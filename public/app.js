@@ -160,10 +160,6 @@ window.addEventListener('DOMContentLoaded', () => {
   loadSnippets();
   recordLaunch();
 
-  if (S.view === 'intro') {
-    stopIntroAnimation = initIntroCanvas();
-  }
-
   // Polling metrics on welcome screen
   setInterval(recordLaunch, 3000);
 
@@ -220,35 +216,118 @@ async function fetchAPI(url, opts = {}) {
   return r.json();
 }
 
-let stopIntroAnimation = null;
+function getClientId() {
+  let cid = localStorage.getItem('mongosandbox_client_id');
+  if (!cid) {
+    cid = 'c_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
+    localStorage.setItem('mongosandbox_client_id', cid);
+  }
+  return cid;
+}
 
-function initIntroCanvas() {
-  const canvas = document.getElementById('intro-canvas');
-  if (!canvas) return null;
+async function recordLaunch() {
+  try {
+    const d = await fetchAPI('/api/analytics/launch', {
+      method: 'POST',
+      body: JSON.stringify({ client_id: getClientId() })
+    });
+    document.getElementById('stat-active').textContent = d.active_users ?? '—';
+    document.getElementById('stat-visited').textContent = d.total_visits ?? '—';
+  } catch(e) {}
+
+  startHeartbeatPolling();
+  initParticles();
+}
+
+let heartbeatTimer = null;
+function startHeartbeatPolling() {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  heartbeatTimer = setInterval(async () => {
+    const intro = document.getElementById('intro-panel');
+    const cid = getClientId();
+    if (intro && intro.classList.contains('active')) {
+      try {
+        const d = await fetchAPI(`/api/analytics?client_id=${cid}`);
+        document.getElementById('stat-active').textContent = d.active_users ?? '—';
+        document.getElementById('stat-visited').textContent = d.total_visits ?? '—';
+      } catch(e) {}
+    } else {
+      try {
+        await fetch('/api/analytics/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client_id: cid })
+        });
+      } catch(e) {}
+    }
+  }, 30000);
+}
+
+function initParticles() {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  let animationFrameId;
+  
+  let width = canvas.offsetWidth;
+  let height = canvas.offsetHeight;
+  canvas.width = width;
+  canvas.height = height;
 
-  let width = canvas.width = canvas.offsetWidth;
-  let height = canvas.height = canvas.offsetHeight;
+  window.addEventListener('resize', () => {
+    if (!canvas) return;
+    width = canvas.offsetWidth;
+    height = canvas.offsetHeight;
+    canvas.width = width;
+    canvas.height = height;
+  });
 
   const particles = [];
-  const particleCount = 45;
-  const maxDistance = 120;
+  const particleCount = Math.min(60, Math.floor((width * height) / 15000));
+  const connectionDistance = 110;
+  const mouse = { x: null, y: null, radius: 150 };
+
+  const intro = document.getElementById('intro-panel');
+  if (intro) {
+    intro.addEventListener('mousemove', (e) => {
+      const rect = intro.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    });
+    intro.addEventListener('mouseleave', () => {
+      mouse.x = null;
+      mouse.y = null;
+    });
+  }
 
   class Particle {
     constructor() {
       this.x = Math.random() * width;
       this.y = Math.random() * height;
-      this.vx = (Math.random() - 0.5) * 0.4;
-      this.vy = (Math.random() - 0.5) * 0.4;
+      this.vx = (Math.random() - 0.5) * 0.5;
+      this.vy = (Math.random() - 0.5) * 0.5;
       this.radius = Math.random() * 2 + 1;
     }
+
     update() {
       this.x += this.vx;
       this.y += this.vy;
+
       if (this.x < 0 || this.x > width) this.vx *= -1;
       if (this.y < 0 || this.y > height) this.vy *= -1;
+
+      if (mouse.x !== null && mouse.y !== null) {
+        const dx = this.x - mouse.x;
+        const dy = this.y - mouse.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < mouse.radius) {
+          const force = (mouse.radius - dist) / mouse.radius;
+          const angle = Math.atan2(dy, dx);
+          this.x += Math.cos(angle) * force * 2;
+          this.y += Math.sin(angle) * force * 2;
+        }
+      }
     }
+
     draw() {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -261,24 +340,27 @@ function initIntroCanvas() {
     particles.push(new Particle());
   }
 
-  function resize() {
-    if (!canvas) return;
-    width = canvas.width = canvas.offsetWidth;
-    height = canvas.height = canvas.offsetHeight;
-  }
-  window.addEventListener('resize', resize);
-
   function animate() {
+    if (intro && !intro.classList.contains('active')) {
+      requestAnimationFrame(animate);
+      return;
+    }
+
     ctx.clearRect(0, 0, width, height);
-    
-    // Draw connections
+
+    for (let i = 0; i < particles.length; i++) {
+      particles[i].update();
+      particles[i].draw();
+    }
+
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < maxDistance) {
-          const alpha = (1 - dist / maxDistance) * 0.15;
+
+        if (dist < connectionDistance) {
+          const alpha = (1 - dist / connectionDistance) * 0.15;
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
@@ -289,37 +371,10 @@ function initIntroCanvas() {
       }
     }
 
-    // Draw and update particles
-    particles.forEach(p => {
-      p.update();
-      p.draw();
-    });
-
-    animationFrameId = requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
   }
 
   animate();
-  
-  return () => {
-    cancelAnimationFrame(animationFrameId);
-    window.removeEventListener('resize', resize);
-  };
-}
-
-async function recordLaunch() {
-  try {
-    let sessionId = sessionStorage.getItem('mongosandbox_session_id');
-    if (!sessionId) {
-      sessionId = 'sess_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      sessionStorage.setItem('mongosandbox_session_id', sessionId);
-    }
-    const d = await fetchAPI('/api/analytics/visit', {
-      method: 'POST',
-      body: JSON.stringify({ session_id: sessionId })
-    });
-    document.getElementById('stat-active').textContent = d.active_users ?? '—';
-    document.getElementById('stat-visited').textContent = d.total_visits ?? '—';
-  } catch(e) {}
 }
 
 async function loadCollections() {
@@ -352,19 +407,12 @@ function showView(name) {
     ide.style.display = 'none';
     intro.classList.add('active');
     
-    if (stopIntroAnimation) stopIntroAnimation();
-    stopIntroAnimation = initIntroCanvas();
-    
     // Set welcome icon active, others inactive
     document.getElementById('act-welcome')?.classList.add('active');
     ['files', 'db', 'history', 'snippets', 'search'].forEach(p => {
       document.getElementById(`act-${p}`)?.classList.remove('active');
     });
   } else {
-    if (stopIntroAnimation) {
-      stopIntroAnimation();
-      stopIntroAnimation = null;
-    }
     intro.classList.remove('active');
     ide.style.display = 'flex';
     

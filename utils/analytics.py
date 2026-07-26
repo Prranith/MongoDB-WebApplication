@@ -1,170 +1,279 @@
 """
 utils/analytics.py
-
-Production-grade real-time analytics using Upstash Redis REST API.
-- Zero persistent connections (safe for Vercel serverless)
-- Active users: Redis SET with 5-min TTL sliding window per unique session
-- Total visits: Redis atomic INCR counter
-- Scales to 1M+ users on Upstash free tier (500K commands/month)
-
-Requires two environment variables (set in Vercel dashboard):
-  UPSTASH_REDIS_REST_URL  — e.g. https://xxx.upstash.io
-  UPSTASH_REDIS_REST_TOKEN — your REST token
-
-Falls back gracefully to in-process counters if env vars are missing
-(useful for local dev).
+Real-time production-grade usage analytics & profile visit counter for MongoSandbox.
+Uses Upstash Redis REST interface for cloud scalability, with a local JSON fallback.
 """
 
-import os
-import time
 import json
-import urllib.request
-import urllib.parse
 import threading
+import uuid
+import time
+import urllib.request
+import os
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict
 
-# ── Upstash Redis REST helpers ────────────────────────────────────────────────
+ANALYTICS_DIR = Path.home() / ".mongosandbox"
+ANALYTICS_FILE = ANALYTICS_DIR / "analytics.json"
+CLIENT_ID_FILE = ANALYTICS_DIR / "client_id"
 
-_REDIS_URL   = os.environ.get("UPSTASH_REDIS_REST_URL", "").rstrip("/")
-_REDIS_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+UPSTASH_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "https://choice-filly-171541.upstash.io")
+UPSTASH_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAAAp4VAAIgcDE4NjFmNjc3ODY4NmU0ODE4YWZlNmJlYjJmMjRmMjUzMA")
 
-# Key names
-_KEY_TOTAL   = "mongosandbox:total_visits"
-_KEY_ACTIVE  = "mongosandbox:active_users"   # Redis SET — member = session_id
-_TTL_ACTIVE  = 300                            # 5-minute active-user window (seconds)
-
-
-def _redis(command: list) -> object:
-    """
-    Execute a single Upstash Redis REST command.
-    command — list, e.g. ["INCR", "some:key"]
-    Returns the 'result' value from the JSON response, or None on failure.
-    """
-    if not _REDIS_URL or not _REDIS_TOKEN:
-        return None
+def _get_or_create_client_id() -> str:
+    """Return a persistent unique identifier for this installation/user."""
     try:
-        url  = f"{_REDIS_URL}/{'/'.join(urllib.parse.quote(str(c), safe='') for c in command)}"
-        req  = urllib.request.Request(
-            url,
-            headers={
-                "Authorization": f"Bearer {_REDIS_TOKEN}",
-                "Content-Type":  "application/json",
-            },
-            method="GET",
-        )
-        with urllib.request.urlopen(req, timeout=2.5) as resp:
-            body = json.loads(resp.read().decode())
-            return body.get("result")
+        ANALYTICS_DIR.mkdir(parents=True, exist_ok=True)
+        if CLIENT_ID_FILE.exists():
+            cid = CLIENT_ID_FILE.read_text(encoding="utf-8").strip()
+            if cid:
+                return cid
+        cid = str(uuid.uuid4())
+        CLIENT_ID_FILE.write_text(cid, encoding="utf-8")
+        return cid
     except Exception:
-        return None
+        return str(uuid.uuid4())
 
 
-def _redis_pipeline(commands: list[list]) -> list:
+class AnalyticsTracker:
     """
-    Execute multiple commands in one HTTP call via Upstash pipeline endpoint.
-    Returns list of result values.
+    Production-grade real-time analytics tracker.
+    Uses Upstash Redis Rest with pipeline optimizations, falling back to local JSON.
     """
-    if not _REDIS_URL or not _REDIS_TOKEN:
-        return [None] * len(commands)
-    try:
-        url  = f"{_REDIS_URL}/pipeline"
-        body = json.dumps(commands).encode()
-        req  = urllib.request.Request(
-            url,
-            data=body,
-            headers={
-                "Authorization": f"Bearer {_REDIS_TOKEN}",
-                "Content-Type":  "application/json",
+
+    _instance: "AnalyticsTracker | None" = None
+    _lock = threading.Lock()
+
+    def __init__(self) -> None:
+        self._client_id = _get_or_create_client_id()
+        self._local_data: dict[str, Any] = {
+            "total_visits": 0,
+            "total_profile_visits": 0,
+            "queries_executed": 0,
+            "first_visited": None,
+            "last_visited": None,
+            "active_sessions": [],
+            "unique_clients": [self._client_id],
+            "collection_visits": {
+                "users": 0,
+                "orders": 0,
+                "inventory": 0,
+                "shipments": 0,
+                "elite": 0,
             },
-            method="POST",
+        }
+        self._load_local()
+
+    @classmethod
+    def instance(cls) -> "AnalyticsTracker":
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = cls()
+        return cls._instance
+
+    def _load_local(self) -> None:
+        try:
+            ANALYTICS_DIR.mkdir(parents=True, exist_ok=True)
+            if ANALYTICS_FILE.exists():
+                text = ANALYTICS_FILE.read_text(encoding="utf-8")
+                if text.strip():
+                    loaded = json.loads(text)
+                    if isinstance(loaded, dict):
+                        self._local_data.update(loaded)
+        except Exception:
+            pass
+
+    def _save_local(self) -> None:
+        try:
+            ANALYTICS_DIR.mkdir(parents=True, exist_ok=True)
+            ANALYTICS_FILE.write_text(json.dumps(self._local_data, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    def _redis_pipeline(self, commands: list[list[Any]]) -> list[Any] | None:
+        """Execute multiple Redis commands in a single HTTP REST pipeline call."""
+        if not UPSTASH_URL or not UPSTASH_TOKEN:
+            return None
+        url = f"{UPSTASH_URL.rstrip('/')}/pipeline"
+        headers = {
+            "Authorization": f"Bearer {UPSTASH_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(commands).encode("utf-8"),
+            headers=headers,
+            method="POST"
         )
-        with urllib.request.urlopen(req, timeout=3.0) as resp:
-            results = json.loads(resp.read().decode())
-            return [r.get("result") for r in results]
-    except Exception:
-        return [None] * len(commands)
+        try:
+            with urllib.request.urlopen(req, timeout=3.0) as response:
+                res = json.loads(response.read().decode("utf-8"))
+                # Response format: [{'result': ...}, ...]
+                return [r.get("result") for r in res]
+        except Exception:
+            return None
 
+    def _async_run(self, commands: list[list[Any]]) -> None:
+        """Run Redis commands asynchronously in a background thread."""
+        def worker():
+            self._redis_pipeline(commands)
+        t = threading.Thread(target=worker, daemon=True)
+        t.start()
 
-# ── In-process fallback (local dev only) ─────────────────────────────────────
+    def record_app_launch(self, client_id: str | None = None) -> dict[str, Any]:
+        """Record an app launch or intro page visit."""
+        cid = client_id or self._client_id
+        now_iso = datetime.now().isoformat(timespec="seconds")
+        now_ts = int(time.time())
 
-_local_lock        = threading.Lock()
-_local_total       = 0
-_local_active_seen: set[str] = set()   # session IDs seen in last 5 min (approx)
+        # 1. Update local state fallback
+        with self._lock:
+            self._local_data["total_visits"] = self._local_data.get("total_visits", 0) + 1
+            if not self._local_data.get("first_visited"):
+                self._local_data["first_visited"] = now_iso
+            self._local_data["last_visited"] = now_iso
+            
+            sessions = self._local_data.setdefault("active_sessions", [])
+            cutoff = now_ts - 300
+            sessions = [t for t in sessions if isinstance(t, (int, float)) and t > cutoff]
+            sessions.append(now_ts)
+            self._local_data["active_sessions"] = sessions
 
+            clients = self._local_data.setdefault("unique_clients", [])
+            if cid not in clients:
+                clients.append(cid)
+            self._save_local()
 
-# ── Public API ────────────────────────────────────────────────────────────────
+        # 2. Redis Pipeline
+        pipeline_cmds = [
+            ["INCR", "total_launches"],
+            ["PFADD", "unique_visitors", cid],
+            ["PFCOUNT", "unique_visitors"],
+            ["ZADD", "active_users", str(now_ts), cid],
+            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 300)],
+            ["ZCARD", "active_users"]
+        ]
+        
+        res = self._redis_pipeline(pipeline_cmds)
+        if res and len(res) == 6:
+            total_visits = res[0] # INCR total_launches
+            active_users = res[5]
+            
+            # Sync back to local data cache
+            with self._lock:
+                if isinstance(total_visits, int):
+                    self._local_data["total_visits"] = total_visits
+                self._save_local()
 
-def record_visit(session_id: str) -> dict:
-    """
-    Record one page visit for session_id.
-    Returns {"total_visits": int, "active_users": int}.
-    """
-    if _REDIS_URL and _REDIS_TOKEN:
-        # Fire-and-forget in background thread to avoid blocking request
-        def _work():
-            # Atomic pipeline:
-            # 1. INCR total visits
-            # 2. SADD session to active set
-            # 3. EXPIRE active set to refresh TTL
-            _redis_pipeline([
-                ["INCR", _KEY_TOTAL],
-                ["SADD", _KEY_ACTIVE, session_id],
-                ["EXPIRE", _KEY_ACTIVE, _TTL_ACTIVE],
-            ])
-        threading.Thread(target=_work, daemon=True).start()
-    else:
-        # Local fallback
-        with _local_lock:
-            global _local_total
-            _local_total += 1
-            _local_active_seen.add(session_id)
+            return {
+                "total_visits": total_visits if isinstance(total_visits, int) else self._local_data["total_visits"],
+                "active_users": active_users if isinstance(active_users, int) else len(set(sessions)),
+                "last_visited": now_iso
+            }
+        
+        # Fallback to local
+        with self._lock:
+            recent_sessions = [t for t in self._local_data["active_sessions"] if t > cutoff]
+            return {
+                "total_visits": self._local_data["total_visits"],
+                "active_users": max(1, len(set(recent_sessions))),
+                "last_visited": now_iso
+            }
 
-    return get_stats()
+    def record_profile_visit(self, collection_name: str) -> None:
+        """Record a visit/inspection to a dataset collection profile."""
+        with self._lock:
+            self._local_data["total_profile_visits"] = self._local_data.get("total_profile_visits", 0) + 1
+            visits = self._local_data.setdefault("collection_visits", {})
+            visits[collection_name] = visits.get(collection_name, 0) + 1
+            self._save_local()
 
-
-def get_stats() -> dict:
-    """
-    Return current {"total_visits": int, "active_users": int}.
-    Reads from Upstash (two cheap GET commands) or local fallback.
-    """
-    if _REDIS_URL and _REDIS_TOKEN:
-        results = _redis_pipeline([
-            ["GET",   _KEY_TOTAL],
-            ["SCARD", _KEY_ACTIVE],
+        # Run background Redis commands
+        self._async_run([
+            ["INCR", "total_profile_visits"],
+            ["HINCRBY", "collection_visits", collection_name, "1"]
         ])
-        total  = int(results[0] or 0)
-        active = int(results[1] or 0)
-    else:
-        with _local_lock:
-            total  = _local_total
-            active = max(1, len(_local_active_seen))
 
-    return {
-        "total_visits":  total,
-        "active_users":  max(1, active),   # always show at least 1 (the current user)
-    }
+    def record_query_executed(self) -> None:
+        """Record a query execution event."""
+        with self._lock:
+            self._local_data["queries_executed"] = self._local_data.get("queries_executed", 0) + 1
+            self._save_local()
+
+        # Run background Redis commands
+        self._async_run([
+            ["INCR", "queries_executed"]
+        ])
+
+    def get_stats(self, client_id: str | None = None) -> dict[str, Any]:
+        """Return exact real-time usage metrics."""
+        cid = client_id or self._client_id
+        now_ts = int(time.time())
+        cutoff = now_ts - 300
+
+        # Query Redis for the latest stats
+        pipeline_cmds = [
+            ["ZADD", "active_users", str(now_ts), cid],
+            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 300)],
+            ["ZCARD", "active_users"],
+            ["GET", "total_launches"],
+            ["GET", "total_profile_visits"],
+            ["GET", "queries_executed"],
+            ["HGETALL", "collection_visits"]
+        ]
+        
+        res = self._redis_pipeline(pipeline_cmds)
+        if res and len(res) == 7:
+            active_users = res[2]
+            total_visits = res[3]
+            total_prof = res[4]
+            queries = res[5]
+            col_visits_raw = res[6]
+
+            # Parse HGETALL list [key1, val1, key2, val2...]
+            col_visits = {}
+            if isinstance(col_visits_raw, list):
+                for i in range(0, len(col_visits_raw), 2):
+                    if i + 1 < len(col_visits_raw):
+                        col_visits[col_visits_raw[i]] = int(col_visits_raw[i+1])
+
+            # Sync Redis numbers back into local cache for offline resiliency
+            with self._lock:
+                if total_visits is not None:
+                    self._local_data["total_visits"] = int(total_visits)
+                if total_prof is not None:
+                    self._local_data["total_profile_visits"] = int(total_prof)
+                if queries is not None:
+                    self._local_data["queries_executed"] = int(queries)
+                if col_visits:
+                    self._local_data["collection_visits"].update(col_visits)
+                self._save_local()
+
+            return {
+                "total_visits": self._local_data["total_visits"],
+                "active_users": active_users if isinstance(active_users, int) else 1,
+                "total_profile_visits": self._local_data["total_profile_visits"],
+                "queries_executed": self._local_data["queries_executed"],
+                "collection_visits": self._local_data["collection_visits"],
+                "client_id": cid,
+                "first_visited": self._local_data.get("first_visited"),
+                "last_visited": self._local_data.get("last_visited")
+            }
+
+        # Fallback to local stats
+        with self._lock:
+            recent_sessions = [t for t in self._local_data.get("active_sessions", []) if t > cutoff]
+            return {
+                "total_visits": self._local_data["total_visits"],
+                "active_users": max(1, len(set(recent_sessions))),
+                "total_profile_visits": self._local_data["total_profile_visits"],
+                "queries_executed": self._local_data["queries_executed"],
+                "collection_visits": dict(self._local_data["collection_visits"]),
+                "client_id": cid,
+                "first_visited": self._local_data.get("first_visited"),
+                "last_visited": self._local_data.get("last_visited")
+            }
 
 
-# ── Legacy shim (so existing import in index.py still works) ──────────────────
-
-class _CompatTracker:
-    """Thin shim so 'analytics_tracker.record_query_executed()' etc. still work."""
-
-    @staticmethod
-    def record_query_executed() -> None:
-        pass  # lightweight — no extra Redis call needed
-
-    @staticmethod
-    def record_profile_visit(_: str) -> None:
-        pass
-
-    @staticmethod
-    def record_app_launch(session_id: str = "unknown") -> dict:
-        return record_visit(session_id)
-
-    @staticmethod
-    def get_stats() -> dict:
-        return get_stats()
-
-
-analytics_tracker = _CompatTracker()
+analytics_tracker = AnalyticsTracker.instance()

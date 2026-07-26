@@ -348,32 +348,33 @@ def api_rename_file():
 
 @app.route("/api/analytics", methods=["GET"])
 def api_analytics():
-    """Return live analytics metrics (reads from Redis, no write)."""
-    from utils.analytics import get_stats
-    return jsonify(get_stats())
+    """Return live analytics metrics."""
+    client_id = request.args.get("client_id")
+    stats = analytics_tracker.get_stats(client_id=client_id)
+    return jsonify(stats)
 
 
-@app.route("/api/analytics/visit", methods=["POST"])
-def api_analytics_visit():
-    """
-    Record a page visit for a given session_id.
-    Body: { "session_id": "<uuid>" }
-    Returns updated stats.
-    """
-    from utils.analytics import record_visit
-    body = request.get_json(force=True, silent=True) or {}
-    session_id = body.get("session_id", "unknown")
-    return jsonify(record_visit(session_id))
-
-
-# Keep old endpoint for backward compat
 @app.route("/api/analytics/launch", methods=["POST"])
 def api_analytics_launch():
-    """Legacy launch recorder."""
-    from utils.analytics import record_visit
+    """Record an app launch / page visit."""
     body = request.get_json(force=True, silent=True) or {}
-    session_id = body.get("session_id", "unknown")
-    return jsonify(record_visit(session_id))
+    client_id = body.get("client_id")
+    result = analytics_tracker.record_app_launch(client_id=client_id)
+    return jsonify(result)
+
+
+@app.route("/api/analytics/heartbeat", methods=["POST"])
+def api_analytics_heartbeat():
+    """Refresh active session heartbeat without returning full metrics."""
+    body = request.get_json(force=True, silent=True) or {}
+    client_id = body.get("client_id")
+    if client_id:
+        now_ts = int(datetime.now().timestamp())
+        analytics_tracker._async_run([
+            ["ZADD", "active_users", str(now_ts), client_id],
+            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 300)]
+        ])
+    return jsonify({"status": "ok"})
 
 
 # ── Vercel handler ────────────────────────────────────────────────────────────

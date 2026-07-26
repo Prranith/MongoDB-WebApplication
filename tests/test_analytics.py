@@ -32,6 +32,8 @@ def test_record_profile_visit():
     initial_profile_visits = initial_stats.get("total_profile_visits", 0)
 
     tracker.record_profile_visit("users")
+    import time
+    time.sleep(0.8)  # wait for background Redis sync
     updated = tracker.get_stats()
 
     assert updated["total_profile_visits"] == initial_profile_visits + 1
@@ -45,6 +47,8 @@ def test_record_query_executed():
     initial_queries = initial_stats.get("queries_executed", 0)
 
     tracker.record_query_executed()
+    import time
+    time.sleep(0.8)  # wait for background Redis sync
     updated = tracker.get_stats()
 
     assert updated["queries_executed"] == initial_queries + 1
