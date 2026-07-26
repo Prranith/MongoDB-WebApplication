@@ -1,184 +1,166 @@
 """
 api/index.py
-Vercel Serverless Python Entrypoint for MongoSandbox.
-Runs Flask WSGI application on @vercel/python runtime.
-Imports Python core modules: core.database, core.executor, core.snippets, utils.analytics.
+Flask-based Vercel serverless API.
+Wraps core/database.py + core/web_executor.py — zero PySide6 dependency.
+All existing Python backend logic runs unchanged.
 """
 
 import sys
+import json
 from pathlib import Path
-from flask import Flask, jsonify, request, render_template_string
+from functools import wraps
 
-# Ensure project root is in Python path
-ROOT_DIR = Path(__file__).parent.parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+# Add project root so all core/ and utils/ imports work
+ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT))
 
-# Import Python Core Engine Modules
-from core.database import db_engine
-from core.executor import query_executor
-from core.snippets import snippets_manager
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+from bson import json_util, ObjectId
+from datetime import datetime
+
+# Import existing Python backend (no PySide6 involved)
+from core.database import db_manager
+from core.web_executor import execute as web_execute
+from core.snippets import snippet_registry
 from utils.analytics import analytics_tracker
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=str(ROOT / "public"), static_url_path="")
+CORS(app)
 
-INDEX_HTML_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to MongoDB Practise Workspace</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background-color: #ffffff;
-      color: #001e2b;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 40px 48px;
-    }
-    .header-box { text-align: center; }
-    .title-l1 { font-size: 48px; font-weight: bold; color: #001e2b; }
-    .title-l2 { font-size: 56px; font-weight: 900; color: #00684a; margin-top: 4px; }
-    .subtitle { font-size: 28px; font-weight: 600; color: #334155; margin-top: 10px; }
-    
-    .center-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin: 24px 0;
-      gap: 24px;
-    }
-    .logo-img { width: 380px; height: 380px; object-fit: contain; }
-    .cta-btn {
-      background-color: #00684a;
-      color: #ffffff;
-      font-size: 18px;
-      font-weight: bold;
-      padding: 16px 36px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.2s ease;
-    }
-    .cta-btn:hover { background-color: #00ed64; color: #001e2b; }
+# ── Utility ──────────────────────────────────────────────────────────────────
 
-    .footer-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      padding-top: 24px;
-      border-top: 1px solid #e2e8f0;
-    }
-    .stat-label { font-size: 18px; font-weight: bold; color: #001e2b; }
-    .stat-green { color: #00684a; }
-    .dev-link { color: #0284c7; text-decoration: underline; font-weight: bold; }
-  </style>
-</head>
-<body>
-  <div class="header-box">
-    <div class="title-l1">Welcome to  MongoDB Practise</div>
-    <div class="title-l2">Workspace</div>
-    <div class="subtitle">A unified platform to learn mongodb precisely</div>
-  </div>
+def _bson_safe(obj):
+    """Serialize any BSON types to JSON-safe primitives."""
+    return json.loads(json_util.dumps(obj))
 
-  <div class="center-box">
-    <svg class="logo-img" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M100 15L173.205 57.3V142.7L100 185L26.7949 142.7V57.3L100 15Z" fill="#00684A" stroke="#00ED64" stroke-width="4"/>
-      <path d="M100 45C100 45 75 75 75 105C75 125 88 140 100 155C112 140 125 125 125 105C125 75 100 45 100 45Z" fill="#FFFFFF"/>
-      <path d="M100 45V155" stroke="#00684A" stroke-width="3"/>
-    </svg>
-    <a href="/workspace" class="cta-btn">🚀 Enter Workspace ➔</a>
-  </div>
 
-  <div class="footer-row">
-    <div>
-      <div class="stat-label">Active Users : {{ active_users }}</div>
-      <div class="stat-label stat-green">Total Visited : {{ total_visits }}</div>
-    </div>
-    <div style="text-align: right;">
-      <div class="stat-label">Visit developer : Prranith Swargam</div>
-      <a href="https://www.linkedin.com/in/prranith-swargam-a620a6334/" target="_blank" class="dev-link">https://www.linkedin.com/in/prranith-swargam-a620a6334/</a>
-    </div>
-  </div>
-</body>
-</html>
-"""
+# ── Serve frontend ────────────────────────────────────────────────────────────
 
-WORKSPACE_HTML_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>MongoSandbox IDE Workspace</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', monospace; background-color: #1e1e1e; color: #ffffff; height: 100vh; display: flex; flex-direction: column; }
-    .nav { height: 40px; background-color: #252526; display: flex; align-items: center; padding: 0 16px; gap: 16px; border-bottom: 1px solid #3c3c3c; font-size: 13px; }
-    .nav a { color: #38bdf8; text-decoration: none; font-weight: bold; }
-    .main { flex: 1; display: flex; }
-    .sidebar { width: 220px; background-color: #252526; padding: 16px; border-right: 1px solid #3c3c3c; font-size: 13px; }
-    .editor-pane { flex: 1; display: flex; flex-direction: column; padding: 16px; gap: 12px; }
-    textarea { width: 100%; height: 180px; background-color: #2d2d2d; color: #00ed64; font-family: monospace; font-size: 15px; border: 1px solid #3c3c3c; padding: 12px; border-radius: 6px; }
-    button { background-color: #00684a; color: white; padding: 10px 20px; border: none; font-weight: bold; border-radius: 6px; cursor: pointer; }
-    button:hover { background-color: #00ed64; color: #001e2b; }
-    .console { flex: 1; background-color: #111111; color: #38bdf8; padding: 12px; font-family: monospace; font-size: 13px; overflow-y: auto; border-radius: 6px; }
-  </style>
-</head>
-<body>
-  <div class="nav">
-    <a href="/">🏠 Intro Page</a>
-    <span>● MongoDB Practice Workspace (Python Serverless Engine)</span>
-  </div>
-  <div class="main">
-    <div class="sidebar">
-      <h4 style="color:#00ed64; margin-bottom:12px;">⛁ Collections</h4>
-      {% for coll in collections %}
-        <div style="margin-bottom:8px;">📄 {{ coll }}</div>
-      {% endfor %}
-    </div>
-    <div class="editor-pane">
-      <form method="POST" action="/query">
-        <textarea name="query_str" spellcheck="false">{{ query_str or 'db.users.find({})' }}</textarea><br/><br/>
-        <button type="submit">▶ Run Query (Python Engine)</button>
-      </form>
-      <h3>OUTPUT CONSOLE</h3>
-      <div class="console">{{ result_json }}</div>
-    </div>
-  </div>
-</body>
-</html>
-"""
+@app.route("/")
+def serve_index():
+    return send_from_directory(str(ROOT / "public"), "index.html")
 
-@app.route('/')
-def home():
-    analytics_tracker.record_app_launch()
+
+@app.route("/<path:path>")
+def serve_static(path):
+    try:
+        return send_from_directory(str(ROOT / "public"), path)
+    except Exception:
+        return send_from_directory(str(ROOT / "public"), "index.html")
+
+
+# ── API: Collections ──────────────────────────────────────────────────────────
+
+@app.route("/api/collections", methods=["GET"])
+def api_collections():
+    """List all available collections with document counts."""
+    names = db_manager.list_collections()
+    result = []
+    for name in names:
+        stats = db_manager.get_collection_stats(name)
+        result.append({
+            "name": name,
+            "count": stats.get("count", 0),
+        })
+    return jsonify({"collections": result})
+
+
+# ── API: Query Execution ──────────────────────────────────────────────────────
+
+@app.route("/api/query", methods=["POST"])
+def api_query():
+    """Execute a MongoDB shell query and return results."""
+    body = request.get_json(force=True, silent=True) or {}
+    raw_query = body.get("query", "").strip()
+    limit = int(body.get("limit", 100))
+
+    if not raw_query:
+        return jsonify({"status": "error", "error": "Empty query"}), 400
+
+    # Track analytics
+    analytics_tracker.record_query_executed()
+
+    result = web_execute(raw_query, max_results=limit)
+    payload = result.to_dict()
+    return jsonify(payload)
+
+
+# ── API: Schema ───────────────────────────────────────────────────────────────
+
+@app.route("/api/schema", methods=["GET"])
+def api_schema():
+    """Return inferred field types for each collection."""
+    schemas = {}
+    for name in db_manager.list_collections():
+        schemas[name] = db_manager.get_schema_for_collection(name, sample_size=50)
+    return jsonify({"schemas": schemas})
+
+
+@app.route("/api/schema/<collection>", methods=["GET"])
+def api_schema_collection(collection):
+    """Return schema for a single collection."""
+    schema = db_manager.get_schema_for_collection(collection, sample_size=100)
+    stats = db_manager.get_collection_stats(collection)
+    analytics_tracker.record_profile_visit(collection)
+    return jsonify({
+        "collection": collection,
+        "count": stats.get("count", 0),
+        "schema": schema,
+    })
+
+
+# ── API: Sample Documents ─────────────────────────────────────────────────────
+
+@app.route("/api/sample/<collection>", methods=["GET"])
+def api_sample(collection):
+    """Return sample documents from a collection."""
+    limit = int(request.args.get("limit", 5))
+    coll = db_manager.get_collection(collection)
+    if coll is None:
+        return jsonify({"error": f"Collection '{collection}' not found"}), 404
+    docs = list(coll.find().limit(limit))
+    return jsonify({"collection": collection, "documents": _bson_safe(docs)})
+
+
+# ── API: Snippets ─────────────────────────────────────────────────────────────
+
+@app.route("/api/snippets", methods=["GET"])
+def api_snippets():
+    """Return all snippets grouped by category."""
+    by_cat = snippet_registry.by_category()
+    result = {}
+    for cat, snips in by_cat.items():
+        result[cat] = [
+            {
+                "name": s.name,
+                "prefix": s.prefix,
+                "body": s.body,
+                "description": s.description,
+                "category": s.category,
+            }
+            for s in snips
+        ]
+    return jsonify({"snippets": result})
+
+
+# ── API: Analytics ────────────────────────────────────────────────────────────
+
+@app.route("/api/analytics", methods=["GET"])
+def api_analytics():
+    """Return live analytics metrics."""
     stats = analytics_tracker.get_stats()
-    return render_template_string(
-        INDEX_HTML_TEMPLATE,
-        active_users=stats.get("active_users", 1),
-        total_visits=stats.get("total_visits", 1)
-    )
+    return jsonify(stats)
 
-@app.route('/workspace')
-def workspace():
-    colls = db_engine.list_collections()
-    return render_template_string(WORKSPACE_HTML_TEMPLATE, collections=colls, query_str='db.users.find({})', result_json='[info] Python Execution Engine Ready.')
 
-@app.route('/query', methods=['POST'])
-def execute_query():
-    q_str = request.form.get('query_str', 'db.users.find({})')
-    res = query_executor.execute(q_str)
-    colls = db_engine.list_collections()
-    import json
-    return render_template_string(
-        WORKSPACE_HTML_TEMPLATE,
-        collections=colls,
-        query_str=q_str,
-        result_json=json.dumps(res, indent=2)
-    )
+@app.route("/api/analytics/launch", methods=["POST"])
+def api_analytics_launch():
+    """Record an app launch / page visit."""
+    result = analytics_tracker.record_app_launch()
+    return jsonify(result)
+
+
+# ── Vercel handler ────────────────────────────────────────────────────────────
+
+# Vercel calls this 'app' variable
+handler = app

@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MongoDB Practice Workspace</title>
+<meta name="description" content="A unified platform to learn MongoDB precisely. Interactive IDE with in-memory query execution, schema ER visualizer, and live analytics."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/one-dark.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css"/>
+<style>
+:root{
+  --bg:#1e1e1e;--bg2:#252526;--bg3:#2d2d2d;--bg4:#3c3c3c;
+  --border:#3c3c3c;--border2:#505050;
+  --green:#00ed64;--dark-green:#00684a;--forest:#001e2b;
+  --blue:#38bdf8;--orange:#ce9178;--yellow:#dcdcaa;--purple:#c586c0;
+  --text:#d4d4d4;--text2:#9d9d9d;--text3:#cccccc;
+  --hover:#2a2d2e;--active:#094771;
+  --sidebar-w:240px;--act-w:48px;--insp-w:230px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
+
+/* ── Window Title Bar ─────────────────────────────────────────────────── */
+#titlebar{
+  height:32px;background:#181818;display:flex;align-items:center;
+  justify-content:space-between;padding:0 16px;
+  border-bottom:1px solid var(--border);flex-shrink:0;user-select:none;
+}
+.menubar{display:flex;gap:2px}
+.menubar span{
+  padding:4px 8px;font-size:12px;color:#cccccc;border-radius:4px;cursor:pointer;
+}
+.menubar span:hover{background:rgba(255,255,255,.1)}
+#title-center{font-size:12px;color:#858585;position:absolute;left:50%;transform:translateX(-50%)}
+
+/* ── View Wrapper ────────────────────────────────────────────────────── */
+#view-wrapper{flex:1;position:relative;overflow:hidden}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   INTRO SCREEN  (white canvas matching MongoDB brand)
+═══════════════════════════════════════════════════════════════════════ */
+#intro{
+  position:absolute;inset:0;background:#ffffff;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:44px 48px 32px;overflow-y:auto;z-index:20;
+  font-family:'Inter',sans-serif;
+}
+.intro-title{text-align:center}
+.t1{font-size:44px;font-weight:800;color:#001e2b;line-height:1.15;letter-spacing:-.5px}
+.t2{font-size:52px;font-weight:900;color:#00684a;line-height:1.1;letter-spacing:1px;margin-top:2px}
+.t3{font-size:24px;font-weight:600;color:#334155;margin-top:10px}
+.logo-wrap{display:flex;flex-direction:column;align-items:center;gap:22px;margin:20px 0}
+#logo-img{width:380px;height:380px;object-fit:contain;cursor:pointer;transition:transform .25s ease}
+#logo-img:hover{transform:scale(1.04)}
+.enter-btn{
+  background:#00684a;color:#fff;font-size:19px;font-weight:700;
+  padding:16px 44px;border:none;border-radius:10px;cursor:pointer;
+  transition:all .2s ease;box-shadow:0 8px 24px rgba(0,104,74,.25);
+  font-family:'Inter',sans-serif;
+}
+.enter-btn:hover{background:#00ed64;color:#001e2b;transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,237,100,.35)}
+.intro-footer{display:flex;justify-content:space-between;align-items:flex-end;padding-top:12px}
+.stats{font-size:18px;font-weight:700;color:#001e2b;display:flex;flex-direction:column;gap:6px}
+.stat-green{color:#00684a}
+.dev-info{text-align:right;font-size:18px;font-weight:700;color:#001e2b;display:flex;flex-direction:column;gap:6px}
+.dev-info a{color:#0284c7;font-size:15px;text-decoration:underline;font-weight:600}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   IDE SCREEN
+═══════════════════════════════════════════════════════════════════════ */
+#ide{position:absolute;inset:0;display:none;flex-direction:column}
+
+/* Run-bar */
+#runbar{
+  height:38px;background:var(--bg3);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 10px;gap:6px;flex-shrink:0;
+}
+.run-btn{
+  background:#16825d;color:#fff;font-weight:700;font-size:12px;
+  border:none;padding:5px 14px;border-radius:4px;cursor:pointer;
+  font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px;
+}
+.run-btn:hover{background:#1d9f70}
+.tool-btn{
+  background:transparent;color:var(--text3);font-size:12px;
+  border:1px solid var(--border);padding:4px 10px;border-radius:4px;
+  cursor:pointer;font-family:'Inter',sans-serif;
+}
+.tool-btn:hover{background:var(--hover);color:#fff}
+.tool-btn.active-view{border-color:#38bdf8;color:#38bdf8}
+#conn-badge{margin-left:auto;font-size:11px;color:var(--green);display:flex;align-items:center;gap:5px}
+#conn-badge::before{content:'●'}
+
+/* Main IDE body */
+#ide-body{flex:1;display:flex;overflow:hidden}
+
+/* Activity Bar */
+#actbar{
+  width:var(--act-w);background:#333;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:2px;flex-shrink:0;
+}
+.act-icon{
+  width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+  color:#858585;border-radius:6px;cursor:pointer;font-size:18px;border:none;background:none;
+  transition:all .15s;position:relative;
+}
+.act-icon:hover{color:#fff;background:rgba(255,255,255,.08)}
+.act-icon.active{color:#fff;background:var(--bg2);border-left:2px solid var(--blue)}
+.act-icon[title]:hover::after{
+  content:attr(title);position:absolute;left:52px;top:50%;transform:translateY(-50%);
+  background:#252526;color:#ccc;padding:4px 8px;border-radius:4px;font-size:11px;
+  white-space:nowrap;border:1px solid var(--border);z-index:100;pointer-events:none;
+}
+
+/* Sidebar */
+#sidebar{
+  width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;
+}
+.sidebar-hdr{
+  height:35px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;font-weight:700;letter-spacing:.5px;color:#bbbbbb;text-transform:uppercase;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.sidebar-hdr span{font-size:10px;color:var(--text2);text-transform:none;letter-spacing:0}
+#sidebar-content{flex:1;overflow-y:auto}
+.coll-item{
+  padding:7px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;
+  color:#cccccc;border-left:2px solid transparent;transition:all .1s;
+}
+.coll-item:hover{background:var(--hover);color:#fff}
+.coll-item.active{background:var(--active);color:#fff;border-left-color:var(--blue)}
+.coll-badge{margin-left:auto;font-size:10px;background:rgba(255,255,255,.1);padding:2px 7px;border-radius:10px;color:#aaa}
+.snippet-item{
+  padding:6px 14px 6px 24px;font-size:12px;cursor:pointer;color:var(--text2);
+  display:flex;flex-direction:column;gap:2px;border-left:2px solid transparent;
+}
+.snippet-item:hover{background:var(--hover);color:#fff;border-left-color:var(--green)}
+.snippet-name{font-weight:600;color:#e2e2e2;font-size:12px}
+.snippet-desc{font-size:10px;color:#777}
+.cat-hdr{padding:8px 14px 4px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px}
+#sidebar-search{
+  margin:8px;padding:6px 10px;font-size:12px;background:var(--bg4);
+  border:1px solid var(--border2);border-radius:4px;color:var(--text);outline:none;width:calc(100% - 16px);
+}
+
+/* Main workspace */
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Tab bar */
+#tabbar{
+  height:34px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:stretch;flex-shrink:0;overflow-x:auto;
+}
+.tab{
+  padding:0 16px;display:flex;align-items:center;gap:8px;font-size:12px;
+  background:var(--bg3);color:#ccc;border-right:1px solid var(--border);
+  cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;
+}
+.tab.active{background:var(--bg);color:#fff;border-bottom-color:var(--blue)}
+.tab-close{color:#666;margin-left:4px;font-size:11px;border-radius:3px;padding:1px 3px}
+.tab-close:hover{background:rgba(255,255,255,.15);color:#fff}
+
+/* Editor area */
+#editor-wrap{flex:1;display:flex;overflow:hidden}
+#cm-wrap{flex:1;overflow:auto;font-size:14px}
+.CodeMirror{height:100%;font-family:'JetBrains Mono',Consolas,monospace;font-size:14px;line-height:1.6}
+.CodeMirror-scroll{overflow-x:auto!important}
+
+/* Inspector pane */
+#inspector{
+  width:var(--insp-w);background:var(--bg2);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
+}
+.insp-hdr{
+  height:35px;padding:0 12px;display:flex;align-items:center;
+  font-size:11px;font-weight:700;color:#bbbbbb;text-transform:uppercase;letter-spacing:.5px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+#insp-content{flex:1;overflow-y:auto;padding:10px 12px;font-size:12px;color:var(--text2)}
+.insp-field{display:flex;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.insp-key{color:#9cdcfe;font-family:'JetBrains Mono',monospace;font-size:11px}
+.insp-type{color:#4ec9b0;font-family:'JetBrains Mono',monospace;font-size:10px;margin-left:auto}
+.rel-item{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px}
+.rel-arrow{color:var(--green);font-weight:700}
+
+/* Console pane */
+#console{
+  height:220px;background:var(--bg);border-top:2px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;
+}
+#console-tabs{
+  height:30px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 8px;gap:6px;flex-shrink:0;
+}
+.ctab{font-size:11px;padding:4px 10px;border-radius:3px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent}
+.ctab.active{color:#fff;border-bottom-color:var(--blue)}
+.ctab:hover{background:var(--hover);color:#fff}
+#console-body{flex:1;overflow:auto;padding:10px 14px;font-family:'JetBrains Mono',Consolas,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+.out-ok{color:#4ec9b0}
+.out-err{color:#f48771}
+.out-info{color:#858585}
+.out-timing{color:#dcdcaa;font-size:10px}
+
+/* Status bar */
+#statusbar{
+  height:22px;background:#007acc;display:flex;align-items:center;padding:0 12px;gap:14px;
+  font-size:11px;color:rgba(255,255,255,.9);flex-shrink:0;
+}
+.sb-item{cursor:pointer;opacity:.9}
+.sb-item:hover{opacity:1}
+.sb-right{margin-left:auto;display:flex;gap:14px}
+.sb-green{background:#16825d}
+
+/* ── Modals ──────────────────────────────────────────────────────────── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;
+  align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:#252526;border:1px solid var(--border2);border-radius:12px;
+  width:800px;max-width:93vw;max-height:85vh;display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.modal-hdr{
+  padding:16px 20px;border-bottom:1px solid var(--border);display:flex;
+  align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.modal-title{font-size:16px;font-weight:700;color:var(--green)}
+.modal-close{background:none;border:none;color:#888;font-size:20px;cursor:pointer;padding:0 4px;line-height:1}
+.modal-close:hover{color:#fff}
+.modal-body{flex:1;overflow-y:auto;padding:20px}
+
+/* Schema ER graph */
+#er-graph{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.er-node{
+  background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:12px;
+  font-size:12px;
+}
+.er-node-name{font-weight:700;color:var(--green);font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.er-field{padding:2px 0;color:var(--text2);display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px}
+.er-type{color:#4ec9b0}
+.er-relations{margin-top:16px}
+.er-rel-row{
+  background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;
+  font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;margin-bottom:8px;
+}
+.er-rel-arrow{color:var(--green);font-weight:700;font-size:14px}
+
+/* User manual */
+.manual-step{
+  background:var(--bg);border:1px solid var(--border2);border-radius:8px;
+  margin-bottom:12px;overflow:hidden;
+}
+.step-hdr{
+  padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;
+  background:var(--bg3);font-weight:600;font-size:13px;
+}
+.step-num{
+  width:26px;height:26px;background:var(--green);color:var(--forest);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;flex-shrink:0;
+}
+.step-body{padding:14px 16px;font-size:12px;color:var(--text2);line-height:1.8;display:none}
+.step-body.open{display:block}
+.step-body code{background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#ce9178}
+pre.code-block{background:#1a1a1a;padding:12px;border-radius:6px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:#d4d4d4;margin:8px 0}
+
+/* Command palette */
+#palette{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;
+  align-items:flex-start;justify-content:center;padding-top:80px;
+}
+#palette.open{display:flex}
+#palette-box{width:560px;background:#252526;border:1px solid #555;border-radius:8px;overflow:hidden}
+#palette-input{
+  width:100%;padding:14px 16px;background:transparent;border:none;
+  color:#fff;font-size:15px;outline:none;border-bottom:1px solid var(--border);
+  font-family:'Inter',sans-serif;
+}
+.pcmd{padding:10px 16px;font-size:13px;cursor:pointer;display:flex;gap:10px;color:#ccc}
+.pcmd:hover,.pcmd.selected{background:var(--active);color:#fff}
+.pcmd-icon{width:20px;text-align:center}
+.pcmd-key{margin-left:auto;font-size:10px;background:rgba(255,255,255,.1);padding:2px 6px;border-radius:3px}
+
+/* Resize handle */
+.resize-handle{width:4px;background:var(--border);cursor:col-resize;flex-shrink:0}
+.resize-handle:hover{background:var(--blue)}
+
+/* Scrollbars */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#555;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#777}
+</style>
+</head>
+<body>
+
+<!-- ── Window Title Bar ─────────────────────────────────────────────── -->
+<div id="titlebar">
+  <div class="menubar">
+    <span onclick="showView('intro')">Intro</span>
+    <span onclick="toggleSidebar()">Explorer</span>
+    <span onclick="openModal('schema-modal')">Schema ER</span>
+    <span onclick="openModal('manual-modal')">Help (F1)</span>
+    <span onclick="openPalette()">⌘K</span>
+  </div>
+  <div id="title-center">MongoSandbox — MongoDB Practice Workspace</div>
+</div>
+
+<!-- ── View Wrapper ──────────────────────────────────────────────────── -->
+<div id="view-wrapper">
+
+  <!-- ══ INTRO SCREEN ═══════════════════════════════════════════════ -->
+  <div id="intro">
+    <div class="intro-title">
+      <h1 class="t1">Welcome to&nbsp; MongoDB Practise</h1>
+      <h2 class="t2">Workspace</h2>
+      <p class="t3">A unified platform to learn mongodb precisely</p>
+    </div>
+
+    <div class="logo-wrap">
+      <img id="logo-img" src="image.png" alt="MongoDB Logo" onclick="showView('ide')"
+           onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 200 200\'><polygon points=\'100,10 170,55 170,145 100,190 30,145 30,55\' fill=\'%2300684a\' stroke=\'%2300ed64\' stroke-width=\'4\'/><path d=\'M100 50 C80 80 78 110 80 130 C85 150 95 165 100 175 C105 165 115 150 120 130 C122 110 120 80 100 50Z\' fill=\'white\'/></svg>'"/>
+      <button class="enter-btn" onclick="showView('ide')">🚀 Enter Workspace ➔</button>
+    </div>
+
+    <div class="intro-footer">
+      <div class="stats">
+        <div>Active Users : <span id="stat-active">—</span></div>
+        <div>Total Visited : <span id="stat-visited" class="stat-green">—</span></div>
+      </div>
+      <div class="dev-info">
+        <div>Visit developer : Prranith Swargam</div>
+        <a href="https://www.linkedin.com/in/prranith-swargam-a620a6334/" target="_blank">
+          linkedin.com/in/prranith-swargam-a620a6334
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ IDE SCREEN ═════════════════════════════════════════════════ -->
+  <div id="ide">
+
+    <!-- Run bar -->
+    <div id="runbar">
+      <button class="run-btn" onclick="runQuery()" title="Run (Ctrl+Enter)">▶ Run Query</button>
+      <button class="tool-btn" onclick="formatQuery()">Format</button>
+      <button class="tool-btn" onclick="clearConsole()">Clear</button>
+      <button class="tool-btn" id="sidebar-toggle" onclick="toggleSidebar()">⧉ Explorer</button>
+      <button class="tool-btn" onclick="openModal('schema-modal')">⛁ Schema ER</button>
+      <button class="tool-btn" onclick="openModal('manual-modal')">📖 Manual</button>
+      <button class="tool-btn" onclick="showView('intro')">🏠 Intro</button>
+      <div id="conn-badge">practice_db (In-Memory)</div>
+    </div>
+
+    <div id="ide-body">
+
+      <!-- Activity bar -->
+      <div id="actbar">
+        <button class="act-icon active" title="Explorer" onclick="setSidebarTab('explorer')" id="act-explorer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <button class="act-icon" title="Snippets" onclick="setSidebarTab('snippets')" id="act-snippets">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </button>
+        <button class="act-icon" title="Schema ER" onclick="openModal('schema-modal')" id="act-schema">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg>
+        </button>
+        <div style="flex:1"></div>
+        <button class="act-icon" title="Intro Page" onclick="showView('intro')" style="margin-bottom:6px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </button>
+      </div>
+
+      <!-- Sidebar -->
+      <div id="sidebar">
+        <div class="sidebar-hdr">
+          <span id="sidebar-tab-title">DATABASE EXPLORER</span>
+          <span id="sidebar-db-label">practice_db</span>
+        </div>
+        <div id="sidebar-content">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <div class="resize-handle" id="sidebar-resizer"></div>
+
+      <!-- Main workspace: editor + console -->
+      <div id="workspace">
+        <!-- Tab bar -->
+        <div id="tabbar">
+          <div class="tab active" id="main-tab">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ec9b0" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            query.mongo
+          </div>
+        </div>
+
+        <!-- CodeMirror editor -->
+        <div id="editor-wrap">
+          <div id="cm-wrap">
+            <textarea id="raw-editor">// MongoDB Practice Workspace
+// Type any MongoDB shell query and press ▶ Run Query (or Ctrl+Enter)
+
+db.users.find({ status: "active" })</textarea>
+          </div>
+
+          <!-- Inspector -->
+          <div id="inspector">
+            <div class="insp-hdr">
+              <span>📋 Schema Inspector</span>
+            </div>
+            <div id="insp-content">
+              <div style="color:#666;font-size:11px;margin-bottom:8px">Select a collection to inspect schema.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Console -->
+        <div id="console">
+          <div id="console-tabs">
+            <span class="ctab active" onclick="setConsoleTab('output')" id="ctab-output">Output</span>
+            <span class="ctab" onclick="setConsoleTab('translated')" id="ctab-translated">Translated</span>
+            <span class="ctab" onclick="setConsoleTab('timing')" id="ctab-timing">Timing</span>
+            <span style="margin-left:auto;color:#555;font-size:11px" id="result-summary"></span>
+          </div>
+          <div id="console-body" class="out-info">[info] MongoSandbox Ready. Press ▶ Run Query or Ctrl+Enter to execute.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div id="statusbar">
+      <span class="sb-item">🍃 practice_db</span>
+      <span class="sb-item" id="sb-collection">users</span>
+      <span class="sb-item" id="sb-docs"></span>
+      <div class="sb-right">
+        <span class="sb-item" id="sb-timing"></span>
+        <span class="sb-item" onclick="openModal('manual-modal')">F1 Help</span>
+        <span class="sb-item" onclick="openPalette()">⌘K</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCHEMA ER MODAL ════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="schema-modal">
+  <div class="modal" style="width:900px">
+    <div class="modal-hdr">
+      <span class="modal-title">⛁ Schema ER Relations Visualizer</span>
+      <button class="modal-close" onclick="closeModal('schema-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:#888;font-size:12px;margin-bottom:16px">Collection schemas inferred from live data + relational mappings.</p>
+      <h4 style="color:#38bdf8;margin-bottom:12px;font-size:13px">Collection Schemas</h4>
+      <div id="er-graph">Loading...</div>
+      <h4 style="color:#38bdf8;margin:20px 0 12px;font-size:13px">Relational Mappings ($lookup Joins)</h4>
+      <div class="er-relations">
+        <div class="er-rel-row"><span style="color:#9cdcfe">orders</span><span class="er-rel-arrow">.user_id  ➔ </span><span style="color:#9cdcfe">users</span><span style="color:#4ec9b0">._id</span><span style="margin-left:auto;font-size:10px;color:#555">One user → Many orders</span></div>
+        <div class="er-rel-row"><span style="color:#9cdcfe">orders.items</span><span class="er-rel-arrow">.sku  ➔ </span><span style="color:#9cdcfe">inventory</span><span style="color:#4ec9b0">.sku</span><span style="margin-left:auto;font-size:10px;color:#555">Stock reference</span></div>
+        <div class="er-rel-row"><span style="color:#9cdcfe">shipments</span><span class="er-rel-arrow">.order_id  ➔ </span><span style="color:#9cdcfe">orders</span><span style="color:#4ec9b0">._id</span><span style="margin-left:auto;font-size:10px;color:#555">One order → One shipment</span></div>
+        <div class="er-rel-row"><span style="color:#9cdcfe">elite</span><span class="er-rel-arrow">.user_id  ➔ </span><span style="color:#9cdcfe">users</span><span style="color:#4ec9b0">._id</span><span style="margin-left:auto;font-size:10px;color:#555">Elite membership</span></div>
+      </div>
+      <h4 style="color:#38bdf8;margin:20px 0 12px;font-size:13px">Generated $lookup Template</h4>
+      <pre class="code-block">db.orders.aggregate([
+  {
+    $lookup: {
+      from: "users",
+      localField: "user_id",
+      foreignField: "_id",
+      as: "user_details"
+    }
+  },
+  { $limit: 10 }
+])</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══ USER MANUAL MODAL ════════════════════════════════════════════ -->
+<div class="modal-overlay" id="manual-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title">📖 Interactive User Manual</span>
+      <button class="modal-close" onclick="closeModal('manual-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="manual-steps"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ COMMAND PALETTE ══════════════════════════════════════════════ -->
+<div id="palette">
+  <div id="palette-box">
+    <input id="palette-input" placeholder="Type a command..." autocomplete="off"/>
+    <div id="palette-list"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════
+const state = {
+  view: 'intro',
+  sidebarTab: 'explorer',
+  sidebarVisible: true,
+  collections: [],
+  snippets: {},
+  activeCollection: 'users',
+  consoleTab: 'output',
+  lastResult: null,
+  translated: '',
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// VIEWS
+// ═══════════════════════════════════════════════════════════════════════
+function showView(name) {
+  document.getElementById('intro').style.display = name === 'intro' ? 'flex' : 'none';
+  const ide = document.getElementById('ide');
+  ide.style.display = name === 'ide' ? 'flex' : 'none';
+  state.view = name;
+  if (name === 'ide') {
+    editor.refresh();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CODEMIRROR SETUP
+// ═══════════════════════════════════════════════════════════════════════
+let editor;
+document.addEventListener('DOMContentLoaded', () => {
+  editor = CodeMirror.fromTextArea(document.getElementById('raw-editor'), {
+    mode: 'javascript',
+    theme: 'one-dark',
+    lineNumbers: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    indentUnit: 2,
+    tabSize: 2,
+    lineWrapping: false,
+    extraKeys: {
+      'Ctrl-Enter': runQuery,
+      'Cmd-Enter': runQuery,
+      'Ctrl-/': (cm) => cm.execCommand('toggleComment'),
+    },
+  });
+  editor.setSize('100%', '100%');
+
+  // Resize handle
+  initResizer();
+
+  // Load everything
+  loadCollections();
+  loadSnippets();
+  loadManual();
+  recordLaunch();
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openPalette(); }
+    if (e.key === 'Escape') { closePalette(); closeAllModals(); }
+    if (e.key === 'F1') { e.preventDefault(); openModal('manual-modal'); }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// API CALLS
+// ═══════════════════════════════════════════════════════════════════════
+const BASE = '';  // same origin
+
+async function api(path, opts={}) {
+  const r = await fetch(BASE + path, { headers: {'Content-Type':'application/json'}, ...opts });
+  return r.json();
+}
+
+async function recordLaunch() {
+  try {
+    const d = await api('/api/analytics/launch', { method: 'POST' });
+    document.getElementById('stat-active').textContent = d.active_users ?? '—';
+    document.getElementById('stat-visited').textContent = d.total_visits ?? '—';
+  } catch(e) {
+    document.getElementById('stat-active').textContent = '—';
+    document.getElementById('stat-visited').textContent = '—';
+  }
+}
+
+async function loadCollections() {
+  try {
+    const d = await api('/api/collections');
+    state.collections = d.collections || [];
+    renderExplorer();
+    if (state.collections.length) {
+      setActiveCollection(state.collections[0].name);
+    }
+  } catch(e) { console.error('loadCollections', e); }
+}
+
+async function loadSnippets() {
+  try {
+    const d = await api('/api/snippets');
+    state.snippets = d.snippets || {};
+    if (state.sidebarTab === 'snippets') renderSnippets();
+  } catch(e) { console.error('loadSnippets', e); }
+}
+
+async function runQuery() {
+  const q = editor.getValue().trim();
+  if (!q) return;
+
+  setConsoleContent('<span class="out-info">[running] Executing query...</span>', 'output');
+  document.getElementById('result-summary').textContent = '';
+
+  try {
+    const d = await api('/api/query', {
+      method: 'POST',
+      body: JSON.stringify({ query: q, limit: 1000 }),
+    });
+    state.lastResult = d;
+    state.translated = d.translated_query || '';
+
+    if (d.status === 'ok' || d.status === 'empty') {
+      const count = d.docs_returned ?? 0;
+      const ms = (d.timing_ms ?? 0).toFixed(2);
+      document.getElementById('result-summary').textContent = `${count} docs · ${ms}ms`;
+      document.getElementById('sb-timing').textContent = `${ms}ms`;
+      document.getElementById('sb-docs').textContent = `${count} docs`;
+
+      if (d.status === 'empty') {
+        setConsoleContent('<span class="out-info">[empty] Query returned no results.</span>', 'output');
+      } else {
+        const data = Array.isArray(d.data) ? d.data : [d.data];
+        setConsoleContent(
+          `<span class="out-ok">[success] ${count} document(s) returned in ${ms}ms${d.truncated?' (truncated)':''}</span>\n\n` +
+          syntaxHighlightJSON(JSON.stringify(data, null, 2)), 'output'
+        );
+      }
+    } else {
+      setConsoleContent(
+        `<span class="out-err">[error] ${escHtml(d.error || 'Unknown error')}</span>` +
+        (d.traceback_str ? `\n<span class="out-info">${escHtml(d.traceback_str)}</span>` : ''),
+        'output'
+      );
+    }
+    renderConsoleTab(state.consoleTab);
+  } catch(e) {
+    setConsoleContent(`<span class="out-err">[network error] ${escHtml(e.message)}</span>`, 'output');
+  }
+}
+
+async function loadSchema(collection) {
+  try {
+    const d = await api(`/api/schema/${collection}`);
+    renderInspector(collection, d.schema, d.count);
+  } catch(e) { console.error('loadSchema', e); }
+}
+
+async function loadErGraph() {
+  try {
+    const d = await api('/api/schema');
+    renderErGraph(d.schemas);
+  } catch(e) {
+    document.getElementById('er-graph').innerHTML = '<span style="color:#888">Failed to load schemas.</span>';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════════════════════
+function setSidebarTab(tab) {
+  state.sidebarTab = tab;
+  document.getElementById('act-explorer').classList.toggle('active', tab === 'explorer');
+  document.getElementById('act-snippets').classList.toggle('active', tab === 'snippets');
+  document.getElementById('sidebar-tab-title').textContent = tab === 'explorer' ? 'DATABASE EXPLORER' : 'SNIPPETS';
+  document.getElementById('sidebar-db-label').textContent = tab === 'explorer' ? 'practice_db' : '';
+  if (tab === 'explorer') renderExplorer();
+  else renderSnippets();
+}
+
+function toggleSidebar() {
+  state.sidebarVisible = !state.sidebarVisible;
+  document.getElementById('sidebar').style.display = state.sidebarVisible ? 'flex' : 'none';
+  document.getElementById('sidebar-resizer').style.display = state.sidebarVisible ? 'block' : 'none';
+}
+
+function renderExplorer() {
+  const el = document.getElementById('sidebar-content');
+  if (!state.collections.length) { el.innerHTML = '<div style="padding:14px;font-size:12px;color:#666">Loading collections...</div>'; return; }
+  const icons = { users:'👤', orders:'📦', inventory:'🏭', shipments:'🚚', elite:'⭐' };
+  el.innerHTML = state.collections.map(c => `
+    <div class="coll-item ${c.name===state.activeCollection?'active':''}" onclick="setActiveCollection('${c.name}')">
+      <span>${icons[c.name]||'📄'}</span>
+      <span>${c.name}</span>
+      <span class="coll-badge">${c.count}</span>
+    </div>
+  `).join('');
+}
+
+function renderSnippets() {
+  const el = document.getElementById('sidebar-content');
+  let html = '<input id="sidebar-search" placeholder="Search snippets..." oninput="filterSnippets(this.value)"/><div id="snip-list">';
+  for (const [cat, snips] of Object.entries(state.snippets)) {
+    html += `<div class="cat-hdr">${escHtml(cat)}</div>`;
+    for (const s of snips) {
+      html += `<div class="snippet-item" onclick="insertSnippet(${JSON.stringify(s.body).replace(/</g,'&lt;')})">
+        <span class="snippet-name">${escHtml(s.name)}</span>
+        <span class="snippet-desc">${escHtml(s.description)}</span>
+      </div>`;
+    }
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function filterSnippets(q) {
+  document.querySelectorAll('.snippet-item').forEach(el => {
+    el.style.display = el.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function insertSnippet(body) {
+  editor.replaceSelection(body);
+  editor.focus();
+}
+
+function setActiveCollection(name) {
+  state.activeCollection = name;
+  document.getElementById('sb-collection').textContent = name;
+  editor.setValue(`db.${name}.find({})`);
+  renderExplorer();
+  loadSchema(name);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// INSPECTOR
+// ═══════════════════════════════════════════════════════════════════════
+const RELATIONS = {
+  orders:    { user_id: { to:'users', field:'_id' }, 'items.sku': { to:'inventory', field:'sku' } },
+  shipments: { order_id: { to:'orders', field:'_id' } },
+  elite:     { user_id: { to:'users', field:'_id' } },
+};
+
+function renderInspector(coll, schema, count) {
+  const rels = RELATIONS[coll] || {};
+  let html = `<div style="font-weight:700;color:#38bdf8;margin-bottom:8px;font-size:12px">${coll} <span style="color:#555;font-size:10px">(${count} docs)</span></div>`;
+  html += '<div style="color:#666;font-size:10px;margin-bottom:6px;text-transform:uppercase">Fields</div>';
+  for (const [f, types] of Object.entries(schema)) {
+    html += `<div class="insp-field"><span class="insp-key">${escHtml(f)}</span><span class="insp-type">${types.join('|')}</span></div>`;
+  }
+  if (Object.keys(rels).length) {
+    html += '<div style="color:#666;font-size:10px;margin-top:10px;margin-bottom:6px;text-transform:uppercase">Relations</div>';
+    for (const [field, rel] of Object.entries(rels)) {
+      html += `<div class="rel-item">${coll}.<span style="color:#9cdcfe">${field}</span> <span class="rel-arrow">➔</span> ${rel.to}.<span style="color:#4ec9b0">${rel.field}</span></div>`;
+    }
+  }
+  document.getElementById('insp-content').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CONSOLE
+// ═══════════════════════════════════════════════════════════════════════
+const _consoleData = { output:'', translated:'', timing:'' };
+
+function setConsoleContent(html, tab) {
+  _consoleData[tab] = html;
+  if (state.consoleTab === tab) document.getElementById('console-body').innerHTML = html;
+}
+
+function setConsoleTab(tab) {
+  state.consoleTab = tab;
+  ['output','translated','timing'].forEach(t => {
+    document.getElementById(`ctab-${t}`)?.classList.toggle('active', t===tab);
+  });
+  renderConsoleTab(tab);
+}
+
+function renderConsoleTab(tab) {
+  const body = document.getElementById('console-body');
+  if (tab === 'output') {
+    body.innerHTML = _consoleData.output || '<span class="out-info">[info] No output yet.</span>';
+  } else if (tab === 'translated') {
+    const t = state.translated || '(Run a query first)';
+    body.innerHTML = `<span class="out-ok">// Translated Python/PyMongo code:</span>\n${escHtml(t)}`;
+  } else if (tab === 'timing') {
+    const d = state.lastResult;
+    if (!d) { body.innerHTML = '<span class="out-info">Run a query to see timing.</span>'; return; }
+    body.innerHTML = `<span class="out-timing">Execution time: ${(d.timing_ms||0).toFixed(2)} ms\nDocs returned: ${d.docs_returned||0}\nTruncated: ${d.truncated||false}\nMethod: ${d.translation_method||'regex'}</span>`;
+  }
+}
+
+function clearConsole() {
+  _consoleData.output = _consoleData.translated = _consoleData.timing = '';
+  state.lastResult = null; state.translated = '';
+  document.getElementById('console-body').innerHTML = '<span class="out-info">[cleared]</span>';
+  document.getElementById('result-summary').textContent = '';
+}
+
+function formatQuery() {
+  let v = editor.getValue().trim();
+  editor.setValue(v);
+  editor.focus();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SCHEMA ER GRAPH
+// ═══════════════════════════════════════════════════════════════════════
+function renderErGraph(schemas) {
+  const el = document.getElementById('er-graph');
+  if (!schemas) { el.innerHTML = '<span style="color:#888">No schema data.</span>'; return; }
+  const icons = { users:'👤', orders:'📦', inventory:'🏭', shipments:'🚚', elite:'⭐' };
+  el.innerHTML = Object.entries(schemas).map(([coll, fields]) => `
+    <div class="er-node">
+      <div class="er-node-name">${icons[coll]||'📄'} ${escHtml(coll)}</div>
+      ${Object.entries(fields).slice(0, 10).map(([f, types]) =>
+        `<div class="er-field"><span style="color:#9cdcfe">${escHtml(f)}</span><span class="er-type">${types.join('|')}</span></div>`
+      ).join('')}
+      ${Object.keys(fields).length > 10 ? `<div style="color:#555;font-size:10px;margin-top:4px">+${Object.keys(fields).length-10} more fields</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// USER MANUAL
+// ═══════════════════════════════════════════════════════════════════════
+const MANUAL_STEPS = [
+  { title:'Overview & Architecture', body:`MongoSandbox is a 100% in-memory MongoDB practice IDE.<br/>The Python backend loads all <code>databases/*.json</code> into mongomock — no real MongoDB needed.<br/>The web frontend communicates with the Flask API via fetch calls.` },
+  { title:'Practice Datasets', body:`Five curated datasets:<br/><b>users</b> (132 docs) — profiles, roles, ages, status<br/><b>orders</b> (160 docs) — transactions, items, amounts<br/><b>inventory</b> (100 docs) — SKUs, stock levels, warehouses<br/><b>shipments</b> (84 docs) — tracking, carriers, delivery status<br/><b>elite</b> (104 docs) — premium membership records` },
+  { title:'Running Queries', body:`Type MongoDB shell syntax in the editor and press <code>▶ Run Query</code> or <code>Ctrl+Enter</code>.<br/>Examples:<br/><pre class="code-block">db.users.find({ status: "active" })
+db.orders.aggregate([{ $match: { status: "completed" }}, { $group: { _id: "$user_id", total: { $sum: "$amount" }}}])
+db.inventory.countDocuments({ stock: { $lt: 10 }})</pre>` },
+  { title:'Schema ER Visualizer', body:`The <b>Schema ER</b> tab shows inferred field types from live data.<br/>Relational mappings:<br/>• <code>orders.user_id ➔ users._id</code><br/>• <code>orders.items.sku ➔ inventory.sku</code><br/>• <code>shipments.order_id ➔ orders._id</code><br/>• <code>elite.user_id ➔ users._id</code>` },
+  { title:'Inspector Pane', body:`Click any collection in the sidebar to open its schema in the right-side Inspector pane. It shows every field, inferred type, and outbound foreign-key relations.` },
+  { title:'Snippets Library', body:`Switch the Activity Bar to <b>Snippets</b> to browse built-in query templates. Click any snippet to insert it directly into the editor.` },
+  { title:'Command Palette', body:`Press <code>Ctrl+K</code> (or Cmd+K on Mac) to open the Command Palette. Type any command name to execute it instantly.` },
+  { title:'Analytics & Real-Time Metrics', body:`The Intro Screen shows live <b>Active Users</b> and <b>Total Visited</b> counts, tracked by the Python analytics engine (<code>utils/analytics.py</code>) and persisted on the server.` },
+];
+
+function loadManual() {
+  const el = document.getElementById('manual-steps');
+  el.innerHTML = MANUAL_STEPS.map((s, i) => `
+    <div class="manual-step">
+      <div class="step-hdr" onclick="toggleStep(${i})">
+        <div class="step-num">${i+1}</div>
+        <span>${escHtml(s.title)}</span>
+      </div>
+      <div class="step-body" id="step-${i}">${s.body}</div>
+    </div>
+  `).join('');
+  // Open first step
+  toggleStep(0);
+}
+
+function toggleStep(i) {
+  const el = document.getElementById(`step-${i}`);
+  el.classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'schema-modal') loadErGraph();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open')); }
+document.querySelectorAll && document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// COMMAND PALETTE
+// ═══════════════════════════════════════════════════════════════════════
+const COMMANDS = [
+  { icon:'▶', label:'Run Query', key:'Ctrl+Enter', action: runQuery },
+  { icon:'🏠', label:'Go to Intro Page', action: () => showView('intro') },
+  { icon:'📋', label:'Open Schema ER Visualizer', action: () => openModal('schema-modal') },
+  { icon:'📖', label:'Open User Manual', action: () => openModal('manual-modal') },
+  { icon:'⧉', label:'Toggle Explorer Sidebar', action: toggleSidebar },
+  { icon:'💡', label:'Show Snippets', action: () => setSidebarTab('snippets') },
+  { icon:'🗑', label:'Clear Console', action: clearConsole },
+  { icon:'🔄', label:'Reload Collections', action: loadCollections },
+];
+
+function openPalette() {
+  const p = document.getElementById('palette');
+  p.classList.add('open');
+  document.getElementById('palette-input').value = '';
+  renderPalette('');
+  document.getElementById('palette-input').focus();
+}
+function closePalette() { document.getElementById('palette').classList.remove('open'); }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('palette-input').addEventListener('input', e => renderPalette(e.target.value));
+  document.getElementById('palette-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const sel = document.querySelector('.pcmd.selected');
+      if (sel) { sel.click(); closePalette(); }
+    }
+    if (e.key === 'Escape') closePalette();
+  });
+  document.getElementById('palette').addEventListener('click', e => {
+    if (e.target === document.getElementById('palette')) closePalette();
+  });
+});
+
+function renderPalette(q) {
+  const filtered = COMMANDS.filter(c => c.label.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById('palette-list').innerHTML = filtered.map((c, i) => `
+    <div class="pcmd ${i===0?'selected':''}" onclick="${c.action.name ? c.action.name+'()' : ''}" data-idx="${i}">
+      <span class="pcmd-icon">${c.icon}</span>
+      <span>${escHtml(c.label)}</span>
+      ${c.key ? `<span class="pcmd-key">${c.key}</span>` : ''}
+    </div>
+  `).join('');
+  // Wire click handlers
+  document.querySelectorAll('.pcmd').forEach((el, i) => {
+    el.addEventListener('click', () => { filtered[i].action(); closePalette(); });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RESIZE HANDLE
+// ═══════════════════════════════════════════════════════════════════════
+function initResizer() {
+  const handle = document.getElementById('sidebar-resizer');
+  const sidebar = document.getElementById('sidebar');
+  let dragging = false, startX = 0, startW = 0;
+  handle.addEventListener('mousedown', e => {
+    dragging = true; startX = e.clientX; startW = sidebar.offsetWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const w = Math.max(160, Math.min(500, startW + e.clientX - startX));
+    sidebar.style.width = w + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    dragging = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    editor && editor.refresh();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function syntaxHighlightJSON(str) {
+  return escHtml(str)
+    .replace(/"([^"]+)":/g, '<span style="color:#9cdcfe">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span style="color:#ce9178">"$1"</span>')
+    .replace(/: (true|false)/g, ': <span style="color:#569cd6">$1</span>')
+    .replace(/: (null)/g, ': <span style="color:#569cd6">$1</span>')
+    .replace(/: (-?\d+\.?\d*)/g, ': <span style="color:#b5cea8">$1</span>');
+}
+</script>
+</body>
+</html>
