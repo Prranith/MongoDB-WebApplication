@@ -56,6 +56,36 @@ def serve_index():
     # Fallback: serve from file
     return send_from_directory(str(PUBLIC_DIR), "index.html")
 
+@app.route("/robots.txt")
+def serve_robots():
+    robots_path = PUBLIC_DIR / "robots.txt"
+    if robots_path.exists():
+        return send_from_directory(str(PUBLIC_DIR), "robots.txt")
+    return (
+        "User-agent: *\nAllow: /\n\nSitemap: https://practice-mongodb.vercel.app/sitemap.xml",
+        200,
+        {"Content-Type": "text/plain; charset=utf-8"}
+    )
+
+@app.route("/sitemap.xml")
+def serve_sitemap():
+    sitemap_path = PUBLIC_DIR / "sitemap.xml"
+    if sitemap_path.exists():
+        return send_from_directory(str(PUBLIC_DIR), "sitemap.xml")
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '  <url>\n'
+        '    <loc>https://practice-mongodb.vercel.app/</loc>\n'
+        '    <lastmod>2026-07-26</lastmod>\n'
+        '    <changefreq>weekly</changefreq>\n'
+        '    <priority>1.0</priority>\n'
+        '  </url>\n'
+        '</urlset>',
+        200,
+        {"Content-Type": "application/xml; charset=utf-8"}
+    )
+
 @app.route("/image.png")
 def serve_logo():
     # Image is embedded as base64 in HTML, but serve file if available

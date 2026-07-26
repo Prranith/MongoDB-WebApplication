@@ -7,8 +7,58 @@ INDEX_HTML = """
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>MongoSandbox — MongoDB Practice IDE</title>
-<meta name="description" content="A unified platform to learn MongoDB precisely. VS Code-like IDE with in-memory query execution."/>
+<title>MongoDB Practice IDE — Interactive Free Online MongoDB Playground</title>
+<meta name="description" content="Practice MongoDB queries online with this free, interactive sandbox. Write find queries, run aggregation pipelines, and visualize schemas in a VS Code-like environment."/>
+<meta name="keywords" content="MongoDB practice, MongoDB playground, MongoDB online, practice MongoDB queries, learn MongoDB, MongoDB sandbox, online MongoDB editor, MongoDB IDE"/>
+<meta name="robots" content="index, follow"/>
+<meta name="author" content="Prranith Swargam"/>
+<link rel="canonical" href="https://practice-mongodb.vercel.app"/>
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://practice-mongodb.vercel.app"/>
+<meta property="og:title" content="MongoDB Practice IDE — Free Online Playground"/>
+<meta property="og:description" content="Write find queries, execute aggregation pipelines, and visual collection schemas in a rich, dark-theme VS Code-like sandbox. Persists data inside your browser cache."/>
+<meta property="og:image" content="https://practice-mongodb.vercel.app/image.png"/>
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image"/>
+<meta property="twitter:url" content="https://practice-mongodb.vercel.app"/>
+<meta property="twitter:title" content="MongoDB Practice IDE — Free Online Playground"/>
+<meta property="twitter:description" content="Write find queries, execute aggregation pipelines, and visual collection schemas in a rich, dark-theme VS Code-like sandbox."/>
+<meta property="twitter:image" content="https://practice-mongodb.vercel.app/image.png"/>
+
+<!-- JSON-LD Structured Data for Search Engine Rich Snippets -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "MongoDB Practice IDE",
+  "alternateName": "MongoSandbox",
+  "url": "https://practice-mongodb.vercel.app",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "All",
+  "browserRequirements": "Requires JavaScript",
+  "description": "An interactive, web-based software sandbox and IDE for learning and practicing MongoDB queries and aggregations inside an in-memory client environment.",
+  "creator": {
+    "@type": "Person",
+    "name": "Prranith Swargam",
+    "url": "https://www.linkedin.com/in/prranith-swargam-a620a6334/"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "featureList": [
+    "In-memory MongoDB query execution",
+    "VS Code-like syntax highlighting and auto-completion",
+    "Interactive collection schema ER visualizer",
+    "Draggable height output terminal console",
+    "Persistent local query storage in browser cache"
+  ]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"/>
