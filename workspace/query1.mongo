@@ -1,0 +1,4 @@
+// MongoSandbox — User Query Workspace
+// Write and execute your MongoDB queries here!
+
+db.elite_data.find({ status: "PAID" }).limit(10)

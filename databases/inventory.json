@@ -1,0 +1,2004 @@
+[
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0001"
+        },
+        "sku": "prod_9001",
+        "name": "Heavy Duty Tactical Backpack",
+        "category": "survival-gear",
+        "price": 45.99,
+        "stock": 140,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "survival",
+            "outdoor",
+            "waterproof",
+            "backpack"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0002"
+        },
+        "sku": "prod_9002",
+        "name": "Stark Nano-Fit Tech Watch",
+        "category": "gadgets",
+        "price": 899.00,
+        "stock": 25,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "wearables",
+            "electronics",
+            "stark",
+            "limited-edition"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0003"
+        },
+        "sku": "prod_9003",
+        "name": "Super-Strength Carbon Fiber Thread",
+        "category": "survival-gear",
+        "price": 12.50,
+        "stock": 1200,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "climbing",
+            "utility",
+            "lightweight"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0004"
+        },
+        "sku": "prod_9004",
+        "name": "Advanced Compact DSLR Camera",
+        "category": "electronics",
+        "price": 199.99,
+        "stock": 78,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "photography",
+            "optics",
+            "travel"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0005"
+        },
+        "sku": "prod_9005",
+        "name": "Everyday Insulated Water Bottle 750ml",
+        "category": "outdoors",
+        "price": 19.99,
+        "stock": 420,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "hydration",
+            "insulated",
+            "bottle"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0006"
+        },
+        "sku": "prod_9006",
+        "name": "Dual-Mode Bluetooth Earbuds",
+        "category": "audio",
+        "price": 29.99,
+        "stock": 310,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "audio",
+            "wireless",
+            "bluetooth"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0007"
+        },
+        "sku": "prod_9007",
+        "name": "Pro Fitness Smart Scale",
+        "category": "fitness",
+        "price": 129.99,
+        "stock": 95,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "fitness",
+            "smart",
+            "health"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0008"
+        },
+        "sku": "prod_9008",
+        "name": "Pocket Multi-Tool Kit",
+        "category": "tools",
+        "price": 9.99,
+        "stock": 1500,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "multi-tool",
+            "utility",
+            "pocket"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0009"
+        },
+        "sku": "prod_9009",
+        "name": "Premium Wireless Home Router",
+        "category": "electronics",
+        "price": 299.99,
+        "stock": 60,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "networking",
+            "wifi6",
+            "home"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c000a"
+        },
+        "sku": "prod_9010",
+        "name": "Classic Canvas Messenger Bag",
+        "category": "accessories",
+        "price": 45.99,
+        "stock": 220,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "bag",
+            "canvas",
+            "messenger"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c000b"
+        },
+        "sku": "prod_9011",
+        "name": "All-Weather Paracord Bracelet",
+        "category": "survival-gear",
+        "price": 12.50,
+        "stock": 980,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "paracord",
+            "survival",
+            "bracelet"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c000c"
+        },
+        "sku": "prod_9012",
+        "name": "Compact Travel Drone",
+        "category": "electronics",
+        "price": 89.99,
+        "stock": 140,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "drone",
+            "photography",
+            "travel"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c000d"
+        },
+        "sku": "prod_9013",
+        "name": "Executive Leather Notebook",
+        "category": "office",
+        "price": 199.99,
+        "stock": 48,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "stationery",
+            "leather",
+            "executive"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c000e"
+        },
+        "sku": "prod_9014",
+        "name": "Eco-Friendly Bamboo Cutlery Set",
+        "category": "kitchen",
+        "price": 12.50,
+        "stock": 640,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "eco",
+            "kitchen",
+            "bamboo"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c000f"
+        },
+        "sku": "prod_9015",
+        "name": "UltraShield 4K Action Camera",
+        "category": "electronics",
+        "price": 499.99,
+        "stock": 34,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "camera",
+            "action",
+            "4k"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0010"
+        },
+        "sku": "prod_9016",
+        "name": "Kids Learning Tablet",
+        "category": "toys",
+        "price": 9.99,
+        "stock": 760,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "kids",
+            "tablet",
+            "education"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0011"
+        },
+        "sku": "prod_9017",
+        "name": "Noise-Cancelling Over-Ear Headphones",
+        "category": "audio",
+        "price": 129.99,
+        "stock": 110,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "audio",
+            "headphones",
+            "noise-cancelling"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0012"
+        },
+        "sku": "prod_9018",
+        "name": "Organic Cotton Crew Socks (Pair)",
+        "category": "apparel",
+        "price": 19.99,
+        "stock": 540,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "apparel",
+            "socks",
+            "organic"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0013"
+        },
+        "sku": "prod_9019",
+        "name": "Smart Home Energy Monitor",
+        "category": "home",
+        "price": 89.99,
+        "stock": 210,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "smart-home",
+            "energy",
+            "monitor"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0014"
+        },
+        "sku": "prod_9020",
+        "name": "Classic Ceramic Coffee Mug",
+        "category": "kitchen",
+        "price": 12.50,
+        "stock": 880,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "kitchen",
+            "mug",
+            "ceramic"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0015"
+        },
+        "sku": "prod_9021",
+        "name": "Rugged Outdoor Sleeping Bag",
+        "category": "outdoors",
+        "price": 149.99,
+        "stock": 72,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "camping",
+            "sleeping-bag",
+            "outdoor"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0016"
+        },
+        "sku": "prod_9022",
+        "name": "Precision Chef's Knife 8-inch",
+        "category": "kitchen",
+        "price": 79.99,
+        "stock": 130,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "kitchen",
+            "knife",
+            "chef"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0017"
+        },
+        "sku": "prod_9023",
+        "name": "Compact Solar Charger 10W",
+        "category": "gadgets",
+        "price": 39.99,
+        "stock": 260,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "solar",
+            "charger",
+            "portable"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0018"
+        },
+        "sku": "prod_9024",
+        "name": "Ergonomic Office Chair Cushion",
+        "category": "office",
+        "price": 34.99,
+        "stock": 340,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "office",
+            "ergonomic",
+            "cushion"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0019"
+        },
+        "sku": "prod_9025",
+        "name": "High-Visibility Safety Vest",
+        "category": "apparel",
+        "price": 24.99,
+        "stock": 410,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "safety",
+            "vest",
+            "hi-vis"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c001a"
+        },
+        "sku": "prod_9026",
+        "name": "Wireless Charging Pad 15W",
+        "category": "electronics",
+        "price": 29.99,
+        "stock": 470,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "wireless",
+            "charger",
+            "electronics"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c001b"
+        },
+        "sku": "prod_9027",
+        "name": "Portable Espresso Maker",
+        "category": "kitchen",
+        "price": 59.99,
+        "stock": 150,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "coffee",
+            "espresso",
+            "portable"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c001c"
+        },
+        "sku": "prod_9028",
+        "name": "Magnetic Phone Mount for Car",
+        "category": "automotive",
+        "price": 14.99,
+        "stock": 620,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "car",
+            "phone",
+            "mount"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c001d"
+        },
+        "sku": "prod_9029",
+        "name": "Deluxe Pet Grooming Kit",
+        "category": "pets",
+        "price": 39.99,
+        "stock": 210,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "pets",
+            "grooming",
+            "kit"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c001e"
+        },
+        "sku": "prod_9030",
+        "name": "Foldable Picnic Blanket",
+        "category": "outdoors",
+        "price": 24.99,
+        "stock": 330,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "picnic",
+            "outdoor",
+            "blanket"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c001f"
+        },
+        "sku": "prod_9031",
+        "name": "Smart LED Desk Lamp",
+        "category": "home",
+        "price": 49.99,
+        "stock": 190,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "lighting",
+            "smart",
+            "desk"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0020"
+        },
+        "sku": "prod_9032",
+        "name": "Compact Sewing Kit",
+        "category": "home",
+        "price": 9.99,
+        "stock": 880,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "sewing",
+            "kit",
+            "home"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0021"
+        },
+        "sku": "prod_9033",
+        "name": "Thermal Insulated Lunch Bag",
+        "category": "kitchen",
+        "price": 22.99,
+        "stock": 410,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "lunch",
+            "insulated",
+            "bag"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0022"
+        },
+        "sku": "prod_9034",
+        "name": "Mini Projector for Home Theater",
+        "category": "electronics",
+        "price": 129.99,
+        "stock": 85,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "projector",
+            "home-theater",
+            "mini"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0023"
+        },
+        "sku": "prod_9035",
+        "name": "Adjustable Yoga Mat Strap",
+        "category": "fitness",
+        "price": 15.99,
+        "stock": 540,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "yoga",
+            "fitness",
+            "strap"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0024"
+        },
+        "sku": "prod_9036",
+        "name": "Premium Scented Candle Set",
+        "category": "home",
+        "price": 34.99,
+        "stock": 260,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "candle",
+            "home",
+            "scented"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0025"
+        },
+        "sku": "prod_9037",
+        "name": "High-Precision Digital Caliper",
+        "category": "tools",
+        "price": 49.99,
+        "stock": 150,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "tools",
+            "precision",
+            "caliper"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0026"
+        },
+        "sku": "prod_9038",
+        "name": "Compact First Aid Kit",
+        "category": "health",
+        "price": 24.99,
+        "stock": 420,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "first-aid",
+            "health",
+            "kit"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0027"
+        },
+        "sku": "prod_9039",
+        "name": "Wireless Outdoor Security Camera",
+        "category": "electronics",
+        "price": 99.99,
+        "stock": 120,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "security",
+            "camera",
+            "wireless"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0028"
+        },
+        "sku": "prod_9040",
+        "name": "Stainless Steel Travel Thermos 500ml",
+        "category": "kitchen",
+        "price": 27.99,
+        "stock": 360,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "thermos",
+            "travel",
+            "stainless"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0029"
+        },
+        "sku": "prod_9041",
+        "name": "Compact Binoculars 8x21",
+        "category": "outdoors",
+        "price": 59.99,
+        "stock": 200,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "binoculars",
+            "outdoor",
+            "birding"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c002a"
+        },
+        "sku": "prod_9042",
+        "name": "USB-C Multiport Adapter",
+        "category": "electronics",
+        "price": 34.99,
+        "stock": 480,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "usb-c",
+            "adapter",
+            "multiport"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c002b"
+        },
+        "sku": "prod_9043",
+        "name": "Deluxe Gardening Tool Set",
+        "category": "home",
+        "price": 44.99,
+        "stock": 140,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "gardening",
+            "tools",
+            "set"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c002c"
+        },
+        "sku": "prod_9044",
+        "name": "Lightweight Running Shoes",
+        "category": "apparel",
+        "price": 89.99,
+        "stock": 220,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "running",
+            "shoes",
+            "lightweight"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c002d"
+        },
+        "sku": "prod_9045",
+        "name": "Smart Water Leak Detector",
+        "category": "home",
+        "price": 29.99,
+        "stock": 300,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "smart-home",
+            "safety",
+            "water"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c002e"
+        },
+        "sku": "prod_9046",
+        "name": "Rechargeable Hand Warmer",
+        "category": "outdoors",
+        "price": 24.99,
+        "stock": 410,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "hand-warmer",
+            "rechargeable",
+            "outdoor"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c002f"
+        },
+        "sku": "prod_9047",
+        "name": "Adjustable Laptop Stand",
+        "category": "office",
+        "price": 39.99,
+        "stock": 260,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "office",
+            "laptop",
+            "stand"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0030"
+        },
+        "sku": "prod_9048",
+        "name": "Premium Beard Grooming Oil",
+        "category": "beauty",
+        "price": 18.99,
+        "stock": 340,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "grooming",
+            "beard",
+            "oil"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0031"
+        },
+        "sku": "prod_9049",
+        "name": "Compact Electric Kettle 1L",
+        "category": "kitchen",
+        "price": 29.99,
+        "stock": 210,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "kitchen",
+            "kettle",
+            "electric"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0032"
+        },
+        "sku": "prod_9050",
+        "name": "Travel-Friendly Garment Steamer",
+        "category": "home",
+        "price": 49.99,
+        "stock": 160,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "travel",
+            "steamer",
+            "garment"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0033"
+        },
+        "sku": "prod_9051",
+        "name": "Ultra-Light Hammock",
+        "category": "outdoors",
+        "price": 39.99,
+        "stock": 260,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "camping",
+            "hammock",
+            "lightweight"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0034"
+        },
+        "sku": "prod_9052",
+        "name": "Bluetooth Tracking Tag",
+        "category": "gadgets",
+        "price": 14.99,
+        "stock": 720,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "tracker",
+            "bluetooth",
+            "lost-and-found"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0035"
+        },
+        "sku": "prod_9053",
+        "name": "Heavy-Duty Carabiner Set (4)",
+        "category": "outdoors",
+        "price": 24.99,
+        "stock": 430,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "carabiner",
+            "climbing",
+            "hardware"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0036"
+        },
+        "sku": "prod_9054",
+        "name": "Portable Bluetooth Speaker",
+        "category": "audio",
+        "price": 59.99,
+        "stock": 190,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "audio",
+            "speaker",
+            "portable"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0037"
+        },
+        "sku": "prod_9055",
+        "name": "Insulated Lunch Box",
+        "category": "kitchen",
+        "price": 22.99,
+        "stock": 360,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "lunch",
+            "insulated",
+            "food"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0038"
+        },
+        "sku": "prod_9056",
+        "name": "Compact Travel Pillow",
+        "category": "travel",
+        "price": 19.99,
+        "stock": 520,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "travel",
+            "pillow",
+            "comfort"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0039"
+        },
+        "sku": "prod_9057",
+        "name": "LED Bike Safety Light Set",
+        "category": "outdoors",
+        "price": 17.99,
+        "stock": 410,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "bike",
+            "safety",
+            "led"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c003a"
+        },
+        "sku": "prod_9058",
+        "name": "Stain-Resistant Picnic Tablecloth",
+        "category": "home",
+        "price": 29.99,
+        "stock": 240,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "picnic",
+            "tablecloth",
+            "outdoor"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c003b"
+        },
+        "sku": "prod_9059",
+        "name": "Compact Travel Adapter Kit",
+        "category": "gadgets",
+        "price": 12.99,
+        "stock": 680,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "travel",
+            "adapter",
+            "electronics"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c003c"
+        },
+        "sku": "prod_9060",
+        "name": "Premium Microfiber Towel",
+        "category": "outdoors",
+        "price": 15.99,
+        "stock": 540,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "towel",
+            "microfiber",
+            "travel"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c003d"
+        },
+        "sku": "prod_9061",
+        "name": "Ergo Grip Screwdriver Set (6)",
+        "category": "tools",
+        "price": 34.99,
+        "stock": 210,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "tools",
+            "screwdriver",
+            "hand-tools"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c003e"
+        },
+        "sku": "prod_9062",
+        "name": "Smart Plug WiFi Outlet",
+        "category": "electronics",
+        "price": 24.99,
+        "stock": 470,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "smart-home",
+            "plug",
+            "wifi"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c003f"
+        },
+        "sku": "prod_9063",
+        "name": "Foldable Camping Stove",
+        "category": "outdoors",
+        "price": 49.99,
+        "stock": 140,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "camping",
+            "stove",
+            "portable"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0040"
+        },
+        "sku": "prod_9064",
+        "name": "Silicone Baking Mat Set (2)",
+        "category": "kitchen",
+        "price": 18.99,
+        "stock": 330,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "baking",
+            "kitchen",
+            "silicone"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0041"
+        },
+        "sku": "prod_9065",
+        "name": "Adjustable Resistance Bands (3)",
+        "category": "fitness",
+        "price": 21.99,
+        "stock": 410,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "fitness",
+            "bands",
+            "exercise"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0042"
+        },
+        "sku": "prod_9066",
+        "name": "Compact USB Rechargeable Flashlight",
+        "category": "tools",
+        "price": 22.99,
+        "stock": 380,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "flashlight",
+            "usb",
+            "rechargeable"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0043"
+        },
+        "sku": "prod_9067",
+        "name": "Bamboo Cutting Board Set",
+        "category": "kitchen",
+        "price": 29.99,
+        "stock": 220,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "kitchen",
+            "cutting-board",
+            "bamboo"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0044"
+        },
+        "sku": "prod_9068",
+        "name": "Wireless Earbud Charging Case",
+        "category": "audio",
+        "price": 19.99,
+        "stock": 540,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "audio",
+            "earbuds",
+            "charging"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0045"
+        },
+        "sku": "prod_9069",
+        "name": "Compact Folding Knife",
+        "category": "tools",
+        "price": 27.99,
+        "stock": 300,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "knife",
+            "folding",
+            "utility"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0046"
+        },
+        "sku": "prod_9070",
+        "name": "Eco Reusable Grocery Bags (5)",
+        "category": "home",
+        "price": 16.99,
+        "stock": 620,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "eco",
+            "bags",
+            "reusable"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0047"
+        },
+        "sku": "prod_9071",
+        "name": "Digital Kitchen Scale",
+        "category": "kitchen",
+        "price": 24.99,
+        "stock": 280,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "kitchen",
+            "scale",
+            "digital"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0048"
+        },
+        "sku": "prod_9072",
+        "name": "Compact Wireless Mouse",
+        "category": "electronics",
+        "price": 19.99,
+        "stock": 540,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "computer",
+            "mouse",
+            "wireless"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0049"
+        },
+        "sku": "prod_9073",
+        "name": "Stainless Steel Measuring Cups",
+        "category": "kitchen",
+        "price": 14.99,
+        "stock": 460,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "kitchen",
+            "measuring",
+            "stainless"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c004a"
+        },
+        "sku": "prod_9074",
+        "name": "Compact Air Purifier",
+        "category": "home",
+        "price": 89.99,
+        "stock": 120,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "air",
+            "purifier",
+            "home"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c004b"
+        },
+        "sku": "prod_9075",
+        "name": "Magnetic Tool Holder Rail",
+        "category": "tools",
+        "price": 29.99,
+        "stock": 210,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "tools",
+            "magnetic",
+            "organizer"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c004c"
+        },
+        "sku": "prod_9076",
+        "name": "Waterproof Phone Pouch",
+        "category": "accessories",
+        "price": 9.99,
+        "stock": 740,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "phone",
+            "waterproof",
+            "pouch"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c004d"
+        },
+        "sku": "prod_9077",
+        "name": "Compact Wireless Keyboard",
+        "category": "electronics",
+        "price": 29.99,
+        "stock": 360,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "keyboard",
+            "wireless",
+            "compact"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c004e"
+        },
+        "sku": "prod_9078",
+        "name": "Nonstick Frying Pan 10-inch",
+        "category": "kitchen",
+        "price": 34.99,
+        "stock": 200,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "kitchen",
+            "pan",
+            "nonstick"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c004f"
+        },
+        "sku": "prod_9079",
+        "name": "Compact Travel Safe",
+        "category": "travel",
+        "price": 49.99,
+        "stock": 150,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "travel",
+            "safe",
+            "security"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0050"
+        },
+        "sku": "prod_9080",
+        "name": "Reusable Silicone Food Bags (4)",
+        "category": "kitchen",
+        "price": 19.99,
+        "stock": 520,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "kitchen",
+            "reusable",
+            "silicone"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0051"
+        },
+        "sku": "prod_9081",
+        "name": "Compact Handheld Vacuum",
+        "category": "home",
+        "price": 59.99,
+        "stock": 180,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "vacuum",
+            "handheld",
+            "cleaning"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0052"
+        },
+        "sku": "prod_9082",
+        "name": "Thermal Coffee Travel Mug",
+        "category": "kitchen",
+        "price": 24.99,
+        "stock": 410,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "coffee",
+            "mug",
+            "thermal"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0053"
+        },
+        "sku": "prod_9083",
+        "name": "Compact Wireless Charger Stand",
+        "category": "electronics",
+        "price": 29.99,
+        "stock": 340,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "wireless",
+            "charger",
+            "stand"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0054"
+        },
+        "sku": "prod_9084",
+        "name": "Portable Water Filter Straw",
+        "category": "survival-gear",
+        "price": 19.99,
+        "stock": 460,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "water",
+            "filter",
+            "survival"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0055"
+        },
+        "sku": "prod_9085",
+        "name": "Compact Bike Pump",
+        "category": "outdoors",
+        "price": 22.99,
+        "stock": 300,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "bike",
+            "pump",
+            "inflation"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0056"
+        },
+        "sku": "prod_9086",
+        "name": "Silicone Phone Wallet",
+        "category": "accessories",
+        "price": 7.99,
+        "stock": 880,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "phone",
+            "wallet",
+            "silicone"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0057"
+        },
+        "sku": "prod_9087",
+        "name": "Compact Travel Umbrella",
+        "category": "travel",
+        "price": 18.99,
+        "stock": 420,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "umbrella",
+            "travel",
+            "compact"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0058"
+        },
+        "sku": "prod_9088",
+        "name": "Magnetic Phone Car Charger",
+        "category": "automotive",
+        "price": 24.99,
+        "stock": 260,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "car",
+            "charger",
+            "magnetic"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0059"
+        },
+        "sku": "prod_9089",
+        "name": "Compact Spice Grinder",
+        "category": "kitchen",
+        "price": 21.99,
+        "stock": 310,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "kitchen",
+            "grinder",
+            "spice"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c005a"
+        },
+        "sku": "prod_9090",
+        "name": "Foldable Grocery Cart",
+        "category": "home",
+        "price": 69.99,
+        "stock": 95,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "grocery",
+            "cart",
+            "foldable"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c005b"
+        },
+        "sku": "prod_9091",
+        "name": "Compact Travel Jewelry Organizer",
+        "category": "accessories",
+        "price": 14.99,
+        "stock": 480,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "jewelry",
+            "organizer",
+            "travel"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c005c"
+        },
+        "sku": "prod_9092",
+        "name": "Smart Temperature Mug",
+        "category": "kitchen",
+        "price": 79.99,
+        "stock": 70,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "smart",
+            "mug",
+            "temperature"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c005d"
+        },
+        "sku": "prod_9093",
+        "name": "Compact Folding Table",
+        "category": "outdoors",
+        "price": 59.99,
+        "stock": 130,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "table",
+            "folding",
+            "camping"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c005e"
+        },
+        "sku": "prod_9094",
+        "name": "Rechargeable LED Book Light",
+        "category": "home",
+        "price": 12.99,
+        "stock": 560,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "lighting",
+            "led",
+            "reading"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c005f"
+        },
+        "sku": "prod_9095",
+        "name": "Compact Travel Shoe Bag",
+        "category": "travel",
+        "price": 11.99,
+        "stock": 640,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "travel",
+            "shoe",
+            "bag"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0060"
+        },
+        "sku": "prod_9096",
+        "name": "Silicone Oven Mitts (Pair)",
+        "category": "kitchen",
+        "price": 13.99,
+        "stock": 420,
+        "warehouse": {
+            "id": "wh_south",
+            "city": "Miami",
+            "state": "FL"
+        },
+        "tags": [
+            "kitchen",
+            "mitts",
+            "silicone"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0061"
+        },
+        "sku": "prod_9097",
+        "name": "Compact Wireless FM Transmitter",
+        "category": "automotive",
+        "price": 19.99,
+        "stock": 360,
+        "warehouse": {
+            "id": "wh_east",
+            "city": "Boston",
+            "state": "MA"
+        },
+        "tags": [
+            "car",
+            "fm",
+            "transmitter"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0062"
+        },
+        "sku": "prod_9098",
+        "name": "Portable Folding Chair",
+        "category": "outdoors",
+        "price": 44.99,
+        "stock": 210,
+        "warehouse": {
+            "id": "wh_west",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        "tags": [
+            "chair",
+            "folding",
+            "camping"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0063"
+        },
+        "sku": "prod_9099",
+        "name": "Compact Travel Sewing Kit",
+        "category": "home",
+        "price": 9.99,
+        "stock": 720,
+        "warehouse": {
+            "id": "wh_north",
+            "city": "Seattle",
+            "state": "WA"
+        },
+        "tags": [
+            "sewing",
+            "travel",
+            "kit"
+        ]
+    },
+    {
+        "_id": {
+            "$oid": "603f7e3b9b1d8c2b4c8c0064"
+        },
+        "sku": "prod_9100",
+        "name": "Premium Insulated Cooler Bag",
+        "category": "outdoors",
+        "price": 54.99,
+        "stock": 140,
+        "warehouse": {
+            "id": "wh_central",
+            "city": "Dallas",
+            "state": "TX"
+        },
+        "tags": [
+            "cooler",
+            "insulated",
+            "outdoor"
+        ]
+    }
+]

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "name": "mongosandbox",
+  "cleanUrls": true,
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/web/$1"
+    }
+  ]
+}

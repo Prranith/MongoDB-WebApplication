@@ -1,0 +1,1043 @@
+[
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb00" },
+    "userId": "u1",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 250,
+    "items": [
+      { "sku": "A1", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-01-20T09:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb01" },
+    "userId": "u2",
+    "status": "PENDING",
+    "provider": "paypal",
+    "amount": 120,
+    "items": [
+      { "sku": "C3", "qty": 4 }
+    ],
+    "createdAt": { "$date": "2026-01-21T10:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb02" },
+    "userId": "u3",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 800,
+    "items": [],
+    "createdAt": { "$date": "2026-01-22T14:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb03" },
+    "userId": "u1",
+    "status": "FAILED",
+    "provider": "stripe",
+    "amount": 45,
+    "items": [
+      { "sku": "E5", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-01-23T08:45:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb04" },
+    "userId": "u4",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 340,
+    "items": [],
+    "createdAt": { "$date": "2026-02-01T11:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb05" },
+    "userId": "u5",
+    "status": "REFUNDED",
+    "provider": "paypal",
+    "amount": 900,
+    "items": [
+      { "sku": "C3", "qty": 10 }
+    ],
+    "createdAt": { "$date": "2026-02-05T16:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb06" },
+    "userId": "u2",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 210,
+    "items": [
+      { "sku": "A1", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-02-10T12:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb07" },
+    "userId": "u6",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 1500,
+    "items": [],
+    "createdAt": { "$date": "2026-02-14T09:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb08" },
+    "userId": "u7",
+    "status": "PENDING",
+    "provider": null,
+    "amount": 55,
+    "items": [],
+    "createdAt": { "$date": "2026-02-20T14:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb09" },
+    "userId": "u8",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 780,
+    "items": [
+      { "sku": "A1", "qty": 3 },
+      { "sku": "C3", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-03-01T10:05:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb0a" },
+    "userId": "u9",
+    "status": "FAILED",
+    "provider": "adyen",
+    "amount": 120,
+    "items": [
+      { "sku": "E5", "qty": 3 }
+    ],
+    "createdAt": { "$date": "2026-03-05T18:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb0b" },
+    "userId": "u10",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 430,
+    "items": [],
+    "createdAt": { "$date": "2026-03-10T07:50:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb0c" },
+    "userId": "u1",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 300,
+    "items": [],
+    "createdAt": { "$date": "2026-03-15T11:11:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb0d" },
+    "userId": "u3",
+    "status": "REFUNDED",
+    "provider": "paypal",
+    "amount": 650,
+    "items": [],
+    "createdAt": { "$date": "2026-03-20T13:45:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb0e" },
+    "userId": "u4",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 95,
+    "items": [
+      { "sku": "C3", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-03-25T15:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb0f" },
+    "userId": "u5",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 1050,
+    "items": [],
+    "createdAt": { "$date": "2026-04-02T09:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb10" },
+    "userId": "u2",
+    "status": "PENDING",
+    "provider": "stripe",
+    "amount": 40,
+    "items": [
+      { "sku": "A1", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-04-05T14:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb11" },
+    "userId": "u6",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 220,
+    "items": [],
+    "createdAt": { "$date": "2026-04-10T11:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb12" },
+    "userId": "u7",
+    "status": "FAILED",
+    "provider": "adyen",
+    "amount": 500,
+    "items": [
+      { "sku": "C3", "qty": 5 }
+    ],
+    "createdAt": { "$date": "2026-04-12T16:45:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb13" },
+    "userId": "u8",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 1300,
+    "items": [],
+    "createdAt": { "$date": "2026-04-18T10:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb14" },
+    "userId": "u9",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 80,
+    "items": [
+      { "sku": "E5", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-04-22T08:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb15" },
+    "userId": "u10",
+    "status": "REFUNDED",
+    "provider": "stripe",
+    "amount": 310,
+    "items": [],
+    "createdAt": { "$date": "2026-05-01T12:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb16" },
+    "userId": "u1",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 760,
+    "items": [
+      { "sku": "C3", "qty": 8 }
+    ],
+    "createdAt": { "$date": "2026-05-05T14:50:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb17" },
+    "userId": "u3",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 420,
+    "items": [],
+    "createdAt": { "$date": "2026-05-10T09:05:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb18" },
+    "userId": "u4",
+    "status": "PENDING",
+    "provider": "paypal",
+    "amount": 150,
+    "items": [
+      { "sku": "A1", "qty": 1 },
+      { "sku": "C3", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-05-15T11:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb19" },
+    "userId": "u5",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 990,
+    "items": [],
+    "createdAt": { "$date": "2026-05-20T16:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb1a" },
+    "userId": "u2",
+    "status": "FAILED",
+    "provider": null,
+    "amount": 200,
+    "items": [
+      { "sku": "E5", "qty": 4 }
+    ],
+    "createdAt": { "$date": "2026-05-25T13:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb1b" },
+    "userId": "u6",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 540,
+    "items": [],
+    "createdAt": { "$date": "2026-06-01T10:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb1c" },
+    "userId": "u7",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 880,
+    "items": [],
+    "createdAt": { "$date": "2026-06-05T08:45:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb1d" },
+    "userId": "u8",
+    "status": "REFUNDED",
+    "provider": "paypal",
+    "amount": 120,
+    "items": [
+      { "sku": "E5", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-06-10T15:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb1e" },
+    "userId": "u9",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 370,
+    "items": [
+      { "sku": "A1", "qty": 2 },
+      { "sku": "C3", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-06-15T12:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb1f" },
+    "userId": "u10",
+    "status": "PENDING",
+    "provider": "adyen",
+    "amount": 610,
+    "items": [],
+    "createdAt": { "$date": "2026-06-20T09:50:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb20" },
+    "userId": "u1",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 850,
+    "items": [
+      { "sku": "E5", "qty": 5 },
+      { "sku": "A1", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-06-25T14:40:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb21" },
+    "userId": "u3",
+    "status": "FAILED",
+    "provider": "stripe",
+    "amount": 290,
+    "items": [
+      { "sku": "C3", "qty": 3 }
+    ],
+    "createdAt": { "$date": "2026-07-02T11:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb22" },
+    "userId": "u4",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 460,
+    "items": [],
+    "createdAt": { "$date": "2026-07-06T16:25:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb23" },
+    "userId": "u5",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 105,
+    "items": [
+      { "sku": "A1", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-07-10T08:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb24" },
+    "userId": "u2",
+    "status": "REFUNDED",
+    "provider": "paypal",
+    "amount": 730,
+    "items": [
+      { "sku": "C3", "qty": 4 },
+      { "sku": "E5", "qty": 3 }
+    ],
+    "createdAt": { "$date": "2026-07-15T13:35:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb25" },
+    "userId": "u6",
+    "status": "PENDING",
+    "provider": "stripe",
+    "amount": 520,
+    "items": [],
+    "createdAt": { "$date": "2026-07-20T10:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb26" },
+    "userId": "u7",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 890,
+    "items": [],
+    "createdAt": { "$date": "2026-07-25T15:50:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb27" },
+    "userId": "u8",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 340,
+    "items": [
+      { "sku": "C3", "qty": 2 },
+      { "sku": "E5", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-08-01T09:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb28" },
+    "userId": "u9",
+    "status": "FAILED",
+    "provider": "stripe",
+    "amount": 180,
+    "items": [],
+    "createdAt": { "$date": "2026-08-05T14:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb29" },
+    "userId": "u10",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 670,
+    "items": [],
+    "createdAt": { "$date": "2026-08-10T11:45:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb2a" },
+    "userId": "u1",
+    "status": "PENDING",
+    "provider": "paypal",
+    "amount": 250,
+    "items": [
+      { "sku": "C3", "qty": 3 }
+    ],
+    "createdAt": { "$date": "2026-08-15T16:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb2b" },
+    "userId": "u3",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 910,
+    "items": [],
+    "createdAt": { "$date": "2026-08-20T08:25:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb2c" },
+    "userId": "u4",
+    "status": "REFUNDED",
+    "provider": "stripe",
+    "amount": 440,
+    "items": [
+      { "sku": "A1", "qty": 3 }
+    ],
+    "createdAt": { "$date": "2026-08-25T13:40:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb2d" },
+    "userId": "u5",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 560,
+    "items": [],
+    "createdAt": { "$date": "2026-09-02T10:05:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb2e" },
+    "userId": "u2",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 130,
+    "items": [],
+    "createdAt": { "$date": "2026-09-06T15:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb2f" },
+    "userId": "u6",
+    "status": "FAILED",
+    "provider": "adyen",
+    "amount": 820,
+    "items": [
+      { "sku": "E5", "qty": 4 },
+      { "sku": "A1", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-09-10T09:35:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb30" },
+    "userId": "u7",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 270,
+    "items": [],
+    "createdAt": { "$date": "2026-09-15T14:50:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb31" },
+    "userId": "u8",
+    "status": "PENDING",
+    "provider": "stripe",
+    "amount": 690,
+    "items": [],
+    "createdAt": { "$date": "2026-09-20T11:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb32" },
+    "userId": "u9",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 350,
+    "items": [
+      { "sku": "E5", "qty": 3 }
+    ],
+    "createdAt": { "$date": "2026-09-25T16:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb33" },
+    "userId": "u10",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 940,
+    "items": [],
+    "createdAt": { "$date": "2026-10-01T08:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb34" },
+    "userId": "u1",
+    "status": "REFUNDED",
+    "provider": "stripe",
+    "amount": 160,
+    "items": [
+      { "sku": "C3", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-10-05T13:45:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb35" },
+    "userId": "u3",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 510,
+    "items": [],
+    "createdAt": { "$date": "2026-10-10T10:05:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb36" },
+    "userId": "u4",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 780,
+    "items": [
+      { "sku": "E5", "qty": 4 },
+      { "sku": "A1", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-10-15T15:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb37" },
+    "userId": "u5",
+    "status": "FAILED",
+    "provider": null,
+    "amount": 230,
+    "items": [],
+    "createdAt": { "$date": "2026-10-20T09:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb38" },
+    "userId": "u2",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 640,
+    "items": [],
+    "createdAt": { "$date": "2026-10-25T14:40:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb39" },
+    "userId": "u6",
+    "status": "PENDING",
+    "provider": "stripe",
+    "amount": 320,
+    "items": [
+      { "sku": "E5", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-11-01T11:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb3a" },
+    "userId": "u7",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 870,
+    "items": [],
+    "createdAt": { "$date": "2026-11-05T16:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb3b" },
+    "userId": "u8",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 450,
+    "items": [],
+    "createdAt": { "$date": "2026-11-10T08:25:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb3c" },
+    "userId": "u9",
+    "status": "REFUNDED",
+    "provider": "adyen",
+    "amount": 190,
+    "items": [
+      { "sku": "E5", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-11-15T13:40:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb3d" },
+    "userId": "u10",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 720,
+    "items": [
+      { "sku": "A1", "qty": 2 },
+      { "sku": "C3", "qty": 4 }
+    ],
+    "createdAt": { "$date": "2026-11-20T10:50:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb3e" },
+    "userId": "u1",
+    "status": "FAILED",
+    "provider": "paypal",
+    "amount": 380,
+    "items": [],
+    "createdAt": { "$date": "2026-11-25T15:05:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb3f" },
+    "userId": "u3",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 930,
+    "items": [],
+    "createdAt": { "$date": "2026-12-01T09:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb40" },
+    "userId": "u4",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 260,
+    "items": [],
+    "createdAt": { "$date": "2026-12-05T14:25:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb41" },
+    "userId": "u5",
+    "status": "PENDING",
+    "provider": "stripe",
+    "amount": 580,
+    "items": [
+      { "sku": "C3", "qty": 4 }
+    ],
+    "createdAt": { "$date": "2026-12-10T11:35:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb42" },
+    "userId": "u2",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 810,
+    "items": [],
+    "createdAt": { "$date": "2026-12-15T16:50:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb43" },
+    "userId": "u6",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 470,
+    "items": [
+      { "sku": "A1", "qty": 2 },
+      { "sku": "C3", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-12-20T08:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb44" },
+    "userId": "u7",
+    "status": "REFUNDED",
+    "provider": null,
+    "amount": 140,
+    "items": [],
+    "createdAt": { "$date": "2026-12-25T13:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb45" },
+    "userId": "u8",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 630,
+    "items": [],
+    "createdAt": { "$date": "2026-12-28T10:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb46" },
+    "userId": "u9",
+    "status": "FAILED",
+    "provider": "stripe",
+    "amount": 390,
+    "items": [
+      { "sku": "E5", "qty": 2 },
+      { "sku": "A1", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-01-10T15:45:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb47" },
+    "userId": "u10",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 860,
+    "items": [],
+    "createdAt": { "$date": "2026-01-15T09:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb48" },
+    "userId": "u1",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 550,
+    "items": [],
+    "createdAt": { "$date": "2026-02-08T14:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb49" },
+    "userId": "u3",
+    "status": "PENDING",
+    "provider": "adyen",
+    "amount": 210,
+    "items": [
+      { "sku": "E5", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-02-18T11:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb4a" },
+    "userId": "u4",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 740,
+    "items": [],
+    "createdAt": { "$date": "2026-03-08T16:35:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb4b" },
+    "userId": "u5",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 480,
+    "items": [],
+    "createdAt": { "$date": "2026-03-22T08:50:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb4c" },
+    "userId": "u2",
+    "status": "REFUNDED",
+    "provider": "stripe",
+    "amount": 170,
+    "items": [
+      { "sku": "A1", "qty": 1 },
+      { "sku": "E5", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-04-08T14:05:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb4d" },
+    "userId": "u6",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 920,
+    "items": [],
+    "createdAt": { "$date": "2026-04-28T10:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb4e" },
+    "userId": "u7",
+    "status": "FAILED",
+    "provider": "stripe",
+    "amount": 330,
+    "items": [],
+    "createdAt": { "$date": "2026-05-12T15:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb4f" },
+    "userId": "u8",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 660,
+    "items": [
+      { "sku": "A1", "qty": 3 },
+      { "sku": "E5", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-05-28T09:40:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb50" },
+    "userId": "u9",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 240,
+    "items": [],
+    "createdAt": { "$date": "2026-06-08T14:55:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb51" },
+    "userId": "u10",
+    "status": "PENDING",
+    "provider": "adyen",
+    "amount": 830,
+    "items": [],
+    "createdAt": { "$date": "2026-06-22T11:05:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb52" },
+    "userId": "u1",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 410,
+    "items": [
+      { "sku": "A1", "qty": 2 },
+      { "sku": "E5", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-07-08T16:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb53" },
+    "userId": "u3",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 750,
+    "items": [],
+    "createdAt": { "$date": "2026-07-28T08:35:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb54" },
+    "userId": "u4",
+    "status": "REFUNDED",
+    "provider": "stripe",
+    "amount": 110,
+    "items": [],
+    "createdAt": { "$date": "2026-08-12T13:50:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb55" },
+    "userId": "u5",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 590,
+    "items": [
+      { "sku": "A1", "qty": 3 },
+      { "sku": "E5", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-08-28T10:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb56" },
+    "userId": "u2",
+    "status": "FAILED",
+    "provider": "stripe",
+    "amount": 360,
+    "items": [],
+    "createdAt": { "$date": "2026-09-08T15:15:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb57" },
+    "userId": "u6",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 840,
+    "items": [],
+    "createdAt": { "$date": "2026-09-22T09:25:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb58" },
+    "userId": "u7",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 280,
+    "items": [
+      { "sku": "E5", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-10-08T14:40:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb59" },
+    "userId": "u8",
+    "status": "PENDING",
+    "provider": "adyen",
+    "amount": 710,
+    "items": [],
+    "createdAt": { "$date": "2026-10-28T11:55:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb5a" },
+    "userId": "u9",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 490,
+    "items": [],
+    "createdAt": { "$date": "2026-11-08T16:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb5b" },
+    "userId": "u10",
+    "status": "REFUNDED",
+    "provider": "paypal",
+    "amount": 150,
+    "items": [
+      { "sku": "E5", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-11-22T08:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb5c" },
+    "userId": "u1",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 960,
+    "items": [],
+    "createdAt": { "$date": "2026-12-08T13:35:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb5d" },
+    "userId": "u3",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 320,
+    "items": [],
+    "createdAt": { "$date": "2026-12-22T10:45:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb5e" },
+    "userId": "u4",
+    "status": "FAILED",
+    "provider": "paypal",
+    "amount": 680,
+    "items": [
+      { "sku": "A1", "qty": 4 }
+    ],
+    "createdAt": { "$date": "2026-01-05T15:55:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb5f" },
+    "userId": "u5",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 250,
+    "items": [],
+    "createdAt": { "$date": "2026-02-12T09:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb60" },
+    "userId": "u2",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 790,
+    "items": [],
+    "createdAt": { "$date": "2026-03-18T14:25:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb61" },
+    "userId": "u6",
+    "status": "PENDING",
+    "provider": "stripe",
+    "amount": 420,
+    "items": [
+      { "sku": "A1", "qty": 2 },
+      { "sku": "E5", "qty": 1 }
+    ],
+    "createdAt": { "$date": "2026-04-25T11:35:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb62" },
+    "userId": "u7",
+    "status": "PAID",
+    "provider": "paypal",
+    "amount": 950,
+    "items": [],
+    "createdAt": { "$date": "2026-05-30T16:50:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb63" },
+    "userId": "u8",
+    "status": "REFUNDED",
+    "provider": "stripe",
+    "amount": 130,
+    "items": [],
+    "createdAt": { "$date": "2026-07-05T08:05:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb64" },
+    "userId": "u10",
+    "status": "PAID",
+    "provider": "adyen",
+    "amount": 470,
+    "items": [],
+    "createdAt": { "$date": "2026-08-11T12:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb65" },
+    "userId": "u9",
+    "status": "PENDING",
+    "provider": null,
+    "amount": 300,
+    "items": [
+      { "sku": "A1", "qty": 2 }
+    ],
+    "createdAt": { "$date": "2026-09-01T09:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb66" },
+    "userId": "u5",
+    "status": "PAID",
+    "provider": "stripe",
+    "amount": 1100,
+    "items": [
+      { "sku": "E5", "qty": 5 },
+      { "sku": "C3", "qty": 5 }
+    ],
+    "createdAt": { "$date": "2026-10-14T14:20:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6970698a212a45531c13cb67" },
+    "userId": "u1",
+    "status": "REFUNDED",
+    "provider": "paypal",
+    "amount": 55,
+    "items": [],
+    "createdAt": { "$date": "2026-11-29T10:15:00.000Z" }
+  }
+]

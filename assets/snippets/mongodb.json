@@ -1,0 +1,180 @@
+{
+  "snippets": [
+    {
+      "name": "Find All",
+      "prefix": "findAll",
+      "body": "db.elite_data.find({})",
+      "description": "Find all documents in a collection",
+      "category": "Find",
+      "tags": ["find", "basic"]
+    },
+    {
+      "name": "Find with Filter",
+      "prefix": "findFilter",
+      "body": "db.elite_data.find({ status: \"PAID\" })",
+      "description": "Find documents matching a filter",
+      "category": "Find",
+      "tags": ["find", "filter"]
+    },
+    {
+      "name": "Find with Projection",
+      "prefix": "findProject",
+      "body": "db.elite_data.find(\n  { status: \"PAID\" },\n  { userId: 1, amount: 1, _id: 0 }\n)",
+      "description": "Find with field projection",
+      "category": "Find",
+      "tags": ["find", "projection"]
+    },
+    {
+      "name": "Find with Sort & Limit",
+      "prefix": "findSortLimit",
+      "body": "db.elite_data.find({}).sort({ amount: -1 }).limit(10)",
+      "description": "Find, sort descending, and limit results",
+      "category": "Find",
+      "tags": ["find", "sort", "limit"]
+    },
+    {
+      "name": "Count Documents",
+      "prefix": "count",
+      "body": "db.elite_data.countDocuments({ status: \"PAID\" })",
+      "description": "Count documents matching a filter",
+      "category": "Find",
+      "tags": ["count"]
+    },
+    {
+      "name": "Distinct Values",
+      "prefix": "distinct",
+      "body": "db.elite_data.distinct(\"status\")",
+      "description": "Get distinct values for a field",
+      "category": "Find",
+      "tags": ["distinct"]
+    },
+    {
+      "name": "Match Stage",
+      "prefix": "$match",
+      "body": "{ $match: { status: \"PAID\" } }",
+      "description": "Filter documents in aggregation pipeline",
+      "category": "Aggregation",
+      "tags": ["aggregate", "match", "filter"]
+    },
+    {
+      "name": "Group by Field",
+      "prefix": "$group",
+      "body": "{\n  $group: {\n    _id: \"$provider\",\n    total: { $sum: \"$amount\" },\n    count: { $sum: 1 },\n    avg: { $avg: \"$amount\" }\n  }\n}",
+      "description": "Group documents and compute aggregations",
+      "category": "Aggregation",
+      "tags": ["aggregate", "group"]
+    },
+    {
+      "name": "Project Fields",
+      "prefix": "$project",
+      "body": "{\n  $project: {\n    userId: 1,\n    amount: 1,\n    status: 1,\n    _id: 0\n  }\n}",
+      "description": "Include or exclude fields",
+      "category": "Aggregation",
+      "tags": ["aggregate", "project"]
+    },
+    {
+      "name": "Sort Stage",
+      "prefix": "$sort",
+      "body": "{ $sort: { amount: -1 } }",
+      "description": "Sort documents in the pipeline",
+      "category": "Aggregation",
+      "tags": ["aggregate", "sort"]
+    },
+    {
+      "name": "Limit Stage",
+      "prefix": "$limit",
+      "body": "{ $limit: 10 }",
+      "description": "Limit number of documents in pipeline",
+      "category": "Aggregation",
+      "tags": ["aggregate", "limit"]
+    },
+    {
+      "name": "Skip Stage",
+      "prefix": "$skip",
+      "body": "{ $skip: 10 }",
+      "description": "Skip documents for pagination",
+      "category": "Aggregation",
+      "tags": ["aggregate", "skip", "pagination"]
+    },
+    {
+      "name": "Unwind Array",
+      "prefix": "$unwind",
+      "body": "{ $unwind: \"$items\" }",
+      "description": "Deconstruct an array field",
+      "category": "Aggregation",
+      "tags": ["aggregate", "unwind", "array"]
+    },
+    {
+      "name": "Lookup (Join)",
+      "prefix": "$lookup",
+      "body": "{\n  $lookup: {\n    from: \"other_collection\",\n    localField: \"userId\",\n    foreignField: \"_id\",\n    as: \"user_data\"\n  }\n}",
+      "description": "Left outer join with another collection",
+      "category": "Aggregation",
+      "tags": ["aggregate", "lookup", "join"]
+    },
+    {
+      "name": "Add Fields",
+      "prefix": "$addFields",
+      "body": "{\n  $addFields: {\n    totalItems: { $size: \"$items\" },\n    isHighValue: { $gt: [\"$amount\", 500] }\n  }\n}",
+      "description": "Add computed fields to documents",
+      "category": "Aggregation",
+      "tags": ["aggregate", "addFields"]
+    },
+    {
+      "name": "Facet (Multi-Bucket)",
+      "prefix": "$facet",
+      "body": "{\n  $facet: {\n    byStatus: [\n      { $group: { _id: \"$status\", count: { $sum: 1 } } }\n    ],\n    byProvider: [\n      { $group: { _id: \"$provider\", total: { $sum: \"$amount\" } } }\n    ]\n  }\n}",
+      "description": "Multiple aggregations in one stage",
+      "category": "Aggregation",
+      "tags": ["aggregate", "facet"]
+    },
+    {
+      "name": "Full Aggregation Pipeline",
+      "prefix": "aggregate",
+      "body": "db.elite_data.aggregate([\n  { $match: { status: \"PAID\" } },\n  {\n    $group: {\n      _id: \"$provider\",\n      total: { $sum: \"$amount\" },\n      count: { $sum: 1 }\n    }\n  },\n  { $sort: { total: -1 } },\n  { $limit: 10 }\n])",
+      "description": "Complete aggregation pipeline example",
+      "category": "Aggregation",
+      "tags": ["aggregate", "full"]
+    },
+    {
+      "name": "Filter Array Items",
+      "prefix": "$filter",
+      "body": "{\n  $project: {\n    highQtyItems: {\n      $filter: {\n        input: \"$items\",\n        as: \"item\",\n        cond: { $gt: [\"$$item.qty\", 2] }\n      }\n    }\n  }\n}",
+      "description": "Filter items in an array field",
+      "category": "Aggregation",
+      "tags": ["aggregate", "filter", "array"]
+    },
+    {
+      "name": "Date Range Query",
+      "prefix": "dateRange",
+      "body": "db.elite_data.find({\n  createdAt: {\n    $gte: ISODate(\"2026-01-01\"),\n    $lt: ISODate(\"2026-02-01\")\n  }\n})",
+      "description": "Query documents within a date range",
+      "category": "Queries",
+      "tags": ["find", "date", "range"]
+    },
+    {
+      "name": "Pagination",
+      "prefix": "paginate",
+      "body": "db.elite_data.find({}).sort({ createdAt: -1 }).skip(0).limit(20)",
+      "description": "Paginate results with skip and limit",
+      "category": "Queries",
+      "tags": ["find", "pagination", "skip", "limit"]
+    },
+    {
+      "name": "Insert One Document",
+      "prefix": "insertOne",
+      "body": "db.elite_data.insertOne({\n  userId: \"u99\",\n  status: \"PAID\",\n  provider: \"stripe\",\n  amount: 500,\n  items: [{ sku: \"X1\", qty: 1 }],\n  createdAt: ISODate(\"2026-07-01\")\n})",
+      "description": "Insert a single document",
+      "category": "Write",
+      "tags": ["insert", "write"]
+    },
+    {
+      "name": "Update One Document",
+      "prefix": "updateOne",
+      "body": "db.elite_data.updateOne(\n  { userId: \"u1\" },\n  { $set: { status: \"REFUNDED\", amount: 0 } }\n)",
+      "description": "Update a single document",
+      "category": "Write",
+      "tags": ["update", "write"]
+    }
+  ]
+}

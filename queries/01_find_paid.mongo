@@ -1,0 +1,4 @@
+// MongoSandbox — Sample Query 1: Find Paid Transactions
+db.elite.find({
+  status: "PAID"
+})

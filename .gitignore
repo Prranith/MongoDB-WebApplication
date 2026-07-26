@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller / Build
+*.manifest
+*.spec
+
+# Testing / Caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# User settings / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local Analytics / Temporary outputs
+analytics.json
+client_id

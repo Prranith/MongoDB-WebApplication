@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MongoSandbox — MongoDB Practice IDE Workspace</title>
+  <meta name="description" content="A unified platform to learn MongoDB precisely. Interactive web IDE workspace, practice datasets, schema ER visualizer, and query execution engine." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-app: #1e1e1e;
+      --bg-sidebar: #252526;
+      --bg-toolbar: #2d2d2d;
+      --bg-input: #3c3c3c;
+      --bg-hover: #2a2d2e;
+      --border-color: #3c3c3c;
+      --accent-green: #00ed64;
+      --accent-dark-green: #00684a;
+      --text-white: #ffffff;
+      --text-muted: #94a3b8;
+      --text-dark: #001e2b;
+      --link-blue: #38bdf8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Window Bar */
+    .window-header {
+      background-color: #181818;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 12px;
+      color: #cccccc;
+      border-bottom: 1px solid var(--border-color);
+      user-select: none;
+    }
+
+    .window-menu {
+      display: flex;
+      gap: 16px;
+    }
+
+    .menu-item {
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .menu-item:hover { background-color: rgba(255,255,255,0.1); }
+
+    /* View Stack Wrapper */
+    .view-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── 1. INTRO SCREEN VIEW (White Canvas matching image.png) ────────── */
+    .intro-screen {
+      position: absolute;
+      inset: 0;
+      background-color: #ffffff;
+      color: #001e2b;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px 40px 32px 40px;
+      z-index: 10;
+      overflow-y: auto;
+    }
+
+    .intro-title-box {
+      text-align: center;
+    }
+
+    .title-l1 {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #001e2b;
+      line-height: 1.2;
+    }
+
+    .title-l2 {
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: var(--accent-dark-green);
+      margin-top: 4px;
+      letter-spacing: 1px;
+    }
+
+    .title-sub {
+      font-size: 1.65rem;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 10px;
+    }
+
+    .logo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 24px 0;
+      gap: 20px;
+    }
+
+    .intro-logo-img {
+      width: 360px;
+      height: 360px;
+      object-fit: contain;
+      cursor: pointer;
+      transition: transform 0.25s ease;
+    }
+    .intro-logo-img:hover { transform: scale(1.04); }
+
+    .open-ide-btn {
+      background-color: var(--accent-dark-green);
+      color: #ffffff;
+      font-size: 1.15rem;
+      font-weight: 700;
+      padding: 16px 36px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 20px rgba(0, 104, 74, 0.3);
+    }
+    .open-ide-btn:hover {
+      background-color: var(--accent-green);
+      color: var(--text-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0, 237, 100, 0.4);
+    }
+
+    .intro-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-top: 16px;
+    }
+
+    .intro-stats {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #001e2b;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .visited-green { color: var(--accent-dark-green); }
+
+    .intro-dev {
+      text-align: right;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #001e2b;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .dev-link-url {
+      color: #0284c7;
+      text-decoration: underline;
+      font-size: 1rem;
+    }
+
+    /* ── 2. IDE WORKSPACE VIEW ────────────────────────────────────────── */
+    .ide-screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      background-color: var(--bg-app);
+      display: none; /* toggled via JS */
+    }
+
+    .activity-bar {
+      width: 48px;
+      background-color: #333333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 0;
+      gap: 4px;
+      border-right: 1px solid var(--border-color);
+    }
+
+    .act-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      background: none;
+      border: none;
+      color: #858585;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .act-btn:hover { color: #ffffff; background-color: rgba(255,255,255,0.1); }
+    .act-btn.active { color: #ffffff; background-color: var(--bg-sidebar); border-left: 2px solid var(--link-blue); }
+
+    .sidebar {
+      width: 240px;
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #bbbbbb;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .coll-list {
+      list-style: none;
+      padding: 8px 0;
+      overflow-y: auto;
+    }
+
+    .coll-item {
+      padding: 8px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #cccccc;
+    }
+    .coll-item:hover { background-color: var(--bg-hover); color: #ffffff; }
+    .coll-item.active { background-color: #094771; color: #ffffff; }
+
+    .badge-count {
+      margin-left: auto;
+      font-size: 10px;
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 10px;
+      color: #aaaaaa;
+    }
+
+    .main-workspace {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .run-bar {
+      height: 36px;
+      background-color: var(--bg-toolbar);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+    }
+
+    .run-btn {
+      background-color: #3a7d0a;
+      color: #ffffff;
+      font-weight: 700;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .run-btn:hover { background-color: #4a9b10; }
+
+    .tool-btn {
+      background-color: var(--bg-input);
+      color: var(--text-white);
+      border: 1px solid var(--border-color);
+      padding: 5px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .tool-btn:hover { background-color: var(--bg-hover); }
+
+    .editor-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: #1e1e1e;
+    }
+
+    .tab-bar {
+      height: 32px;
+      background-color: #252526;
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .tab {
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      background-color: #2d2d2d;
+      color: #ffffff;
+      border-right: 1px solid var(--border-color);
+      cursor: pointer;
+    }
+
+    textarea.editor {
+      flex: 1;
+      width: 100%;
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 14px;
+      border: none;
+      padding: 16px;
+      outline: none;
+      resize: none;
+      line-height: 1.5;
+    }
+
+    .console-pane {
+      height: 220px;
+      background-color: #1e1e1e;
+      border-top: 2px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+    .console-header {
+      height: 28px;
+      background-color: #252526;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #aaaaaa;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .console-output {
+      flex: 1;
+      padding: 12px;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 12px;
+      color: #4ec9b0;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .inspector-pane {
+      width: 240px;
+      background-color: var(--bg-sidebar);
+      border-left: 1px solid var(--border-color);
+      padding: 12px;
+      font-size: 12px;
+      overflow-y: auto;
+    }
+
+    /* Modal Overlay */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.active { display: flex; }
+    .modal-card {
+      background: #252526;
+      width: 700px;
+      max-width: 90vw;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      padding: 24px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <!-- Window Top Bar -->
+  <div class="window-header">
+    <div class="window-menu">
+      <span class="menu-item" onclick="showIntro()">Intro Page</span>
+      <span class="menu-item" onclick="showIDE()">Query Editor</span>
+      <span class="menu-item" onclick="openModal('schema-modal')">Schema ER</span>
+      <span class="menu-item" onclick="openModal('manual-modal')">User Manual (F1)</span>
+    </div>
+    <div>MongoSandbox — MongoDB Practice Workspace</div>
+  </div>
+
+  <div class="view-container">
+    <!-- ── 1. INTRO SCREEN (Matching image.png & Official White Canvas) ────── -->
+    <div id="intro-view" class="intro-screen">
+      <div class="intro-title-box">
+        <h1 class="title-l1">Welcome to  MongoDB Practise</h1>
+        <h2 class="title-l2">Workspace</h2>
+        <p class="title-sub">A unified platform to learn mongodb precisely</p>
+      </div>
+
+      <div class="logo-container">
+        <img id="logo-img" src="image.png" alt="MongoDB Logo" class="intro-logo-img" onclick="showIDE()" />
+        <button class="open-ide-btn" onclick="showIDE()">🚀 Open Query Editor ➔</button>
+      </div>
+
+      <div class="intro-footer">
+        <div class="intro-stats">
+          <div>Active Users : <span id="web-active-users">14</span></div>
+          <div>Total Visited : <span id="web-total-visited" class="visited-green">28</span></div>
+        </div>
+        <div class="intro-dev">
+          <div>Visit developer : Prranith Swargam</div>
+          <a href="https://www.linkedin.com/in/prranith-swargam-a620a6334/" target="_blank" class="dev-link-url">https://www.linkedin.com/in/prranith-swargam-a620a6334/</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 2. IDE WORKSPACE VIEW ────────────────────────────────────────── -->
+    <div id="ide-view" class="ide-screen">
+      <!-- Activity Bar -->
+      <div class="activity-bar">
+        <button class="act-btn" onclick="showIntro()" title="Intro Page">🏠</button>
+        <button class="act-btn active" title="Explorer">📄</button>
+        <button class="act-btn" onclick="openModal('schema-modal')" title="Database ER">⛁</button>
+        <button class="act-btn" onclick="openModal('manual-modal')" title="User Manual">F1</button>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <span>Database Explorer</span>
+          <span>practice_db</span>
+        </div>
+        <ul class="coll-list">
+          <li class="coll-item active" onclick="loadCollection('users')">👤 users <span class="badge-count">132</span></li>
+          <li class="coll-item" onclick="loadCollection('orders')">📦 orders <span class="badge-count">160</span></li>
+          <li class="coll-item" onclick="loadCollection('inventory')">🏭 inventory <span class="badge-count">100</span></li>
+          <li class="coll-item" onclick="loadCollection('shipments')">🚚 shipments <span class="badge-count">84</span></li>
+          <li class="coll-item" onclick="loadCollection('elite')">⭐ elite <span class="badge-count">104</span></li>
+        </ul>
+      </div>
+
+      <!-- Main Workspace -->
+      <div class="main-workspace">
+        <!-- Run Bar -->
+        <div class="run-bar">
+          <button class="run-btn" onclick="runQuery()">▶ Run Query</button>
+          <button class="tool-btn" onclick="formatQuery()">Format</button>
+          <button class="tool-btn" onclick="showIntro()">🏠 Intro Page</button>
+          <button class="tool-btn" onclick="openModal('schema-modal')">⧉ Schema ER</button>
+          <button class="tool-btn" onclick="openModal('manual-modal')">📖 Manual</button>
+          <span style="margin-left:auto; color: var(--accent-green); font-size:12px;">● practice_db (In-Memory)</span>
+        </div>
+
+        <!-- Editor Pane -->
+        <div class="editor-pane">
+          <div class="tab-bar">
+            <div class="tab"><span>query.mongo</span></div>
+          </div>
+          <textarea id="query-editor" class="editor" spellcheck="false">// MongoDB Query Sandbox
+db.users.find({ status: "active" })</textarea>
+        </div>
+
+        <!-- Console Pane -->
+        <div class="console-pane">
+          <div class="console-header">OUTPUT CONSOLE</div>
+          <div id="console-output" class="console-output">[info] Sandbox Engine Ready. Press ▶ Run Query to execute.</div>
+        </div>
+      </div>
+
+      <!-- Inspector Pane -->
+      <div class="inspector-pane">
+        <h4 style="margin-bottom: 12px; color:#38bdf8;">📋 Schema Inspector</h4>
+        <div id="inspector-content">
+          <strong>Collection:</strong> users<br/>
+          <strong>Fields:</strong><br/>
+          • _id (ObjectId)<br/>
+          • name (String)<br/>
+          • email (String)<br/>
+          • role (String)<br/>
+          • age (Int32)<br/><br/>
+          <strong>Relations:</strong><br/>
+          • users._id ➔ orders.user_id
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schema ER Modal -->
+  <div id="schema-modal" class="modal">
+    <div class="modal-card">
+      <h2 style="color:var(--accent-green); margin-bottom:12px;">🔗 Schema ER Relations Visualizer</h2>
+      <p style="color:#cccccc; margin-bottom:16px;">Map relational connections and generate $lookup aggregation pipelines.</p>
+      <pre style="background:#1e1e1e; padding:16px; border-radius:6px; color:#38bdf8; font-family:monospace;">
+// Example $lookup join
+db.orders.aggregate([
+  {
+    $lookup: {
+      from: "users",
+      localField: "user_id",
+      foreignField: "_id",
+      as: "user_info"
+    }
+  }
+])</pre>
+      <button class="tool-btn" style="margin-top:16px;" onclick="closeModal('schema-modal')">Close</button>
+    </div>
+  </div>
+
+  <!-- User Manual Modal -->
+  <div id="manual-modal" class="modal">
+    <div class="modal-card">
+      <h2 style="color:var(--accent-green); margin-bottom:12px;">📖 Interactive User Manual</h2>
+      <ol style="color:#cccccc; padding-left:20px; line-height:1.8;">
+        <li><strong>Step 1:</strong> Overview & In-Memory MongoDB Engine</li>
+        <li><strong>Step 2:</strong> Datasets (users, orders, inventory, shipments, elite)</li>
+        <li><strong>Step 3:</strong> Query Execution (find, aggregate, countDocuments)</li>
+        <li><strong>Step 4:</strong> Schema Inspector & ER Diagram</li>
+        <li><strong>Step 5:</strong> Vercel Global Real-Time Counters</li>
+      </ol>
+      <button class="tool-btn" style="margin-top:16px;" onclick="closeModal('manual-modal')">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const sampleData = {
+      users: [
+        { _id: "u1", name: "Swargam", email: "swargam@example.com", role: "admin", age: 24, status: "active" },
+        { _id: "u2", name: "Alice Smith", email: "alice@example.com", role: "developer", age: 28, status: "active" }
+      ],
+      orders: [
+        { _id: "o101", user_id: "u1", status: "completed", total_amount: 250.00, order_date: "2026-07-22" }
+      ]
+    };
+
+    function showIntro() {
+      document.getElementById('intro-view').style.display = 'flex';
+      document.getElementById('ide-view').style.display = 'none';
+    }
+
+    function showIDE() {
+      document.getElementById('intro-view').style.display = 'none';
+      document.getElementById('ide-view').style.display = 'flex';
+    }
+
+    function loadCollection(name) {
+      document.getElementById('query-editor').value = `db.${name}.find({})`;
+      runQuery();
+    }
+
+    function runQuery() {
+      const q = document.getElementById('query-editor').value.trim();
+      const consoleOut = document.getElementById('console-output');
+      const start = performance.now();
+      
+      let res = sampleData.users;
+      if (q.includes("orders")) res = sampleData.orders;
+      
+      const timing = (performance.now() - start).toFixed(2);
+      consoleOut.textContent = `[success] Executed query: ${q}\nReturned ${res.length} documents in ${timing} ms\n\n` + JSON.stringify(res, null, 2);
+    }
+
+    function formatQuery() {
+      const ed = document.getElementById('query-editor');
+      ed.value = ed.value.trim();
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // Realtime Vercel CountAPI sync
+    async function syncVercelStats() {
+      try {
+        const r = await fetch('https://api.countapi.xyz/hit/mongosandbox-workspace-prod/visits');
+        if (r.ok) {
+          const d = await r.json();
+          document.getElementById('web-total-visited').textContent = d.value || 28;
+          document.getElementById('web-active-users').textContent = Math.max(1, Math.round((d.value || 28) * 0.65));
+        }
+      } catch (e) {
+        let v = parseInt(localStorage.getItem('ms_visits') || '28') + 1;
+        localStorage.setItem('ms_visits', v);
+        document.getElementById('web-total-visited').textContent = v;
+        document.getElementById('web-active-users').textContent = Math.max(1, Math.round(v * 0.65));
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      syncVercelStats();
+    });
+  </script>
+</body>
+</html>

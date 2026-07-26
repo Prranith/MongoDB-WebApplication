@@ -1,0 +1,4094 @@
+[
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0005"
+    },
+    "userId": "usr_1005",
+    "name": "Ava Mitchell",
+    "email": "ava.mitchell@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2021-06-14T10:20:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 29,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "45 Maple Street",
+      "city": "Portland",
+      "state": "OR",
+      "zip": "97201",
+      "country": "USA"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0006"
+    },
+    "userId": "usr_1006",
+    "name": "Liam O'Connor",
+    "email": "liam.oconnor@example.ie",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-02-02T08:00:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 36,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "12 O'Connell Street",
+      "city": "Dublin",
+      "state": "Leinster",
+      "zip": "D01",
+      "country": "Ireland"
+    },
+    "preferences": [
+      "apparel",
+      "electronics",
+      "sports"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0007"
+    },
+    "userId": "usr_1007",
+    "name": "Maya Singh",
+    "email": "maya.singh@example.in",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-12-01T12:00:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 24,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "7 Lotus Lane",
+      "city": "Hyderabad",
+      "state": "TG",
+      "zip": "500001",
+      "country": "India"
+    },
+    "preferences": [
+      "beauty",
+      "apparel",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0008"
+    },
+    "userId": "usr_1008",
+    "name": "Noah Kim",
+    "email": "noah.kim@example.kr",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2020-09-10T09:30:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 31,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "88 Han River Rd",
+      "city": "Seoul",
+      "state": "Seoul",
+      "zip": "04524",
+      "country": "South Korea"
+    },
+    "preferences": [
+      "electronics",
+      "gaming",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0009"
+    },
+    "userId": "usr_1009",
+    "name": "Olivia Martinez",
+    "email": "olivia.martinez@example.mx",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2023-03-22T16:10:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 27,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "221 Reforma Ave",
+      "city": "Mexico City",
+      "state": "CDMX",
+      "zip": "01000",
+      "country": "Mexico"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "beauty"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a000a"
+    },
+    "userId": "usr_1010",
+    "name": "Ethan Brown",
+    "email": "ethan.brown@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2019-11-05T14:00:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 40,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "9 Harbor Drive",
+      "city": "Boston",
+      "state": "MA",
+      "zip": "02108",
+      "country": "USA"
+    },
+    "preferences": [
+      "books",
+      "outdoors",
+      "sports"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a000b"
+    },
+    "userId": "usr_1011",
+    "name": "Isabella Rossi",
+    "email": "isabella.rossi@example.it",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2021-01-20T11:45:00Z"
+      },
+      "discountRate": 0.18
+    },
+    "demographics": {
+      "age": 33,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "14 Via Roma",
+      "city": "Milan",
+      "state": "Lombardy",
+      "zip": "20121",
+      "country": "Italy"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a000c"
+    },
+    "userId": "usr_1012",
+    "name": "Lucas Müller",
+    "email": "lucas.mueller@example.de",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-07-07T07:07:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 38,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "3 Lindenstrasse",
+      "city": "Berlin",
+      "state": "Berlin",
+      "zip": "10115",
+      "country": "Germany"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a000d"
+    },
+    "userId": "usr_1013",
+    "name": "Sofia Alvarez",
+    "email": "sofia.alvarez@example.es",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-05-18T19:30:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 22,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "56 Calle Mayor",
+      "city": "Madrid",
+      "state": "Community of Madrid",
+      "zip": "28013",
+      "country": "Spain"
+    },
+    "preferences": [
+      "apparel",
+      "beauty",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a000e"
+    },
+    "userId": "usr_1014",
+    "name": "Mason Johnson",
+    "email": "mason.johnson@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-04-01T09:00:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 45,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "300 Elm Street",
+      "city": "Chicago",
+      "state": "IL",
+      "zip": "60601",
+      "country": "USA"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a000f"
+    },
+    "userId": "usr_1015",
+    "name": "Emma Wilson",
+    "email": "emma.wilson@example.co.uk",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2023-10-10T10:10:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 30,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "8 Baker Street",
+      "city": "London",
+      "state": "Greater London",
+      "zip": "NW1",
+      "country": "UK"
+    },
+    "preferences": [
+      "books",
+      "home",
+      "kitchen"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0010"
+    },
+    "userId": "usr_1016",
+    "name": "Oliver Davis",
+    "email": "oliver.davis@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-02-14T14:14:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 26,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 Pine Avenue",
+      "city": "Seattle",
+      "state": "WA",
+      "zip": "98101",
+      "country": "USA"
+    },
+    "preferences": [
+      "gaming",
+      "electronics",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0011"
+    },
+    "userId": "usr_1017",
+    "name": "Charlotte Nguyen",
+    "email": "charlotte.nguyen@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2021-09-09T09:09:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 35,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "19 Orchid Road",
+      "city": "San Francisco",
+      "state": "CA",
+      "zip": "94102",
+      "country": "USA"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0012"
+    },
+    "userId": "usr_1018",
+    "name": "James Patel",
+    "email": "james.patel@example.in",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-12-12T12:12:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 41,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "101 Gandhi Marg",
+      "city": "Mumbai",
+      "state": "MH",
+      "zip": "400001",
+      "country": "India"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0013"
+    },
+    "userId": "usr_1019",
+    "name": "Amelia Thompson",
+    "email": "amelia.thompson@example.com.au",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2019-05-05T05:05:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 37,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "5 Harbour View",
+      "city": "Sydney",
+      "state": "NSW",
+      "zip": "2000",
+      "country": "Australia"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "fashion"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0014"
+    },
+    "userId": "usr_1020",
+    "name": "Benjamin Clark",
+    "email": "ben.clark@example.ca",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-08-08T08:08:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 50,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "200 King Street",
+      "city": "Toronto",
+      "state": "ON",
+      "zip": "M5H",
+      "country": "Canada"
+    },
+    "preferences": [
+      "books",
+      "outdoors",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0015"
+    },
+    "userId": "usr_1021",
+    "name": "Harper Lee",
+    "email": "harper.lee@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-07-07T07:07:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 19,
+      "gender": "Non-binary"
+    },
+    "shippingAddress": {
+      "street": "2 College Lane",
+      "city": "Austin",
+      "state": "TX",
+      "zip": "73301",
+      "country": "USA"
+    },
+    "preferences": [
+      "apparel",
+      "books",
+      "music"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0016"
+    },
+    "userId": "usr_1022",
+    "name": "Henry Walker",
+    "email": "henry.walker@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-04-04T04:04:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 46,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "400 Market Street",
+      "city": "Philadelphia",
+      "state": "PA",
+      "zip": "19103",
+      "country": "USA"
+    },
+    "preferences": [
+      "electronics",
+      "gadgets",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0017"
+    },
+    "userId": "usr_1023",
+    "name": "Evelyn Garcia",
+    "email": "evelyn.garcia@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2022-05-15T15:15:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 28,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "66 Sunset Blvd",
+      "city": "Los Angeles",
+      "state": "CA",
+      "zip": "90028",
+      "country": "USA"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0018"
+    },
+    "userId": "usr_1024",
+    "name": "Alexander Scott",
+    "email": "alex.scott@example.com",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2018-10-10T10:00:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 55,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "1 Beacon Hill",
+      "city": "Boston",
+      "state": "MA",
+      "zip": "02108",
+      "country": "USA"
+    },
+    "preferences": [
+      "books",
+      "automotive",
+      "electronics"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0019"
+    },
+    "userId": "usr_1025",
+    "name": "Zoe Carter",
+    "email": "zoe.carter@example.nz",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2023-06-06T06:06:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 32,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "9 K Road",
+      "city": "Auckland",
+      "state": "Auckland",
+      "zip": "1010",
+      "country": "New Zealand"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a001a"
+    },
+    "userId": "usr_1026",
+    "name": "Daniel Rivera",
+    "email": "daniel.rivera@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-03-03T03:03:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 23,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "12 Palm Street",
+      "city": "Miami",
+      "state": "FL",
+      "zip": "33101",
+      "country": "USA"
+    },
+    "preferences": [
+      "apparel",
+      "music",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a001b"
+    },
+    "userId": "usr_1027",
+    "name": "Luna Perez",
+    "email": "luna.perez@example.ar",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-01-01T01:01:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 34,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "77 Avenida Libertad",
+      "city": "Buenos Aires",
+      "state": "CABA",
+      "zip": "C1002",
+      "country": "Argentina"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a001c"
+    },
+    "userId": "usr_1028",
+    "name": "Owen Brooks",
+    "email": "owen.brooks@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-11-11T11:11:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 43,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "120 River Road",
+      "city": "Denver",
+      "state": "CO",
+      "zip": "80202",
+      "country": "USA"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "electronics"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a001d"
+    },
+    "userId": "usr_1029",
+    "name": "Grace Foster",
+    "email": "grace.foster@example.com",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2017-07-07T07:07:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 52,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "33 Garden Lane",
+      "city": "Vancouver",
+      "state": "BC",
+      "zip": "V5K",
+      "country": "Canada"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a001e"
+    },
+    "userId": "usr_1030",
+    "name": "Jack Turner",
+    "email": "jack.turner@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2022-09-09T09:09:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 39,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "58 Oak Avenue",
+      "city": "Minneapolis",
+      "state": "MN",
+      "zip": "55401",
+      "country": "USA"
+    },
+    "preferences": [
+      "electronics",
+      "gaming",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a001f"
+    },
+    "userId": "usr_1031",
+    "name": "Chloe Bennett",
+    "email": "chloe.bennett@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-02-02T02:02:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 20,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "14 College Road",
+      "city": "Bristol",
+      "state": "Somerset",
+      "zip": "BS1",
+      "country": "UK"
+    },
+    "preferences": [
+      "books",
+      "music",
+      "apparel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0020"
+    },
+    "userId": "usr_1032",
+    "name": "Wyatt Hughes",
+    "email": "wyatt.hughes@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2020-06-06T06:06:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 47,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "9 Seaside Blvd",
+      "city": "San Diego",
+      "state": "CA",
+      "zip": "92101",
+      "country": "USA"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0021"
+    },
+    "userId": "usr_1033",
+    "name": "Lily Brooks",
+    "email": "lily.brooks@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2021-03-03T03:03:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 31,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "44 Willow Way",
+      "city": "Charlotte",
+      "state": "NC",
+      "zip": "28202",
+      "country": "USA"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0022"
+    },
+    "userId": "usr_1034",
+    "name": "Samuel Reed",
+    "email": "sam.reed@example.com",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2016-12-12T12:12:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 60,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "2 Old Mill Road",
+      "city": "Edinburgh",
+      "state": "Scotland",
+      "zip": "EH1",
+      "country": "UK"
+    },
+    "preferences": [
+      "books",
+      "home",
+      "kitchen"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0023"
+    },
+    "userId": "usr_1035",
+    "name": "Aria Coleman",
+    "email": "aria.coleman@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2023-01-01T01:01:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 29,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "101 Sunset Terrace",
+      "city": "Los Angeles",
+      "state": "CA",
+      "zip": "90012",
+      "country": "USA"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0024"
+    },
+    "userId": "usr_1036",
+    "name": "Caleb Price",
+    "email": "caleb.price@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-08-08T08:08:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 25,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 College Ave",
+      "city": "Raleigh",
+      "state": "NC",
+      "zip": "27601",
+      "country": "USA"
+    },
+    "preferences": [
+      "gaming",
+      "electronics",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0025"
+    },
+    "userId": "usr_1037",
+    "name": "Nora Bell",
+    "email": "nora.bell@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2022-10-10T10:10:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 42,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Riverbend",
+      "city": "Columbus",
+      "state": "OH",
+      "zip": "43085",
+      "country": "USA"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "beauty"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0026"
+    },
+    "userId": "usr_1038",
+    "name": "Levi Murphy",
+    "email": "levi.murphy@example.ie",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-02-02T02:02:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 39,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "5 Harbour Street",
+      "city": "Cork",
+      "state": "Munster",
+      "zip": "T12",
+      "country": "Ireland"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0027"
+    },
+    "userId": "usr_1039",
+    "name": "Hannah Ortiz",
+    "email": "hannah.ortiz@example.com",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2019-09-09T09:09:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 44,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "88 Palm Drive",
+      "city": "San Juan",
+      "state": "PR",
+      "zip": "00901",
+      "country": "Puerto Rico"
+    },
+    "preferences": [
+      "beauty",
+      "home",
+      "kitchen"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0028"
+    },
+    "userId": "usr_1040",
+    "name": "Michael Young",
+    "email": "michael.young@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-05-05T05:05:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 48,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "14 Ridge Road",
+      "city": "Salt Lake City",
+      "state": "UT",
+      "zip": "84101",
+      "country": "USA"
+    },
+    "preferences": [
+      "electronics",
+      "gadgets",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0029"
+    },
+    "userId": "usr_1041",
+    "name": "Madison King",
+    "email": "madison.king@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-11-11T11:11:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 21,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "3 College Green",
+      "city": "Dublin",
+      "state": "Leinster",
+      "zip": "D02",
+      "country": "Ireland"
+    },
+    "preferences": [
+      "books",
+      "music",
+      "apparel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a002a"
+    },
+    "userId": "usr_1042",
+    "name": "Omar Hassan",
+    "email": "omar.hassan@example.ae",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-04-04T04:04:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 34,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "22 Sheikh Zayed Rd",
+      "city": "Dubai",
+      "state": "Dubai",
+      "zip": "00000",
+      "country": "UAE"
+    },
+    "preferences": [
+      "electronics",
+      "gadgets",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a002b"
+    },
+    "userId": "usr_1043",
+    "name": "Aaliyah Khan",
+    "email": "aaliyah.khan@example.pk",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2021-08-08T08:08:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 27,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "10 Garden Street",
+      "city": "Lahore",
+      "state": "Punjab",
+      "zip": "54000",
+      "country": "Pakistan"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a002c"
+    },
+    "userId": "usr_1044",
+    "name": "Isaac Flores",
+    "email": "isaac.flores@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-06-06T06:06:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 22,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "55 Avenida del Sol",
+      "city": "Barcelona",
+      "state": "Catalonia",
+      "zip": "08002",
+      "country": "Spain"
+    },
+    "preferences": [
+      "music",
+      "apparel",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a002d"
+    },
+    "userId": "usr_1045",
+    "name": "Violet Reed",
+    "email": "violet.reed@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2023-04-04T04:04:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 31,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "18 Pinecrest",
+      "city": "Orlando",
+      "state": "FL",
+      "zip": "32801",
+      "country": "USA"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "beauty"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a002e"
+    },
+    "userId": "usr_1046",
+    "name": "Julian Price",
+    "email": "julian.price@example.com",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2018-03-03T03:03:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 58,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "2 Cliffside Drive",
+      "city": "Auckland",
+      "state": "Auckland",
+      "zip": "1010",
+      "country": "New Zealand"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a002f"
+    },
+    "userId": "usr_1047",
+    "name": "Stella Rivera",
+    "email": "stella.rivera@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-02-02T02:02:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 33,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "90 Ocean Drive",
+      "city": "Honolulu",
+      "state": "HI",
+      "zip": "96815",
+      "country": "USA"
+    },
+    "preferences": [
+      "outdoors",
+      "home",
+      "kitchen"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0030"
+    },
+    "userId": "usr_1048",
+    "name": "Connor Bell",
+    "email": "connor.bell@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-09-09T09:09:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 18,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "7 University Ave",
+      "city": "Cambridge",
+      "state": "MA",
+      "zip": "02138",
+      "country": "USA"
+    },
+    "preferences": [
+      "books",
+      "electronics",
+      "gaming"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0031"
+    },
+    "userId": "usr_1049",
+    "name": "Penelope Ward",
+    "email": "penelope.ward@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-05-05T05:05:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 28,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "44 High Street",
+      "city": "Oxford",
+      "state": "Oxfordshire",
+      "zip": "OX1",
+      "country": "UK"
+    },
+    "preferences": [
+      "books",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0032"
+    },
+    "userId": "usr_1050",
+    "name": "Isaiah Brooks",
+    "email": "isaiah.brooks@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2019-02-02T02:02:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 49,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "12 Harbor Lane",
+      "city": "Tampa",
+      "state": "FL",
+      "zip": "33602",
+      "country": "USA"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0033"
+    },
+    "userId": "usr_1051",
+    "name": "Aurora Hayes",
+    "email": "aurora.hayes@example.com",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2017-01-01T01:01:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 61,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "3 Seaview Road",
+      "city": "Brighton",
+      "state": "East Sussex",
+      "zip": "BN1",
+      "country": "UK"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0034"
+    },
+    "userId": "usr_1052",
+    "name": "Eli Foster",
+    "email": "eli.foster@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-04-04T04:04:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 26,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "66 Market Lane",
+      "city": "Leeds",
+      "state": "West Yorkshire",
+      "zip": "LS1",
+      "country": "UK"
+    },
+    "preferences": [
+      "music",
+      "gaming",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0035"
+    },
+    "userId": "usr_1053",
+    "name": "Scarlett Hayes",
+    "email": "scarlett.hayes@example.com.au",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-11-11T11:11:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 34,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "10 Harbour Road",
+      "city": "Melbourne",
+      "state": "VIC",
+      "zip": "3000",
+      "country": "Australia"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0036"
+    },
+    "userId": "usr_1054",
+    "name": "Adam Bennett",
+    "email": "adam.bennett@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-12-12T12:12:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 45,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "88 Ridgeview",
+      "city": "Pittsburgh",
+      "state": "PA",
+      "zip": "15222",
+      "country": "USA"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0037"
+    },
+    "userId": "usr_1055",
+    "name": "Mila Ortiz",
+    "email": "mila.ortiz@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-03-03T03:03:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 23,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "21 Calle Luna",
+      "city": "Seville",
+      "state": "Andalusia",
+      "zip": "41001",
+      "country": "Spain"
+    },
+    "preferences": [
+      "apparel",
+      "beauty",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0038"
+    },
+    "userId": "usr_1056",
+    "name": "Nathan Cole",
+    "email": "nathan.cole@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-07-07T07:07:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 37,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "5 Lakeview Drive",
+      "city": "Madison",
+      "state": "WI",
+      "zip": "53703",
+      "country": "USA"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "electronics"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0039"
+    },
+    "userId": "usr_1057",
+    "name": "Hazel Kim",
+    "email": "hazel.kim@example.kr",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2019-08-08T08:08:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 41,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "33 Gangnam-daero",
+      "city": "Seoul",
+      "state": "Seoul",
+      "zip": "06000",
+      "country": "South Korea"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a003a"
+    },
+    "userId": "usr_1058",
+    "name": "Juliette Laurent",
+    "email": "juliette.laurent@example.fr",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2022-01-01T01:01:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 36,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Rue de la Paix",
+      "city": "Paris",
+      "state": "Ile-de-France",
+      "zip": "75002",
+      "country": "France"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a003b"
+    },
+    "userId": "usr_1059",
+    "name": "Theo Romano",
+    "email": "theo.romano@example.it",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2020-03-03T03:03:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 35,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "9 Via Dante",
+      "city": "Rome",
+      "state": "Lazio",
+      "zip": "00186",
+      "country": "Italy"
+    },
+    "preferences": [
+      "books",
+      "music",
+      "apparel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a003c"
+    },
+    "userId": "usr_1060",
+    "name": "Clara Jensen",
+    "email": "clara.jensen@example.dk",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2018-06-06T06:06:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 54,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "7 Nyhavn",
+      "city": "Copenhagen",
+      "state": "Capital Region",
+      "zip": "1051",
+      "country": "Denmark"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a003d"
+    },
+    "userId": "usr_1061",
+    "name": "Miles Carter",
+    "email": "miles.carter@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2021-10-10T10:10:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 30,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "44 Bay Street",
+      "city": "Halifax",
+      "state": "NS",
+      "zip": "B3J",
+      "country": "Canada"
+    },
+    "preferences": [
+      "electronics",
+      "gaming",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a003e"
+    },
+    "userId": "usr_1062",
+    "name": "Ivy Morgan",
+    "email": "ivy.morgan@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-01-01T01:01:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 22,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "18 King Street",
+      "city": "Belfast",
+      "state": "Northern Ireland",
+      "zip": "BT1",
+      "country": "UK"
+    },
+    "preferences": [
+      "books",
+      "music",
+      "apparel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a003f"
+    },
+    "userId": "usr_1063",
+    "name": "Aaron Wells",
+    "email": "aaron.wells@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-03-03T03:03:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 44,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "90 Central Ave",
+      "city": "St. Louis",
+      "state": "MO",
+      "zip": "63101",
+      "country": "USA"
+    },
+    "preferences": [
+      "automotive",
+      "electronics",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0040"
+    },
+    "userId": "usr_1064",
+    "name": "Piper Shaw",
+    "email": "piper.shaw@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-07-07T07:07:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 29,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Seaside Ave",
+      "city": "Newport",
+      "state": "RI",
+      "zip": "02840",
+      "country": "USA"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "beauty"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0041"
+    },
+    "userId": "usr_1065",
+    "name": "Ezekiel Stone",
+    "email": "ezekiel.stone@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-12-12T12:12:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 20,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "3 College Row",
+      "city": "Birmingham",
+      "state": "West Midlands",
+      "zip": "B1",
+      "country": "UK"
+    },
+    "preferences": [
+      "gaming",
+      "electronics",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0042"
+    },
+    "userId": "usr_1066",
+    "name": "Sadie Palmer",
+    "email": "sadie.palmer@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-12-12T12:12:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 33,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "55 Elmwood",
+      "city": "Rochester",
+      "state": "NY",
+      "zip": "14604",
+      "country": "USA"
+    },
+    "preferences": [
+      "books",
+      "home",
+      "kitchen"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0043"
+    },
+    "userId": "usr_1067",
+    "name": "Gavin Stone",
+    "email": "gavin.stone@example.com",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2015-05-05T05:05:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 63,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "1 Old Port",
+      "city": "Bordeaux",
+      "state": "Nouvelle-Aquitaine",
+      "zip": "33000",
+      "country": "France"
+    },
+    "preferences": [
+      "wine",
+      "home",
+      "kitchen"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0044"
+    },
+    "userId": "usr_1068",
+    "name": "Maya Brooks",
+    "email": "maya.brooks@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-10-10T10:10:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 28,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "77 Park Lane",
+      "city": "Manchester",
+      "state": "Greater Manchester",
+      "zip": "M1",
+      "country": "UK"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0045"
+    },
+    "userId": "usr_1069",
+    "name": "Ryder Fox",
+    "email": "ryder.fox@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-09-09T09:09:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 24,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "9 College Street",
+      "city": "Leicester",
+      "state": "Leicestershire",
+      "zip": "LE1",
+      "country": "UK"
+    },
+    "preferences": [
+      "gaming",
+      "electronics",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0046"
+    },
+    "userId": "usr_1070",
+    "name": "Nina Park",
+    "email": "nina.park@example.kr",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-06-06T06:06:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 38,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Insadong",
+      "city": "Seoul",
+      "state": "Seoul",
+      "zip": "03045",
+      "country": "South Korea"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0047"
+    },
+    "userId": "usr_1071",
+    "name": "Rafael Silva",
+    "email": "rafael.silva@example.br",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2018-11-11T11:11:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 47,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "44 Avenida Paulista",
+      "city": "Sao Paulo",
+      "state": "SP",
+      "zip": "01311",
+      "country": "Brazil"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0048"
+    },
+    "userId": "usr_1072",
+    "name": "Lena Fischer",
+    "email": "lena.fischer@example.de",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2021-09-01T09:00:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 32,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "9 Bahnhofstrasse",
+      "city": "Munich",
+      "state": "Bavaria",
+      "zip": "80331",
+      "country": "Germany"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0049"
+    },
+    "userId": "usr_1073",
+    "name": "Cameron Price",
+    "email": "cameron.price@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-01-15T15:15:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 22,
+      "gender": "Non-binary"
+    },
+    "shippingAddress": {
+      "street": "14 College Lane",
+      "city": "Sheffield",
+      "state": "South Yorkshire",
+      "zip": "S1",
+      "country": "UK"
+    },
+    "preferences": [
+      "books",
+      "music",
+      "gaming"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a004a"
+    },
+    "userId": "usr_1074",
+    "name": "Sienna Park",
+    "email": "sienna.park@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-08-08T08:08:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 29,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "77 Ocean Ave",
+      "city": "Santa Monica",
+      "state": "CA",
+      "zip": "90401",
+      "country": "USA"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a004b"
+    },
+    "userId": "usr_1075",
+    "name": "Evan Stone",
+    "email": "evan.stone@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-03-15T15:15:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 41,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "9 River Road",
+      "city": "Cincinnati",
+      "state": "OH",
+      "zip": "45202",
+      "country": "USA"
+    },
+    "preferences": [
+      "automotive",
+      "electronics",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a004c"
+    },
+    "userId": "usr_1076",
+    "name": "Maya Patel",
+    "email": "maya.patel@example.in",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-11-11T11:11:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 24,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "33 MG Road",
+      "city": "Bengaluru",
+      "state": "KA",
+      "zip": "560001",
+      "country": "India"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a004d"
+    },
+    "userId": "usr_1077",
+    "name": "Ronan Doyle",
+    "email": "ronan.doyle@example.ie",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-06-06T06:06:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 39,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "12 O'Connell Ave",
+      "city": "Galway",
+      "state": "Connacht",
+      "zip": "H91",
+      "country": "Ireland"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a004e"
+    },
+    "userId": "usr_1078",
+    "name": "Miriam Cohen",
+    "email": "miriam.cohen@example.il",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2019-04-04T04:04:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 46,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "9 King George St",
+      "city": "Tel Aviv",
+      "state": "Tel Aviv",
+      "zip": "61000",
+      "country": "Israel"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a004f"
+    },
+    "userId": "usr_1079",
+    "name": "Dylan Hayes",
+    "email": "dylan.hayes@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-01-20T20:20:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 35,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "44 Market Street",
+      "city": "Wellington",
+      "state": "Wellington",
+      "zip": "6011",
+      "country": "New Zealand"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "electronics"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0050"
+    },
+    "userId": "usr_1080",
+    "name": "Lola Bennett",
+    "email": "lola.bennett@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-08-08T08:08:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 20,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "3 College Road",
+      "city": "Perth",
+      "state": "WA",
+      "zip": "6000",
+      "country": "Australia"
+    },
+    "preferences": [
+      "books",
+      "music",
+      "apparel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0051"
+    },
+    "userId": "usr_1081",
+    "name": "Owen Clarke",
+    "email": "owen.clarke@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-02-22T22:22:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 42,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 Harbour Road",
+      "city": "Christchurch",
+      "state": "Canterbury",
+      "zip": "8011",
+      "country": "New Zealand"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0052"
+    },
+    "userId": "usr_1082",
+    "name": "Zara Khan",
+    "email": "zara.khan@example.pk",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2021-11-11T11:11:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 30,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Mall Road",
+      "city": "Islamabad",
+      "state": "ICT",
+      "zip": "44000",
+      "country": "Pakistan"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0053"
+    },
+    "userId": "usr_1083",
+    "name": "Riley Morgan",
+    "email": "riley.morgan@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-05-05T05:05:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 23,
+      "gender": "Non-binary"
+    },
+    "shippingAddress": {
+      "street": "9 College Lane",
+      "city": "Cardiff",
+      "state": "Wales",
+      "zip": "CF10",
+      "country": "UK"
+    },
+    "preferences": [
+      "books",
+      "music",
+      "gaming"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0054"
+    },
+    "userId": "usr_1084",
+    "name": "Eleanor Hayes",
+    "email": "eleanor.hayes@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-09-01T09:00:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 34,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "44 Queen Street",
+      "city": "Auckland",
+      "state": "Auckland",
+      "zip": "1010",
+      "country": "New Zealand"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0055"
+    },
+    "userId": "usr_1085",
+    "name": "Colin Hart",
+    "email": "colin.hart@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-11-11T11:11:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 46,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 River Street",
+      "city": "Glasgow",
+      "state": "Scotland",
+      "zip": "G1",
+      "country": "UK"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0056"
+    },
+    "userId": "usr_1086",
+    "name": "Iris Bennett",
+    "email": "iris.bennett@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-06-06T06:06:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 19,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "3 College Road",
+      "city": "Adelaide",
+      "state": "SA",
+      "zip": "5000",
+      "country": "Australia"
+    },
+    "preferences": [
+      "books",
+      "music",
+      "apparel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0057"
+    },
+    "userId": "usr_1087",
+    "name": "Felix Meyer",
+    "email": "felix.meyer@example.de",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-01-15T15:15:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 37,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "12 Kaiserstrasse",
+      "city": "Frankfurt",
+      "state": "Hesse",
+      "zip": "60311",
+      "country": "Germany"
+    },
+    "preferences": [
+      "electronics",
+      "gadgets",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0058"
+    },
+    "userId": "usr_1088",
+    "name": "Luna Rossi",
+    "email": "luna.rossi@example.it",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2019-10-10T10:10:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 43,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "9 Via Veneto",
+      "city": "Rome",
+      "state": "Lazio",
+      "zip": "00187",
+      "country": "Italy"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0059"
+    },
+    "userId": "usr_1089",
+    "name": "Marcus Allen",
+    "email": "marcus.allen@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-02-20T20:20:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 51,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "44 Bayview",
+      "city": "Halifax",
+      "state": "NS",
+      "zip": "B3J",
+      "country": "Canada"
+    },
+    "preferences": [
+      "books",
+      "home",
+      "kitchen"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a005a"
+    },
+    "userId": "usr_1090",
+    "name": "Ava Brooks",
+    "email": "ava.brooks@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-04-04T04:04:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 18,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "3 College Lane",
+      "city": "Wellington",
+      "state": "Wellington",
+      "zip": "6011",
+      "country": "New Zealand"
+    },
+    "preferences": [
+      "books",
+      "music",
+      "apparel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a005b"
+    },
+    "userId": "usr_1091",
+    "name": "Owen Reed",
+    "email": "owen.reed@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-05-05T05:05:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 40,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 Harbour Road",
+      "city": "Dunedin",
+      "state": "Otago",
+      "zip": "9016",
+      "country": "New Zealand"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "electronics"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a005c"
+    },
+    "userId": "usr_1092",
+    "name": "Maya Green",
+    "email": "maya.green@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2021-07-07T07:07:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 33,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Garden Lane",
+      "city": "Bristol",
+      "state": "Somerset",
+      "zip": "BS1",
+      "country": "UK"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a005d"
+    },
+    "userId": "usr_1093",
+    "name": "Leo Martin",
+    "email": "leo.martin@example.fr",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-07-07T07:07:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 24,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "9 Rue des Fleurs",
+      "city": "Lyon",
+      "state": "Auvergne-Rhone-Alpes",
+      "zip": "69001",
+      "country": "France"
+    },
+    "preferences": [
+      "music",
+      "books",
+      "apparel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a005e"
+    },
+    "userId": "usr_1094",
+    "name": "Nora Ellis",
+    "email": "nora.ellis@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-10-10T10:10:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 36,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "44 High Street",
+      "city": "Belfast",
+      "state": "Northern Ireland",
+      "zip": "BT1",
+      "country": "UK"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a005f"
+    },
+    "userId": "usr_1095",
+    "name": "Elias Ford",
+    "email": "elias.ford@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-09-09T09:09:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 48,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 River Road",
+      "city": "Bristol",
+      "state": "Somerset",
+      "zip": "BS1",
+      "country": "UK"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0060"
+    },
+    "userId": "usr_1096",
+    "name": "Clara Hughes",
+    "email": "clara.hughes@example.com",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2016-06-06T06:06:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 59,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "3 Seaview Road",
+      "city": "Brighton",
+      "state": "East Sussex",
+      "zip": "BN1",
+      "country": "UK"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0061"
+    },
+    "userId": "usr_1097",
+    "name": "Asher Knight",
+    "email": "asher.knight@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-03-03T03:03:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 39,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "12 Harbor Lane",
+      "city": "Tampa",
+      "state": "FL",
+      "zip": "33602",
+      "country": "USA"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0062"
+    },
+    "userId": "usr_1098",
+    "name": "Ivy Turner",
+    "email": "ivy.turner@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-04-04T04:04:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 31,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "44 Willow Way",
+      "city": "Charlotte",
+      "state": "NC",
+      "zip": "28202",
+      "country": "USA"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0063"
+    },
+    "userId": "usr_1099",
+    "name": "Kai Nakamura",
+    "email": "kai.nakamura@example.jp",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2018-02-02T02:02:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 50,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "9 Shibuya Crossing",
+      "city": "Tokyo",
+      "state": "Tokyo",
+      "zip": "150-0002",
+      "country": "Japan"
+    },
+    "preferences": [
+      "electronics",
+      "gaming",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a0064"
+    },
+    "userId": "usr_1100",
+    "name": "Zoe Park",
+    "email": "zoe.park@example.kr",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-12-12T12:12:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 29,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "77 Gangnam-daero",
+      "city": "Seoul",
+      "state": "Seoul",
+      "zip": "06000",
+      "country": "South Korea"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1405"
+    },
+    "userId": "usr_1405",
+    "name": "Nadia Romero",
+    "email": "nadia.romero@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-02-18T10:30:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 34,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Coral Way",
+      "city": "San Diego",
+      "state": "CA",
+      "zip": "92103",
+      "country": "USA"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1406"
+    },
+    "userId": "usr_1406",
+    "name": "Diego Morales",
+    "email": "diego.morales@example.mx",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-06-12T09:00:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 41,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "44 Paseo de la Reforma",
+      "city": "Mexico City",
+      "state": "CDMX",
+      "zip": "06600",
+      "country": "Mexico"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1407"
+    },
+    "userId": "usr_1407",
+    "name": "Sana Iqbal",
+    "email": "sana.iqbal@example.pk",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-10-10T12:00:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 25,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "7 Liberty Road",
+      "city": "Karachi",
+      "state": "Sindh",
+      "zip": "74200",
+      "country": "Pakistan"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1408"
+    },
+    "userId": "usr_1408",
+    "name": "Mateo Alvarez",
+    "email": "mateo.alvarez@example.ar",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2019-09-09T09:09:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 38,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "33 Avenida Corrientes",
+      "city": "Buenos Aires",
+      "state": "CABA",
+      "zip": "C1043",
+      "country": "Argentina"
+    },
+    "preferences": [
+      "music",
+      "books",
+      "electronics"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1409"
+    },
+    "userId": "usr_1409",
+    "name": "Priya Desai",
+    "email": "priya.desai@example.in",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-03-03T08:45:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 30,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "101 MG Road",
+      "city": "Mumbai",
+      "state": "MH",
+      "zip": "400001",
+      "country": "India"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a140a"
+    },
+    "userId": "usr_1410",
+    "name": "Omar El-Sayed",
+    "email": "omar.elsayed@example.eg",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-01-20T14:20:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 45,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "9 Nile Corniche",
+      "city": "Cairo",
+      "state": "Cairo",
+      "zip": "11511",
+      "country": "Egypt"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a140b"
+    },
+    "userId": "usr_1411",
+    "name": "Hana Suzuki",
+    "email": "hana.suzuki@example.jp",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2018-05-05T05:05:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 52,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "7 Ueno Park",
+      "city": "Tokyo",
+      "state": "Tokyo",
+      "zip": "110-0007",
+      "country": "Japan"
+    },
+    "preferences": [
+      "books",
+      "home",
+      "kitchen"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a140c"
+    },
+    "userId": "usr_1412",
+    "name": "Liam O'Neill",
+    "email": "liam.oneill@example.ie",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-11-11T11:11:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 36,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "12 O'Connell Street",
+      "city": "Dublin",
+      "state": "Leinster",
+      "zip": "D01",
+      "country": "Ireland"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a140d"
+    },
+    "userId": "usr_1413",
+    "name": "Marta Kowalska",
+    "email": "marta.kowalska@example.pl",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-08-08T08:08:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 33,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "44 Nowy Swiat",
+      "city": "Warsaw",
+      "state": "Mazovia",
+      "zip": "00-001",
+      "country": "Poland"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a140e"
+    },
+    "userId": "usr_1414",
+    "name": "Jonas Berg",
+    "email": "jonas.berg@example.se",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2017-03-03T03:03:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 57,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "9 Strandgatan",
+      "city": "Stockholm",
+      "state": "Stockholm",
+      "zip": "111 30",
+      "country": "Sweden"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a140f"
+    },
+    "userId": "usr_1415",
+    "name": "Aisha Rahman",
+    "email": "aisha.rahman@example.bd",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-07-07T07:07:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 29,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Gulshan Ave",
+      "city": "Dhaka",
+      "state": "Dhaka",
+      "zip": "1212",
+      "country": "Bangladesh"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1410"
+    },
+    "userId": "usr_1416",
+    "name": "Noel Carter",
+    "email": "noel.carter@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-05-05T05:05:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 46,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 Harbor Drive",
+      "city": "Halifax",
+      "state": "NS",
+      "zip": "B3J",
+      "country": "Canada"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1411"
+    },
+    "userId": "usr_1417",
+    "name": "Zara Ahmed",
+    "email": "zara.ahmed@example.ae",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2024-02-02T02:02:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 24,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "9 Marina Walk",
+      "city": "Dubai",
+      "state": "Dubai",
+      "zip": "00000",
+      "country": "UAE"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1412"
+    },
+    "userId": "usr_1418",
+    "name": "Ethan Park",
+    "email": "ethan.park@example.kr",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-09-09T09:09:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 35,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "44 Gangnam-daero",
+      "city": "Seoul",
+      "state": "Seoul",
+      "zip": "06000",
+      "country": "South Korea"
+    },
+    "preferences": [
+      "electronics",
+      "gaming",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1413"
+    },
+    "userId": "usr_1419",
+    "name": "Maya Thompson",
+    "email": "maya.thompson@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-10-10T10:10:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 31,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Willow Lane",
+      "city": "Charlotte",
+      "state": "NC",
+      "zip": "28202",
+      "country": "USA"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1414"
+    },
+    "userId": "usr_1420",
+    "name": "Arjun Mehta",
+    "email": "arjun.mehta@example.in",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2018-12-12T12:12:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 44,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 Marine Drive",
+      "city": "Mumbai",
+      "state": "MH",
+      "zip": "400020",
+      "country": "India"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1415"
+    },
+    "userId": "usr_1421",
+    "name": "Sofia Petrova",
+    "email": "sofia.petrova@example.ru",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-01-01T01:01:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 37,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "9 Nevsky Prospekt",
+      "city": "Saint Petersburg",
+      "state": "Saint Petersburg",
+      "zip": "191186",
+      "country": "Russia"
+    },
+    "preferences": [
+      "books",
+      "music",
+      "apparel"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1416"
+    },
+    "userId": "usr_1422",
+    "name": "Noah Bennett",
+    "email": "noah.bennett@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2019-04-04T04:04:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 49,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "44 Ridge Road",
+      "city": "Salt Lake City",
+      "state": "UT",
+      "zip": "84101",
+      "country": "USA"
+    },
+    "preferences": [
+      "electronics",
+      "gadgets",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1417"
+    },
+    "userId": "usr_1423",
+    "name": "Lina Haddad",
+    "email": "lina.haddad@example.lb",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-05-05T05:05:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 23,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Hamra Street",
+      "city": "Beirut",
+      "state": "Beirut",
+      "zip": "1107",
+      "country": "Lebanon"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1418"
+    },
+    "userId": "usr_1424",
+    "name": "Evan Park",
+    "email": "evan.park@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-06-06T06:06:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 38,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 Harbor Road",
+      "city": "Vancouver",
+      "state": "BC",
+      "zip": "V6B",
+      "country": "Canada"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "electronics"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1419"
+    },
+    "userId": "usr_1425",
+    "name": "Maya Santos",
+    "email": "maya.santos@example.ph",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-09-09T09:09:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 32,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Roxas Blvd",
+      "city": "Manila",
+      "state": "NCR",
+      "zip": "1000",
+      "country": "Philippines"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a141a"
+    },
+    "userId": "usr_1426",
+    "name": "Luca Romano",
+    "email": "luca.romano@example.it",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2016-10-10T10:10:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 54,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "9 Via Garibaldi",
+      "city": "Naples",
+      "state": "Campania",
+      "zip": "80100",
+      "country": "Italy"
+    },
+    "preferences": [
+      "food",
+      "wine",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a141b"
+    },
+    "userId": "usr_1427",
+    "name": "Ava Nguyen",
+    "email": "ava.nguyen@example.vn",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-04-04T04:04:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 28,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "44 Le Loi",
+      "city": "Ho Chi Minh City",
+      "state": "HCMC",
+      "zip": "700000",
+      "country": "Vietnam"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a141c"
+    },
+    "userId": "usr_1428",
+    "name": "Noor Al-Farsi",
+    "email": "noor.alfarsi@example.om",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-12-12T12:12:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 39,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Sultan Qaboos St",
+      "city": "Muscat",
+      "state": "Muscat",
+      "zip": "113",
+      "country": "Oman"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a141d"
+    },
+    "userId": "usr_1429",
+    "name": "Ethan Wright",
+    "email": "ethan.wright@example.com",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-02-02T02:02:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 21,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "3 College Lane",
+      "city": "Leeds",
+      "state": "West Yorkshire",
+      "zip": "LS1",
+      "country": "UK"
+    },
+    "preferences": [
+      "gaming",
+      "electronics",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a141e"
+    },
+    "userId": "usr_1430",
+    "name": "Sofia Martins",
+    "email": "sofia.martins@example.pt",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-01-01T01:01:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 35,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "44 Avenida da Liberdade",
+      "city": "Lisbon",
+      "state": "Lisbon",
+      "zip": "1250-096",
+      "country": "Portugal"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a141f"
+    },
+    "userId": "usr_1431",
+    "name": "Liam Carter",
+    "email": "liam.carter@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2019-07-07T07:07:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 47,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 Harbor Drive",
+      "city": "St. John's",
+      "state": "NL",
+      "zip": "A1C",
+      "country": "Canada"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "automotive"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1420"
+    },
+    "userId": "usr_1432",
+    "name": "Maya Lopez",
+    "email": "maya.lopez@example.co",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2017-08-08T08:08:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 50,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "9 Carrera 7",
+      "city": "Bogota",
+      "state": "Cundinamarca",
+      "zip": "110111",
+      "country": "Colombia"
+    },
+    "preferences": [
+      "home",
+      "kitchen",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1421"
+    },
+    "userId": "usr_1433",
+    "name": "Noor Khan",
+    "email": "noor.khan@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-09-09T09:09:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 31,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "44 Garden Street",
+      "city": "Lahore",
+      "state": "Punjab",
+      "zip": "54000",
+      "country": "Pakistan"
+    },
+    "preferences": [
+      "beauty",
+      "fashion",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1422"
+    },
+    "userId": "usr_1434",
+    "name": "Ethan Brown",
+    "email": "ethan.brown2@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-02-02T02:02:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 43,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "12 Harbor Lane",
+      "city": "Tampa",
+      "state": "FL",
+      "zip": "33602",
+      "country": "USA"
+    },
+    "preferences": [
+      "electronics",
+      "automotive",
+      "gadgets"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1423"
+    },
+    "userId": "usr_1435",
+    "name": "Lina Gomez",
+    "email": "lina.gomez@example.co",
+    "membership": {
+      "tier": "BRONZE",
+      "joinDate": {
+        "$date": "2025-03-03T03:03:00Z"
+      },
+      "discountRate": 0.00
+    },
+    "demographics": {
+      "age": 22,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "21 Calle 50",
+      "city": "Medellin",
+      "state": "Antioquia",
+      "zip": "050021",
+      "country": "Colombia"
+    },
+    "preferences": [
+      "apparel",
+      "beauty",
+      "books"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1424"
+    },
+    "userId": "usr_1436",
+    "name": "Noah Silva",
+    "email": "noah.silva@example.br",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2021-04-04T04:04:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 39,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "77 Avenida Brasil",
+      "city": "Rio de Janeiro",
+      "state": "RJ",
+      "zip": "20000-000",
+      "country": "Brazil"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "electronics"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1425"
+    },
+    "userId": "usr_1437",
+    "name": "Maya Brown",
+    "email": "maya.brown2@example.com",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-11-11T11:11:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 30,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "12 Park Lane",
+      "city": "Manchester",
+      "state": "Greater Manchester",
+      "zip": "M1",
+      "country": "UK"
+    },
+    "preferences": [
+      "fashion",
+      "beauty",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1426"
+    },
+    "userId": "usr_1438",
+    "name": "Liam Johnson",
+    "email": "liam.johnson2@example.com",
+    "membership": {
+      "tier": "PLATINUM",
+      "joinDate": {
+        "$date": "2015-05-05T05:05:00Z"
+      },
+      "discountRate": 0.20
+    },
+    "demographics": {
+      "age": 62,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "1 Old Port",
+      "city": "Bordeaux",
+      "state": "Nouvelle-Aquitaine",
+      "zip": "33000",
+      "country": "France"
+    },
+    "preferences": [
+      "wine",
+      "home",
+      "kitchen"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1427"
+    },
+    "userId": "usr_1439",
+    "name": "Zoe Martin",
+    "email": "zoe.martin2@example.com",
+    "membership": {
+      "tier": "GOLD",
+      "joinDate": {
+        "$date": "2022-06-06T06:06:00Z"
+      },
+      "discountRate": 0.10
+    },
+    "demographics": {
+      "age": 33,
+      "gender": "Female"
+    },
+    "shippingAddress": {
+      "street": "9 K Road",
+      "city": "Auckland",
+      "state": "Auckland",
+      "zip": "1010",
+      "country": "New Zealand"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "home"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "603f7e1b9b1d8c2b4c8a1428"
+    },
+    "userId": "usr_1440",
+    "name": "Owen Murphy",
+    "email": "owen.murphy@example.ie",
+    "membership": {
+      "tier": "SILVER",
+      "joinDate": {
+        "$date": "2020-01-01T01:01:00Z"
+      },
+      "discountRate": 0.05
+    },
+    "demographics": {
+      "age": 36,
+      "gender": "Male"
+    },
+    "shippingAddress": {
+      "street": "12 Harbour Street",
+      "city": "Cork",
+      "state": "Munster",
+      "zip": "T12",
+      "country": "Ireland"
+    },
+    "preferences": [
+      "outdoors",
+      "sports",
+      "automotive"
+    ]
+  }
+]

@@ -1,0 +1,12 @@
+// MongoSandbox — Sample Query 2: Aggregation Pipeline
+db.elite.aggregate([
+  { $match: { status: "PAID" } },
+  {
+    $group: {
+      _id: "$provider",
+      totalAmount: { $sum: "$amount" },
+      transactionCount: { $sum: 1 }
+    }
+  },
+  { $sort: { totalAmount: -1 } }
+])

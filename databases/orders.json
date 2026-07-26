@@ -1,0 +1,4012 @@
+[
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0001"
+        },
+        "orderId": "ord_5001",
+        "userId": "usr_1001",
+        "orderDate": {
+            "$date": "2024-10-15T11:24:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 2,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 91.98,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8001"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": "Leave at front door"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0002"
+        },
+        "orderId": "ord_5002",
+        "userId": "usr_1002",
+        "orderDate": {
+            "$date": "2024-10-16T15:40:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9002",
+                "qty": 1,
+                "unitPrice": 899.0
+            }
+        ],
+        "totalAmount": 899.0,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8002"
+        },
+        "shippingCarrier": "UPS",
+        "notes": "Signature required"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0003"
+        },
+        "orderId": "ord_5003",
+        "userId": "usr_1001",
+        "orderDate": {
+            "$date": "2024-10-18T08:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9003",
+                "qty": 5,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 62.5,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PENDING",
+            "transactionId": "txn_8003"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0004"
+        },
+        "orderId": "ord_5004",
+        "userId": "usr_1004",
+        "orderDate": {
+            "$date": "2024-10-19T10:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            },
+            {
+                "sku": "prod_9002",
+                "qty": 2,
+                "unitPrice": 899.0
+            },
+            {
+                "sku": "prod_9004",
+                "qty": 3,
+                "unitPrice": 199.99
+            }
+        ],
+        "totalAmount": 2443.96,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8004"
+        },
+        "shippingCarrier": "DHL",
+        "notes": "Deliver to corporate hangar"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0005"
+        },
+        "orderId": "ord_5005",
+        "userId": "usr_1005",
+        "orderDate": {
+            "$date": "2024-01-12T09:15:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9005",
+                "qty": 1,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 19.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8005"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0006"
+        },
+        "orderId": "ord_5006",
+        "userId": "usr_1006",
+        "orderDate": {
+            "$date": "2023-11-20T13:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 2,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 59.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8006"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": "Leave with concierge"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0007"
+        },
+        "orderId": "ord_5007",
+        "userId": "usr_1007",
+        "orderDate": {
+            "$date": "2024-03-05T18:30:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9007",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8007"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0008"
+        },
+        "orderId": "ord_5008",
+        "userId": "usr_1008",
+        "orderDate": {
+            "$date": "2024-06-21T12:45:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9008",
+                "qty": 3,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 29.97,
+        "payment": {
+            "method": "APPLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8008"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0009"
+        },
+        "orderId": "ord_5009",
+        "userId": "usr_1009",
+        "orderDate": {
+            "$date": "2024-07-11T09:20:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8009"
+        },
+        "shippingCarrier": "Amazon Logistics",
+        "notes": "Deliver between 9am-5pm"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b000a"
+        },
+        "orderId": "ord_5010",
+        "userId": "usr_1010",
+        "orderDate": {
+            "$date": "2024-02-02T14:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9010",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8010"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b000b"
+        },
+        "orderId": "ord_5011",
+        "userId": "usr_1011",
+        "orderDate": {
+            "$date": "2024-04-18T16:30:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9011",
+                "qty": 2,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 25.0,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8011"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b000c"
+        },
+        "orderId": "ord_5012",
+        "userId": "usr_1012",
+        "orderDate": {
+            "$date": "2024-05-05T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PENDING",
+            "transactionId": "txn_8012"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b000d"
+        },
+        "orderId": "ord_5013",
+        "userId": "usr_1013",
+        "orderDate": {
+            "$date": "2024-08-12T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9013",
+                "qty": 1,
+                "unitPrice": 199.99
+            }
+        ],
+        "totalAmount": 199.99,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8013"
+        },
+        "shippingCarrier": "UPS",
+        "notes": "Deliver to office"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b000e"
+        },
+        "orderId": "ord_5014",
+        "userId": "usr_1014",
+        "orderDate": {
+            "$date": "2024-09-01T10:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9014",
+                "qty": 2,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 25.0,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8014"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b000f"
+        },
+        "orderId": "ord_5015",
+        "userId": "usr_1015",
+        "orderDate": {
+            "$date": "2024-10-01T10:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9015",
+                "qty": 1,
+                "unitPrice": 499.99
+            }
+        ],
+        "totalAmount": 499.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8015"
+        },
+        "shippingCarrier": "DHL",
+        "notes": "Handle with care"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0010"
+        },
+        "orderId": "ord_5016",
+        "userId": "usr_1016",
+        "orderDate": {
+            "$date": "2024-02-14T14:14:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9016",
+                "qty": 3,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 29.97,
+        "payment": {
+            "method": "APPLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8016"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0011"
+        },
+        "orderId": "ord_5017",
+        "userId": "usr_1017",
+        "orderDate": {
+            "$date": "2024-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9017",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8017"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0012"
+        },
+        "orderId": "ord_5018",
+        "userId": "usr_1018",
+        "orderDate": {
+            "$date": "2024-06-12T12:12:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9018",
+                "qty": 2,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 39.98,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8018"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0013"
+        },
+        "orderId": "ord_5019",
+        "userId": "usr_1019",
+        "orderDate": {
+            "$date": "2024-07-07T05:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9019",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8019"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0014"
+        },
+        "orderId": "ord_5020",
+        "userId": "usr_1020",
+        "orderDate": {
+            "$date": "2024-08-08T08:08:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9020",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8020"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0015"
+        },
+        "orderId": "ord_5021",
+        "userId": "usr_1021",
+        "orderDate": {
+            "$date": "2025-07-07T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9003",
+                "qty": 2,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 25.0,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PENDING",
+            "transactionId": "txn_8021"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0016"
+        },
+        "orderId": "ord_5022",
+        "userId": "usr_1022",
+        "orderDate": {
+            "$date": "2024-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8022"
+        },
+        "shippingCarrier": "DHL",
+        "notes": "Corporate billing"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0017"
+        },
+        "orderId": "ord_5023",
+        "userId": "usr_1023",
+        "orderDate": {
+            "$date": "2024-05-15T15:15:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8023"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0018"
+        },
+        "orderId": "ord_5024",
+        "userId": "usr_1024",
+        "orderDate": {
+            "$date": "2023-10-10T10:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "REFUNDED",
+            "transactionId": "txn_8024"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": "Customer returned item"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0019"
+        },
+        "orderId": "ord_5025",
+        "userId": "usr_1025",
+        "orderDate": {
+            "$date": "2024-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9015",
+                "qty": 1,
+                "unitPrice": 499.99
+            }
+        ],
+        "totalAmount": 499.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8025"
+        },
+        "shippingCarrier": "Amazon Logistics",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b001a"
+        },
+        "orderId": "ord_5026",
+        "userId": "usr_1026",
+        "orderDate": {
+            "$date": "2024-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8026"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b001b"
+        },
+        "orderId": "ord_5027",
+        "userId": "usr_1027",
+        "orderDate": {
+            "$date": "2020-01-01T01:01:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9008",
+                "qty": 2,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 19.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8027"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b001c"
+        },
+        "orderId": "ord_5028",
+        "userId": "usr_1028",
+        "orderDate": {
+            "$date": "2021-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9018",
+                "qty": 1,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 19.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8028"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b001d"
+        },
+        "orderId": "ord_5029",
+        "userId": "usr_1029",
+        "orderDate": {
+            "$date": "2017-07-07T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9005",
+                "qty": 3,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 59.97,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8029"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b001e"
+        },
+        "orderId": "ord_5030",
+        "userId": "usr_1030",
+        "orderDate": {
+            "$date": "2022-09-09T09:09:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8030"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b001f"
+        },
+        "orderId": "ord_5031",
+        "userId": "usr_1031",
+        "orderDate": {
+            "$date": "2025-02-02T02:02:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9011",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PENDING",
+            "transactionId": "txn_8031"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0020"
+        },
+        "orderId": "ord_5032",
+        "userId": "usr_1032",
+        "orderDate": {
+            "$date": "2020-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9019",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8032"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0021"
+        },
+        "orderId": "ord_5033",
+        "userId": "usr_1033",
+        "orderDate": {
+            "$date": "2021-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9020",
+                "qty": 2,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 25.0,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8033"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0022"
+        },
+        "orderId": "ord_5034",
+        "userId": "usr_1034",
+        "orderDate": {
+            "$date": "2016-12-12T12:12:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9002",
+                "qty": 1,
+                "unitPrice": 899.0
+            }
+        ],
+        "totalAmount": 899.0,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8034"
+        },
+        "shippingCarrier": "DHL",
+        "notes": "High value item"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0023"
+        },
+        "orderId": "ord_5035",
+        "userId": "usr_1035",
+        "orderDate": {
+            "$date": "2023-01-01T01:01:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9007",
+                "qty": 2,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 259.98,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8035"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0024"
+        },
+        "orderId": "ord_5036",
+        "userId": "usr_1036",
+        "orderDate": {
+            "$date": "2024-08-08T08:08:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9004",
+                "qty": 1,
+                "unitPrice": 199.99
+            }
+        ],
+        "totalAmount": 199.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8036"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0025"
+        },
+        "orderId": "ord_5037",
+        "userId": "usr_1037",
+        "orderDate": {
+            "$date": "2022-10-10T10:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "FAILED",
+            "transactionId": "txn_8037"
+        },
+        "shippingCarrier": "USPS",
+        "notes": "Payment failed, awaiting retry"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0026"
+        },
+        "orderId": "ord_5038",
+        "userId": "usr_1038",
+        "orderDate": {
+            "$date": "2021-02-02T02:02:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9016",
+                "qty": 1,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 9.99,
+        "payment": {
+            "method": "APPLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8038"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0027"
+        },
+        "orderId": "ord_5039",
+        "userId": "usr_1039",
+        "orderDate": {
+            "$date": "2019-09-09T09:09:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9013",
+                "qty": 1,
+                "unitPrice": 199.99
+            }
+        ],
+        "totalAmount": 199.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8039"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0028"
+        },
+        "orderId": "ord_5040",
+        "userId": "usr_1040",
+        "orderDate": {
+            "$date": "2020-05-05T05:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8040"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": "Deliver to reception"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0029"
+        },
+        "orderId": "ord_5041",
+        "userId": "usr_1041",
+        "orderDate": {
+            "$date": "2025-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9015",
+                "qty": 1,
+                "unitPrice": 499.99
+            }
+        ],
+        "totalAmount": 499.99,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8041"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b002a"
+        },
+        "orderId": "ord_5042",
+        "userId": "usr_1042",
+        "orderDate": {
+            "$date": "2022-04-04T04:04:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8042"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b002b"
+        },
+        "orderId": "ord_5043",
+        "userId": "usr_1043",
+        "orderDate": {
+            "$date": "2021-08-08T08:08:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9011",
+                "qty": 4,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 50.0,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8043"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b002c"
+        },
+        "orderId": "ord_5044",
+        "userId": "usr_1044",
+        "orderDate": {
+            "$date": "2024-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8044"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b002d"
+        },
+        "orderId": "ord_5045",
+        "userId": "usr_1045",
+        "orderDate": {
+            "$date": "2023-04-04T04:04:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9003",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8045"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b002e"
+        },
+        "orderId": "ord_5046",
+        "userId": "usr_1046",
+        "orderDate": {
+            "$date": "2018-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9007",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8046"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b002f"
+        },
+        "orderId": "ord_5047",
+        "userId": "usr_1047",
+        "orderDate": {
+            "$date": "2020-02-02T02:02:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9010",
+                "qty": 2,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 91.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8047"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0030"
+        },
+        "orderId": "ord_5048",
+        "userId": "usr_1048",
+        "orderDate": {
+            "$date": "2025-09-09T09:09:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9014",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PENDING",
+            "transactionId": "txn_8048"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0031"
+        },
+        "orderId": "ord_5049",
+        "userId": "usr_1049",
+        "orderDate": {
+            "$date": "2021-05-05T05:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9019",
+                "qty": 2,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 179.98,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8049"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0032"
+        },
+        "orderId": "ord_5050",
+        "userId": "usr_1050",
+        "orderDate": {
+            "$date": "2019-02-02T02:02:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9002",
+                "qty": 1,
+                "unitPrice": 899.0
+            }
+        ],
+        "totalAmount": 899.0,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8050"
+        },
+        "shippingCarrier": "DHL",
+        "notes": "Business account"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0033"
+        },
+        "orderId": "ord_5051",
+        "userId": "usr_1051",
+        "orderDate": {
+            "$date": "2017-01-01T01:01:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9005",
+                "qty": 1,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 19.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8051"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0034"
+        },
+        "orderId": "ord_5052",
+        "userId": "usr_1052",
+        "orderDate": {
+            "$date": "2024-04-04T04:04:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9008",
+                "qty": 5,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 49.95,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8052"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0035"
+        },
+        "orderId": "ord_5053",
+        "userId": "usr_1053",
+        "orderDate": {
+            "$date": "2022-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9017",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8053"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0036"
+        },
+        "orderId": "ord_5054",
+        "userId": "usr_1054",
+        "orderDate": {
+            "$date": "2020-12-12T12:12:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9016",
+                "qty": 2,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 19.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8054"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0037"
+        },
+        "orderId": "ord_5055",
+        "userId": "usr_1055",
+        "orderDate": {
+            "$date": "2025-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9014",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PENDING",
+            "transactionId": "txn_8055"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0038"
+        },
+        "orderId": "ord_5056",
+        "userId": "usr_1056",
+        "orderDate": {
+            "$date": "2021-07-07T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8056"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0039"
+        },
+        "orderId": "ord_5057",
+        "userId": "usr_1057",
+        "orderDate": {
+            "$date": "2019-08-08T08:08:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9005",
+                "qty": 2,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 39.98,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8057"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b003a"
+        },
+        "orderId": "ord_5058",
+        "userId": "usr_1058",
+        "orderDate": {
+            "$date": "2022-01-01T01:01:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9013",
+                "qty": 1,
+                "unitPrice": 199.99
+            }
+        ],
+        "totalAmount": 199.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8058"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b003b"
+        },
+        "orderId": "ord_5059",
+        "userId": "usr_1059",
+        "orderDate": {
+            "$date": "2020-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9010",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8059"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b003c"
+        },
+        "orderId": "ord_5060",
+        "userId": "usr_1060",
+        "orderDate": {
+            "$date": "2018-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9008",
+                "qty": 1,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 9.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8060"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b003d"
+        },
+        "orderId": "ord_5061",
+        "userId": "usr_1061",
+        "orderDate": {
+            "$date": "2021-10-10T10:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9019",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8061"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b003e"
+        },
+        "orderId": "ord_5062",
+        "userId": "usr_1062",
+        "orderDate": {
+            "$date": "2024-01-01T01:01:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9016",
+                "qty": 1,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 9.99,
+        "payment": {
+            "method": "APPLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8062"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b003f"
+        },
+        "orderId": "ord_5063",
+        "userId": "usr_1063",
+        "orderDate": {
+            "$date": "2022-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9002",
+                "qty": 1,
+                "unitPrice": 899.0
+            }
+        ],
+        "totalAmount": 899.0,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8063"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": "High value"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0040"
+        },
+        "orderId": "ord_5064",
+        "userId": "usr_1064",
+        "orderDate": {
+            "$date": "2020-07-07T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9004",
+                "qty": 1,
+                "unitPrice": 199.99
+            }
+        ],
+        "totalAmount": 199.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8064"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0041"
+        },
+        "orderId": "ord_5065",
+        "userId": "usr_1065",
+        "orderDate": {
+            "$date": "2025-12-12T12:12:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PENDING",
+            "transactionId": "txn_8065"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0042"
+        },
+        "orderId": "ord_5066",
+        "userId": "usr_1066",
+        "orderDate": {
+            "$date": "2021-12-12T12:12:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8066"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0043"
+        },
+        "orderId": "ord_5067",
+        "userId": "usr_1067",
+        "orderDate": {
+            "$date": "2015-05-05T05:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9005",
+                "qty": 2,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 39.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8067"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0044"
+        },
+        "orderId": "ord_5068",
+        "userId": "usr_1068",
+        "orderDate": {
+            "$date": "2020-10-10T10:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9017",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8068"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0045"
+        },
+        "orderId": "ord_5069",
+        "userId": "usr_1069",
+        "orderDate": {
+            "$date": "2024-09-09T09:09:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9008",
+                "qty": 4,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 39.96,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8069"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0046"
+        },
+        "orderId": "ord_5070",
+        "userId": "usr_1070",
+        "orderDate": {
+            "$date": "2022-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9011",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8070"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0047"
+        },
+        "orderId": "ord_5071",
+        "userId": "usr_1071",
+        "orderDate": {
+            "$date": "2018-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9002",
+                "qty": 1,
+                "unitPrice": 899.0
+            }
+        ],
+        "totalAmount": 899.0,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8071"
+        },
+        "shippingCarrier": "DHL",
+        "notes": "Corporate"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0048"
+        },
+        "orderId": "ord_5072",
+        "userId": "usr_1072",
+        "orderDate": {
+            "$date": "2021-09-01T09:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9018",
+                "qty": 3,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 59.97,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8072"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0049"
+        },
+        "orderId": "ord_5073",
+        "userId": "usr_1073",
+        "orderDate": {
+            "$date": "2025-01-15T15:15:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9003",
+                "qty": 2,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 25.0,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8073"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b004a"
+        },
+        "orderId": "ord_5074",
+        "userId": "usr_1074",
+        "orderDate": {
+            "$date": "2022-08-08T08:08:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9015",
+                "qty": 1,
+                "unitPrice": 499.99
+            }
+        ],
+        "totalAmount": 499.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8074"
+        },
+        "shippingCarrier": "DHL",
+        "notes": "Fragile"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b004b"
+        },
+        "orderId": "ord_5075",
+        "userId": "usr_1075",
+        "orderDate": {
+            "$date": "2020-03-15T15:15:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8075"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b004c"
+        },
+        "orderId": "ord_5076",
+        "userId": "usr_1076",
+        "orderDate": {
+            "$date": "2024-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8076"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b004d"
+        },
+        "orderId": "ord_5077",
+        "userId": "usr_1077",
+        "orderDate": {
+            "$date": "2021-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 2,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 91.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8077"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b004e"
+        },
+        "orderId": "ord_5078",
+        "userId": "usr_1078",
+        "orderDate": {
+            "$date": "2019-04-04T04:04:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8078"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b004f"
+        },
+        "orderId": "ord_5079",
+        "userId": "usr_1079",
+        "orderDate": {
+            "$date": "2020-01-20T20:20:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9018",
+                "qty": 1,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 19.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8079"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0050"
+        },
+        "orderId": "ord_5080",
+        "userId": "usr_1080",
+        "orderDate": {
+            "$date": "2025-08-08T08:08:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9003",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8080"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0051"
+        },
+        "orderId": "ord_5081",
+        "userId": "usr_1081",
+        "orderDate": {
+            "$date": "2022-02-22T22:22:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9017",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8081"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0052"
+        },
+        "orderId": "ord_5082",
+        "userId": "usr_1082",
+        "orderDate": {
+            "$date": "2021-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 3,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 89.97,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8082"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0053"
+        },
+        "orderId": "ord_5083",
+        "userId": "usr_1083",
+        "orderDate": {
+            "$date": "2024-05-05T05:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9011",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8083"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0054"
+        },
+        "orderId": "ord_5084",
+        "userId": "usr_1084",
+        "orderDate": {
+            "$date": "2022-09-01T09:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 2,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 179.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8084"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0055"
+        },
+        "orderId": "ord_5085",
+        "userId": "usr_1085",
+        "orderDate": {
+            "$date": "2020-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8085"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0056"
+        },
+        "orderId": "ord_5086",
+        "userId": "usr_1086",
+        "orderDate": {
+            "$date": "2025-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9008",
+                "qty": 2,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 19.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8086"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0057"
+        },
+        "orderId": "ord_5087",
+        "userId": "usr_1087",
+        "orderDate": {
+            "$date": "2021-01-15T15:15:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9013",
+                "qty": 1,
+                "unitPrice": 199.99
+            }
+        ],
+        "totalAmount": 199.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8087"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0058"
+        },
+        "orderId": "ord_5088",
+        "userId": "usr_1088",
+        "orderDate": {
+            "$date": "2019-10-10T10:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8088"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0059"
+        },
+        "orderId": "ord_5089",
+        "userId": "usr_1089",
+        "orderDate": {
+            "$date": "2020-02-20T20:20:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9015",
+                "qty": 1,
+                "unitPrice": 499.99
+            }
+        ],
+        "totalAmount": 499.99,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8089"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b005a"
+        },
+        "orderId": "ord_5090",
+        "userId": "usr_1090",
+        "orderDate": {
+            "$date": "2025-04-04T04:04:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9016",
+                "qty": 1,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 9.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8090"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b005b"
+        },
+        "orderId": "ord_5091",
+        "userId": "usr_1091",
+        "orderDate": {
+            "$date": "2022-05-05T05:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8091"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b005c"
+        },
+        "orderId": "ord_5092",
+        "userId": "usr_1092",
+        "orderDate": {
+            "$date": "2021-07-07T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9019",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8092"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b005d"
+        },
+        "orderId": "ord_5093",
+        "userId": "usr_1093",
+        "orderDate": {
+            "$date": "2024-07-07T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9003",
+                "qty": 3,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 37.5,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8093"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b005e"
+        },
+        "orderId": "ord_5094",
+        "userId": "usr_1094",
+        "orderDate": {
+            "$date": "2022-10-10T10:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8094"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b005f"
+        },
+        "orderId": "ord_5095",
+        "userId": "usr_1095",
+        "orderDate": {
+            "$date": "2020-09-09T09:09:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8095"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0060"
+        },
+        "orderId": "ord_5096",
+        "userId": "usr_1096",
+        "orderDate": {
+            "$date": "2016-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9015",
+                "qty": 1,
+                "unitPrice": 499.99
+            }
+        ],
+        "totalAmount": 499.99,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8096"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0061"
+        },
+        "orderId": "ord_5097",
+        "userId": "usr_1097",
+        "orderDate": {
+            "$date": "2021-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8097"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0062"
+        },
+        "orderId": "ord_5098",
+        "userId": "usr_1098",
+        "orderDate": {
+            "$date": "2020-04-04T04:04:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9016",
+                "qty": 2,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 19.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8098"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0063"
+        },
+        "orderId": "ord_5099",
+        "userId": "usr_1099",
+        "orderDate": {
+            "$date": "2018-02-02T02:02:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8099"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0064"
+        },
+        "orderId": "ord_5100",
+        "userId": "usr_1100",
+        "orderDate": {
+            "$date": "2022-12-12T12:12:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9017",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8100"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0065"
+        },
+        "orderId": "ord_5101",
+        "userId": "usr_1101",
+        "orderDate": {
+            "$date": "2024-01-05T10:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8101"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0066"
+        },
+        "orderId": "ord_5102",
+        "userId": "usr_1102",
+        "orderDate": {
+            "$date": "2023-02-14T09:30:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9005",
+                "qty": 2,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 39.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8102"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0067"
+        },
+        "orderId": "ord_5103",
+        "userId": "usr_1103",
+        "orderDate": {
+            "$date": "2024-03-22T16:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9002",
+                "qty": 1,
+                "unitPrice": 899.0
+            }
+        ],
+        "totalAmount": 899.0,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8103"
+        },
+        "shippingCarrier": "DHL",
+        "notes": "Corporate billing"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0068"
+        },
+        "orderId": "ord_5104",
+        "userId": "usr_1104",
+        "orderDate": {
+            "$date": "2024-06-01T12:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9019",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8104"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0069"
+        },
+        "orderId": "ord_5105",
+        "userId": "usr_1105",
+        "orderDate": {
+            "$date": "2024-07-20T08:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9010",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8105"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b006a"
+        },
+        "orderId": "ord_5106",
+        "userId": "usr_1106",
+        "orderDate": {
+            "$date": "2024-08-15T14:45:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9004",
+                "qty": 1,
+                "unitPrice": 199.99
+            }
+        ],
+        "totalAmount": 199.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8106"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b006b"
+        },
+        "orderId": "ord_5107",
+        "userId": "usr_1107",
+        "orderDate": {
+            "$date": "2023-09-09T09:09:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9007",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8107"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b006c"
+        },
+        "orderId": "ord_5108",
+        "userId": "usr_1108",
+        "orderDate": {
+            "$date": "2024-11-01T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9008",
+                "qty": 2,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 19.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8108"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b006d"
+        },
+        "orderId": "ord_5109",
+        "userId": "usr_1109",
+        "orderDate": {
+            "$date": "2024-12-12T12:12:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8109"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b006e"
+        },
+        "orderId": "ord_5110",
+        "userId": "usr_1110",
+        "orderDate": {
+            "$date": "2024-02-02T02:02:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9011",
+                "qty": 2,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 25.0,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8110"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b006f"
+        },
+        "orderId": "ord_5111",
+        "userId": "usr_1111",
+        "orderDate": {
+            "$date": "2023-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8111"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0070"
+        },
+        "orderId": "ord_5112",
+        "userId": "usr_1112",
+        "orderDate": {
+            "$date": "2024-04-04T04:04:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9013",
+                "qty": 1,
+                "unitPrice": 199.99
+            }
+        ],
+        "totalAmount": 199.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8112"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0071"
+        },
+        "orderId": "ord_5113",
+        "userId": "usr_1113",
+        "orderDate": {
+            "$date": "2024-05-05T05:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8113"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0072"
+        },
+        "orderId": "ord_5114",
+        "userId": "usr_1114",
+        "orderDate": {
+            "$date": "2024-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8114"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0073"
+        },
+        "orderId": "ord_5115",
+        "userId": "usr_1115",
+        "orderDate": {
+            "$date": "2024-07-07T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9019",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8115"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0074"
+        },
+        "orderId": "ord_5116",
+        "userId": "usr_1116",
+        "orderDate": {
+            "$date": "2024-08-08T08:08:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9003",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8116"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0075"
+        },
+        "orderId": "ord_5117",
+        "userId": "usr_1117",
+        "orderDate": {
+            "$date": "2024-09-09T09:09:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9016",
+                "qty": 1,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 9.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8117"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0076"
+        },
+        "orderId": "ord_5118",
+        "userId": "usr_1118",
+        "orderDate": {
+            "$date": "2024-10-10T10:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9007",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8118"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0077"
+        },
+        "orderId": "ord_5119",
+        "userId": "usr_1119",
+        "orderDate": {
+            "$date": "2024-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8119"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0078"
+        },
+        "orderId": "ord_5120",
+        "userId": "usr_1120",
+        "orderDate": {
+            "$date": "2024-12-12T12:12:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9015",
+                "qty": 1,
+                "unitPrice": 499.99
+            }
+        ],
+        "totalAmount": 499.99,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8120"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0079"
+        },
+        "orderId": "ord_5121",
+        "userId": "usr_1121",
+        "orderDate": {
+            "$date": "2023-01-20T08:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8121"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b007a"
+        },
+        "orderId": "ord_5122",
+        "userId": "usr_1122",
+        "orderDate": {
+            "$date": "2024-02-02T02:02:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 2,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 91.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8122"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b007b"
+        },
+        "orderId": "ord_5123",
+        "userId": "usr_1123",
+        "orderDate": {
+            "$date": "2024-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8123"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b007c"
+        },
+        "orderId": "ord_5124",
+        "userId": "usr_1124",
+        "orderDate": {
+            "$date": "2024-04-04T04:04:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9019",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8124"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b007d"
+        },
+        "orderId": "ord_5125",
+        "userId": "usr_1125",
+        "orderDate": {
+            "$date": "2024-05-05T05:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9003",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8125"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b007e"
+        },
+        "orderId": "ord_5126",
+        "userId": "usr_1126",
+        "orderDate": {
+            "$date": "2024-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9016",
+                "qty": 1,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 9.99,
+        "payment": {
+            "method": "APPLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8126"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b007f"
+        },
+        "orderId": "ord_5127",
+        "userId": "usr_1127",
+        "orderDate": {
+            "$date": "2024-07-07T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9007",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8127"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0080"
+        },
+        "orderId": "ord_5128",
+        "userId": "usr_1128",
+        "orderDate": {
+            "$date": "2024-08-08T08:08:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8128"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0081"
+        },
+        "orderId": "ord_5129",
+        "userId": "usr_1129",
+        "orderDate": {
+            "$date": "2024-09-09T09:09:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9015",
+                "qty": 1,
+                "unitPrice": 499.99
+            }
+        ],
+        "totalAmount": 499.99,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8129"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0082"
+        },
+        "orderId": "ord_5130",
+        "userId": "usr_1130",
+        "orderDate": {
+            "$date": "2024-10-10T10:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8130"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0083"
+        },
+        "orderId": "ord_5131",
+        "userId": "usr_1131",
+        "orderDate": {
+            "$date": "2024-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8131"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0084"
+        },
+        "orderId": "ord_5132",
+        "userId": "usr_1132",
+        "orderDate": {
+            "$date": "2024-12-12T12:12:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8132"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0085"
+        },
+        "orderId": "ord_5133",
+        "userId": "usr_1133",
+        "orderDate": {
+            "$date": "2023-01-01T01:01:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9019",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8133"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0086"
+        },
+        "orderId": "ord_5134",
+        "userId": "usr_1134",
+        "orderDate": {
+            "$date": "2024-02-02T02:02:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9003",
+                "qty": 2,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 25.0,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8134"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0087"
+        },
+        "orderId": "ord_5135",
+        "userId": "usr_1135",
+        "orderDate": {
+            "$date": "2024-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9016",
+                "qty": 3,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 29.97,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8135"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0088"
+        },
+        "orderId": "ord_5136",
+        "userId": "usr_1136",
+        "orderDate": {
+            "$date": "2024-04-04T04:04:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9007",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8136"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0089"
+        },
+        "orderId": "ord_5137",
+        "userId": "usr_1137",
+        "orderDate": {
+            "$date": "2024-05-05T05:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8137"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b008a"
+        },
+        "orderId": "ord_5138",
+        "userId": "usr_1138",
+        "orderDate": {
+            "$date": "2024-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9015",
+                "qty": 1,
+                "unitPrice": 499.99
+            }
+        ],
+        "totalAmount": 499.99,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8138"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b008b"
+        },
+        "orderId": "ord_5139",
+        "userId": "usr_1139",
+        "orderDate": {
+            "$date": "2024-07-07T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8139"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b008c"
+        },
+        "orderId": "ord_5140",
+        "userId": "usr_1140",
+        "orderDate": {
+            "$date": "2024-08-08T08:08:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8140"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b008d"
+        },
+        "orderId": "ord_5141",
+        "userId": "usr_1141",
+        "orderDate": {
+            "$date": "2024-09-09T09:09:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8141"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b008e"
+        },
+        "orderId": "ord_5142",
+        "userId": "usr_1142",
+        "orderDate": {
+            "$date": "2024-10-10T10:10:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9019",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8142"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b008f"
+        },
+        "orderId": "ord_5143",
+        "userId": "usr_1143",
+        "orderDate": {
+            "$date": "2024-11-11T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9003",
+                "qty": 1,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 12.5,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8143"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0090"
+        },
+        "orderId": "ord_5144",
+        "userId": "usr_1144",
+        "orderDate": {
+            "$date": "2024-12-12T12:12:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9016",
+                "qty": 1,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 9.99,
+        "payment": {
+            "method": "APPLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_8144"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0091"
+        },
+        "orderId": "ord_5145",
+        "userId": "usr_1145",
+        "orderDate": {
+            "$date": "2023-01-01T01:01:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9007",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8145"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0092"
+        },
+        "orderId": "ord_5146",
+        "userId": "usr_1146",
+        "orderDate": {
+            "$date": "2023-02-02T02:02:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9009",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8146"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0093"
+        },
+        "orderId": "ord_5147",
+        "userId": "usr_1147",
+        "orderDate": {
+            "$date": "2023-03-03T03:03:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9015",
+                "qty": 1,
+                "unitPrice": 499.99
+            }
+        ],
+        "totalAmount": 499.99,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_8147"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0094"
+        },
+        "orderId": "ord_5148",
+        "userId": "usr_1148",
+        "orderDate": {
+            "$date": "2023-04-04T04:04:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9012",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8148"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0095"
+        },
+        "orderId": "ord_5149",
+        "userId": "usr_1149",
+        "orderDate": {
+            "$date": "2023-05-05T05:05:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9001",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_8149"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b0096"
+        },
+        "orderId": "ord_5150",
+        "userId": "usr_1150",
+        "orderDate": {
+            "$date": "2023-06-06T06:06:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9006",
+                "qty": 1,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 29.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_8150"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b5751"
+        },
+        "orderId": "ord_5751",
+        "userId": "usr_1201",
+        "orderDate": {
+            "$date": "2024-01-15T09:15:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9051",
+                "qty": 1,
+                "unitPrice": 19.99
+            }
+        ],
+        "totalAmount": 19.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_85751"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b5752"
+        },
+        "orderId": "ord_5752",
+        "userId": "usr_1202",
+        "orderDate": {
+            "$date": "2024-02-20T13:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9052",
+                "qty": 2,
+                "unitPrice": 29.99
+            }
+        ],
+        "totalAmount": 59.98,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_85752"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": "Leave with concierge"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b5753"
+        },
+        "orderId": "ord_5753",
+        "userId": "usr_1203",
+        "orderDate": {
+            "$date": "2024-03-05T18:30:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9053",
+                "qty": 1,
+                "unitPrice": 129.99
+            }
+        ],
+        "totalAmount": 129.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_85753"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b5754"
+        },
+        "orderId": "ord_5754",
+        "userId": "usr_1204",
+        "orderDate": {
+            "$date": "2024-04-21T12:45:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9054",
+                "qty": 3,
+                "unitPrice": 9.99
+            }
+        ],
+        "totalAmount": 29.97,
+        "payment": {
+            "method": "APPLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_85754"
+        },
+        "shippingCarrier": "UPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b5755"
+        },
+        "orderId": "ord_5755",
+        "userId": "usr_1205",
+        "orderDate": {
+            "$date": "2024-05-11T09:20:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9055",
+                "qty": 1,
+                "unitPrice": 299.99
+            }
+        ],
+        "totalAmount": 299.99,
+        "payment": {
+            "method": "GOOGLE_PAY",
+            "status": "PAID",
+            "transactionId": "txn_85755"
+        },
+        "shippingCarrier": "Amazon Logistics",
+        "notes": "Deliver between 9am-5pm"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b5756"
+        },
+        "orderId": "ord_5756",
+        "userId": "usr_1206",
+        "orderDate": {
+            "$date": "2024-06-02T14:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9056",
+                "qty": 1,
+                "unitPrice": 45.99
+            }
+        ],
+        "totalAmount": 45.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PAID",
+            "transactionId": "txn_85756"
+        },
+        "shippingCarrier": "USPS",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b5757"
+        },
+        "orderId": "ord_5757",
+        "userId": "usr_1207",
+        "orderDate": {
+            "$date": "2024-07-18T16:30:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9057",
+                "qty": 2,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 25.0,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_85757"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b5758"
+        },
+        "orderId": "ord_5758",
+        "userId": "usr_1208",
+        "orderDate": {
+            "$date": "2024-08-05T07:07:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9058",
+                "qty": 1,
+                "unitPrice": 89.99
+            }
+        ],
+        "totalAmount": 89.99,
+        "payment": {
+            "method": "CREDIT_CARD",
+            "status": "PENDING",
+            "transactionId": "txn_85758"
+        },
+        "shippingCarrier": "DHL",
+        "notes": ""
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b5759"
+        },
+        "orderId": "ord_5759",
+        "userId": "usr_1209",
+        "orderDate": {
+            "$date": "2024-09-12T11:11:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9059",
+                "qty": 1,
+                "unitPrice": 199.99
+            }
+        ],
+        "totalAmount": 199.99,
+        "payment": {
+            "method": "WIRE_TRANSFER",
+            "status": "PAID",
+            "transactionId": "txn_85759"
+        },
+        "shippingCarrier": "UPS",
+        "notes": "Deliver to office"
+    },
+    {
+        "_id": {
+            "$oid": "603f7e2b9b1d8c2b4c8b575a"
+        },
+        "orderId": "ord_5760",
+        "userId": "usr_1210",
+        "orderDate": {
+            "$date": "2024-10-01T10:00:00Z"
+        },
+        "items": [
+            {
+                "sku": "prod_9060",
+                "qty": 2,
+                "unitPrice": 12.5
+            }
+        ],
+        "totalAmount": 25.0,
+        "payment": {
+            "method": "PAYPAL",
+            "status": "PAID",
+            "transactionId": "txn_85760"
+        },
+        "shippingCarrier": "FedEx",
+        "notes": ""
+    }
+]
