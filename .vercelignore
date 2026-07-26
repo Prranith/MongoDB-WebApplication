@@ -1,26 +1,28 @@
 # Ignore desktop-only files from Vercel deployment
-# These have PySide6 Qt dependencies not available on Vercel
 
-# Desktop launcher & app
-launcher.py
-app.py
-MongoSandbox.spec
+# Desktop launcher & app (root-level only - use leading slash)
+/launcher.py
+/app.py
+/MongoSandbox.spec
 
-# Qt-only dependencies
-ui/
-build/
-dist/
+# Qt-only PySide6 UI directory
+/ui/
+
+# Build artifacts
+/build/
+/dist/
 
 # Test files
-tests/
-.pytest_cache/
+/tests/
+/.pytest_cache/
 
-# Python cache
+# Python cache (anywhere)
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
-# Old static web files
-index.html
-image.png
-web/
+# Root-level old static files (leading slash = root only, NOT public/)
+/index.html
+/image.png
+/web/
