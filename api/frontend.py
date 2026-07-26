@@ -1297,12 +1297,12 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px 30px;
+  padding: 20px 24px 15px;
   background: transparent;
 }
 
 .intro-title {
-  font-size: 42px;
+  font-size: 32px;
   font-weight: 800;
   color: #f3f4f6;
   text-align: center;
@@ -1318,30 +1318,30 @@ body {
 }
 
 .intro-subtitle {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 3px;
-  margin-top: 8px;
+  margin-top: 4px;
   text-align: center;
 }
 
 .intro-tagline {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 500;
   color: #94a3b8;
-  margin-top: 12px;
+  margin-top: 6px;
   text-align: center;
   max-width: 520px;
   line-height: 1.5;
 }
 
 .intro-logo {
-  width: 180px;
-  height: 180px;
+  width: 120px;
+  height: 120px;
   object-fit: contain;
-  margin: 25px 0;
+  margin: 12px 0;
   cursor: pointer;
   filter: drop-shadow(0 0 20px rgba(0, 237, 100, 0.15));
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1355,11 +1355,11 @@ body {
 /* Glassmorphism Grid */
 .intro-stats-grid {
   display: flex;
-  gap: 20px;
-  margin: 10px 0 35px 0;
+  gap: 15px;
+  margin: 8px 0 20px 0;
   justify-content: center;
   width: 100%;
-  max-width: 480px;
+  max-width: 440px;
 }
 
 .intro-stat-card {
@@ -1369,7 +1369,7 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 10px 14px;
   text-align: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
@@ -1386,8 +1386,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 8px;
-  height: 24px;
+  margin-bottom: 4px;
+  height: 20px;
 }
 
 .pulse-dot {
@@ -1416,7 +1416,7 @@ body {
 }
 
 .intro-stat-value {
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 800;
   color: #ffffff;
   font-family: 'JetBrains Mono', Consolas, monospace;
@@ -1435,9 +1435,9 @@ body {
 .intro-enter {
   background-color: var(--mongo);
   color: #ffffff;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
-  padding: 14px 40px;
+  padding: 10px 28px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -1459,7 +1459,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px 24px;
+  padding: 10px 24px;
   background: transparent;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
