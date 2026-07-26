@@ -544,13 +544,15 @@ function deleteActiveQueryFile(path) {
 // ═══════════════════════════════════════════════════════════════════
 // DATABASE TREE RENDERER
 // ═══════════════════════════════════════════════════════════════════
+const SVG_COLLECTION_ICON = `<svg viewBox="0 0 16 16" width="13" height="13" style="margin-right:6px;flex-shrink:0" fill="#a7a7a7"><path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3zm2 1v2h8V4H4zm0 3v2h8V7H4zm0 3v2h8v-2H4z"/></svg>`;
+
 function renderDbTree() {
   const container = document.getElementById('coll-list');
   container.innerHTML = S.collections.map(c => `
     <div class="tree-item ${c.name === S.activeCollection ? 'active' : ''}" 
-         onclick="setActiveCollection('${c.name}')">
-      <span class="tree-icon">${COLL_ICONS[c.name] || '📄'}</span>
-      <span style="font-size:11px;color:var(--text3);margin-right:2px">≡</span>
+         onclick="setActiveCollection('${c.name}')"
+         style="display: flex; align-items: center">
+      ${SVG_COLLECTION_ICON}
       <span>${c.name}</span>
       <span class="tree-badge">${c.count}</span>
     </div>
