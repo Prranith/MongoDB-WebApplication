@@ -160,9 +160,6 @@ window.addEventListener('DOMContentLoaded', () => {
   loadSnippets();
   recordLaunch();
 
-  // Polling metrics on welcome screen
-  setInterval(recordLaunch, 3000);
-
   // Setup Global Keyboard Shortcuts
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); }

@@ -1297,12 +1297,12 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px 24px;
+  padding: 40px 24px 30px;
   background: transparent;
 }
 
 .intro-title {
-  font-size: 32px;
+  font-size: 42px;
   font-weight: 800;
   color: #f3f4f6;
   text-align: center;
@@ -1318,48 +1318,48 @@ body {
 }
 
 .intro-subtitle {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 3px;
-  margin-top: 6px;
+  margin-top: 8px;
   text-align: center;
 }
 
 .intro-tagline {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   color: #94a3b8;
-  margin-top: 8px;
+  margin-top: 12px;
   text-align: center;
   max-width: 520px;
   line-height: 1.5;
 }
 
 .intro-logo {
-  width: 115px;
-  height: 115px;
+  width: 180px;
+  height: 180px;
   object-fit: contain;
-  margin: 15px 0;
+  margin: 25px 0;
   cursor: pointer;
-  filter: drop-shadow(0 0 15px rgba(0, 237, 100, 0.15));
+  filter: drop-shadow(0 0 20px rgba(0, 237, 100, 0.15));
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .intro-logo:hover {
   transform: scale(1.08) rotate(5deg);
-  filter: drop-shadow(0 0 25px rgba(0, 237, 100, 0.35));
+  filter: drop-shadow(0 0 30px rgba(0, 237, 100, 0.35));
 }
 
 /* Glassmorphism Grid */
 .intro-stats-grid {
   display: flex;
-  gap: 15px;
-  margin: 10px 0 20px 0;
+  gap: 20px;
+  margin: 10px 0 35px 0;
   justify-content: center;
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
 }
 
 .intro-stat-card {
@@ -1368,15 +1368,15 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-radius: 10px;
-  padding: 10px 14px;
+  border-radius: 12px;
+  padding: 16px 20px;
   text-align: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
 }
 
 .intro-stat-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(0, 237, 100, 0.3);
   box-shadow: 0 8px 30px rgba(0, 237, 100, 0.08);
@@ -1386,13 +1386,13 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 6px;
-  height: 20px;
+  margin-bottom: 8px;
+  height: 24px;
 }
 
 .pulse-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: #00ed64;
   border-radius: 50%;
   display: inline-block;
@@ -1407,7 +1407,7 @@ body {
   }
   70% {
     transform: scale(1);
-    box-shadow: 0 0 0 6px rgba(0, 237, 100, 0);
+    box-shadow: 0 0 0 8px rgba(0, 237, 100, 0);
   }
   100% {
     transform: scale(0.95);
@@ -1416,7 +1416,7 @@ body {
 }
 
 .intro-stat-value {
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 800;
   color: #ffffff;
   font-family: 'JetBrains Mono', Consolas, monospace;
@@ -1424,22 +1424,22 @@ body {
 }
 
 .intro-stat-label {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #64748b;
-  margin-top: 4px;
+  margin-top: 6px;
   font-weight: 600;
 }
 
 .intro-enter {
   background-color: var(--mongo);
   color: #ffffff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
-  padding: 10px 30px;
+  padding: 14px 40px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 8px 24px rgba(0, 104, 74, 0.35);
@@ -2508,9 +2508,6 @@ window.addEventListener('DOMContentLoaded', () => {
   loadCollections();
   loadSnippets();
   recordLaunch();
-
-  // Polling metrics on welcome screen
-  setInterval(recordLaunch, 3000);
 
   // Setup Global Keyboard Shortcuts
   document.addEventListener('keydown', e => {
