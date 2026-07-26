@@ -1255,7 +1255,12 @@ body {
    WELCOME/INTRO SCREEN (white canvas, matching Image 1)
 ═══════════════════════════════════════════════════════════════ */
 #intro-panel {
-  flex: 1;
+  position: fixed;
+  top: var(--title-h);
+  left: 0;
+  right: 0;
+  bottom: 22px; /* leave room for statusbar */
+  z-index: 500;
   display: none;
   flex-direction: column;
   background: #000000;
@@ -1266,6 +1271,16 @@ body {
   display: flex;
 }
 
+#particle-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .intro-wrap {
   flex: 1;
   display: flex;
@@ -1274,6 +1289,8 @@ body {
   justify-content: center;
   padding: 40px 24px 30px;
   background: transparent;
+  position: relative;
+  z-index: 2;
 }
 
 .intro-title {
@@ -1438,6 +1455,8 @@ body {
   background: transparent;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .intro-dev {
