@@ -3400,8 +3400,9 @@ function saveSettings() {
 function applySettings() {
   if (!editor) return;
   
-  // Apply tab width setting
-  const tabVal = parseInt(S.settings.tabWidth) || 8;
+  // Extract number from tabWidth (e.g. "8 spaces" -> 8)
+  const tabMatch = String(S.settings.tabWidth || '8').match(/\\d+/);
+  const tabVal = tabMatch ? parseInt(tabMatch[0]) : 8;
   editor.setOption('tabSize', tabVal);
   editor.setOption('indentUnit', tabVal);
   
@@ -3413,14 +3414,23 @@ function applySettings() {
     document.head.appendChild(styleEl);
   }
   
-  const size = S.settings.fontSize.includes('pt') || S.settings.fontSize.includes('px') 
-    ? S.settings.fontSize 
-    : S.settings.fontSize + 'pt';
-    
+  // Format size safely (e.g. "13 pt" -> "13pt")
+  let sizeVal = String(S.settings.fontSize || '13pt').trim();
+  if (/^\\d+$/.test(sizeVal)) {
+    sizeVal = sizeVal + 'px'; // Default to px if just a number
+  } else {
+    // Replace any spaces inside unit, e.g. "13 pt" -> "13pt"
+    sizeVal = sizeVal.replace(/\\s+/g, '');
+  }
+  
   styleEl.textContent = `
-    .CodeMirror {
-      font-family: ${S.settings.fontFamily}, 'JetBrains Mono', monospace !important;
-      font-size: ${size} !important;
+    .CodeMirror,
+    .CodeMirror pre.CodeMirror-line,
+    .CodeMirror pre.CodeMirror-line-like,
+    .CodeMirror-linenumber,
+    .CodeMirror-lines * {
+      font-family: ${S.settings.fontFamily || 'Consolas'}, 'JetBrains Mono', monospace !important;
+      font-size: ${sizeVal} !important;
     }
   `;
   editor.refresh();
