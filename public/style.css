@@ -1255,12 +1255,7 @@ body {
    WELCOME/INTRO SCREEN (white canvas, matching Image 1)
 ═══════════════════════════════════════════════════════════════ */
 #intro-panel {
-  position: fixed;
-  top: var(--title-h);
-  left: 0;
-  right: 0;
-  bottom: 22px; /* leave room for statusbar */
-  z-index: 500;
+  flex: 1;
   display: none;
   flex-direction: column;
   background: #000000;
@@ -1271,30 +1266,18 @@ body {
   display: flex;
 }
 
-#particle-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
-}
-
 .intro-wrap {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px 30px;
+  padding: 20px 24px;
   background: transparent;
-  position: relative;
-  z-index: 2;
 }
 
 .intro-title {
-  font-size: 42px;
+  font-size: 32px;
   font-weight: 800;
   color: #f3f4f6;
   text-align: center;
@@ -1310,48 +1293,48 @@ body {
 }
 
 .intro-subtitle {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 3px;
-  margin-top: 8px;
+  margin-top: 6px;
   text-align: center;
 }
 
 .intro-tagline {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: #94a3b8;
-  margin-top: 12px;
+  margin-top: 8px;
   text-align: center;
   max-width: 520px;
   line-height: 1.5;
 }
 
 .intro-logo {
-  width: 180px;
-  height: 180px;
+  width: 115px;
+  height: 115px;
   object-fit: contain;
-  margin: 25px 0;
+  margin: 15px 0;
   cursor: pointer;
-  filter: drop-shadow(0 0 20px rgba(0, 237, 100, 0.15));
+  filter: drop-shadow(0 0 15px rgba(0, 237, 100, 0.15));
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .intro-logo:hover {
   transform: scale(1.08) rotate(5deg);
-  filter: drop-shadow(0 0 30px rgba(0, 237, 100, 0.35));
+  filter: drop-shadow(0 0 25px rgba(0, 237, 100, 0.35));
 }
 
 /* Glassmorphism Grid */
 .intro-stats-grid {
   display: flex;
-  gap: 20px;
-  margin: 10px 0 35px 0;
+  gap: 15px;
+  margin: 10px 0 20px 0;
   justify-content: center;
   width: 100%;
-  max-width: 480px;
+  max-width: 440px;
 }
 
 .intro-stat-card {
@@ -1360,15 +1343,15 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-radius: 12px;
-  padding: 16px 20px;
+  border-radius: 10px;
+  padding: 10px 14px;
   text-align: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
 }
 
 .intro-stat-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(0, 237, 100, 0.3);
   box-shadow: 0 8px 30px rgba(0, 237, 100, 0.08);
@@ -1378,13 +1361,13 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 8px;
-  height: 24px;
+  margin-bottom: 6px;
+  height: 20px;
 }
 
 .pulse-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   background: #00ed64;
   border-radius: 50%;
   display: inline-block;
@@ -1399,7 +1382,7 @@ body {
   }
   70% {
     transform: scale(1);
-    box-shadow: 0 0 0 8px rgba(0, 237, 100, 0);
+    box-shadow: 0 0 0 6px rgba(0, 237, 100, 0);
   }
   100% {
     transform: scale(0.95);
@@ -1408,7 +1391,7 @@ body {
 }
 
 .intro-stat-value {
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 800;
   color: #ffffff;
   font-family: 'JetBrains Mono', Consolas, monospace;
@@ -1416,22 +1399,22 @@ body {
 }
 
 .intro-stat-label {
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #64748b;
-  margin-top: 6px;
+  margin-top: 4px;
   font-weight: 600;
 }
 
 .intro-enter {
   background-color: var(--mongo);
   color: #ffffff;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
-  padding: 14px 40px;
+  padding: 10px 30px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 8px 24px rgba(0, 104, 74, 0.35);
@@ -1455,8 +1438,6 @@ body {
   background: transparent;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  position: relative;
-  z-index: 2;
 }
 
 .intro-dev {

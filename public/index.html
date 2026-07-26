@@ -215,6 +215,50 @@
       </div>
     </div>
 
+    <!-- Intro panel (replaces editor when on intro) -->
+    <div id="intro-panel" class="active" style="position: relative; overflow: hidden;">
+      <!-- Canvas for particle background -->
+      <canvas id="particle-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></canvas>
+
+      <div class="intro-wrap" style="position: relative; z-index: 2; background: transparent;">
+        <h1 class="intro-title">Welcome to <span class="gradient-text">MongoDB Practice</span></h1>
+        <h2 class="intro-subtitle">Interactive Workspace</h2>
+        <p class="intro-tagline">A production-grade, highly scalable sandbox environment to learn MongoDB</p>
+        
+        <img class="intro-logo" id="logo-img" src="image.png" alt="MongoDB Logo"
+          onclick="showView('ide')"
+          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><polygon points=\'50,5 90,27 90,73 50,95 10,73 10,27\' fill=\'%2300684a\' stroke=\'%2300ed64\' stroke-width=\'2\'/><path d=\'M50 22 C38 40 37 56 38 66 C42 78 47 86 50 92 C53 86 58 78 62 66 C63 56 62 40 50 22Z\' fill=\'white\'/></svg>'"/>
+        
+        <!-- Glassmorphic Stats Counters -->
+        <div class="intro-stats-grid">
+          <div class="intro-stat-card">
+            <div class="intro-stat-icon-wrapper">
+              <span class="pulse-dot"></span>
+            </div>
+            <div class="intro-stat-value" id="stat-active">—</div>
+            <div class="intro-stat-label">Active Users</div>
+          </div>
+          <div class="intro-stat-card">
+            <div class="intro-stat-icon-wrapper">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--mongo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div class="intro-stat-value" id="stat-visited">—</div>
+            <div class="intro-stat-label">Total Visited</div>
+          </div>
+        </div>
+
+        <button class="intro-enter" onclick="showView('ide')">
+          🚀 Enter Workspace →
+        </button>
+      </div>
+
+      <div class="intro-footer-row" style="position: relative; z-index: 2; background: transparent; border-top: 1px solid var(--border);">
+        <div class="intro-dev">
+          Developed by <a href="https://www.linkedin.com/in/prranith-swargam-a620a6334/" target="_blank">Prranith Swargam</a>
+        </div>
+      </div>
+    </div>
+
     <!-- IDE panel (tab bar + editor + console) -->
     <div id="ide-panel" style="display:none;flex-direction:column;flex:1;overflow:hidden">
 
@@ -384,50 +428,6 @@
           </tbody>
         </table>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ INTRO/WELCOME PANEL (fixed full-screen overlay over shell) ══════ -->
-<div id="intro-panel" class="active">
-  <!-- Canvas for particle background -->
-  <canvas id="particle-canvas"></canvas>
-
-  <div class="intro-wrap">
-    <h1 class="intro-title">Welcome to <span class="gradient-text">MongoDB Practice</span></h1>
-    <h2 class="intro-subtitle">Interactive Workspace</h2>
-    <p class="intro-tagline">A production-grade, highly scalable sandbox environment to learn MongoDB</p>
-
-    <img class="intro-logo" id="logo-img" src="image.png" alt="MongoDB Logo"
-      onclick="showView('ide')"
-      onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><polygon points=\'50,5 90,27 90,73 50,95 10,73 10,27\' fill=\'%2300684a\' stroke=\'%2300ed64\' stroke-width=\'2\'/><path d=\'M50 22 C38 40 37 56 38 66 C42 78 47 86 50 92 C53 86 58 78 62 66 C63 56 62 40 50 22Z\' fill=\'white\'/></svg>'"/>
-
-    <!-- Glassmorphic Stats Counters -->
-    <div class="intro-stats-grid">
-      <div class="intro-stat-card">
-        <div class="intro-stat-icon-wrapper">
-          <span class="pulse-dot"></span>
-        </div>
-        <div class="intro-stat-value" id="stat-active">—</div>
-        <div class="intro-stat-label">Active Users</div>
-      </div>
-      <div class="intro-stat-card">
-        <div class="intro-stat-icon-wrapper">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--mongo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-        </div>
-        <div class="intro-stat-value" id="stat-visited">—</div>
-        <div class="intro-stat-label">Total Visited</div>
-      </div>
-    </div>
-
-    <button class="intro-enter" onclick="showView('ide')">
-      🚀 Enter Workspace →
-    </button>
-  </div>
-
-  <div class="intro-footer-row">
-    <div class="intro-dev">
-      Developed by <a href="https://www.linkedin.com/in/prranith-swargam-a620a6334/" target="_blank">Prranith Swargam</a>
     </div>
   </div>
 </div>
