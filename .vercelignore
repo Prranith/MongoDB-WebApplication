@@ -1,28 +1,11 @@
-# Ignore desktop-only files from Vercel deployment
+# Only exclude Python cache and build artifacts
+# DO NOT exclude anything in api/ or public/
 
-# Desktop launcher & app (root-level only - use leading slash)
-/launcher.py
-/app.py
-/MongoSandbox.spec
-
-# Qt-only PySide6 UI directory
-/ui/
-
-# Build artifacts
-/build/
-/dist/
-
-# Test files
-/tests/
-/.pytest_cache/
-
-# Python cache (anywhere)
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Root-level old static files (leading slash = root only, NOT public/)
-/index.html
-/image.png
-/web/
+.pytest_cache/
+/build/
+/dist/
+/MongoSandbox.spec

@@ -8,7 +8,6 @@ All existing Python backend logic runs unchanged.
 import sys
 import json
 from pathlib import Path
-from functools import wraps
 
 # Add project root so all core/ and utils/ imports work
 ROOT = Path(__file__).parent.parent
@@ -25,10 +24,20 @@ from core.web_executor import execute as web_execute
 from core.snippets import snippet_registry
 from utils.analytics import analytics_tracker
 
-app = Flask(__name__, static_folder=str(ROOT / "public"), static_url_path="/static")
+app = Flask(__name__)
 CORS(app)
 
 PUBLIC_DIR = ROOT / "public"
+
+# Embedded frontend HTML (image.png already baked in as base64 data URI)
+# This allows deployment even if .vercelignore removes public/ files
+try:
+    from api.frontend import INDEX_HTML
+except ImportError:
+    try:
+        from frontend import INDEX_HTML  # when CWD is api/
+    except ImportError:
+        INDEX_HTML = None  # will fall back to file
 
 # ── Utility ──────────────────────────────────────────────────────────────────
 
@@ -41,24 +50,34 @@ def _bson_safe(obj):
 
 @app.route("/")
 def serve_index():
+    # Try embedded HTML first (works even if public/ was removed by .vercelignore)
+    if INDEX_HTML:
+        return INDEX_HTML, 200, {"Content-Type": "text/html; charset=utf-8"}
+    # Fallback: serve from file
     return send_from_directory(str(PUBLIC_DIR), "index.html")
 
 @app.route("/image.png")
 def serve_logo():
-    return send_from_directory(str(PUBLIC_DIR), "image.png")
+    # Image is embedded as base64 in HTML, but serve file if available
+    try:
+        return send_from_directory(str(PUBLIC_DIR), "image.png")
+    except Exception:
+        return "", 404
 
 @app.route("/favicon.ico")
 def serve_favicon():
-    try:
-        return send_from_directory(str(PUBLIC_DIR), "favicon.ico")
-    except Exception:
-        return "", 204
+    return "", 204
 
 @app.route("/<path:path>")
 def serve_static(path):
+    # API routes are handled above; all other paths return the SPA
+    if path.startswith("api/"):
+        return jsonify({"error": "Not found"}), 404
     try:
         return send_from_directory(str(PUBLIC_DIR), path)
     except Exception:
+        if INDEX_HTML:
+            return INDEX_HTML, 200, {"Content-Type": "text/html; charset=utf-8"}
         return send_from_directory(str(PUBLIC_DIR), "index.html")
 
 
