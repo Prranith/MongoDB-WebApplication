@@ -8,12 +8,12 @@ INDEX_HTML = """
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>MongoDB Practice IDE — Interactive Free Online MongoDB Playground</title>
+<meta name="google-site-verification" content="MUmeLM3pVpTFtnd-SE9aITj4aLoI1IgY6tnqlg7aVrA" />
 <meta name="description" content="Practice MongoDB queries online with this free, interactive sandbox. Write find queries, run aggregation pipelines, and visualize schemas in a VS Code-like environment."/>
 <meta name="keywords" content="MongoDB practice, MongoDB playground, MongoDB online, practice MongoDB queries, learn MongoDB, MongoDB sandbox, online MongoDB editor, MongoDB IDE"/>
 <meta name="robots" content="index, follow"/>
 <meta name="author" content="Prranith Swargam"/>
 <link rel="canonical" href="https://practice-mongodb.vercel.app"/>
-<meta name="google-site-verification" content="MUmeLM3pVpTFtnd-SE9aITj4aLoI1IgY6tnqlg7aVrA" />
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website"/>
