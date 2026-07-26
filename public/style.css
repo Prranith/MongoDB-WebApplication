@@ -1658,3 +1658,82 @@ body {
   color: #aaa;
   font-family: 'JetBrains Mono', monospace;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   VS CODE DARK PLUS EDITOR THEME & INTELLISENSE STYLING
+   ═══════════════════════════════════════════════════════════════ */
+.CodeMirror {
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+  line-height: 1.5 !important;
+  font-family: 'Consolas', 'JetBrains Mono', monospace !important;
+}
+
+.CodeMirror-gutters {
+  background: #1e1e1e !important;
+  border-right: 1px solid #2d2d2d !important;
+}
+
+.CodeMirror-linenumber {
+  color: #858585 !important;
+}
+
+.CodeMirror-cursor {
+  border-left: 2px solid #aeafad !important;
+}
+
+.CodeMirror-activeline-background {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.CodeMirror-selected {
+  background: #264f78 !important;
+}
+
+.CodeMirror-focused .CodeMirror-selected {
+  background: #264f78 !important;
+}
+
+/* VS Code Dark+ Syntax Colors */
+.cm-s-default .cm-keyword { color: #c586c0 !important; font-weight: bold; }
+.cm-s-default .cm-atom { color: #569cd6 !important; }
+.cm-s-default .cm-number { color: #b5cea8 !important; }
+.cm-s-default .cm-def { color: #9cdcfe !important; }
+.cm-s-default .cm-variable { color: #9cdcfe !important; }
+.cm-s-default .cm-variable-2 { color: #4ec9b0 !important; }
+.cm-s-default .cm-property { color: #dcdcaa !important; }
+.cm-s-default .cm-operator { color: #d4d4d4 !important; }
+.cm-s-default .cm-comment { color: #6a9955 !important; font-style: italic; }
+.cm-s-default .cm-string { color: #ce9178 !important; }
+.cm-s-default .cm-string-2 { color: #ce9178 !important; }
+.cm-s-default .cm-meta { color: #569cd6 !important; }
+.cm-s-default .cm-qualifier { color: #d7ba7d !important; }
+.cm-s-default .cm-builtin { color: #4ec9b0 !important; }
+.cm-s-default .cm-bracket { color: #ffd700 !important; }
+.cm-s-default .cm-tag { color: #569cd6 !important; }
+
+/* VS Code IntelliSense Hint Box Styling */
+.CodeMirror-hints {
+  background: #252526 !important;
+  border: 1px solid #454545 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+  padding: 4px 0 !important;
+  font-family: 'Consolas', 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  z-index: 1000 !important;
+  max-height: 220px !important;
+}
+
+.CodeMirror-hint {
+  color: #cccccc !important;
+  padding: 5px 10px !important;
+  border-radius: 2px !important;
+  margin: 0 4px !important;
+  white-space: nowrap !important;
+}
+
+li.CodeMirror-hint-active {
+  background-color: #04395e !important;
+  color: #ffffff !important;
+}

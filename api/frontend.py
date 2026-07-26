@@ -1684,6 +1684,85 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   VS CODE DARK PLUS EDITOR THEME & INTELLISENSE STYLING
+   ═══════════════════════════════════════════════════════════════ */
+.CodeMirror {
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+  line-height: 1.5 !important;
+  font-family: 'Consolas', 'JetBrains Mono', monospace !important;
+}
+
+.CodeMirror-gutters {
+  background: #1e1e1e !important;
+  border-right: 1px solid #2d2d2d !important;
+}
+
+.CodeMirror-linenumber {
+  color: #858585 !important;
+}
+
+.CodeMirror-cursor {
+  border-left: 2px solid #aeafad !important;
+}
+
+.CodeMirror-activeline-background {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.CodeMirror-selected {
+  background: #264f78 !important;
+}
+
+.CodeMirror-focused .CodeMirror-selected {
+  background: #264f78 !important;
+}
+
+/* VS Code Dark+ Syntax Colors */
+.cm-s-default .cm-keyword { color: #c586c0 !important; font-weight: bold; }
+.cm-s-default .cm-atom { color: #569cd6 !important; }
+.cm-s-default .cm-number { color: #b5cea8 !important; }
+.cm-s-default .cm-def { color: #9cdcfe !important; }
+.cm-s-default .cm-variable { color: #9cdcfe !important; }
+.cm-s-default .cm-variable-2 { color: #4ec9b0 !important; }
+.cm-s-default .cm-property { color: #dcdcaa !important; }
+.cm-s-default .cm-operator { color: #d4d4d4 !important; }
+.cm-s-default .cm-comment { color: #6a9955 !important; font-style: italic; }
+.cm-s-default .cm-string { color: #ce9178 !important; }
+.cm-s-default .cm-string-2 { color: #ce9178 !important; }
+.cm-s-default .cm-meta { color: #569cd6 !important; }
+.cm-s-default .cm-qualifier { color: #d7ba7d !important; }
+.cm-s-default .cm-builtin { color: #4ec9b0 !important; }
+.cm-s-default .cm-bracket { color: #ffd700 !important; }
+.cm-s-default .cm-tag { color: #569cd6 !important; }
+
+/* VS Code IntelliSense Hint Box Styling */
+.CodeMirror-hints {
+  background: #252526 !important;
+  border: 1px solid #454545 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+  padding: 4px 0 !important;
+  font-family: 'Consolas', 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  z-index: 1000 !important;
+  max-height: 220px !important;
+}
+
+.CodeMirror-hint {
+  color: #cccccc !important;
+  padding: 5px 10px !important;
+  border-radius: 2px !important;
+  margin: 0 4px !important;
+  white-space: nowrap !important;
+}
+
+li.CodeMirror-hint-active {
+  background-color: #04395e !important;
+  color: #ffffff !important;
+}
+
 </style>
 </head>
 <body>
@@ -1875,7 +1954,6 @@ body {
       <button class="tbtn tbtn-secondary" onclick="formatQuery()">Format</button>
       <button class="tbtn tbtn-secondary" onclick="saveQuery()">Save</button>
       <div class="tb-sep"></div>
-      <button class="tbtn tbtn-secondary" onclick="showView('intro')">🏠 Welcome Screen</button>
       <button class="tbtn tbtn-secondary" onclick="openModal('schema-modal')">⛁ Schema ER Details</button>
       <div id="tb-right">
         <button class="tbtn tbtn-secondary" onclick="toggleInspector()">🔍 Inspector Panel</button>
@@ -2236,6 +2314,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // Initialize state from local storage fallback
   loadHistoryFromLocalStorage();
 
+  // Setup CodeMirror IntelliSense Helper
+  setupMongoIntelliSense();
+
   const tabVal = parseInt(S.settings.tabWidth) || 8;
 
   // Setup CodeMirror
@@ -2254,9 +2335,17 @@ window.addEventListener('DOMContentLoaded', () => {
       'Ctrl-/': cm => cm.execCommand('toggleComment'),
       'Alt-F': formatQuery,
       'Ctrl-S': cm => { saveQuery(); },
+      'Ctrl-Space': cm => { cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false }); },
     },
   });
   editor.setSize('100%', '100%');
+
+  // Trigger IntelliSense autocompletion as user types
+  editor.on('inputRead', (cm, change) => {
+    if (change.text[0] === '.' || change.text[0] === '$' || (change.text[0].length === 1 && change.text[0].match(/[a-zA-Z]/))) {
+      cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false });
+    }
+  });
 
   // Track cursor position
   editor.on('cursorActivity', () => {
@@ -3673,6 +3762,78 @@ function applySettings() {
     }
   `;
   editor.refresh();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MONGO INTELLISENSE AUTOCOMPLETION PROVIDER
+// ═══════════════════════════════════════════════════════════════════
+function setupMongoIntelliSense() {
+  if (typeof CodeMirror === 'undefined') return;
+
+  const SUGGESTIONS = [
+    // Collections
+    { text: "db.users.find({})", displayText: "db.users.find({}) — Collection: Customer accounts" },
+    { text: "db.orders.find({})", displayText: "db.orders.find({}) — Collection: System orders" },
+    { text: "db.inventory.find({})", displayText: "db.inventory.find({}) — Collection: Product stock" },
+    { text: "db.shipments.find({})", displayText: "db.shipments.find({}) — Collection: Order delivery status" },
+    { text: "db.elite.find({})", displayText: "db.elite.find({}) — Collection: Premium transactions" },
+    
+    // Methods
+    { text: "find({})", displayText: "find({ filter }) — Query matching documents" },
+    { text: "findOne({})", displayText: "findOne({ filter }) — Return single document" },
+    { text: "aggregate([])", displayText: "aggregate([ pipeline ]) — Multi-stage aggregation" },
+    { text: "countDocuments({})", displayText: "countDocuments({ filter }) — Count documents" },
+    { text: "distinct(\\"\\")", displayText: "distinct(field) — Return distinct field values" },
+    { text: "sort({ _id: -1 })", displayText: "sort({ field: 1/-1 }) — Sort query results" },
+    { text: "limit(10)", displayText: "limit(n) — Limit maximum document count" },
+    { text: "skip(0)", displayText: "skip(n) — Skip n documents" },
+    { text: "insertOne({})", displayText: "insertOne(document) — Insert single document" },
+    { text: "updateOne({}, {})", displayText: "updateOne(filter, update) — Update single document" },
+
+    // Pipeline Stages
+    { text: "$match: { status: \\"PAID\\" }", displayText: "$match — Filter documents by criteria" },
+    { text: "$group: { _id: \\"$field\\", total: { $sum: \\"$amount\\" } }", displayText: "$group — Group & calculate metrics" },
+    { text: "$project: { userId: 1, amount: 1, _id: 0 }", displayText: "$project — Select & format output fields" },
+    { text: "$sort: { amount: -1 }", displayText: "$sort — Sort pipeline documents" },
+    { text: "$limit: 10", displayText: "$limit — Limit pipeline documents" },
+    { text: "$skip: 10", displayText: "$skip — Skip pipeline documents" },
+    { text: "$lookup: { from: \\"users\\", localField: \\"userId\\", foreignField: \\"userId\\", as: \\"user_info\\" }", displayText: "$lookup — Perform collection join" },
+    { text: "$unwind: \\"$items\\"", displayText: "$unwind — Deconstruct array field" },
+    { text: "$addFields: { totalItems: { $size: \\"$items\\" } }", displayText: "$addFields — Add computed fields" },
+    { text: "$facet: { byStatus: [{ $group: { _id: \\"$status\\", count: { $sum: 1 } } }] }", displayText: "$facet — Run multi-bucket aggregations" },
+
+    // Operators
+    { text: "$sum", displayText: "$sum — Calculate sum value" },
+    { text: "$avg", displayText: "$avg — Calculate average value" },
+    { text: "$min", displayText: "$min — Find minimum value" },
+    { text: "$max", displayText: "$max — Find maximum value" },
+    { text: "$gt", displayText: "$gt — Greater than ($gt)" },
+    { text: "$gte", displayText: "$gte — Greater than or equal ($gte)" },
+    { text: "$lt", displayText: "$lt — Less than ($lt)" },
+    { text: "$lte", displayText: "$lte — Less than or equal ($lte)" },
+    { text: "$in", displayText: "$in — Matches any in array ($in)" },
+    { text: "$exists", displayText: "$exists — Check field existence ($exists)" }
+  ];
+
+  CodeMirror.registerHelper("hint", "javascript", function(cm) {
+    const cur = cm.getCursor();
+    const token = cm.getTokenAt(cur);
+    const word = token.string.trim().toLowerCase();
+
+    let list = SUGGESTIONS;
+    if (word && word !== '.' && word !== '$') {
+      list = SUGGESTIONS.filter(s => 
+        s.text.toLowerCase().includes(word) || 
+        s.displayText.toLowerCase().includes(word)
+      );
+    }
+
+    return {
+      list: list.map(s => ({ text: s.text, displayText: s.displayText })),
+      from: CodeMirror.Pos(cur.line, token.start),
+      to: CodeMirror.Pos(cur.line, token.end)
+    };
+  });
 }
 
 </script>

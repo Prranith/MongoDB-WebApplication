@@ -93,6 +93,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // Initialize state from local storage fallback
   loadHistoryFromLocalStorage();
 
+  // Setup CodeMirror IntelliSense Helper
+  setupMongoIntelliSense();
+
   const tabVal = parseInt(S.settings.tabWidth) || 8;
 
   // Setup CodeMirror
@@ -111,9 +114,17 @@ window.addEventListener('DOMContentLoaded', () => {
       'Ctrl-/': cm => cm.execCommand('toggleComment'),
       'Alt-F': formatQuery,
       'Ctrl-S': cm => { saveQuery(); },
+      'Ctrl-Space': cm => { cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false }); },
     },
   });
   editor.setSize('100%', '100%');
+
+  // Trigger IntelliSense autocompletion as user types
+  editor.on('inputRead', (cm, change) => {
+    if (change.text[0] === '.' || change.text[0] === '$' || (change.text[0].length === 1 && change.text[0].match(/[a-zA-Z]/))) {
+      cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false });
+    }
+  });
 
   // Track cursor position
   editor.on('cursorActivity', () => {
@@ -1530,4 +1541,76 @@ function applySettings() {
     }
   `;
   editor.refresh();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MONGO INTELLISENSE AUTOCOMPLETION PROVIDER
+// ═══════════════════════════════════════════════════════════════════
+function setupMongoIntelliSense() {
+  if (typeof CodeMirror === 'undefined') return;
+
+  const SUGGESTIONS = [
+    // Collections
+    { text: "db.users.find({})", displayText: "db.users.find({}) — Collection: Customer accounts" },
+    { text: "db.orders.find({})", displayText: "db.orders.find({}) — Collection: System orders" },
+    { text: "db.inventory.find({})", displayText: "db.inventory.find({}) — Collection: Product stock" },
+    { text: "db.shipments.find({})", displayText: "db.shipments.find({}) — Collection: Order delivery status" },
+    { text: "db.elite.find({})", displayText: "db.elite.find({}) — Collection: Premium transactions" },
+    
+    // Methods
+    { text: "find({})", displayText: "find({ filter }) — Query matching documents" },
+    { text: "findOne({})", displayText: "findOne({ filter }) — Return single document" },
+    { text: "aggregate([])", displayText: "aggregate([ pipeline ]) — Multi-stage aggregation" },
+    { text: "countDocuments({})", displayText: "countDocuments({ filter }) — Count documents" },
+    { text: "distinct(\"\")", displayText: "distinct(field) — Return distinct field values" },
+    { text: "sort({ _id: -1 })", displayText: "sort({ field: 1/-1 }) — Sort query results" },
+    { text: "limit(10)", displayText: "limit(n) — Limit maximum document count" },
+    { text: "skip(0)", displayText: "skip(n) — Skip n documents" },
+    { text: "insertOne({})", displayText: "insertOne(document) — Insert single document" },
+    { text: "updateOne({}, {})", displayText: "updateOne(filter, update) — Update single document" },
+
+    // Pipeline Stages
+    { text: "$match: { status: \"PAID\" }", displayText: "$match — Filter documents by criteria" },
+    { text: "$group: { _id: \"$field\", total: { $sum: \"$amount\" } }", displayText: "$group — Group & calculate metrics" },
+    { text: "$project: { userId: 1, amount: 1, _id: 0 }", displayText: "$project — Select & format output fields" },
+    { text: "$sort: { amount: -1 }", displayText: "$sort — Sort pipeline documents" },
+    { text: "$limit: 10", displayText: "$limit — Limit pipeline documents" },
+    { text: "$skip: 10", displayText: "$skip — Skip pipeline documents" },
+    { text: "$lookup: { from: \"users\", localField: \"userId\", foreignField: \"userId\", as: \"user_info\" }", displayText: "$lookup — Perform collection join" },
+    { text: "$unwind: \"$items\"", displayText: "$unwind — Deconstruct array field" },
+    { text: "$addFields: { totalItems: { $size: \"$items\" } }", displayText: "$addFields — Add computed fields" },
+    { text: "$facet: { byStatus: [{ $group: { _id: \"$status\", count: { $sum: 1 } } }] }", displayText: "$facet — Run multi-bucket aggregations" },
+
+    // Operators
+    { text: "$sum", displayText: "$sum — Calculate sum value" },
+    { text: "$avg", displayText: "$avg — Calculate average value" },
+    { text: "$min", displayText: "$min — Find minimum value" },
+    { text: "$max", displayText: "$max — Find maximum value" },
+    { text: "$gt", displayText: "$gt — Greater than ($gt)" },
+    { text: "$gte", displayText: "$gte — Greater than or equal ($gte)" },
+    { text: "$lt", displayText: "$lt — Less than ($lt)" },
+    { text: "$lte", displayText: "$lte — Less than or equal ($lte)" },
+    { text: "$in", displayText: "$in — Matches any in array ($in)" },
+    { text: "$exists", displayText: "$exists — Check field existence ($exists)" }
+  ];
+
+  CodeMirror.registerHelper("hint", "javascript", function(cm) {
+    const cur = cm.getCursor();
+    const token = cm.getTokenAt(cur);
+    const word = token.string.trim().toLowerCase();
+
+    let list = SUGGESTIONS;
+    if (word && word !== '.' && word !== '$') {
+      list = SUGGESTIONS.filter(s => 
+        s.text.toLowerCase().includes(word) || 
+        s.displayText.toLowerCase().includes(word)
+      );
+    }
+
+    return {
+      list: list.map(s => ({ text: s.text, displayText: s.displayText })),
+      from: CodeMirror.Pos(cur.line, token.start),
+      to: CodeMirror.Pos(cur.line, token.end)
+    };
+  });
 }
