@@ -1174,13 +1174,16 @@ function renderHistoryPanel() {
   
   if (!S.history.length) {
     container.innerHTML = `
-      <div style="padding:12px;color:var(--text3);font-size:12px">No recent queries.</div>
+      <div style="padding:12px;color:var(--text3);font-size:12px">No recent queries in browser cache.</div>
     `;
     return;
   }
   
   container.innerHTML = `
-    <div style="font-size:10px;color:var(--text3);padding:6px 12px;font-weight:bold;letter-spacing:.3px">RECENT RUNS</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px">
+      <span style="font-size:10px;color:var(--text3);font-weight:bold;letter-spacing:.3px">RECENT RUNS (${S.history.length})</span>
+      <button class="phbtn" title="Clear History" onclick="clearQueryHistory(event)" style="font-size:11px;padding:2px 6px">🗑️ Clear</button>
+    </div>
     <div class="history-list">
       ${S.history.map(item => {
         const star = item.favorite ? '★' : '☆';
@@ -1203,6 +1206,16 @@ function renderHistoryPanel() {
       }).join('')}
     </div>
   `;
+}
+
+function clearQueryHistory(event) {
+  if (event) event.stopPropagation();
+  if (confirm('Clear all query history from your browser cache?')) {
+    S.history = [];
+    localStorage.removeItem('mongosandbox_history');
+    renderHistoryPanel();
+    logOutput('[info] Query history cleared from browser cache.');
+  }
 }
 
 function loadHistoryEntry(id) {
