@@ -25,8 +25,10 @@ from core.web_executor import execute as web_execute
 from core.snippets import snippet_registry
 from utils.analytics import analytics_tracker
 
-app = Flask(__name__, static_folder=str(ROOT / "public"), static_url_path="")
+app = Flask(__name__, static_folder=str(ROOT / "public"), static_url_path="/static")
 CORS(app)
+
+PUBLIC_DIR = ROOT / "public"
 
 # ── Utility ──────────────────────────────────────────────────────────────────
 
@@ -39,15 +41,26 @@ def _bson_safe(obj):
 
 @app.route("/")
 def serve_index():
-    return send_from_directory(str(ROOT / "public"), "index.html")
+    return send_from_directory(str(PUBLIC_DIR), "index.html")
 
+@app.route("/image.png")
+def serve_logo():
+    return send_from_directory(str(PUBLIC_DIR), "image.png")
+
+@app.route("/favicon.ico")
+def serve_favicon():
+    try:
+        return send_from_directory(str(PUBLIC_DIR), "favicon.ico")
+    except Exception:
+        return "", 204
 
 @app.route("/<path:path>")
 def serve_static(path):
     try:
-        return send_from_directory(str(ROOT / "public"), path)
+        return send_from_directory(str(PUBLIC_DIR), path)
     except Exception:
-        return send_from_directory(str(ROOT / "public"), "index.html")
+        return send_from_directory(str(PUBLIC_DIR), "index.html")
+
 
 
 # ── API: Collections ──────────────────────────────────────────────────────────

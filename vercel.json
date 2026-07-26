@@ -5,13 +5,8 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "runtime": "python3.12",
         "maxLambdaSize": "50mb"
       }
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -20,12 +15,9 @@
       "dest": "api/index.py"
     },
     {
-      "src": "/image.png",
-      "dest": "public/image.png"
-    },
-    {
       "src": "/(.*)",
-      "dest": "public/index.html"
+      "dest": "api/index.py"
     }
   ]
 }
+
