@@ -28,14 +28,14 @@ INDEX_HTML = """
 */
 
 :root {
-  --bg:         #1e1e1e;
-  --bg2:        #252526;
-  --bg3:        #2d2d2d;
-  --bg4:        #3c3c3c;
-  --bg5:        #37373d;
-  --actbar:     #333333;
-  --border:     #3c3c3c;
-  --border2:    #474747;
+  --bg:         #0a0a0a;
+  --bg2:        #141414;
+  --bg3:        #1f1f1f;
+  --bg4:        #2b2b2b;
+  --bg5:        #363636;
+  --actbar:     #050505;
+  --border:     #222222;
+  --border2:    #333333;
   --text:       #cccccc;
   --text2:      #9d9d9d;
   --text3:      #858585;
@@ -52,7 +52,7 @@ INDEX_HTML = """
   --purple:     #c586c0;
   --red:        #f48771;
   --cyan:       #9cdcfe;
-  --statusbar:  #007acc;
+  --statusbar:  #000000;
   --sidebar-w:  240px;
   --act-w:      48px;
   --insp-w:     220px;
@@ -108,10 +108,10 @@ a {
 ═══════════════════════════════════════════════════════════════ */
 #titlebar {
   height: var(--title-h);
-  background: #323233;
+  background: var(--bg2);
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #252526;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   user-select: none;
   position: relative;
@@ -150,8 +150,8 @@ a {
   position: absolute;
   top: 100%;
   left: 0;
-  background: #252526;
-  border: 1px solid #454545;
+  background: var(--bg2);
+  border: 1px solid var(--border);
   min-width: 170px;
   z-index: 600;
   box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.5);
@@ -174,7 +174,7 @@ a {
 
 .wmenu-item:hover {
   background: var(--hl);
-  color: #ffffff;
+  color: #fff;
 }
 
 .wmenu-sep {
@@ -1957,7 +1957,6 @@ li.CodeMirror-hint-active {
       <div class="tb-sep"></div>
       <button class="tbtn tbtn-secondary" onclick="openModal('schema-modal')">⛁ Schema ER Details</button>
       <div id="tb-right" style="display: flex; align-items: center; gap: 8px;">
-        <div id="db-badge">practice_db</div>
         <button class="tbtn tbtn-secondary" onclick="toggleInspector()" style="display: flex; align-items: center; gap: 6px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
           Inspector Panel
