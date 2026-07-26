@@ -1771,7 +1771,7 @@ body {
     </button>
     <div class="act-spacer"></div>
     <!-- Bottom: Settings gear -->
-    <button class="act-btn" data-tip="Settings" onclick="openPalette()">
+    <button class="act-btn" data-tip="Settings" onclick="openModal('settings-modal')">
       <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
     </button>
   </div>
@@ -2047,6 +2047,51 @@ body {
   </div>
 </div>
 
+<!-- ══ SETTINGS MODAL ════════════════════════════════════════════════ -->
+<div class="modal-bg" id="settings-modal">
+  <div class="modal-win" style="width: 580px; max-height: 500px;">
+    <div class="modal-titlebar">
+      <span class="modal-title">Settings — MongoSandbox</span>
+      <button class="modal-close-btn" onclick="closeModal('settings-modal')">×</button>
+    </div>
+    <div class="modal-body" style="padding: 24px; background: #1e1e1e">
+      <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 24px; color: #fff; display: flex; align-items: center; gap: 8px">
+        <span style="font-size: 18px">⚙</span> Settings
+      </h3>
+      
+      <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 16px;">
+        <label style="width: 140px; color: #ccc; font-size: 13px;">Editor Font Family:</label>
+        <input id="set-font-family" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none; font-family: Consolas, monospace" value="Consolas"/>
+      </div>
+      
+      <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 16px;">
+        <label style="width: 140px; color: #ccc; font-size: 13px;">Editor Font Size:</label>
+        <input id="set-font-size" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none" value="13 pt"/>
+      </div>
+      
+      <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 16px;">
+        <label style="width: 140px; color: #ccc; font-size: 13px;">Tab Width:</label>
+        <input id="set-tab-width" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none" value="8 spaces"/>
+      </div>
+      
+      <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 16px;">
+        <label style="width: 140px; color: #ccc; font-size: 13px;">Max Results:</label>
+        <input type="number" id="set-max-results" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none" value="10000"/>
+      </div>
+      
+      <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 24px;">
+        <label style="width: 140px; color: #ccc; font-size: 13px;">Query Timeout:</label>
+        <input id="set-timeout" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none" value="30 s"/>
+      </div>
+      
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px">
+        <button onclick="saveSettings()" style="background: #007acc; color: white; border: none; padding: 6px 18px; border-radius: 4px; font-weight: bold; cursor: pointer;">Save</button>
+        <button onclick="closeModal('settings-modal')" style="background: #3c3c3c; color: #ccc; border: none; padding: 6px 18px; border-radius: 4px; cursor: pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ COMMAND PALETTE ════════════════════════════════════════════════ -->
 <div id="palette">
   <div id="palette-box">
@@ -2137,6 +2182,7 @@ const S = {
   filesOpen: true,
   outlineOpen: false,
   timelineOpen: false,
+  settings: {},
 };
 
 let editor;
@@ -2145,8 +2191,13 @@ let editor;
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  // Initialize settings
+  loadSettingsFromLocalStorage();
+
   // Initialize state from local storage fallback
   loadHistoryFromLocalStorage();
+
+  const tabVal = parseInt(S.settings.tabWidth) || 8;
 
   // Setup CodeMirror
   editor = CodeMirror.fromTextArea(document.getElementById('raw-editor'), {
@@ -2155,8 +2206,8 @@ window.addEventListener('DOMContentLoaded', () => {
     lineNumbers: true,
     matchBrackets: true,
     autoCloseBrackets: true,
-    indentUnit: 2,
-    tabSize: 2,
+    indentUnit: tabVal,
+    tabSize: tabVal,
     styleActiveLine: true,
     extraKeys: {
       'Ctrl-Enter': runQuery,
@@ -2186,6 +2237,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Apply visual theme override
   applyEditorTheme();
+  applySettings();
   initResizer();
 
   // Load backend metrics & explorer data
@@ -2731,9 +2783,10 @@ async function runQuery() {
   runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Stop`;
 
   try {
+    const limitVal = S.settings ? S.settings.maxResults : 10000;
     const d = await fetchAPI('/api/query', {
       method: 'POST',
-      body: JSON.stringify({ query: q, limit: 100 })
+      body: JSON.stringify({ query: q, limit: limitVal })
     });
     
     S.lastData = d.data;
@@ -3157,6 +3210,8 @@ function openModal(id) {
   document.getElementById(id).classList.add('open');
   if (id === 'schema-modal') {
     updateSchemaModal(S.activeCollection);
+  } else if (id === 'settings-modal') {
+    loadSettingsFromLocalStorage();
   }
 }
 
@@ -3305,6 +3360,70 @@ function esc(s) {
 
 function escId(s) {
   return String(s).replace(/[^A-Za-z0-9]/g, '_');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SETTINGS OPERATIONS
+// ═══════════════════════════════════════════════════════════════════
+function loadSettingsFromLocalStorage() {
+  const defaults = {
+    fontFamily: 'Consolas',
+    fontSize: '13 pt',
+    tabWidth: '8 spaces',
+    maxResults: 10000,
+    timeout: '30 s'
+  };
+  const saved = JSON.parse(localStorage.getItem('mongosandbox_settings') || '{}');
+  S.settings = { ...defaults, ...saved };
+  
+  // Populate modal inputs
+  document.getElementById('set-font-family').value = S.settings.fontFamily;
+  document.getElementById('set-font-size').value = S.settings.fontSize;
+  document.getElementById('set-tab-width').value = S.settings.tabWidth;
+  document.getElementById('set-max-results').value = S.settings.maxResults;
+  document.getElementById('set-timeout').value = S.settings.timeout;
+}
+
+function saveSettings() {
+  S.settings.fontFamily = document.getElementById('set-font-family').value;
+  S.settings.fontSize = document.getElementById('set-font-size').value;
+  S.settings.tabWidth = document.getElementById('set-tab-width').value;
+  S.settings.maxResults = parseInt(document.getElementById('set-max-results').value) || 10000;
+  S.settings.timeout = document.getElementById('set-timeout').value;
+  
+  localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings));
+  applySettings();
+  closeModal('settings-modal');
+  logOutput('[info] Editor and execution settings saved.');
+}
+
+function applySettings() {
+  if (!editor) return;
+  
+  // Apply tab width setting
+  const tabVal = parseInt(S.settings.tabWidth) || 8;
+  editor.setOption('tabSize', tabVal);
+  editor.setOption('indentUnit', tabVal);
+  
+  // Apply styling dynamically (fontFamily, fontSize)
+  let styleEl = document.getElementById('cm-dyn-settings-style');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'cm-dyn-settings-style';
+    document.head.appendChild(styleEl);
+  }
+  
+  const size = S.settings.fontSize.includes('pt') || S.settings.fontSize.includes('px') 
+    ? S.settings.fontSize 
+    : S.settings.fontSize + 'pt';
+    
+  styleEl.textContent = `
+    .CodeMirror {
+      font-family: ${S.settings.fontFamily}, 'JetBrains Mono', monospace !important;
+      font-size: ${size} !important;
+    }
+  `;
+  editor.refresh();
 }
 
 </script>

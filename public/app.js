@@ -78,6 +78,7 @@ const S = {
   filesOpen: true,
   outlineOpen: false,
   timelineOpen: false,
+  settings: {},
 };
 
 let editor;
@@ -86,8 +87,13 @@ let editor;
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  // Initialize settings
+  loadSettingsFromLocalStorage();
+
   // Initialize state from local storage fallback
   loadHistoryFromLocalStorage();
+
+  const tabVal = parseInt(S.settings.tabWidth) || 8;
 
   // Setup CodeMirror
   editor = CodeMirror.fromTextArea(document.getElementById('raw-editor'), {
@@ -96,8 +102,8 @@ window.addEventListener('DOMContentLoaded', () => {
     lineNumbers: true,
     matchBrackets: true,
     autoCloseBrackets: true,
-    indentUnit: 2,
-    tabSize: 2,
+    indentUnit: tabVal,
+    tabSize: tabVal,
     styleActiveLine: true,
     extraKeys: {
       'Ctrl-Enter': runQuery,
@@ -127,6 +133,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Apply visual theme override
   applyEditorTheme();
+  applySettings();
   initResizer();
 
   // Load backend metrics & explorer data
@@ -672,9 +679,10 @@ async function runQuery() {
   runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Stop`;
 
   try {
+    const limitVal = S.settings ? S.settings.maxResults : 10000;
     const d = await fetchAPI('/api/query', {
       method: 'POST',
-      body: JSON.stringify({ query: q, limit: 100 })
+      body: JSON.stringify({ query: q, limit: limitVal })
     });
     
     S.lastData = d.data;
@@ -1098,6 +1106,8 @@ function openModal(id) {
   document.getElementById(id).classList.add('open');
   if (id === 'schema-modal') {
     updateSchemaModal(S.activeCollection);
+  } else if (id === 'settings-modal') {
+    loadSettingsFromLocalStorage();
   }
 }
 
@@ -1246,4 +1256,68 @@ function esc(s) {
 
 function escId(s) {
   return String(s).replace(/[^A-Za-z0-9]/g, '_');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SETTINGS OPERATIONS
+// ═══════════════════════════════════════════════════════════════════
+function loadSettingsFromLocalStorage() {
+  const defaults = {
+    fontFamily: 'Consolas',
+    fontSize: '13 pt',
+    tabWidth: '8 spaces',
+    maxResults: 10000,
+    timeout: '30 s'
+  };
+  const saved = JSON.parse(localStorage.getItem('mongosandbox_settings') || '{}');
+  S.settings = { ...defaults, ...saved };
+  
+  // Populate modal inputs
+  document.getElementById('set-font-family').value = S.settings.fontFamily;
+  document.getElementById('set-font-size').value = S.settings.fontSize;
+  document.getElementById('set-tab-width').value = S.settings.tabWidth;
+  document.getElementById('set-max-results').value = S.settings.maxResults;
+  document.getElementById('set-timeout').value = S.settings.timeout;
+}
+
+function saveSettings() {
+  S.settings.fontFamily = document.getElementById('set-font-family').value;
+  S.settings.fontSize = document.getElementById('set-font-size').value;
+  S.settings.tabWidth = document.getElementById('set-tab-width').value;
+  S.settings.maxResults = parseInt(document.getElementById('set-max-results').value) || 10000;
+  S.settings.timeout = document.getElementById('set-timeout').value;
+  
+  localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings));
+  applySettings();
+  closeModal('settings-modal');
+  logOutput('[info] Editor and execution settings saved.');
+}
+
+function applySettings() {
+  if (!editor) return;
+  
+  // Apply tab width setting
+  const tabVal = parseInt(S.settings.tabWidth) || 8;
+  editor.setOption('tabSize', tabVal);
+  editor.setOption('indentUnit', tabVal);
+  
+  // Apply styling dynamically (fontFamily, fontSize)
+  let styleEl = document.getElementById('cm-dyn-settings-style');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'cm-dyn-settings-style';
+    document.head.appendChild(styleEl);
+  }
+  
+  const size = S.settings.fontSize.includes('pt') || S.settings.fontSize.includes('px') 
+    ? S.settings.fontSize 
+    : S.settings.fontSize + 'pt';
+    
+  styleEl.textContent = `
+    .CodeMirror {
+      font-family: ${S.settings.fontFamily}, 'JetBrains Mono', monospace !important;
+      font-size: ${size} !important;
+    }
+  `;
+  editor.refresh();
 }
