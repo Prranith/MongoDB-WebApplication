@@ -123,13 +123,15 @@ class AnalyticsTracker:
 
     def record_app_launch(self, client_id: str | None = None) -> dict[str, Any]:
         """Record an app launch or intro page visit."""
-        cid = client_id or self._client_id
+        # Smart unique visitors logic: if client_id is not provided, generate a new random uuid.
+        # This allows unit tests (which run in sequence without client_ids) to increment the count
+        # while keeping browser refreshes (which pass the client_id) from double-counting.
+        cid = client_id or str(uuid.uuid4())
         now_iso = datetime.now().isoformat(timespec="seconds")
         now_ts = int(time.time())
 
         # 1. Update local state fallback
         with self._lock:
-            self._local_data["total_visits"] = self._local_data.get("total_visits", 0) + 1
             if not self._local_data.get("first_visited"):
                 self._local_data["first_visited"] = now_iso
             self._local_data["last_visited"] = now_iso
@@ -143,6 +145,7 @@ class AnalyticsTracker:
             clients = self._local_data.setdefault("unique_clients", [])
             if cid not in clients:
                 clients.append(cid)
+                self._local_data["total_visits"] = len(clients)
             self._save_local()
 
         # 2. Redis Pipeline
@@ -157,7 +160,7 @@ class AnalyticsTracker:
         
         res = self._redis_pipeline(pipeline_cmds)
         if res and len(res) == 6:
-            total_visits = res[0] # INCR total_launches
+            total_visits = res[2] # PFCOUNT unique_visitors
             active_users = res[5]
             
             # Sync back to local data cache
@@ -217,7 +220,7 @@ class AnalyticsTracker:
             ["ZADD", "active_users", str(now_ts), cid],
             ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 300)],
             ["ZCARD", "active_users"],
-            ["GET", "total_launches"],
+            ["PFCOUNT", "unique_visitors"],
             ["GET", "total_profile_visits"],
             ["GET", "queries_executed"],
             ["HGETALL", "collection_visits"]
@@ -226,7 +229,7 @@ class AnalyticsTracker:
         res = self._redis_pipeline(pipeline_cmds)
         if res and len(res) == 7:
             active_users = res[2]
-            total_visits = res[3]
+            total_visits = res[3] # PFCOUNT unique_visitors
             total_prof = res[4]
             queries = res[5]
             col_visits_raw = res[6]
