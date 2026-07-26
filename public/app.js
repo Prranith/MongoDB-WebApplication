@@ -160,6 +160,10 @@ window.addEventListener('DOMContentLoaded', () => {
   loadSnippets();
   recordLaunch();
 
+  if (S.view === 'intro') {
+    stopIntroAnimation = initIntroCanvas();
+  }
+
   // Polling metrics on welcome screen
   setInterval(recordLaunch, 3000);
 
@@ -216,9 +220,103 @@ async function fetchAPI(url, opts = {}) {
   return r.json();
 }
 
+let stopIntroAnimation = null;
+
+function initIntroCanvas() {
+  const canvas = document.getElementById('intro-canvas');
+  if (!canvas) return null;
+  const ctx = canvas.getContext('2d');
+  let animationFrameId;
+
+  let width = canvas.width = canvas.offsetWidth;
+  let height = canvas.height = canvas.offsetHeight;
+
+  const particles = [];
+  const particleCount = 45;
+  const maxDistance = 120;
+
+  class Particle {
+    constructor() {
+      this.x = Math.random() * width;
+      this.y = Math.random() * height;
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = (Math.random() - 0.5) * 0.4;
+      this.radius = Math.random() * 2 + 1;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.x < 0 || this.x > width) this.vx *= -1;
+      if (this.y < 0 || this.y > height) this.vy *= -1;
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 237, 100, 0.4)';
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < particleCount; i++) {
+    particles.push(new Particle());
+  }
+
+  function resize() {
+    if (!canvas) return;
+    width = canvas.width = canvas.offsetWidth;
+    height = canvas.height = canvas.offsetHeight;
+  }
+  window.addEventListener('resize', resize);
+
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // Draw connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < maxDistance) {
+          const alpha = (1 - dist / maxDistance) * 0.15;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(0, 237, 100, ${alpha})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw and update particles
+    particles.forEach(p => {
+      p.update();
+      p.draw();
+    });
+
+    animationFrameId = requestAnimationFrame(animate);
+  }
+
+  animate();
+  
+  return () => {
+    cancelAnimationFrame(animationFrameId);
+    window.removeEventListener('resize', resize);
+  };
+}
+
 async function recordLaunch() {
   try {
-    const d = await fetchAPI('/api/analytics/launch', { method: 'POST' });
+    let sessionId = sessionStorage.getItem('mongosandbox_session_id');
+    if (!sessionId) {
+      sessionId = 'sess_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      sessionStorage.setItem('mongosandbox_session_id', sessionId);
+    }
+    const d = await fetchAPI('/api/analytics/visit', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: sessionId })
+    });
     document.getElementById('stat-active').textContent = d.active_users ?? '—';
     document.getElementById('stat-visited').textContent = d.total_visits ?? '—';
   } catch(e) {}
@@ -254,12 +352,19 @@ function showView(name) {
     ide.style.display = 'none';
     intro.classList.add('active');
     
+    if (stopIntroAnimation) stopIntroAnimation();
+    stopIntroAnimation = initIntroCanvas();
+    
     // Set welcome icon active, others inactive
     document.getElementById('act-welcome')?.classList.add('active');
     ['files', 'db', 'history', 'snippets', 'search'].forEach(p => {
       document.getElementById(`act-${p}`)?.classList.remove('active');
     });
   } else {
+    if (stopIntroAnimation) {
+      stopIntroAnimation();
+      stopIntroAnimation = null;
+    }
     intro.classList.remove('active');
     ide.style.display = 'flex';
     

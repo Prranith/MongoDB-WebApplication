@@ -348,16 +348,32 @@ def api_rename_file():
 
 @app.route("/api/analytics", methods=["GET"])
 def api_analytics():
-    """Return live analytics metrics."""
-    stats = analytics_tracker.get_stats()
-    return jsonify(stats)
+    """Return live analytics metrics (reads from Redis, no write)."""
+    from utils.analytics import get_stats
+    return jsonify(get_stats())
 
 
+@app.route("/api/analytics/visit", methods=["POST"])
+def api_analytics_visit():
+    """
+    Record a page visit for a given session_id.
+    Body: { "session_id": "<uuid>" }
+    Returns updated stats.
+    """
+    from utils.analytics import record_visit
+    body = request.get_json(force=True, silent=True) or {}
+    session_id = body.get("session_id", "unknown")
+    return jsonify(record_visit(session_id))
+
+
+# Keep old endpoint for backward compat
 @app.route("/api/analytics/launch", methods=["POST"])
 def api_analytics_launch():
-    """Record an app launch / page visit."""
-    result = analytics_tracker.record_app_launch()
-    return jsonify(result)
+    """Legacy launch recorder."""
+    from utils.analytics import record_visit
+    body = request.get_json(force=True, silent=True) or {}
+    session_id = body.get("session_id", "unknown")
+    return jsonify(record_visit(session_id))
 
 
 # ── Vercel handler ────────────────────────────────────────────────────────────
