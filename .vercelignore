@@ -1,0 +1,15 @@
+# Ignore Python desktop application files for Vercel
+app.py
+launcher.py
+MongoSandbox.spec
+requirements.txt
+core/
+ui/
+utils/
+tests/
+assets/
+databases/
+queries/
+workspace/
+__pycache__/
+.pytest_cache/
