@@ -779,6 +779,11 @@ body {
   border-radius: 50%;
   background: var(--orange);
   flex-shrink: 0;
+  display: none;
+}
+
+.tab.dirty .tab-dot {
+  display: inline-block !important;
 }
 
 .tab-close {

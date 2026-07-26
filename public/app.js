@@ -110,7 +110,7 @@ window.addEventListener('DOMContentLoaded', () => {
       'Cmd-Enter': runQuery,
       'Ctrl-/': cm => cm.execCommand('toggleComment'),
       'Alt-F': formatQuery,
-      'Ctrl-S': saveQuery,
+      'Ctrl-S': cm => { saveQuery(); },
     },
   });
   editor.setSize('100%', '100%');
@@ -125,8 +125,14 @@ window.addEventListener('DOMContentLoaded', () => {
   editor.on('change', () => {
     if (S.activeFile) {
       const file = S.files.find(f => f.path === S.activeFile);
-      if (file && file.content !== editor.getValue()) {
-        document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.add('dirty');
+      if (file) {
+        const val = editor.getValue().replace(/\r\n/g, '\n');
+        const fileContent = file.content.replace(/\r\n/g, '\n');
+        if (fileContent !== val) {
+          document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.add('dirty');
+        } else {
+          document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.remove('dirty');
+        }
       }
     }
   });
@@ -367,7 +373,7 @@ function createTabElement(file) {
   tab.className = 'tab';
   tab.id = `tab-${escId(file.path)}`;
   tab.innerHTML = `
-    <span class="tab-dot" style="display:none"></span>
+    <span class="tab-dot"></span>
     <span>${esc(file.name)}</span>
     <button class="tab-close" onclick="closeTab('${file.path}', event)">×</button>
   `;
@@ -559,35 +565,119 @@ function handleFileContextMenu(event, path) {
   event.preventDefault();
   event.stopPropagation();
   
+  // Remove any existing context menus
+  removeCustomContextMenu();
+  
+  const menu = document.createElement('div');
+  menu.id = 'custom-file-context-menu';
+  menu.style.position = 'fixed';
+  menu.style.top = event.clientY + 'px';
+  menu.style.left = event.clientX + 'px';
+  menu.style.background = '#252526';
+  menu.style.border = '1px solid #454545';
+  menu.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5)';
+  menu.style.borderRadius = '3px';
+  menu.style.padding = '4px 0';
+  menu.style.zIndex = '1000';
+  menu.style.minWidth = '120px';
+  
+  menu.innerHTML = `
+    <div class="ctx-item" style="padding: 6px 12px; cursor: pointer; color: #ccc; font-size: 12px; display: flex; align-items: center; gap: 8px" onclick="inlineRenameFile('${path}')">
+      <span style="font-size: 12px">✏️</span> Rename
+    </div>
+    <div class="ctx-item" style="padding: 6px 12px; cursor: pointer; color: #f48771; font-size: 12px; display: flex; align-items: center; gap: 8px" onclick="inlineDeleteFile('${path}')">
+      <span style="font-size: 12px">🗑️</span> Delete
+    </div>
+  `;
+  
+  // Style hover effect
+  let style = document.getElementById('ctx-hover-style');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'ctx-hover-style';
+    style.textContent = `
+      .ctx-item:hover {
+        background: #094771 !important;
+        color: #fff !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(menu);
+  
+  // Close menu when clicking outside
+  const closeHandler = () => {
+    removeCustomContextMenu();
+    document.removeEventListener('click', closeHandler);
+  };
+  setTimeout(() => {
+    document.addEventListener('click', closeHandler);
+  }, 50);
+}
+
+function removeCustomContextMenu() {
+  const menu = document.getElementById('custom-file-context-menu');
+  if (menu) menu.remove();
+  const style = document.getElementById('ctx-hover-style');
+  if (style) style.remove();
+}
+
+function inlineRenameFile(path) {
+  removeCustomContextMenu();
   const file = S.files.find(f => f.path === path);
   if (!file) return;
   
-  const opt = prompt(`Manage ${file.name}:\n1. Rename\n2. Delete\n\nEnter number (1 or 2):`);
-  if (opt === '1') {
-    const newName = prompt("Enter new name:", file.name);
-    if (newName && newName.trim() && newName.trim() !== file.name) {
+  const items = document.querySelectorAll('.file-item');
+  let targetEl = null;
+  for (const item of items) {
+    if (item.getAttribute('data-path') === path) {
+      targetEl = item;
+      break;
+    }
+  }
+  
+  if (!targetEl) return;
+  
+  const currentName = file.name;
+  const icon = targetEl.querySelector('.file-icon').innerHTML;
+  
+  targetEl.innerHTML = `
+    <span class="file-icon" style="margin-right: 6px; display: flex; align-items: center">${icon}</span>
+    <input id="inline-rename-input" 
+           value="${esc(currentName)}"
+           style="flex: 1; background: #2d2d2d; border: 1px solid #007acc; border-radius: 2px; color: #fff; font-size: 12px; outline: none; padding: 2px 4px; font-family: inherit; width: 100%" />
+  `;
+  
+  const inputEl = document.getElementById('inline-rename-input');
+  inputEl.focus();
+  inputEl.select();
+  
+  let finished = false;
+  const handleRenameFinish = () => {
+    if (finished) return;
+    finished = true;
+    const newName = inputEl.value.trim();
+    if (newName && newName !== currentName) {
       const oldPath = file.path;
-      file.name = newName.trim();
-      file.path = newName.trim();
+      file.name = newName;
+      file.path = newName;
       
-      // Update tab if open
+      const tabIdx = S.tabs.indexOf(oldPath);
+      if (tabIdx !== -1) S.tabs[tabIdx] = file.path;
+      if (S.activeFile === oldPath) S.activeFile = file.path;
+      
+      // Update Tab element ID and label directly
       const tabEl = document.getElementById(`tab-${escId(oldPath)}`);
       if (tabEl) {
         tabEl.id = `tab-${escId(file.path)}`;
-        tabEl.querySelector('span:not(.tab-dot)').textContent = file.name;
-        // Update onclick to open new path
+        const textSpan = tabEl.querySelector('span:not(.tab-dot)');
+        if (textSpan) textSpan.textContent = file.name;
+        // Re-bind onclick
         tabEl.onclick = () => openFileInTab(file.path);
         const closeBtn = tabEl.querySelector('.tab-close');
         if (closeBtn) closeBtn.onclick = (e) => closeTab(file.path, e);
       }
-      
-      // Update active state path
-      if (S.activeFile === oldPath) {
-        S.activeFile = file.path;
-      }
-      
-      const tabIdx = S.tabs.indexOf(oldPath);
-      if (tabIdx !== -1) S.tabs[tabIdx] = file.path;
       
       localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
       renderFileTree();
@@ -596,10 +686,31 @@ function handleFileContextMenu(event, path) {
         method: 'POST',
         body: JSON.stringify({ old_path: oldPath, new_path: file.path })
       }).catch(() => {});
+    } else {
+      renderFileTree();
     }
-  } else if (opt === '2') {
-    deleteActiveQueryFile(file.path);
-  }
+  };
+  
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleRenameFinish();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      renderFileTree();
+    }
+  });
+  
+  inputEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (!finished) handleRenameFinish();
+    }, 150);
+  });
+}
+
+function inlineDeleteFile(path) {
+  removeCustomContextMenu();
+  deleteActiveQueryFile(path);
 }
 
 function deleteActiveQueryFile(path) {
@@ -1124,6 +1235,11 @@ function setSidePanel(name) {
   // Force show sidebar if collapsed
   if (!S.sidebarOpen) {
     toggleSidebar();
+  }
+  
+  // Switch view to editor/ide when clicking other sidebar panels
+  if (S.view !== 'ide') {
+    showView('ide');
   }
   
   if (name === 'history') {
