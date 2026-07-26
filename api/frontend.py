@@ -1825,10 +1825,7 @@ li.CodeMirror-hint-active {
     </div>
   </div>
   <div id="win-title">MongoSandbox — MongoDB Practice IDE</div>
-  <div id="win-controls">
-    <div class="wctrl" onclick="toggleSidebar()">&#9472;</div>
-    <div class="wctrl">&#9723;</div>
-    <div class="wctrl close" onclick="showView('intro')">&#10005;</div>
+  <div id="win-controls" style="display:none">
   </div>
 </div>
 
@@ -1959,9 +1956,12 @@ li.CodeMirror-hint-active {
       <button class="tbtn tbtn-secondary" onclick="saveQuery()">Save</button>
       <div class="tb-sep"></div>
       <button class="tbtn tbtn-secondary" onclick="openModal('schema-modal')">⛁ Schema ER Details</button>
-      <div id="tb-right">
-        <button class="tbtn tbtn-secondary" onclick="toggleInspector()">🔍 Inspector Panel</button>
+      <div id="tb-right" style="display: flex; align-items: center; gap: 8px;">
         <div id="db-badge">practice_db</div>
+        <button class="tbtn tbtn-secondary" onclick="toggleInspector()" style="display: flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+          Inspector Panel
+        </button>
       </div>
     </div>
 
