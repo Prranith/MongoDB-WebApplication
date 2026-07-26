@@ -3,7 +3,7 @@
     {
       "name": "Find All",
       "prefix": "findAll",
-      "body": "db.elite_data.find({})",
+      "body": "db.elite.find({})",
       "description": "Find all documents in a collection",
       "category": "Find",
       "tags": ["find", "basic"]
@@ -11,7 +11,7 @@
     {
       "name": "Find with Filter",
       "prefix": "findFilter",
-      "body": "db.elite_data.find({ status: \"PAID\" })",
+      "body": "db.elite.find({ status: \"PAID\" })",
       "description": "Find documents matching a filter",
       "category": "Find",
       "tags": ["find", "filter"]
@@ -19,7 +19,7 @@
     {
       "name": "Find with Projection",
       "prefix": "findProject",
-      "body": "db.elite_data.find(\n  { status: \"PAID\" },\n  { userId: 1, amount: 1, _id: 0 }\n)",
+      "body": "db.elite.find(\n  { status: \"PAID\" },\n  { userId: 1, amount: 1, _id: 0 }\n)",
       "description": "Find with field projection",
       "category": "Find",
       "tags": ["find", "projection"]
@@ -27,7 +27,7 @@
     {
       "name": "Find with Sort & Limit",
       "prefix": "findSortLimit",
-      "body": "db.elite_data.find({}).sort({ amount: -1 }).limit(10)",
+      "body": "db.elite.find({}).sort({ amount: -1 }).limit(10)",
       "description": "Find, sort descending, and limit results",
       "category": "Find",
       "tags": ["find", "sort", "limit"]
@@ -35,7 +35,7 @@
     {
       "name": "Count Documents",
       "prefix": "count",
-      "body": "db.elite_data.countDocuments({ status: \"PAID\" })",
+      "body": "db.elite.countDocuments({ status: \"PAID\" })",
       "description": "Count documents matching a filter",
       "category": "Find",
       "tags": ["count"]
@@ -43,7 +43,7 @@
     {
       "name": "Distinct Values",
       "prefix": "distinct",
-      "body": "db.elite_data.distinct(\"status\")",
+      "body": "db.elite.distinct(\"status\")",
       "description": "Get distinct values for a field",
       "category": "Find",
       "tags": ["distinct"]
@@ -107,8 +107,8 @@
     {
       "name": "Lookup (Join)",
       "prefix": "$lookup",
-      "body": "{\n  $lookup: {\n    from: \"other_collection\",\n    localField: \"userId\",\n    foreignField: \"_id\",\n    as: \"user_data\"\n  }\n}",
-      "description": "Left outer join with another collection",
+      "body": "{\n  $lookup: {\n    from: \"users\",\n    localField: \"userId\",\n    foreignField: \"userId\",\n    as: \"user_data\"\n  }\n}",
+      "description": "Left outer join with users collection",
       "category": "Aggregation",
       "tags": ["aggregate", "lookup", "join"]
     },
@@ -131,7 +131,7 @@
     {
       "name": "Full Aggregation Pipeline",
       "prefix": "aggregate",
-      "body": "db.elite_data.aggregate([\n  { $match: { status: \"PAID\" } },\n  {\n    $group: {\n      _id: \"$provider\",\n      total: { $sum: \"$amount\" },\n      count: { $sum: 1 }\n    }\n  },\n  { $sort: { total: -1 } },\n  { $limit: 10 }\n])",
+      "body": "db.elite.aggregate([\n  { $match: { status: \"PAID\" } },\n  {\n    $group: {\n      _id: \"$provider\",\n      total: { $sum: \"$amount\" },\n      count: { $sum: 1 }\n    }\n  },\n  { $sort: { total: -1 } },\n  { $limit: 10 }\n])",
       "description": "Complete aggregation pipeline example",
       "category": "Aggregation",
       "tags": ["aggregate", "full"]
@@ -147,7 +147,7 @@
     {
       "name": "Date Range Query",
       "prefix": "dateRange",
-      "body": "db.elite_data.find({\n  createdAt: {\n    $gte: ISODate(\"2026-01-01\"),\n    $lt: ISODate(\"2026-02-01\")\n  }\n})",
+      "body": "db.elite.find({\n  createdAt: {\n    $gte: ISODate(\"2026-01-01\"),\n    $lt: ISODate(\"2026-02-01\")\n  }\n})",
       "description": "Query documents within a date range",
       "category": "Queries",
       "tags": ["find", "date", "range"]
@@ -155,7 +155,7 @@
     {
       "name": "Pagination",
       "prefix": "paginate",
-      "body": "db.elite_data.find({}).sort({ createdAt: -1 }).skip(0).limit(20)",
+      "body": "db.elite.find({}).sort({ createdAt: -1 }).skip(0).limit(20)",
       "description": "Paginate results with skip and limit",
       "category": "Queries",
       "tags": ["find", "pagination", "skip", "limit"]
@@ -163,7 +163,7 @@
     {
       "name": "Insert One Document",
       "prefix": "insertOne",
-      "body": "db.elite_data.insertOne({\n  userId: \"u99\",\n  status: \"PAID\",\n  provider: \"stripe\",\n  amount: 500,\n  items: [{ sku: \"X1\", qty: 1 }],\n  createdAt: ISODate(\"2026-07-01\")\n})",
+      "body": "db.elite.insertOne({\n  userId: \"u99\",\n  status: \"PAID\",\n  provider: \"stripe\",\n  amount: 500,\n  items: [{ sku: \"X1\", qty: 1 }],\n  createdAt: ISODate(\"2026-07-01\")\n})",
       "description": "Insert a single document",
       "category": "Write",
       "tags": ["insert", "write"]
@@ -171,7 +171,7 @@
     {
       "name": "Update One Document",
       "prefix": "updateOne",
-      "body": "db.elite_data.updateOne(\n  { userId: \"u1\" },\n  { $set: { status: \"REFUNDED\", amount: 0 } }\n)",
+      "body": "db.elite.updateOne(\n  { userId: \"u1\" },\n  { $set: { status: \"REFUNDED\", amount: 0 } }\n)",
       "description": "Update a single document",
       "category": "Write",
       "tags": ["update", "write"]
