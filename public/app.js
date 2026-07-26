@@ -1264,7 +1264,8 @@ function escId(s) {
 function loadSettingsFromLocalStorage() {
   const defaults = {
     fontFamily: 'Consolas',
-    fontSize: '13 pt',
+    fontSizeVal: 13,
+    fontSizeUnit: 'pt',
     tabWidth: '8 spaces',
     maxResults: 10000,
     timeout: '30 s'
@@ -1272,9 +1273,18 @@ function loadSettingsFromLocalStorage() {
   const saved = JSON.parse(localStorage.getItem('mongosandbox_settings') || '{}');
   S.settings = { ...defaults, ...saved };
   
+  // Backwards compatibility for old S.settings.fontSize (e.g. "13 pt")
+  if (saved.fontSize && !saved.fontSizeVal) {
+    const valMatch = String(saved.fontSize).match(/\d+/);
+    const unitMatch = String(saved.fontSize).match(/[a-zA-Z]+/);
+    S.settings.fontSizeVal = valMatch ? parseInt(valMatch[0]) : 13;
+    S.settings.fontSizeUnit = unitMatch ? unitMatch[0] : 'pt';
+  }
+  
   // Populate modal inputs
   document.getElementById('set-font-family').value = S.settings.fontFamily;
-  document.getElementById('set-font-size').value = S.settings.fontSize;
+  document.getElementById('set-font-size-val').value = S.settings.fontSizeVal;
+  document.getElementById('set-font-size-unit').value = S.settings.fontSizeUnit;
   document.getElementById('set-tab-width').value = S.settings.tabWidth;
   document.getElementById('set-max-results').value = S.settings.maxResults;
   document.getElementById('set-timeout').value = S.settings.timeout;
@@ -1282,10 +1292,14 @@ function loadSettingsFromLocalStorage() {
 
 function saveSettings() {
   S.settings.fontFamily = document.getElementById('set-font-family').value;
-  S.settings.fontSize = document.getElementById('set-font-size').value;
+  S.settings.fontSizeVal = parseInt(document.getElementById('set-font-size-val').value) || 13;
+  S.settings.fontSizeUnit = document.getElementById('set-font-size-unit').value;
   S.settings.tabWidth = document.getElementById('set-tab-width').value;
   S.settings.maxResults = parseInt(document.getElementById('set-max-results').value) || 10000;
   S.settings.timeout = document.getElementById('set-timeout').value;
+  
+  // Maintain S.settings.fontSize for older dependencies
+  S.settings.fontSize = S.settings.fontSizeVal + S.settings.fontSizeUnit;
   
   localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings));
   applySettings();
@@ -1310,14 +1324,7 @@ function applySettings() {
     document.head.appendChild(styleEl);
   }
   
-  // Format size safely (e.g. "13 pt" -> "13pt")
-  let sizeVal = String(S.settings.fontSize || '13pt').trim();
-  if (/^\d+$/.test(sizeVal)) {
-    sizeVal = sizeVal + 'px'; // Default to px if just a number
-  } else {
-    // Replace any spaces inside unit, e.g. "13 pt" -> "13pt"
-    sizeVal = sizeVal.replace(/\s+/g, '');
-  }
+  const sizeVal = (S.settings.fontSizeVal || 13) + (S.settings.fontSizeUnit || 'pt');
   
   styleEl.textContent = `
     .CodeMirror,

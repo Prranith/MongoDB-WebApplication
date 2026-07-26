@@ -2061,17 +2061,35 @@ body {
       
       <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 16px;">
         <label style="width: 140px; color: #ccc; font-size: 13px;">Editor Font Family:</label>
-        <input id="set-font-family" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none; font-family: Consolas, monospace" value="Consolas"/>
+        <select id="set-font-family" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none; font-family: Consolas, monospace">
+          <option value="Consolas">Consolas</option>
+          <option value="'Courier New'">Courier New</option>
+          <option value="'JetBrains Mono'">JetBrains Mono</option>
+          <option value="'Fira Code'">Fira Code</option>
+          <option value="Monaco">Monaco</option>
+          <option value="monospace">Monospace (Default)</option>
+        </select>
       </div>
       
       <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 16px;">
         <label style="width: 140px; color: #ccc; font-size: 13px;">Editor Font Size:</label>
-        <input id="set-font-size" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none" value="13 pt"/>
+        <div style="display: flex; flex: 1; gap: 8px;">
+          <input type="number" id="set-font-size-val" min="8" max="40" style="width: 100px; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none;" value="13"/>
+          <select id="set-font-size-unit" style="width: 80px; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none;">
+            <option value="pt">pt</option>
+            <option value="px">px</option>
+          </select>
+        </div>
       </div>
       
       <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 16px;">
         <label style="width: 140px; color: #ccc; font-size: 13px;">Tab Width:</label>
-        <input id="set-tab-width" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none" value="8 spaces"/>
+        <select id="set-tab-width" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none">
+          <option value="2 spaces">2 spaces</option>
+          <option value="4 spaces">4 spaces</option>
+          <option value="8 spaces" selected>8 spaces</option>
+          <option value="16 spaces">16 spaces</option>
+        </select>
       </div>
       
       <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 16px;">
@@ -2081,7 +2099,11 @@ body {
       
       <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 24px;">
         <label style="width: 140px; color: #ccc; font-size: 13px;">Query Timeout:</label>
-        <input id="set-timeout" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none" value="30 s"/>
+        <select id="set-timeout" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none">
+          <option value="10 s">10 s</option>
+          <option value="30 s" selected>30 s</option>
+          <option value="60 s">60 s</option>
+        </select>
       </div>
       
       <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px">
@@ -3368,7 +3390,8 @@ function escId(s) {
 function loadSettingsFromLocalStorage() {
   const defaults = {
     fontFamily: 'Consolas',
-    fontSize: '13 pt',
+    fontSizeVal: 13,
+    fontSizeUnit: 'pt',
     tabWidth: '8 spaces',
     maxResults: 10000,
     timeout: '30 s'
@@ -3376,9 +3399,18 @@ function loadSettingsFromLocalStorage() {
   const saved = JSON.parse(localStorage.getItem('mongosandbox_settings') || '{}');
   S.settings = { ...defaults, ...saved };
   
+  // Backwards compatibility for old S.settings.fontSize (e.g. "13 pt")
+  if (saved.fontSize && !saved.fontSizeVal) {
+    const valMatch = String(saved.fontSize).match(/\\d+/);
+    const unitMatch = String(saved.fontSize).match(/[a-zA-Z]+/);
+    S.settings.fontSizeVal = valMatch ? parseInt(valMatch[0]) : 13;
+    S.settings.fontSizeUnit = unitMatch ? unitMatch[0] : 'pt';
+  }
+  
   // Populate modal inputs
   document.getElementById('set-font-family').value = S.settings.fontFamily;
-  document.getElementById('set-font-size').value = S.settings.fontSize;
+  document.getElementById('set-font-size-val').value = S.settings.fontSizeVal;
+  document.getElementById('set-font-size-unit').value = S.settings.fontSizeUnit;
   document.getElementById('set-tab-width').value = S.settings.tabWidth;
   document.getElementById('set-max-results').value = S.settings.maxResults;
   document.getElementById('set-timeout').value = S.settings.timeout;
@@ -3386,10 +3418,14 @@ function loadSettingsFromLocalStorage() {
 
 function saveSettings() {
   S.settings.fontFamily = document.getElementById('set-font-family').value;
-  S.settings.fontSize = document.getElementById('set-font-size').value;
+  S.settings.fontSizeVal = parseInt(document.getElementById('set-font-size-val').value) || 13;
+  S.settings.fontSizeUnit = document.getElementById('set-font-size-unit').value;
   S.settings.tabWidth = document.getElementById('set-tab-width').value;
   S.settings.maxResults = parseInt(document.getElementById('set-max-results').value) || 10000;
   S.settings.timeout = document.getElementById('set-timeout').value;
+  
+  // Maintain S.settings.fontSize for older dependencies
+  S.settings.fontSize = S.settings.fontSizeVal + S.settings.fontSizeUnit;
   
   localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings));
   applySettings();
@@ -3414,14 +3450,7 @@ function applySettings() {
     document.head.appendChild(styleEl);
   }
   
-  // Format size safely (e.g. "13 pt" -> "13pt")
-  let sizeVal = String(S.settings.fontSize || '13pt').trim();
-  if (/^\\d+$/.test(sizeVal)) {
-    sizeVal = sizeVal + 'px'; // Default to px if just a number
-  } else {
-    // Replace any spaces inside unit, e.g. "13 pt" -> "13pt"
-    sizeVal = sizeVal.replace(/\\s+/g, '');
-  }
+  const sizeVal = (S.settings.fontSizeVal || 13) + (S.settings.fontSizeUnit || 'pt');
   
   styleEl.textContent = `
     .CodeMirror,
