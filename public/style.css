@@ -416,6 +416,8 @@ body {
 .file-section {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 .file-section-hdr {
@@ -449,6 +451,8 @@ body {
 .file-list-container {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .file-section.collapsed .file-list-container {

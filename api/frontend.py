@@ -441,6 +441,8 @@ body {
 .file-section {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 .file-section-hdr {
@@ -474,6 +476,8 @@ body {
 .file-list-container {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .file-section.collapsed .file-list-container {
@@ -1792,10 +1796,18 @@ body {
             <span class="arrow">▼</span> QUERIES
           </span>
           <div class="section-actions" style="display: flex; gap: 4px; padding-right: 4px">
-            <button class="phbtn" title="New File" onclick="createNewQueryFile(event)">+📄</button>
-            <button class="phbtn" title="New Folder" onclick="createNewFolder(event)">+📁</button>
-            <button class="phbtn" title="Refresh Explorer" onclick="loadFiles(event)">⟳</button>
-            <button class="phbtn" title="Collapse All" onclick="collapseAllFiles(event)">⊞</button>
+            <button class="phbtn" title="New File" onclick="createNewQueryFile(event)">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M9 1H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6l-5-5zm2 5h-3V3.5L11.5 6zM8 8V6H7v2H5v1h2v2h1V9h2V8H8z"/></svg>
+            </button>
+            <button class="phbtn" title="New Folder" onclick="createNewFolder(event)">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M14 4H8.5l-2-2H2c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-3 6H9v2H8v-2H6V9h2V7h1v2h2v1z"/></svg>
+            </button>
+            <button class="phbtn" title="Refresh Explorer" onclick="loadFiles(event)">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M13.6 2.3C12.2.9 10.2 0 8 0 3.6 0 0 3.6 0 8s3.6 8 8 8c3.7 0 6.9-2.6 7.7-6h-2.1c-.8 2.3-3 4-5.6 4-3.3 0-6-2.7-6-6s2.7-6 6-6c1.7 0 3.1.7 4.2 1.8L9 7h7V0l-2.4 2.3z"/></svg>
+            </button>
+            <button class="phbtn" title="Collapse All" onclick="collapseAllFiles(event)">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1.5H5v-1h4v1zM2 4h12V3H2v1zm2 3h8V6H4v1zm7 3H5V9h6v1zm2 3H3v-1h10v1z"/></svg>
+            </button>
           </div>
         </div>
         <div class="file-list-container">
@@ -2393,9 +2405,12 @@ async function loadFiles() {
     // Read local override from localStorage
     const localOverride = JSON.parse(localStorage.getItem('mongosandbox_files') || '[]');
     
-    // Merge server files with local modifications
-    const merged = [...serverFiles];
-    for (const lf of localOverride) {
+    const legacyPaths = ['01_find_paid.mongo', '02_aggregate_pipeline.mongo', 'kishor.mongo'];
+    // Merge server files with local modifications, ignoring legacy files
+    const cleanLocalOverride = localOverride.filter(lf => !legacyPaths.includes(lf.path));
+    const merged = [...serverFiles].filter(sf => !legacyPaths.includes(sf.path));
+    
+    for (const lf of cleanLocalOverride) {
       const idx = merged.findIndex(f => f.path === lf.path);
       if (idx !== -1) {
         merged[idx] = lf; // update with locally modified version
@@ -2422,6 +2437,8 @@ async function loadFiles() {
 }
 
 const SVG_MONGO_LEAF = `<svg viewBox="0 0 16 16" width="14" height="14" style="margin-right:6px;flex-shrink:0"><path fill="#47a248" d="M8 1s-4.5 4.5-4.5 8.5C3.5 12 5.5 15 8 15s4.5-3 4.5-5.5C12.5 5.5 8 1 8 1zm0 12.5c-1.5 0-2.5-1.5-2.5-3 0-2.5 2.5-6 2.5-6s2.5 3.5 2.5 6c0 1.5-1 3-2.5 3z"/></svg>`;
+const SVG_FOLDER_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" fill="#a7a7a7" style="margin-right:6px;flex-shrink:0"><path d="M14 4.5h-5.5L7 2.5H2a1.5 1.5 0 0 0-1.5 1.5v8c0 .8.7 1.5 1.5 1.5h12c.8 0 1.5-.7 1.5-1.5v-6c0-.8-.7-1.5-1.5-1.5z"/></svg>`;
+const SVG_FILE_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" fill="#a7a7a7" style="margin-right:6px;flex-shrink:0"><path d="M9 1H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6l-5-5zM8 5V2.5L11.5 5H8z"/></svg>`;
 
 function renderFileTree() {
   const container = document.getElementById('q-list');
@@ -2437,7 +2454,7 @@ function renderFileTree() {
   });
   
   container.innerHTML = sorted.map(f => {
-    let icon = f.type === 'folder' ? '📁' : '📄';
+    let icon = f.type === 'folder' ? SVG_FOLDER_ICON : SVG_FILE_ICON;
     if (f.type === 'file' && f.name.endsWith('.mongo')) {
       icon = SVG_MONGO_LEAF;
     }
@@ -2551,54 +2568,124 @@ function saveQuery() {
 // ═══════════════════════════════════════════════════════════════════
 function createNewQueryFile(event) {
   if (event) event.stopPropagation();
-  const name = prompt("Enter new query filename (e.g. stats.mongo):");
-  if (!name || !name.trim()) return;
-  
-  let filename = name.trim();
-  if (!filename.endsWith('.mongo') && !filename.endsWith('.json')) {
-    filename += '.mongo';
-  }
-  
-  const fileObj = {
-    name: filename,
-    path: filename,
-    content: `// MongoDB Query: ${filename}\\n\\ndb.users.find({})\\n`,
-    type: 'file'
-  };
-  
-  S.files.push(fileObj);
-  localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
-  renderFileTree();
-  openFileInTab(fileObj.path);
-  
-  // Notify backend
-  fetchAPI('/api/files/create', {
-    method: 'POST',
-    body: JSON.stringify({ path: fileObj.path, is_folder: false })
-  }).catch(() => {});
+  renderInlineCreateInput('file');
 }
 
 function createNewFolder(event) {
   if (event) event.stopPropagation();
-  const name = prompt("Enter new folder name:");
-  if (!name || !name.trim()) return;
+  renderInlineCreateInput('folder');
+}
+
+function renderInlineCreateInput(type) {
+  // First make sure the file list container is expanded
+  if (!S.filesOpen) {
+    toggleFileSection();
+  }
   
-  const folderName = name.trim();
-  const folderObj = {
-    name: folderName,
-    path: folderName,
-    type: 'folder',
-    content: ''
+  const container = document.getElementById('q-list');
+  // Check if an input is already showing
+  if (document.getElementById('inline-create-input')) return;
+  
+  const tempDiv = document.createElement('div');
+  tempDiv.className = 'file-item inline-create-container';
+  tempDiv.style.paddingLeft = '28px';
+  tempDiv.style.background = 'var(--hl2)';
+  
+  const icon = type === 'folder' ? SVG_FOLDER_ICON : SVG_FILE_ICON;
+  
+  tempDiv.innerHTML = `
+    <span class="file-icon" style="margin-right: 6px; display: flex; align-items: center">${icon}</span>
+    <input id="inline-create-input" 
+           placeholder="${type === 'folder' ? 'Folder Name' : 'filename.mongo'}"
+           style="flex: 1; background: #2d2d2d; border: 1px solid #007acc; border-radius: 2px; color: #fff; font-size: 12px; outline: none; padding: 2px 4px; font-family: inherit; width: 100%" />
+  `;
+  
+  // Insert at the top of the file list
+  container.insertBefore(tempDiv, container.firstChild);
+  
+  const inputEl = document.getElementById('inline-create-input');
+  inputEl.focus();
+  
+  let finished = false;
+  const handleFinish = () => {
+    if (finished) return;
+    finished = true;
+    const name = inputEl.value.trim();
+    if (name) {
+      if (type === 'file') {
+        let filename = name;
+        if (!filename.endsWith('.mongo') && !filename.endsWith('.json')) {
+          filename += '.mongo';
+        }
+        
+        // Check duplicate
+        if (S.files.some(f => f.path === filename)) {
+          alert('File already exists.');
+          renderFileTree();
+          return;
+        }
+        
+        const fileObj = {
+          name: filename,
+          path: filename,
+          content: `// MongoDB Query: ${filename}\\n\\ndb.users.find({})\\n`,
+          type: 'file'
+        };
+        S.files.push(fileObj);
+        localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
+        renderFileTree();
+        openFileInTab(fileObj.path);
+        
+        fetchAPI('/api/files/create', {
+          method: 'POST',
+          body: JSON.stringify({ path: fileObj.path, is_folder: false })
+        }).catch(() => {});
+      } else {
+        // Folder
+        if (S.files.some(f => f.path === name)) {
+          alert('Folder already exists.');
+          renderFileTree();
+          return;
+        }
+        
+        const folderObj = {
+          name: name,
+          path: name,
+          type: 'folder',
+          content: ''
+        };
+        S.files.push(folderObj);
+        localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
+        renderFileTree();
+        
+        fetchAPI('/api/files/create', {
+          method: 'POST',
+          body: JSON.stringify({ path: folderObj.path, is_folder: true })
+        }).catch(() => {});
+      }
+    } else {
+      renderFileTree();
+    }
   };
   
-  S.files.push(folderObj);
-  localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
-  renderFileTree();
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleFinish();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      renderFileTree();
+    }
+  });
   
-  fetchAPI('/api/files/create', {
-    method: 'POST',
-    body: JSON.stringify({ path: folderObj.path, is_folder: true })
-  }).catch(() => {});
+  // Clean up on blur if empty
+  inputEl.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (document.getElementById('inline-create-input') && !finished) {
+        handleFinish();
+      }
+    }, 150);
+  });
 }
 
 function collapseAllFiles(event) {
