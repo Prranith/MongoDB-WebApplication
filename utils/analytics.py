@@ -145,20 +145,20 @@ class AnalyticsTracker:
                 clients.append(cid)
             self._save_local()
 
-        # 2. Redis Pipeline
+        # 2. Redis Pipeline: INCR launches for internal tracking, use PFCOUNT for unique visitor display
         pipeline_cmds = [
-            ["INCR", "total_launches"],
-            ["PFADD", "unique_visitors", cid],
-            ["PFCOUNT", "unique_visitors"],
-            ["ZADD", "active_users", str(now_ts), cid],
-            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 300)],
-            ["ZCARD", "active_users"]
+            ["PFADD", "unique_visitors", cid],          # 0: register unique visitor
+            ["PFCOUNT", "unique_visitors"],              # 1: unique visitor count (for total_visits)
+            ["ZADD", "active_users", str(now_ts), cid], # 2: register active user
+            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 300)],  # 3: prune stale
+            ["ZCARD", "active_users"]                   # 4: active user count
         ]
         
         res = self._redis_pipeline(pipeline_cmds)
-        if res and len(res) == 6:
-            total_visits = res[0] # INCR total_launches
-            active_users = res[5]
+        if res and len(res) == 5:
+            # total_visits = unique visitors (HyperLogLog - stable, truly unique)
+            total_visits = res[1]
+            active_users = res[4]
             
             # Sync back to local data cache
             with self._lock:
@@ -207,29 +207,27 @@ class AnalyticsTracker:
         ])
 
     def get_stats(self, client_id: str | None = None) -> dict[str, Any]:
-        """Return exact real-time usage metrics."""
+        """Return exact real-time usage metrics (pure read — does not write activity)."""
         cid = client_id or self._client_id
         now_ts = int(time.time())
         cutoff = now_ts - 300
 
-        # Query Redis for the latest stats
+        # Pure read pipeline — does NOT register activity (heartbeat/launch does that)
         pipeline_cmds = [
-            ["ZADD", "active_users", str(now_ts), cid],
-            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 300)],
-            ["ZCARD", "active_users"],
-            ["GET", "total_launches"],
-            ["GET", "total_profile_visits"],
-            ["GET", "queries_executed"],
-            ["HGETALL", "collection_visits"]
+            ["ZCARD", "active_users"],            # 0: active users right now
+            ["PFCOUNT", "unique_visitors"],        # 1: unique visitor total (HyperLogLog)
+            ["GET", "total_profile_visits"],       # 2
+            ["GET", "queries_executed"],           # 3
+            ["HGETALL", "collection_visits"]       # 4
         ]
         
         res = self._redis_pipeline(pipeline_cmds)
-        if res and len(res) == 7:
-            active_users = res[2]
-            total_visits = res[3]
-            total_prof = res[4]
-            queries = res[5]
-            col_visits_raw = res[6]
+        if res and len(res) == 5:
+            active_users = res[0]
+            total_visits = res[1]   # unique visitors via HyperLogLog
+            total_prof = res[2]
+            queries = res[3]
+            col_visits_raw = res[4]
 
             # Parse HGETALL list [key1, val1, key2, val2...]
             col_visits = {}
