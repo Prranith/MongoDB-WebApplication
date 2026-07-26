@@ -1669,3 +1669,19 @@ function setupMongoIntelliSense() {
     };
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// ANALYTICS POLLING
+// ═══════════════════════════════════════════════════════════════════
+async function recordLaunch() {
+  if (S.view !== 'intro') return;
+  try {
+    const res = await fetchAPI('/api/analytics/visit', { method: 'POST' });
+    if (res && res.active_users !== undefined) {
+      document.getElementById('stat-active').textContent = res.active_users;
+      document.getElementById('stat-visited').textContent = res.total_visits;
+    }
+  } catch (e) {
+    console.error("Analytics fetch failed:", e);
+  }
+}

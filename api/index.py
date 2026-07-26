@@ -178,6 +178,15 @@ def api_snippets():
 
 # ── API: Analytics ────────────────────────────────────────────────────────────
 
+@app.route("/api/analytics/visit", methods=["POST"])
+def api_analytics_visit():
+    stats = analytics_tracker.record_app_launch()
+    return jsonify(stats)
+
+@app.route("/api/analytics", methods=["GET"])
+def api_analytics():
+    return jsonify(analytics_tracker.get_stats())
+
 # ── API: File Operations (Query Files in queries/) ──────────────────────────
 
 QUERIES_DIR = ROOT / "queries"
