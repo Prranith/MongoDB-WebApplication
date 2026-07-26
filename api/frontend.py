@@ -13,6 +13,7 @@ INDEX_HTML = """
 <meta name="robots" content="index, follow"/>
 <meta name="author" content="Prranith Swargam"/>
 <link rel="canonical" href="https://practice-mongodb.vercel.app"/>
+<meta name="google-site-verification" content="MUmeLM3pVpTFtnd-SE9aITj4aLoI1IgY6tnqlg7aVrA" />
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website"/>
