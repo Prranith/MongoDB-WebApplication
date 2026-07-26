@@ -974,6 +974,10 @@ body {
 }
 
 /* ── Console ─────────────────────────────────────────── */
+#console-resizer:hover, #console-resizer.dragging {
+  background: var(--blue) !important;
+}
+
 #console {
   height: var(--console-h);
   background: var(--bg);
@@ -2016,20 +2020,37 @@ li.CodeMirror-hint-active {
         </div>
       </div>
 
+      <!-- Horizontal resizer for console -->
+      <div id="console-resizer" style="height: 4px; background: var(--border); cursor: ns-resize; flex-shrink: 0;"></div>
+
       <!-- Console -->
       <div id="console">
-        <div id="console-tabs">
+        <!-- Console Header (Row 1) -->
+        <div id="console-header" style="height: 35px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; gap: 12px; flex-shrink: 0;">
+          <div style="font-size: 11px; font-weight: 700; color: #bbbbbb; letter-spacing: 0.5px;">CONSOLE</div>
+          <div id="console-status" style="font-size: 12px; color: var(--green2); display: flex; align-items: center; gap: 6px;">— Ready</div>
+          <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+            <div id="console-time" style="padding: 2px 8px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; font-size: 11px; color: #ccc;">0ms</div>
+            <div id="console-count" style="padding: 2px 8px; background: rgba(71, 162, 72, 0.2); border: 1px solid rgba(71, 162, 72, 0.4); border-radius: 4px; font-size: 11px; color: var(--green2);">0 docs</div>
+            <button class="console-btn" onclick="clearConsole()" style="padding: 2px 8px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; font-size: 11px; color: #ccc; cursor: pointer;">Clear</button>
+          </div>
+        </div>
+
+        <!-- Console Tabs (Row 2) -->
+        <div id="console-tabs" style="height: 28px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: stretch; flex-shrink: 0;">
           <div class="ctab active" id="ctab-output" onclick="setConTab('output')">Output</div>
           <div class="ctab" id="ctab-logs" onclick="setConTab('logs')">Logs</div>
-          <div class="console-status" id="console-status">— Ready</div>
-          <div style="display:flex;gap:4px;align-items:center;padding:0 8px" id="view-btns">
+        </div>
+        
+        <!-- Output Sub-Tabs (Row 3) -->
+        <div id="console-sub-tabs" style="height: 30px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; flex-shrink: 0;">
+          <div style="display: flex; gap: 12px; align-items: center;" id="view-btns">
             <span class="con-badge active-view" id="vbtn-tree" onclick="setResultView('tree')">Tree</span>
             <span class="con-badge" id="vbtn-raw" onclick="setResultView('raw')">Raw JSON</span>
             <span class="con-badge" id="vbtn-out" onclick="setResultView('out')">Expand All</span>
           </div>
-          <div id="console-ctrl">
-            <button class="console-btn" onclick="copyResult()">Copy</button>
-            <button class="console-btn" onclick="clearConsole()">Clear</button>
+          <div style="margin-left: auto;">
+            <button class="console-btn" onclick="copyResult()" style="background: transparent; border: none; font-size: 11px; color: var(--text3); cursor: pointer;">Copy</button>
           </div>
         </div>
 
@@ -2169,7 +2190,7 @@ li.CodeMirror-hint-active {
       <div class="setting-group" style="display: flex; align-items: center; margin-bottom: 16px;">
         <label style="width: 140px; color: #ccc; font-size: 13px;">Editor Font Size:</label>
         <div style="display: flex; flex: 1; gap: 8px;">
-          <input type="number" id="set-font-size-val" min="8" max="40" style="width: 100px; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none;" value="13"/>
+          <input type="number" id="set-font-size-val" min="8" max="40" style="width: 100px; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none;" value="11"/>
           <select id="set-font-size-unit" style="width: 80px; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none;">
             <option value="pt">pt</option>
             <option value="px">px</option>
@@ -2181,8 +2202,8 @@ li.CodeMirror-hint-active {
         <label style="width: 140px; color: #ccc; font-size: 13px;">Tab Width:</label>
         <select id="set-tab-width" style="flex: 1; padding: 6px 12px; background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 4px; color: #fff; outline: none">
           <option value="2 spaces">2 spaces</option>
-          <option value="4 spaces">4 spaces</option>
-          <option value="8 spaces" selected>8 spaces</option>
+          <option value="4 spaces" selected>4 spaces</option>
+          <option value="8 spaces">8 spaces</option>
           <option value="16 spaces">16 spaces</option>
         </select>
       </div>
@@ -2373,6 +2394,7 @@ window.addEventListener('DOMContentLoaded', () => {
   applyEditorTheme();
   applySettings();
   initResizer();
+  initConsoleResizer();
 
   // Load backend metrics & explorer data
   loadFiles();
@@ -2524,13 +2546,11 @@ async function loadFiles() {
     
     renderFileTree();
     
-    // Open default files in tabs if empty
-    if (!S.tabs.length && S.files.length) {
-      const defaultFile = S.files.find(f => f.type === 'file');
-      if (defaultFile) {
-        openFileInTab(defaultFile.path);
-      }
-    }
+    // Do not open default files automatically on load so that the welcome page stays active
+    // if (!S.tabs.length && S.files.length) {
+    //   const defaultFile = S.files.find(f => f.type === 'file');
+    //   if (defaultFile) openFileInTab(defaultFile.path);
+    // }
   } catch(e) {
     console.error('loadFiles error:', e);
   }
@@ -2561,6 +2581,7 @@ function renderFileTree() {
     const indentClass = f.path.includes('/') ? 'style="padding-left:36px"' : '';
     return `
       <div class="file-item ${f.path === S.activeFile ? 'active' : ''}" 
+           data-path="${esc(f.path)}"
            ${indentClass}
            onclick="openFileInTab('${f.path}')"
            oncontextmenu="handleFileContextMenu(event, '${f.path}')">
@@ -3091,7 +3112,14 @@ async function runQuery() {
   const q = editor.getValue().trim();
   if (!q) return;
 
-  setConsoleStatus('⟳ Running query...');
+  const statEl = document.getElementById('console-status');
+  if (statEl) statEl.innerHTML = `⟳ Running query...`;
+  
+  const timeEl = document.getElementById('console-time');
+  const countEl = document.getElementById('console-count');
+  if (timeEl) timeEl.textContent = '0ms';
+  if (countEl) countEl.textContent = '0 docs';
+
   logOutput(`<span class="out-info">[info] Executing MongoDB command...</span>`);
   
   const runBtn = document.querySelector('.tbtn-run');
@@ -3115,7 +3143,10 @@ async function runQuery() {
     const count = d.docs_returned || 0;
 
     if (d.status === 'ok' || d.status === 'empty') {
-      setConsoleStatus(`— ${count} docs returned in ${ms}ms`);
+      if (statEl) statEl.innerHTML = `✓ ${count} document(s) returned`;
+      if (timeEl) timeEl.textContent = `${ms}ms`;
+      if (countEl) countEl.textContent = `${count} docs`;
+
       document.getElementById('sb-timing').textContent = `${ms}ms`;
       document.getElementById('sb-docs').textContent = `${count} docs`;
       
@@ -3128,7 +3159,9 @@ async function runQuery() {
       // Save query execution to history state
       saveToHistory(q, d.status, count, d.timing_ms);
     } else {
-      setConsoleStatus('— Query Error');
+      if (statEl) statEl.innerHTML = `— Query Error`;
+      if (timeEl) timeEl.textContent = `0ms`;
+      if (countEl) countEl.textContent = `0 docs`;
       logOutput(`<span class="out-err">[error] ${esc(d.error || 'Unknown evaluation error')}</span>`);
       if (d.traceback_str) {
         logOutput(`<span class="out-info">${esc(d.traceback_str)}</span>`);
@@ -3140,7 +3173,7 @@ async function runQuery() {
   } catch(e) {
     runBtn.classList.remove('running');
     runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
-    setConsoleStatus('— Network Error');
+    if (statEl) statEl.innerHTML = `— Network Error`;
     logOutput(`<span class="out-err">[network error] ${esc(e.message)}</span>`);
   }
 }
@@ -3685,6 +3718,36 @@ function initResizer() {
   });
 }
 
+function initConsoleResizer() {
+  const handle = document.getElementById('console-resizer');
+  const consoleEl = document.getElementById('console');
+  if (!handle || !consoleEl) return;
+  
+  let dragging = false, startY = 0, startH = 0;
+  
+  handle.addEventListener('mousedown', e => {
+    dragging = true;
+    startY = e.clientY;
+    startH = consoleEl.offsetHeight;
+    document.body.style.userSelect = 'none';
+  });
+  
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const dy = startY - e.clientY; // upwards drag increases height
+    const h = Math.max(100, Math.min(window.innerHeight * 0.8, startH + dy));
+    consoleEl.style.height = h + 'px';
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (dragging) {
+      dragging = false;
+      document.body.style.userSelect = '';
+      if (editor) editor.refresh();
+    }
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // HTML FORMAT ESCAPER
 // ═══════════════════════════════════════════════════════════════════
@@ -3702,9 +3765,9 @@ function escId(s) {
 function loadSettingsFromLocalStorage() {
   const defaults = {
     fontFamily: 'Consolas',
-    fontSizeVal: 13,
+    fontSizeVal: 11,
     fontSizeUnit: 'pt',
-    tabWidth: '8 spaces',
+    tabWidth: '4 spaces',
     maxResults: 10000,
     timeout: '30 s'
   };
@@ -3730,7 +3793,7 @@ function loadSettingsFromLocalStorage() {
 
 function saveSettings() {
   S.settings.fontFamily = document.getElementById('set-font-family').value;
-  S.settings.fontSizeVal = parseInt(document.getElementById('set-font-size-val').value) || 13;
+  S.settings.fontSizeVal = parseInt(document.getElementById('set-font-size-val').value) || 11;
   S.settings.fontSizeUnit = document.getElementById('set-font-size-unit').value;
   S.settings.tabWidth = document.getElementById('set-tab-width').value;
   S.settings.maxResults = parseInt(document.getElementById('set-max-results').value) || 10000;
@@ -3748,9 +3811,9 @@ function saveSettings() {
 function applySettings() {
   if (!editor) return;
   
-  // Extract number from tabWidth (e.g. "8 spaces" -> 8)
-  const tabMatch = String(S.settings.tabWidth || '8').match(/\\d+/);
-  const tabVal = tabMatch ? parseInt(tabMatch[0]) : 8;
+  // Extract number from tabWidth (e.g. "4 spaces" -> 4)
+  const tabMatch = String(S.settings.tabWidth || '4').match(/\\d+/);
+  const tabVal = tabMatch ? parseInt(tabMatch[0]) : 4;
   editor.setOption('tabSize', tabVal);
   editor.setOption('indentUnit', tabVal);
   
@@ -3762,7 +3825,7 @@ function applySettings() {
     document.head.appendChild(styleEl);
   }
   
-  const sizeVal = (S.settings.fontSizeVal || 13) + (S.settings.fontSizeUnit || 'pt');
+  const sizeVal = (S.settings.fontSizeVal || 11) + (S.settings.fontSizeUnit || 'pt');
   
   styleEl.textContent = `
     .CodeMirror,

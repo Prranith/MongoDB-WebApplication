@@ -152,6 +152,7 @@ window.addEventListener('DOMContentLoaded', () => {
   applyEditorTheme();
   applySettings();
   initResizer();
+  initConsoleResizer();
 
   // Load backend metrics & explorer data
   loadFiles();
@@ -303,13 +304,11 @@ async function loadFiles() {
     
     renderFileTree();
     
-    // Open default files in tabs if empty
-    if (!S.tabs.length && S.files.length) {
-      const defaultFile = S.files.find(f => f.type === 'file');
-      if (defaultFile) {
-        openFileInTab(defaultFile.path);
-      }
-    }
+    // Do not open default files automatically on load so that the welcome page stays active
+    // if (!S.tabs.length && S.files.length) {
+    //   const defaultFile = S.files.find(f => f.type === 'file');
+    //   if (defaultFile) openFileInTab(defaultFile.path);
+    // }
   } catch(e) {
     console.error('loadFiles error:', e);
   }
@@ -340,6 +339,7 @@ function renderFileTree() {
     const indentClass = f.path.includes('/') ? 'style="padding-left:36px"' : '';
     return `
       <div class="file-item ${f.path === S.activeFile ? 'active' : ''}" 
+           data-path="${esc(f.path)}"
            ${indentClass}
            onclick="openFileInTab('${f.path}')"
            oncontextmenu="handleFileContextMenu(event, '${f.path}')">
@@ -870,7 +870,14 @@ async function runQuery() {
   const q = editor.getValue().trim();
   if (!q) return;
 
-  setConsoleStatus('⟳ Running query...');
+  const statEl = document.getElementById('console-status');
+  if (statEl) statEl.innerHTML = `⟳ Running query...`;
+  
+  const timeEl = document.getElementById('console-time');
+  const countEl = document.getElementById('console-count');
+  if (timeEl) timeEl.textContent = '0ms';
+  if (countEl) countEl.textContent = '0 docs';
+
   logOutput(`<span class="out-info">[info] Executing MongoDB command...</span>`);
   
   const runBtn = document.querySelector('.tbtn-run');
@@ -894,7 +901,10 @@ async function runQuery() {
     const count = d.docs_returned || 0;
 
     if (d.status === 'ok' || d.status === 'empty') {
-      setConsoleStatus(`— ${count} docs returned in ${ms}ms`);
+      if (statEl) statEl.innerHTML = `✓ ${count} document(s) returned`;
+      if (timeEl) timeEl.textContent = `${ms}ms`;
+      if (countEl) countEl.textContent = `${count} docs`;
+
       document.getElementById('sb-timing').textContent = `${ms}ms`;
       document.getElementById('sb-docs').textContent = `${count} docs`;
       
@@ -907,7 +917,9 @@ async function runQuery() {
       // Save query execution to history state
       saveToHistory(q, d.status, count, d.timing_ms);
     } else {
-      setConsoleStatus('— Query Error');
+      if (statEl) statEl.innerHTML = `— Query Error`;
+      if (timeEl) timeEl.textContent = `0ms`;
+      if (countEl) countEl.textContent = `0 docs`;
       logOutput(`<span class="out-err">[error] ${esc(d.error || 'Unknown evaluation error')}</span>`);
       if (d.traceback_str) {
         logOutput(`<span class="out-info">${esc(d.traceback_str)}</span>`);
@@ -919,7 +931,7 @@ async function runQuery() {
   } catch(e) {
     runBtn.classList.remove('running');
     runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
-    setConsoleStatus('— Network Error');
+    if (statEl) statEl.innerHTML = `— Network Error`;
     logOutput(`<span class="out-err">[network error] ${esc(e.message)}</span>`);
   }
 }
@@ -1464,6 +1476,36 @@ function initResizer() {
   });
 }
 
+function initConsoleResizer() {
+  const handle = document.getElementById('console-resizer');
+  const consoleEl = document.getElementById('console');
+  if (!handle || !consoleEl) return;
+  
+  let dragging = false, startY = 0, startH = 0;
+  
+  handle.addEventListener('mousedown', e => {
+    dragging = true;
+    startY = e.clientY;
+    startH = consoleEl.offsetHeight;
+    document.body.style.userSelect = 'none';
+  });
+  
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const dy = startY - e.clientY; // upwards drag increases height
+    const h = Math.max(100, Math.min(window.innerHeight * 0.8, startH + dy));
+    consoleEl.style.height = h + 'px';
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (dragging) {
+      dragging = false;
+      document.body.style.userSelect = '';
+      if (editor) editor.refresh();
+    }
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // HTML FORMAT ESCAPER
 // ═══════════════════════════════════════════════════════════════════
@@ -1481,9 +1523,9 @@ function escId(s) {
 function loadSettingsFromLocalStorage() {
   const defaults = {
     fontFamily: 'Consolas',
-    fontSizeVal: 13,
+    fontSizeVal: 11,
     fontSizeUnit: 'pt',
-    tabWidth: '8 spaces',
+    tabWidth: '4 spaces',
     maxResults: 10000,
     timeout: '30 s'
   };
@@ -1509,7 +1551,7 @@ function loadSettingsFromLocalStorage() {
 
 function saveSettings() {
   S.settings.fontFamily = document.getElementById('set-font-family').value;
-  S.settings.fontSizeVal = parseInt(document.getElementById('set-font-size-val').value) || 13;
+  S.settings.fontSizeVal = parseInt(document.getElementById('set-font-size-val').value) || 11;
   S.settings.fontSizeUnit = document.getElementById('set-font-size-unit').value;
   S.settings.tabWidth = document.getElementById('set-tab-width').value;
   S.settings.maxResults = parseInt(document.getElementById('set-max-results').value) || 10000;
@@ -1527,9 +1569,9 @@ function saveSettings() {
 function applySettings() {
   if (!editor) return;
   
-  // Extract number from tabWidth (e.g. "8 spaces" -> 8)
-  const tabMatch = String(S.settings.tabWidth || '8').match(/\d+/);
-  const tabVal = tabMatch ? parseInt(tabMatch[0]) : 8;
+  // Extract number from tabWidth (e.g. "4 spaces" -> 4)
+  const tabMatch = String(S.settings.tabWidth || '4').match(/\d+/);
+  const tabVal = tabMatch ? parseInt(tabMatch[0]) : 4;
   editor.setOption('tabSize', tabVal);
   editor.setOption('indentUnit', tabVal);
   
@@ -1541,7 +1583,7 @@ function applySettings() {
     document.head.appendChild(styleEl);
   }
   
-  const sizeVal = (S.settings.fontSizeVal || 13) + (S.settings.fontSizeUnit || 'pt');
+  const sizeVal = (S.settings.fontSizeVal || 11) + (S.settings.fontSizeUnit || 'pt');
   
   styleEl.textContent = `
     .CodeMirror,

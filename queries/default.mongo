@@ -1,0 +1,2 @@
+// Default MongoDB Query
+db.users.find({})

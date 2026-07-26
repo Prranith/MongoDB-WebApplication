@@ -949,6 +949,10 @@ body {
 }
 
 /* ── Console ─────────────────────────────────────────── */
+#console-resizer:hover, #console-resizer.dragging {
+  background: var(--blue) !important;
+}
+
 #console {
   height: var(--console-h);
   background: var(--bg);
