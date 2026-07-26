@@ -41,3 +41,5 @@ htmlcov/
 # Local Analytics / Temporary outputs
 analytics.json
 client_id
+
+.vercel
