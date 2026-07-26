@@ -160,8 +160,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadSnippets();
   recordLaunch();
 
-  // Polling metrics on welcome screen
-  setInterval(recordLaunch, 3000);
+  // Polling metrics is already handled in recordLaunch via startHeartbeatPolling (every 30s)
 
   // Setup Global Keyboard Shortcuts
   document.addEventListener('keydown', e => {
@@ -400,30 +399,22 @@ async function loadSnippets() {
 // VIEWS SWITCHING
 // ═══════════════════════════════════════════════════════════════════
 function showView(name) {
-  S.view = name;
-  const ide = document.getElementById('ide-panel');
-  const intro = document.getElementById('intro-panel');
   if (name === 'intro') {
-    ide.style.display = 'none';
-    intro.classList.add('active');
-    
-    // Set welcome icon active, others inactive
-    document.getElementById('act-welcome')?.classList.add('active');
-    ['files', 'db', 'history', 'snippets', 'search'].forEach(p => {
-      document.getElementById(`act-${p}`)?.classList.remove('active');
-    });
+    openFileInTab('welcome');
   } else {
-    intro.classList.remove('active');
-    ide.style.display = 'flex';
-    
-    // Set current side panel button to active
-    document.getElementById('act-welcome')?.classList.remove('active');
-    document.getElementById(`act-${S.sidePanel}`)?.classList.add('active');
-    
-    setTimeout(() => {
-      editor.refresh();
-      editor.focus();
-    }, 50);
+    // Switch to IDE view: open active file, or last tab, or fallback to default
+    const defaultFile = S.files.find(f => f.type === 'file');
+    if (S.activeFile && S.activeFile !== 'welcome') {
+      openFileInTab(S.activeFile);
+    } else if (S.tabs.length > 0) {
+      openFileInTab(S.tabs[S.tabs.length - 1]);
+    } else if (defaultFile) {
+      openFileInTab(defaultFile.path);
+    } else {
+      document.getElementById('intro-panel').classList.remove('active');
+      document.getElementById('cm-wrap').style.display = 'flex';
+      document.getElementById('inspector').style.display = 'none';
+    }
   }
 }
 
@@ -504,6 +495,36 @@ function renderFileTree() {
 }
 
 function openFileInTab(path) {
+  if (path === 'welcome') {
+    S.activeFile = 'welcome';
+    if (!S.tabs.includes('welcome')) {
+      S.tabs.unshift('welcome');
+      createTabElement({ name: 'Welcome', path: 'welcome' });
+    }
+    
+    // Toggle DOM panels: show intro, hide editor & inspector
+    document.getElementById('intro-panel').classList.add('active');
+    document.getElementById('cm-wrap').style.display = 'none';
+    document.getElementById('inspector').style.display = 'none';
+    
+    renderFileTree();
+    updateActiveTabStyle();
+    
+    document.getElementById('act-welcome')?.classList.add('active');
+    ['files', 'db', 'history', 'snippets', 'search'].forEach(p => {
+      document.getElementById(`act-${p}`)?.classList.remove('active');
+    });
+    
+    setTimeout(() => {
+      const canvas = document.getElementById('particle-canvas');
+      if (canvas) {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+      }
+    }, 100);
+    return;
+  }
+
   const file = S.files.find(f => f.path === path);
   if (!file || file.type === 'folder') return;
   
@@ -513,15 +534,27 @@ function openFileInTab(path) {
     createTabElement(file);
   }
   
+  // Hide welcome page, show editor & inspector
+  document.getElementById('intro-panel').classList.remove('active');
+  document.getElementById('cm-wrap').style.display = 'flex';
+  const showInsp = !document.getElementById('inspector').classList.contains('collapsed');
+  document.getElementById('inspector').style.display = showInsp ? 'flex' : 'none';
+  
   editor.setValue(file.content);
   S.activeCollection = inferCollectionFromQuery(file.content) || S.activeCollection;
   document.getElementById('sb-coll').textContent = S.activeCollection;
   loadSchema(S.activeCollection);
   
-  // Update active states
   renderFileTree();
   updateActiveTabStyle();
-  showView('ide');
+  
+  document.getElementById('act-welcome')?.classList.remove('active');
+  document.getElementById(`act-${S.sidePanel}`)?.classList.add('active');
+  
+  setTimeout(() => {
+    editor.refresh();
+    editor.focus();
+  }, 50);
 }
 
 function inferCollectionFromQuery(q) {
@@ -559,6 +592,10 @@ function closeTab(path, event) {
     } else {
       S.activeFile = null;
       editor.setValue('');
+      // Hide welcome panel, reset to empty editor view
+      document.getElementById('intro-panel').classList.remove('active');
+      document.getElementById('cm-wrap').style.display = 'flex';
+      document.getElementById('inspector').style.display = 'none';
     }
   }
   renderFileTree();
