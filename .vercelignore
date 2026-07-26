@@ -1,15 +1,10 @@
-# Ignore Python desktop application files for Vercel
-app.py
+# Vercel ignore file
 launcher.py
+app.py
 MongoSandbox.spec
-requirements.txt
-core/
-ui/
-utils/
-tests/
-assets/
-databases/
-queries/
-workspace/
 __pycache__/
 .pytest_cache/
+assets/
+queries/
+workspace/
+Dockerfile
