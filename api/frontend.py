@@ -2588,25 +2588,39 @@ async function recordLaunch() {
 let heartbeatTimer = null;
 function startHeartbeatPolling() {
   if (heartbeatTimer) clearInterval(heartbeatTimer);
-  heartbeatTimer = setInterval(async () => {
-    const intro = document.getElementById('intro-panel');
-    const cid = getClientId();
-    if (intro && intro.classList.contains('active')) {
-      try {
-        const d = await fetchAPI(`/api/analytics?client_id=${cid}`);
-        document.getElementById('stat-active').textContent = d.active_users ?? '—';
-        document.getElementById('stat-visited').textContent = d.total_visits ?? '—';
-      } catch(e) {}
-    } else {
-      try {
-        await fetch('/api/analytics/heartbeat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ client_id: cid })
-        });
-      } catch(e) {}
-    }
-  }, 30000);
+  heartbeatTimer = setInterval(sendHeartbeat, 30000);
+
+  if (!window.hasHeartbeatListener) {
+    window.hasHeartbeatListener = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        sendHeartbeat();
+      }
+    });
+  }
+}
+
+async function sendHeartbeat() {
+  if (document.visibilityState !== 'visible') {
+    return;
+  }
+  const intro = document.getElementById('intro-panel');
+  const cid = getClientId();
+  if (intro && intro.classList.contains('active')) {
+    try {
+      const d = await fetchAPI(`/api/analytics?client_id=${cid}`);
+      document.getElementById('stat-active').textContent = d.active_users ?? '—';
+      document.getElementById('stat-visited').textContent = d.total_visits ?? '—';
+    } catch(e) {}
+  } else {
+    try {
+      await fetch('/api/analytics/heartbeat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: cid })
+      });
+    } catch(e) {}
+  }
 }
 
 function initParticles() {

@@ -372,7 +372,7 @@ def api_analytics_heartbeat():
         now_ts = int(datetime.now().timestamp())
         analytics_tracker._async_run([
             ["ZADD", "active_users", str(now_ts), client_id],
-            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 300)]
+            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 90)]
         ])
     return jsonify({"status": "ok"})
 

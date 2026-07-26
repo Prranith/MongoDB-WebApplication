@@ -137,7 +137,7 @@ class AnalyticsTracker:
             self._local_data["last_visited"] = now_iso
             
             sessions = self._local_data.setdefault("active_sessions", [])
-            cutoff = now_ts - 300
+            cutoff = now_ts - 90
             sessions = [t for t in sessions if isinstance(t, (int, float)) and t > cutoff]
             sessions.append(now_ts)
             self._local_data["active_sessions"] = sessions
@@ -154,7 +154,7 @@ class AnalyticsTracker:
             ["PFADD", "unique_visitors", cid],
             ["PFCOUNT", "unique_visitors"],
             ["ZADD", "active_users", str(now_ts), cid],
-            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 300)],
+            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 90)],
             ["ZCARD", "active_users"]
         ]
         
@@ -213,12 +213,12 @@ class AnalyticsTracker:
         """Return exact real-time usage metrics."""
         cid = client_id or self._client_id
         now_ts = int(time.time())
-        cutoff = now_ts - 300
+        cutoff = now_ts - 90
 
         # Query Redis for the latest stats
         pipeline_cmds = [
             ["ZADD", "active_users", str(now_ts), cid],
-            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 300)],
+            ["ZREMRANGEBYSCORE", "active_users", "-inf", str(now_ts - 90)],
             ["ZCARD", "active_users"],
             ["PFCOUNT", "unique_visitors"],
             ["GET", "total_profile_visits"],
