@@ -228,9 +228,20 @@ function showView(name) {
   if (name === 'intro') {
     ide.style.display = 'none';
     intro.classList.add('active');
+    
+    // Set welcome icon active, others inactive
+    document.getElementById('act-welcome')?.classList.add('active');
+    ['files', 'db', 'history', 'snippets', 'search'].forEach(p => {
+      document.getElementById(`act-${p}`)?.classList.remove('active');
+    });
   } else {
     intro.classList.remove('active');
     ide.style.display = 'flex';
+    
+    // Set current side panel button to active
+    document.getElementById('act-welcome')?.classList.remove('active');
+    document.getElementById(`act-${S.sidePanel}`)?.classList.add('active');
+    
     setTimeout(() => {
       editor.refresh();
       editor.focus();
@@ -277,6 +288,8 @@ async function loadFiles() {
   }
 }
 
+const SVG_MONGO_LEAF = `<svg viewBox="0 0 16 16" width="14" height="14" style="margin-right:6px;flex-shrink:0"><path fill="#47a248" d="M8 1s-4.5 4.5-4.5 8.5C3.5 12 5.5 15 8 15s4.5-3 4.5-5.5C12.5 5.5 8 1 8 1zm0 12.5c-1.5 0-2.5-1.5-2.5-3 0-2.5 2.5-6 2.5-6s2.5 3.5 2.5 6c0 1.5-1 3-2.5 3z"/></svg>`;
+
 function renderFileTree() {
   const container = document.getElementById('q-list');
   if (!S.files.length) {
@@ -291,14 +304,17 @@ function renderFileTree() {
   });
   
   container.innerHTML = sorted.map(f => {
-    const icon = f.type === 'folder' ? '📁' : '📄';
+    let icon = f.type === 'folder' ? '📁' : '📄';
+    if (f.type === 'file' && f.name.endsWith('.mongo')) {
+      icon = SVG_MONGO_LEAF;
+    }
     const indentClass = f.path.includes('/') ? 'style="padding-left:36px"' : '';
     return `
       <div class="file-item ${f.path === S.activeFile ? 'active' : ''}" 
            ${indentClass}
            onclick="openFileInTab('${f.path}')"
            oncontextmenu="handleFileContextMenu(event, '${f.path}')">
-        <span class="file-icon">${icon}</span>
+        <span class="file-icon" style="display:flex; align-items:center">${icon}</span>
         <span>${esc(f.name)}</span>
       </div>
     `;
@@ -400,7 +416,8 @@ function saveQuery() {
 // ═══════════════════════════════════════════════════════════════════
 // CRUD FILE SYSTEM DIALOGS
 // ═══════════════════════════════════════════════════════════════════
-function createNewQueryFile() {
+function createNewQueryFile(event) {
+  if (event) event.stopPropagation();
   const name = prompt("Enter new query filename (e.g. stats.mongo):");
   if (!name || !name.trim()) return;
   
@@ -428,8 +445,83 @@ function createNewQueryFile() {
   }).catch(() => {});
 }
 
+function createNewFolder(event) {
+  if (event) event.stopPropagation();
+  const name = prompt("Enter new folder name:");
+  if (!name || !name.trim()) return;
+  
+  const folderName = name.trim();
+  const folderObj = {
+    name: folderName,
+    path: folderName,
+    type: 'folder',
+    content: ''
+  };
+  
+  S.files.push(folderObj);
+  localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
+  renderFileTree();
+  
+  fetchAPI('/api/files/create', {
+    method: 'POST',
+    body: JSON.stringify({ path: folderObj.path, is_folder: true })
+  }).catch(() => {});
+}
+
+function collapseAllFiles(event) {
+  if (event) event.stopPropagation();
+  toggleFileSection();
+}
+
+function handleFileContextMenu(event, path) {
+  event.preventDefault();
+  event.stopPropagation();
+  
+  const file = S.files.find(f => f.path === path);
+  if (!file) return;
+  
+  const opt = prompt(`Manage ${file.name}:\n1. Rename\n2. Delete\n\nEnter number (1 or 2):`);
+  if (opt === '1') {
+    const newName = prompt("Enter new name:", file.name);
+    if (newName && newName.trim() && newName.trim() !== file.name) {
+      const oldPath = file.path;
+      file.name = newName.trim();
+      file.path = newName.trim();
+      
+      // Update tab if open
+      const tabEl = document.getElementById(`tab-${escId(oldPath)}`);
+      if (tabEl) {
+        tabEl.id = `tab-${escId(file.path)}`;
+        tabEl.querySelector('span:not(.tab-dot)').textContent = file.name;
+        // Update onclick to open new path
+        tabEl.onclick = () => openFileInTab(file.path);
+        const closeBtn = tabEl.querySelector('.tab-close');
+        if (closeBtn) closeBtn.onclick = (e) => closeTab(file.path, e);
+      }
+      
+      // Update active state path
+      if (S.activeFile === oldPath) {
+        S.activeFile = file.path;
+      }
+      
+      const tabIdx = S.tabs.indexOf(oldPath);
+      if (tabIdx !== -1) S.tabs[tabIdx] = file.path;
+      
+      localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
+      renderFileTree();
+      
+      fetchAPI('/api/files/rename', {
+        method: 'POST',
+        body: JSON.stringify({ old_path: oldPath, new_path: file.path })
+      }).catch(() => {});
+    }
+  } else if (opt === '2') {
+    deleteActiveQueryFile(file.path);
+  }
+}
+
 function deleteActiveQueryFile(path) {
-  if (!confirm(`Are you sure you want to delete ${path}?`)) return;
+  if (!confirm(`Are you sure you want to delete '${path}'?`)) return;
   
   closeTab(path);
   S.files = S.files.filter(f => f.path !== path);
@@ -860,9 +952,18 @@ function saveToHistory(queryText, status, docsCount, executionTime) {
   renderHistoryPanel();
 }
 
+const PANEL_TITLES = {
+  files: "Explorer",
+  db: "DATABASE EXPLORER",
+  history: "QUERY HISTORY",
+  snippets: "SNIPPETS",
+  search: "SEARCH"
+};
+
 function renderHistoryPanel() {
-  const panel = document.getElementById('panel-queries');
-  const container = panel.querySelector('.panel-body');
+  const panel = document.getElementById('panel-history');
+  if (!panel) return;
+  const container = panel.querySelector('.panel-body') || panel;
   
   if (!S.history.length) {
     container.innerHTML = `
@@ -920,13 +1021,27 @@ function toggleFavHistory(id, event) {
 // ═══════════════════════════════════════════════════════════════════
 function setSidePanel(name) {
   S.sidePanel = name;
-  ['explorer', 'queries', 'snippets'].forEach(p => {
+  const panels = ['files', 'db', 'history', 'snippets', 'search'];
+  panels.forEach(p => {
     const isAct = p === name;
-    document.getElementById(`panel-${p}`).classList.toggle('active', isAct);
-    document.getElementById(`act-${p}`).classList.toggle('active', isAct);
+    document.getElementById(`panel-${p}`)?.classList.toggle('active', isAct);
+    document.getElementById(`act-${p}`)?.classList.toggle('active', isAct);
   });
   
-  if (name === 'queries') {
+  // Uncheck welcome page active state
+  document.getElementById('act-welcome')?.classList.remove('active');
+  
+  // Update header title
+  const title = PANEL_TITLES[name] || "Explorer";
+  const titleEl = document.getElementById('sidebar-title');
+  if (titleEl) titleEl.textContent = title;
+  
+  // Force show sidebar if collapsed
+  if (!S.sidebarOpen) {
+    toggleSidebar();
+  }
+  
+  if (name === 'history') {
     renderHistoryPanel();
   }
 }
