@@ -320,22 +320,38 @@ function initParticles() {
     }
 
     update() {
+      // Apply speed damping friction
+      this.vx *= 0.98;
+      this.vy *= 0.98;
+
       this.x += this.vx;
       this.y += this.vy;
+
+      // Gentle random jitter
+      this.vx += (Math.random() - 0.5) * 0.04;
+      this.vy += (Math.random() - 0.5) * 0.04;
 
       if (this.x < 0 || this.x > width) this.vx *= -1;
       if (this.y < 0 || this.y > height) this.vy *= -1;
 
+      // Gravitational pull toward mouse cursor
       if (mouse.x !== null && mouse.y !== null) {
-        const dx = this.x - mouse.x;
-        const dy = this.y - mouse.y;
+        const dx = mouse.x - this.x;
+        const dy = mouse.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < mouse.radius) {
           const force = (mouse.radius - dist) / mouse.radius;
-          const angle = Math.atan2(dy, dx);
-          this.x += Math.cos(angle) * force * 2;
-          this.y += Math.sin(angle) * force * 2;
+          this.vx += (dx / dist) * force * 0.12;
+          this.vy += (dy / dist) * force * 0.12;
         }
+      }
+
+      // Clamp speed limits
+      const maxSpeed = 1.6;
+      const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+      if (speed > maxSpeed) {
+        this.vx = (this.vx / speed) * maxSpeed;
+        this.vy = (this.vy / speed) * maxSpeed;
       }
     }
 
@@ -371,6 +387,15 @@ function initParticles() {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < connectionDistance) {
+          // Mutual attraction pull between close particles
+          const force = (connectionDistance - dist) / (connectionDistance * 50);
+          const angle = Math.atan2(dy, dx);
+          
+          particles[i].vx -= Math.cos(angle) * force;
+          particles[i].vy -= Math.sin(angle) * force;
+          particles[j].vx += Math.cos(angle) * force;
+          particles[j].vy += Math.sin(angle) * force;
+
           const alpha = (1 - dist / connectionDistance) * 0.65;
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
