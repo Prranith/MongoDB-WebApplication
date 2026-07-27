@@ -1907,6 +1907,54 @@ li.CodeMirror-hint-active {
   color: #ffffff !important;
 }
 
+/* Custom Dataset Actions & Badges */
+.db-action-btn {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 3px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.db-action-btn:hover {
+  background: var(--hl);
+  border-color: var(--blue);
+  color: #ffffff;
+}
+
+.custom-badge {
+  background: rgba(0, 237, 100, 0.15);
+  color: #00ed64;
+  border: 1px solid rgba(0, 237, 100, 0.3);
+  border-radius: 3px;
+  font-size: 9px;
+  padding: 1px 4px;
+  margin-left: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+  vertical-align: middle;
+  display: inline-block;
+  letter-spacing: 0.3px;
+}
+
+.delete-custom-btn {
+  color: var(--text3);
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+.delete-custom-btn:hover {
+  color: #ff5252 !important;
+  opacity: 1;
+}
+
 </style>
 </head>
 <body>
@@ -2051,6 +2099,15 @@ li.CodeMirror-hint-active {
     <!-- 2. Database Explorer Panel -->
     <div class="sidebar-panel" id="panel-db">
       <input class="panel-search" placeholder="Filter collections..." id="coll-filter" oninput="filterCollections(this.value)"/>
+      
+      <div style="padding: 0 8px 8px 8px;">
+        <button class="db-action-btn" onclick="document.getElementById('dataset-upload').click()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Upload Custom Dataset
+        </button>
+        <input type="file" id="dataset-upload" accept=".json" style="display:none" onchange="uploadCustomDataset(event)"/>
+      </div>
+
       <div class="panel-body" id="db-tree">
         <div class="db-root" onclick="toggleDbRoot()">
           <span id="db-root-arrow">▼</span>
@@ -2791,7 +2848,17 @@ function initParticles() {
 async function loadCollections() {
   try {
     const d = await fetchAPI('/api/collections');
-    S.collections = d.collections || [];
+    const defaultColls = d.collections || [];
+    
+    // Load custom collections from local storage
+    const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+    const customColls = Object.entries(customCollsMap).map(([name, docs]) => ({
+      name: name,
+      count: Array.isArray(docs) ? docs.length : 0,
+      isCustom: true
+    }));
+    
+    S.collections = [...defaultColls, ...customColls];
     renderDbTree();
     if (S.collections.length && !S.activeCollection) {
       setActiveCollection(S.collections[0].name);
@@ -3312,13 +3379,125 @@ function renderDbTree() {
   container.innerHTML = S.collections.map(c => `
     <div class="tree-item ${c.name === S.activeCollection ? 'active' : ''}" 
          onclick="setActiveCollection('${c.name}')"
-         style="display: flex; align-items: center">
-      ${SVG_COLLECTION_ICON}
-      <span>${c.name}</span>
-      <span class="tree-badge">${c.count}</span>
+         style="display: flex; align-items: center; justify-content: space-between; padding-right: 8px;">
+      <div style="display: flex; align-items: center; min-width: 0; flex: 1;">
+        ${SVG_COLLECTION_ICON}
+        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.name}</span>
+        ${c.isCustom ? '<span class="custom-badge">custom</span>' : ''}
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="tree-badge">${c.count}</span>
+        ${c.isCustom ? `<span class="delete-custom-btn" title="Delete dataset" onclick="deleteCustomCollection(event, '${c.name}')" style="font-weight: bold; cursor: pointer; color: var(--text3); font-size: 13px; padding: 2px;">×</span>` : ''}
+      </div>
     </div>
   `).join('');
   container.style.display = S.dbRootOpen ? 'block' : 'none';
+}
+
+function deleteCustomCollection(event, name) {
+  event.stopPropagation();
+  if (!confirm(`Are you sure you want to delete the custom dataset "${name}"?`)) {
+    return;
+  }
+  const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+  delete customCollsMap[name];
+  localStorage.setItem('mongosandbox_custom_collections', JSON.stringify(customCollsMap));
+  
+  if (S.activeCollection === name) {
+    S.activeCollection = null;
+  }
+  loadCollections();
+}
+
+function uploadCustomDataset(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const rawData = JSON.parse(e.target.result);
+      let docs = [];
+      if (Array.isArray(rawData)) {
+        docs = rawData;
+      } else if (rawData && typeof rawData === 'object') {
+        docs = [rawData];
+      } else {
+        throw new Error("Dataset JSON must be a list of objects or a single object.");
+      }
+      
+      let defaultName = file.name.replace(/\\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_]/g, "_");
+      let collName = prompt("Enter a name for this custom collection:", defaultName);
+      if (!collName) return;
+      collName = collName.trim();
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(collName)) {
+        alert("Invalid collection name. Use alphanumeric characters and underscores only, starting with a letter or underscore.");
+        return;
+      }
+      
+      const defaults = ['elite', 'users', 'orders', 'inventory', 'shipments', 'transactions'];
+      if (defaults.includes(collName)) {
+        alert(`Collection name "${collName}" is reserved for default datasets. Please use another name.`);
+        return;
+      }
+      
+      const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+      customCollsMap[collName] = docs;
+      localStorage.setItem('mongosandbox_custom_collections', JSON.stringify(customCollsMap));
+      
+      loadCollections();
+      setActiveCollection(collName);
+      
+      event.target.value = '';
+      alert(`Collection "${collName}" (${docs.length} documents) successfully loaded into local in-memory sandbox!`);
+    } catch(err) {
+      alert("Failed to parse JSON file: " + err.message);
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function getCustomCollectionSchema(docs) {
+  const schema = {};
+  
+  function getTypeName(val) {
+    if (val === null) return "Null";
+    if (typeof val === "boolean") return "Boolean";
+    if (typeof val === "number") return Number.isInteger(val) ? "Int32" : "Double";
+    if (typeof val === "string") return "String";
+    if (val instanceof Date) return "Date";
+    if (Array.isArray(val)) return "Array";
+    if (typeof val === "object") {
+      if (val.$oid) return "ObjectId";
+      if (val.$date) return "Date";
+      return "Object";
+    }
+    return typeof val;
+  }
+
+  function extract(obj, prefix) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj) || obj.$oid || obj.$date) return;
+    for (const [key, val] of Object.entries(obj)) {
+      const fieldName = prefix ? `${prefix}.${key}` : key;
+      const type = getTypeName(val);
+      if (!schema[fieldName]) {
+        schema[fieldName] = new Set();
+      }
+      schema[fieldName].add(type);
+      if (val && typeof val === 'object' && !Array.isArray(val) && !val.$oid && !val.$date) {
+        extract(val, fieldName);
+      }
+    }
+  }
+
+  docs.slice(0, 100).forEach(doc => extract(doc, ''));
+  
+  const result = {};
+  for (const [field, typeSet] of Object.entries(schema)) {
+    result[field] = Array.from(typeSet).sort();
+  }
+  return result;
 }
 
 function filterCollections(q) {
@@ -3343,9 +3522,17 @@ function setActiveCollection(name) {
 // SCHEMA INSPECTOR
 // ═══════════════════════════════════════════════════════════════════
 function loadSchema(coll) {
-  fetchAPI(`/api/schema/${coll}`).then(d => {
-    renderInspector(coll, d.schema, d.count);
-  });
+  const collObj = S.collections.find(c => c.name === coll);
+  if (collObj && collObj.isCustom) {
+    const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+    const docs = customCollsMap[coll] || [];
+    const schema = getCustomCollectionSchema(docs);
+    renderInspector(coll, schema, docs.length);
+  } else {
+    fetchAPI(`/api/schema/${coll}`).then(d => {
+      renderInspector(coll, d.schema, d.count);
+    });
+  }
 }
 
 function renderInspector(coll, schema, count) {
@@ -3450,9 +3637,14 @@ async function runQuery() {
 
   try {
     const limitVal = S.settings ? S.settings.maxResults : 10000;
+    const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
     const d = await fetchAPI('/api/query', {
       method: 'POST',
-      body: JSON.stringify({ query: q, limit: limitVal })
+      body: JSON.stringify({ 
+        query: q, 
+        limit: limitVal,
+        custom_collections: customCollsMap
+      })
     });
     
     S.lastData = d.data;

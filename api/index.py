@@ -130,12 +130,43 @@ def api_collections():
 
 # ── API: Query Execution ──────────────────────────────────────────────────────
 
+def _create_temp_db(custom_collections=None):
+    """
+    Create an isolated, temporary, in-memory MongoDB client per request.
+    Populates it with all default datasets plus the user's custom JSON collections.
+    """
+    import mongomock
+    temp_client = mongomock.MongoClient()
+    temp_db = temp_client[db_manager.db_name]
+    
+    # 1. Copy default collection datasets
+    for coll_name in db_manager.list_collection_names():
+        global_coll = db_manager.get_collection(coll_name)
+        if global_coll:
+            docs = list(global_coll.find({}))
+            if docs:
+                temp_db[coll_name].insert_many(docs)
+                
+    # 2. Load custom collections provided by user
+    if custom_collections:
+        for coll_name, docs in custom_collections.items():
+            if not coll_name or not isinstance(docs, list):
+                continue
+            if docs:
+                parsed_docs = json_util.loads(json_util.dumps(docs))
+                temp_db[coll_name].drop()
+                temp_db[coll_name].insert_many(parsed_docs)
+                
+    return temp_db
+
+
 @app.route("/api/query", methods=["POST"])
 def api_query():
     """Execute a MongoDB shell query and return results."""
     body = request.get_json(force=True, silent=True) or {}
     raw_query = body.get("query", "").strip()
     limit = int(body.get("limit", 100))
+    custom_collections = body.get("custom_collections", {})
 
     if not raw_query:
         return jsonify({"status": "error", "error": "Empty query"}), 400
@@ -143,7 +174,12 @@ def api_query():
     # Track analytics
     analytics_tracker.record_query_executed()
 
-    result = web_execute(raw_query, max_results=limit)
+    if custom_collections:
+        temp_db = _create_temp_db(custom_collections)
+        result = web_execute(raw_query, max_results=limit, db=temp_db)
+    else:
+        result = web_execute(raw_query, max_results=limit)
+
     payload = result.to_dict()
     return jsonify(payload)
 

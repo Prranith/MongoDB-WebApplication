@@ -48,7 +48,7 @@ class QueryResult:
         return raw
 
 
-def execute(raw_query: str, max_results: int = 1000) -> QueryResult:
+def execute(raw_query: str, max_results: int = 1000, db: Any = None) -> QueryResult:
     """
     Core synchronous execution (no Qt):
     1. Translate raw shell query → Python code
@@ -84,7 +84,7 @@ def execute(raw_query: str, max_results: int = 1000) -> QueryResult:
         raise ValueError(f"ISODate: cannot parse '{x}'")
 
     safe_locals: dict[str, Any] = {
-        "db": db_manager.db,
+        "db": db if db is not None else db_manager.db,
         "ObjectId": ObjectId,
         "ISODate": _ISODate,
         "datetime": datetime,

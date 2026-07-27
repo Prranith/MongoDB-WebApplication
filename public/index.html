@@ -213,6 +213,15 @@
     <!-- 2. Database Explorer Panel -->
     <div class="sidebar-panel" id="panel-db">
       <input class="panel-search" placeholder="Filter collections..." id="coll-filter" oninput="filterCollections(this.value)"/>
+      
+      <div style="padding: 0 8px 8px 8px;">
+        <button class="db-action-btn" onclick="document.getElementById('dataset-upload').click()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Upload Custom Dataset
+        </button>
+        <input type="file" id="dataset-upload" accept=".json" style="display:none" onchange="uploadCustomDataset(event)"/>
+      </div>
+
       <div class="panel-body" id="db-tree">
         <div class="db-root" onclick="toggleDbRoot()">
           <span id="db-root-arrow">▼</span>

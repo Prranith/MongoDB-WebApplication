@@ -1830,3 +1830,51 @@ li.CodeMirror-hint-active {
   background-color: #04395e !important;
   color: #ffffff !important;
 }
+
+/* Custom Dataset Actions & Badges */
+.db-action-btn {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 3px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.db-action-btn:hover {
+  background: var(--hl);
+  border-color: var(--blue);
+  color: #ffffff;
+}
+
+.custom-badge {
+  background: rgba(0, 237, 100, 0.15);
+  color: #00ed64;
+  border: 1px solid rgba(0, 237, 100, 0.3);
+  border-radius: 3px;
+  font-size: 9px;
+  padding: 1px 4px;
+  margin-left: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+  vertical-align: middle;
+  display: inline-block;
+  letter-spacing: 0.3px;
+}
+
+.delete-custom-btn {
+  color: var(--text3);
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+.delete-custom-btn:hover {
+  color: #ff5252 !important;
+  opacity: 1;
+}
