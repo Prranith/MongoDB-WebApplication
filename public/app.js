@@ -342,7 +342,7 @@ function initParticles() {
     draw() {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 237, 100, 0.4)';
+      ctx.fillStyle = 'rgba(0, 200, 80, 0.7)';
       ctx.fill();
     }
   }
@@ -371,11 +371,11 @@ function initParticles() {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < connectionDistance) {
-          const alpha = (1 - dist / connectionDistance) * 0.15;
+          const alpha = (1 - dist / connectionDistance) * 0.65;
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(0, 237, 100, ${alpha})`;
+          ctx.strokeStyle = `rgba(0, 200, 80, ${alpha})`;
           ctx.lineWidth = 1;
           ctx.stroke();
         }
@@ -1180,7 +1180,18 @@ async function runQuery() {
 
   try {
     const limitVal = S.settings ? S.settings.maxResults : 10000;
-    const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+    // Filter custom collections to only include those referenced in the query string
+    const customCollsMap = {};
+    try {
+      const stored = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+      Object.entries(stored).forEach(([name, docs]) => {
+        const pattern = new RegExp('\\b' + name + '\\b');
+        if (pattern.test(q)) {
+          customCollsMap[name] = docs;
+        }
+      });
+    } catch(e) {}
+
     const d = await fetchAPI('/api/query', {
       method: 'POST',
       body: JSON.stringify({ 

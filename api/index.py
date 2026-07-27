@@ -130,22 +130,27 @@ def api_collections():
 
 # ── API: Query Execution ──────────────────────────────────────────────────────
 
-def _create_temp_db(custom_collections=None):
+# Global warm cache to keep parsed BSON docs across sequential requests on warm instances
+_PARSED_CACHE = {}
+
+def _create_temp_db(raw_query, custom_collections=None):
     """
     Create an isolated, temporary, in-memory MongoDB client per request.
-    Populates it with all default datasets plus the user's custom JSON collections.
+    Populates it with referenced default collections plus the user's custom JSON collections.
     """
     import mongomock
     temp_client = mongomock.MongoClient()
     temp_db = temp_client[db_manager.db_name]
     
-    # 1. Copy default collection datasets
+    # 1. Copy default collection datasets only if they are referenced in the query string
+    # This prevents loading/copying unneeded collections (saving CPU & memory overhead)
     for coll_name in db_manager.list_collection_names():
-        global_coll = db_manager.get_collection(coll_name)
-        if global_coll:
-            docs = list(global_coll.find({}))
-            if docs:
-                temp_db[coll_name].insert_many(docs)
+        if coll_name in raw_query:
+            global_coll = db_manager.get_collection(coll_name)
+            if global_coll:
+                docs = list(global_coll.find({}))
+                if docs:
+                    temp_db[coll_name].insert_many(docs)
                 
     # 2. Load custom collections provided by user
     if custom_collections:
@@ -153,7 +158,18 @@ def _create_temp_db(custom_collections=None):
             if not coll_name or not isinstance(docs, list):
                 continue
             if docs:
-                parsed_docs = json_util.loads(json_util.dumps(docs))
+                # Fast BSON parse fingerprint cache key
+                first_id = docs[0].get('_id', {}).get('$oid', '') if (docs and isinstance(docs[0], dict)) else ''
+                last_id = docs[-1].get('_id', {}).get('$oid', '') if (docs and isinstance(docs[-1], dict)) else ''
+                cache_key = f"{coll_name}_{len(docs)}_{first_id}_{last_id}"
+                
+                if cache_key in _PARSED_CACHE:
+                    parsed_docs = _PARSED_CACHE[cache_key]
+                else:
+                    # json.dumps is implemented in C and much faster than json_util.dumps
+                    parsed_docs = json_util.loads(json.dumps(docs))
+                    _PARSED_CACHE[cache_key] = parsed_docs
+                
                 temp_db[coll_name].drop()
                 temp_db[coll_name].insert_many(parsed_docs)
                 
@@ -175,7 +191,7 @@ def api_query():
     analytics_tracker.record_query_executed()
 
     if custom_collections:
-        temp_db = _create_temp_db(custom_collections)
+        temp_db = _create_temp_db(raw_query, custom_collections)
         result = web_execute(raw_query, max_results=limit, db=temp_db)
     else:
         result = web_execute(raw_query, max_results=limit)
