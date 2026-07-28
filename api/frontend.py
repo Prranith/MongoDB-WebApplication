@@ -2455,10 +2455,6 @@ li.CodeMirror-hint-active {
 
 <!-- JavaScript Logic -->
 <script>
-/* app.js
-   Full VS Code-like state & UI logic for MongoSandbox
-*/
-
 // ═══════════════════════════════════════════════════════════════════
 // CONSTANTS & CONFIGS
 // ═══════════════════════════════════════════════════════════════════
@@ -2540,125 +2536,8 @@ const S = {
 
 let editor;
 
-// ═══════════════════════════════════════════════════════════════════
-// INITIALIZATION
-// ═══════════════════════════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', () => {
-  // Initialize settings
-  loadSettingsFromLocalStorage();
-
-  // Initialize state from local storage fallback
-  loadHistoryFromLocalStorage();
-
-  // Setup CodeMirror IntelliSense Helper
-  setupMongoIntelliSense();
-
-  const tabVal = parseInt(S.settings.tabWidth) || 8;
-
-  // Setup CodeMirror
-  editor = CodeMirror.fromTextArea(document.getElementById('raw-editor'), {
-    mode: 'javascript',
-    theme: 'default',
-    lineNumbers: true,
-    matchBrackets: true,
-    autoCloseBrackets: true,
-    indentUnit: tabVal,
-    tabSize: tabVal,
-    styleActiveLine: true,
-    extraKeys: {
-      'Ctrl-Enter': runQuery,
-      'Cmd-Enter': runQuery,
-      'Ctrl-/': cm => cm.execCommand('toggleComment'),
-      'Alt-F': formatQuery,
-      'Ctrl-S': cm => { saveQuery(); },
-      'Ctrl-Space': cm => { cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false }); },
-    },
-  });
-  editor.setSize('100%', '100%');
-
-  // Trigger IntelliSense autocompletion as user types
-  editor.on('inputRead', (cm, change) => {
-    if (change.text[0] === '.' || change.text[0] === '$' || (change.text[0].length === 1 && change.text[0].match(/[a-zA-Z]/))) {
-      cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false });
-    }
-  });
-
-  // Track cursor position
-  editor.on('cursorActivity', () => {
-    const c = editor.getCursor();
-    document.getElementById('sb-pos').textContent = `Ln ${c.line + 1}, Col ${c.ch + 1}`;
-  });
-
-  // Track workspace changes and sync to tab state
-  editor.on('change', () => {
-    if (S.activeFile) {
-      const file = S.files.find(f => f.path === S.activeFile);
-      if (file) {
-        const val = editor.getValue().replace(/\\r\\n/g, '\\n');
-        const fileContent = file.content.replace(/\\r\\n/g, '\\n');
-        if (fileContent !== val) {
-          document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.add('dirty');
-        } else {
-          document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.remove('dirty');
-        }
-      }
-    }
-  });
-
-  // Apply visual theme override
-  applyEditorTheme();
-  applySettings();
-  initResizer();
-  initConsoleResizer();
-
-  // Load backend metrics & explorer data
-  loadFiles();
-  loadCollections();
-  loadSnippets();
-  recordLaunch();
-
-  // Setup Global Keyboard Shortcuts
-  document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') { e.preventDefault(); toggleSidebar(); }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveQuery(); }
-    if (e.key === 'Escape') { closePalette(); closeAllModals(); closeMenus(); }
-    if (e.key === 'F1') { e.preventDefault(); openModal('schema-modal'); }
-  });
-
-  document.addEventListener('click', closeMenus);
-});
-
-// Apply VS Code dark theme style tokens directly
-function applyEditorTheme() {
-  const style = document.createElement('style');
-  style.textContent = `
-    .CodeMirror { background:#1e1e1e !important; color:#d4d4d4 !important; }
-    .CodeMirror-gutters { background:#1e1e1e !important; border-right:1px solid #3c3c3c !important; }
-    .CodeMirror-linenumber { color:#858585 !important; }
-    .CodeMirror-activeline-background { background:#282828 !important; }
-    .CodeMirror-selected { background:#264f78 !important; }
-    .CodeMirror-cursor { border-left:2px solid #aeafad !important; }
-    .cm-keyword { color:#569cd6 !important; }
-    .cm-string, .cm-string-2 { color:#ce9178 !important; }
-    .cm-number { color:#b5cea8 !important; }
-    .cm-comment { color:#6a9955 !important; font-style:italic; }
-    .cm-property { color:#9cdcfe !important; }
-    .cm-variable { color:#9cdcfe !important; }
-    .cm-variable-2 { color:#9cdcfe !important; }
-    .cm-def { color:#dcdcaa !important; }
-    .cm-operator { color:#d4d4d4 !important; }
-    .cm-atom { color:#569cd6 !important; }
-    .cm-punctuation { color:#d4d4d4 !important; }
-    .CodeMirror-scroll { background:#1e1e1e !important; }
-    .CodeMirror-hints { background:#252526; border:1px solid #454545; z-index:1000; }
-    .CodeMirror-hint { color:#d4d4d4; }
-    .CodeMirror-hint-active { background:#094771 !important; color:#fff; }
-    .tab.dirty .tab-dot { display: block !important; }
-  `;
-  document.head.appendChild(style);
-}
-
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════════════
 // API CORE
 // ═══════════════════════════════════════════════════════════════════
@@ -2874,6 +2753,609 @@ async function loadSnippets() {
   } catch(e) {}
 }
 
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// HTML FORMAT ESCAPER
+// ═══════════════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escId(s) {
+  return String(s).replace(/[^A-Za-z0-9]/g, '_');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SETTINGS OPERATIONS
+// ═══════════════════════════════════════════════════════════════════
+function loadSettingsFromLocalStorage() {
+  const defaults = {
+    fontFamily: 'Consolas',
+    fontSizeVal: 11,
+    fontSizeUnit: 'pt',
+    tabWidth: '4 spaces',
+    maxResults: 10000,
+    timeout: '30 s'
+  };
+  const saved = JSON.parse(localStorage.getItem('mongosandbox_settings') || '{}');
+  S.settings = { ...defaults, ...saved };
+  
+  // Backwards compatibility for old S.settings.fontSize (e.g. "13 pt")
+  if (saved.fontSize && !saved.fontSizeVal) {
+    const valMatch = String(saved.fontSize).match(/\\d+/);
+    const unitMatch = String(saved.fontSize).match(/[a-zA-Z]+/);
+    S.settings.fontSizeVal = valMatch ? parseInt(valMatch[0]) : 13;
+    S.settings.fontSizeUnit = unitMatch ? unitMatch[0] : 'pt';
+  }
+  
+  // Populate modal inputs
+  document.getElementById('set-font-family').value = S.settings.fontFamily;
+  document.getElementById('set-font-size-val').value = S.settings.fontSizeVal;
+  document.getElementById('set-font-size-unit').value = S.settings.fontSizeUnit;
+  document.getElementById('set-tab-width').value = S.settings.tabWidth;
+  document.getElementById('set-max-results').value = S.settings.maxResults;
+  document.getElementById('set-timeout').value = S.settings.timeout;
+}
+
+function saveSettings() {
+  S.settings.fontFamily = document.getElementById('set-font-family').value;
+  S.settings.fontSizeVal = parseInt(document.getElementById('set-font-size-val').value) || 11;
+  S.settings.fontSizeUnit = document.getElementById('set-font-size-unit').value;
+  S.settings.tabWidth = document.getElementById('set-tab-width').value;
+  S.settings.maxResults = parseInt(document.getElementById('set-max-results').value) || 10000;
+  S.settings.timeout = document.getElementById('set-timeout').value;
+  
+  // Maintain S.settings.fontSize for older dependencies
+  S.settings.fontSize = S.settings.fontSizeVal + S.settings.fontSizeUnit;
+  
+  localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings));
+  applySettings();
+  closeModal('settings-modal');
+  logOutput('[info] Editor and execution settings saved.');
+}
+
+function applySettings() {
+  if (!editor) return;
+  
+  // Extract number from tabWidth (e.g. "4 spaces" -> 4)
+  const tabMatch = String(S.settings.tabWidth || '4').match(/\\d+/);
+  const tabVal = tabMatch ? parseInt(tabMatch[0]) : 4;
+  editor.setOption('tabSize', tabVal);
+  editor.setOption('indentUnit', tabVal);
+  
+  // Apply styling dynamically (fontFamily, fontSize)
+  let styleEl = document.getElementById('cm-dyn-settings-style');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'cm-dyn-settings-style';
+    document.head.appendChild(styleEl);
+  }
+  
+  const sizeVal = (S.settings.fontSizeVal || 11) + (S.settings.fontSizeUnit || 'pt');
+  
+  styleEl.textContent = `
+    .CodeMirror,
+    .CodeMirror pre.CodeMirror-line,
+    .CodeMirror pre.CodeMirror-line-like,
+    .CodeMirror-linenumber,
+    .CodeMirror-lines * {
+      font-family: ${S.settings.fontFamily || 'Consolas'}, 'JetBrains Mono', monospace !important;
+      font-size: ${sizeVal} !important;
+    }
+  `;
+  editor.refresh();
+}
+
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// SIDE PANEL TOGGLES
+// ═══════════════════════════════════════════════════════════════════
+function setSidePanel(name) {
+  S.sidePanel = name;
+  const panels = ['files', 'db', 'history', 'snippets', 'search'];
+  panels.forEach(p => {
+    const isAct = p === name;
+    document.getElementById(`panel-${p}`)?.classList.toggle('active', isAct);
+    document.getElementById(`act-${p}`)?.classList.toggle('active', isAct);
+  });
+  
+  // Uncheck welcome page active state
+  document.getElementById('act-welcome')?.classList.remove('active');
+  
+  // Update header title
+  const title = PANEL_TITLES[name] || "Explorer";
+  const titleEl = document.getElementById('sidebar-title');
+  if (titleEl) titleEl.textContent = title;
+  
+  // Force show sidebar if collapsed
+  if (!S.sidebarOpen) {
+    toggleSidebar();
+  }
+  
+  // Switch view to editor/ide when clicking other sidebar panels
+  if (S.view !== 'ide') {
+    showView('ide');
+  }
+  
+  if (name === 'history') {
+    renderHistoryPanel();
+  }
+}
+
+function toggleSidebar() {
+  S.sidebarOpen = !S.sidebarOpen;
+  document.getElementById('sidebar').style.display = S.sidebarOpen ? 'flex' : 'none';
+  document.getElementById('resizer').style.display = S.sidebarOpen ? 'block' : 'none';
+  setTimeout(() => editor.refresh(), 50);
+}
+
+function toggleInspector() {
+  S.inspectorOpen = !S.inspectorOpen;
+  document.getElementById('inspector').style.display = S.inspectorOpen ? 'flex' : 'none';
+  setTimeout(() => editor.refresh(), 50);
+}
+
+function toggleDbRoot() {
+  S.dbRootOpen = !S.dbRootOpen;
+  document.getElementById('coll-list').style.display = S.dbRootOpen ? 'block' : 'none';
+  document.getElementById('db-root-arrow').textContent = S.dbRootOpen ? '▼' : '▶';
+}
+
+function toggleFileSection() {
+  S.filesOpen = !S.filesOpen;
+  document.getElementById('file-section').classList.toggle('collapsed', !S.filesOpen);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// WINDOW & MENU ACTIONS
+// ═══════════════════════════════════════════════════════════════════
+function toggleMenu(el) {
+  event.stopPropagation();
+  const wasOpen = el.classList.contains('open');
+  closeMenus();
+  if (!wasOpen) el.classList.add('open');
+}
+
+function closeMenus() {
+  document.querySelectorAll('.wmenu.open').forEach(m => m.classList.remove('open'));
+}
+
+function formatQuery() {
+  // Mock layout query formatter
+  const val = editor.getValue();
+  // Simply trim and fix tabs/spaces layout
+  editor.setValue(val.trim());
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SCHEMA OVERLAY MODAL (Fields + Relationships)
+// ═══════════════════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'schema-modal') {
+    updateSchemaModal(S.activeCollection);
+  } else if (id === 'settings-modal') {
+    loadSettingsFromLocalStorage();
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function closeAllModals() {
+  document.querySelectorAll('.modal-bg').forEach(el => el.classList.remove('open'));
+}
+
+function setModalTab(tab) {
+  ['fields', 'rels'].forEach(t => {
+    document.getElementById(`modal-tab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`modal-${t}-view`).style.display = t === tab ? 'block' : 'none';
+  });
+}
+
+function updateSchemaModal(collName) {
+  document.getElementById('schema-coll-name').textContent = collName;
+  const coll = S.collections.find(c => c.name === collName);
+  document.getElementById('schema-coll-count').textContent = coll ? `${coll.count} documents` : '';
+  
+  fetchAPI(`/api/schema/${collName}`).then(d => {
+    const tbody = document.getElementById('schema-tbody');
+    tbody.innerHTML = Object.entries(d.schema || {}).map(([field, types], i) => `
+      <tr>
+        <td class="td-num">${i + 1}</td>
+        <td class="td-field">${esc(field)}</td>
+        <td class="td-type">${types.join('|')}</td>
+        <td class="td-sample">${esc(getSampleValue(field, collName))}</td>
+      </tr>
+    `).join('');
+  });
+}
+
+function getSampleValue(field, coll) {
+  const samples = {
+    '_id': '{"$oid": "603f7e2b..."}',
+    'userId': '"usr_1001"',
+    'orderId': '"ord_5001"',
+    'shipmentId': '"shp_3001"',
+    'sku': '"prod_9001"',
+    'amount': '250',
+    'totalAmount': '91.98',
+    'status': '"PAID"',
+    'qty': '2',
+    'unitPrice': '45.99',
+    'name': '"Ava Mitchell"',
+    'email': '"ava.mitchell@example.com"',
+    'demographics.age': '29',
+    'demographics.gender': '"Female"',
+    'payment.method': '"CREDIT_CARD"',
+    'payment.status': '"PAID"'
+  };
+  return samples[field] || samples[field.split('.').pop()] || '—';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMMAND PALETTE
+// ═══════════════════════════════════════════════════════════════════
+const CMDS = [
+  { icon: '▶', label: 'Run MongoDB Query', key: 'Ctrl+Enter', action: runQuery },
+  { icon: '📁', label: 'Toggle Side Explorer Panel', key: 'Ctrl+B', action: toggleSidebar },
+  { icon: '📄', label: 'Create New Query File', key: 'Ctrl+N', action: createNewQueryFile },
+  { icon: '💾', label: 'Save Current File changes', key: 'Ctrl+S', action: saveQuery },
+  { icon: '⛁', label: 'Open Schema ER Details Dialog', key: 'F1', action: () => openModal('schema-modal') },
+  { icon: '🗑', label: 'Clear Result Console Panels', action: clearConsole },
+  { icon: '🔍', label: 'Toggle Right Inspector Widget', action: toggleInspector },
+  { icon: '🏠', label: 'Go to Welcome Screen Dashboard', action: () => showView('intro') }
+];
+
+function openPalette() {
+  document.getElementById('palette').classList.add('open');
+  document.getElementById('palette-input').value = '';
+  renderPalette('');
+  document.getElementById('palette-input').focus();
+}
+
+function closePalette() {
+  document.getElementById('palette').classList.remove('open');
+}
+
+function renderPalette(q) {
+  const filtered = CMDS.filter(c => c.label.toLowerCase().includes(q.toLowerCase()));
+  const container = document.getElementById('palette-list');
+  
+  container.innerHTML = filtered.map((c, i) => `
+    <div class="p-item ${i === 0 ? 'sel' : ''}" onclick="executePaletteCommand(${i})">
+      <span class="p-icon">${c.icon}</span>
+      <span>${esc(c.label)}</span>
+      ${c.key ? `<span class="p-key">${c.key}</span>` : ''}
+    </div>
+  `).join('');
+  
+  // Save commands list on window scope for invocation
+  window._filteredCmds = filtered;
+}
+
+function executePaletteCommand(idx) {
+  const cmd = window._filteredCmds[idx];
+  if (cmd) {
+    cmd.action();
+    closePalette();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SIDEBAR RESIZER INTERACTIVE
+// ═══════════════════════════════════════════════════════════════════
+function initResizer() {
+  const handle = document.getElementById('resizer');
+  const sidebar = document.getElementById('sidebar');
+  let dragging = false, startX = 0, startW = 0;
+  
+  handle.addEventListener('mousedown', e => {
+    dragging = true;
+    startX = e.clientX;
+    startW = sidebar.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+  });
+  
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const w = Math.max(160, Math.min(420, startW + e.clientX - startX));
+    sidebar.style.width = w + 'px';
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (dragging) {
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      editor.refresh();
+    }
+  });
+}
+
+function initConsoleResizer() {
+  const handle = document.getElementById('console-resizer');
+  const consoleEl = document.getElementById('console');
+  if (!handle || !consoleEl) return;
+  
+  let dragging = false, startY = 0, startH = 0;
+  
+  handle.addEventListener('mousedown', e => {
+    dragging = true;
+    startY = e.clientY;
+    startH = consoleEl.offsetHeight;
+    document.body.style.userSelect = 'none';
+  });
+  
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const dy = startY - e.clientY; // upwards drag increases height
+    const h = Math.max(100, Math.min(window.innerHeight * 0.8, startH + dy));
+    consoleEl.style.height = h + 'px';
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (dragging) {
+      dragging = false;
+      document.body.style.userSelect = '';
+      if (editor) editor.refresh();
+    }
+  });
+}
+
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DATABASE TREE RENDERER
+// ═══════════════════════════════════════════════════════════════════
+const SVG_COLLECTION_ICON = `<svg viewBox="0 0 16 16" width="13" height="13" style="margin-right:6px;flex-shrink:0" fill="#a7a7a7"><path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3zm2 1v2h8V4H4zm0 3v2h8V7H4zm0 3v2h8v-2H4z"/></svg>`;
+
+function renderDbTree() {
+  const container = document.getElementById('coll-list');
+  container.innerHTML = S.collections.map(c => `
+    <div class="tree-item ${c.name === S.activeCollection ? 'active' : ''}" 
+         onclick="setActiveCollection('${c.name}')"
+         style="display: flex; align-items: center; justify-content: space-between; padding-right: 8px;">
+      <div style="display: flex; align-items: center; min-width: 0; flex: 1;">
+        ${SVG_COLLECTION_ICON}
+        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.name}</span>
+        ${c.isCustom ? '<span class="custom-badge">custom</span>' : ''}
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="tree-badge">${c.count}</span>
+        ${c.isCustom ? `<span class="delete-custom-btn" title="Delete dataset" onclick="deleteCustomCollection(event, '${c.name}')" style="font-weight: bold; cursor: pointer; color: var(--text3); font-size: 13px; padding: 2px;">×</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+  container.style.display = S.dbRootOpen ? 'block' : 'none';
+}
+
+function deleteCustomCollection(event, name) {
+  event.stopPropagation();
+  if (!confirm(`Are you sure you want to delete the custom dataset "${name}"?`)) {
+    return;
+  }
+  const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+  delete customCollsMap[name];
+  localStorage.setItem('mongosandbox_custom_collections', JSON.stringify(customCollsMap));
+  
+  if (S.activeCollection === name) {
+    S.activeCollection = null;
+  }
+  loadCollections();
+}
+
+function uploadCustomDataset(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const rawData = JSON.parse(e.target.result);
+      let docs = [];
+      if (Array.isArray(rawData)) {
+        docs = rawData;
+      } else if (rawData && typeof rawData === 'object') {
+        docs = [rawData];
+      } else {
+        throw new Error("Dataset JSON must be a list of objects or a single object.");
+      }
+      
+      let defaultName = file.name.replace(/\\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_]/g, "_");
+      let collName = prompt("Enter a name for this custom collection:", defaultName);
+      if (!collName) return;
+      collName = collName.trim();
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(collName)) {
+        alert("Invalid collection name. Use alphanumeric characters and underscores only, starting with a letter or underscore.");
+        return;
+      }
+      
+      const defaults = ['elite', 'users', 'orders', 'inventory', 'shipments', 'transactions'];
+      if (defaults.includes(collName)) {
+        alert(`Collection name "${collName}" is reserved for default datasets. Please use another name.`);
+        return;
+      }
+      
+      const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+      customCollsMap[collName] = docs;
+      localStorage.setItem('mongosandbox_custom_collections', JSON.stringify(customCollsMap));
+      
+      loadCollections();
+      setActiveCollection(collName);
+      
+      event.target.value = '';
+      alert(`Collection "${collName}" (${docs.length} documents) successfully loaded into local in-memory sandbox!`);
+    } catch(err) {
+      alert("Failed to parse JSON file: " + err.message);
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function getCustomCollectionSchema(docs) {
+  const schema = {};
+  
+  function getTypeName(val) {
+    if (val === null) return "Null";
+    if (typeof val === "boolean") return "Boolean";
+    if (typeof val === "number") return Number.isInteger(val) ? "Int32" : "Double";
+    if (typeof val === "string") return "String";
+    if (val instanceof Date) return "Date";
+    if (Array.isArray(val)) return "Array";
+    if (typeof val === "object") {
+      if (val.$oid) return "ObjectId";
+      if (val.$date) return "Date";
+      return "Object";
+    }
+    return typeof val;
+  }
+
+  function extract(obj, prefix) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj) || obj.$oid || obj.$date) return;
+    for (const [key, val] of Object.entries(obj)) {
+      const fieldName = prefix ? `${prefix}.${key}` : key;
+      const type = getTypeName(val);
+      if (!schema[fieldName]) {
+        schema[fieldName] = new Set();
+      }
+      schema[fieldName].add(type);
+      if (val && typeof val === 'object' && !Array.isArray(val) && !val.$oid && !val.$date) {
+        extract(val, fieldName);
+      }
+    }
+  }
+
+  docs.slice(0, 100).forEach(doc => extract(doc, ''));
+  
+  const result = {};
+  for (const [field, typeSet] of Object.entries(schema)) {
+    result[field] = Array.from(typeSet).sort();
+  }
+  return result;
+}
+
+function filterCollections(q) {
+  document.querySelectorAll('.tree-item').forEach(el => {
+    el.style.display = el.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function setActiveCollection(name) {
+  S.activeCollection = name;
+  document.getElementById('sb-coll').textContent = name;
+  
+  if (editor) {
+    editor.setValue(`db.${name}.find({})`);
+  }
+  
+  renderDbTree();
+  loadSchema(name);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SCHEMA INSPECTOR
+// ═══════════════════════════════════════════════════════════════════
+function loadSchema(coll) {
+  const collObj = S.collections.find(c => c.name === coll);
+  if (collObj && collObj.isCustom) {
+    const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+    const docs = customCollsMap[coll] || [];
+    const schema = getCustomCollectionSchema(docs);
+    renderInspector(coll, schema, docs.length);
+  } else {
+    fetchAPI(`/api/schema/${coll}`).then(d => {
+      renderInspector(coll, d.schema, d.count);
+    });
+  }
+}
+
+function renderInspector(coll, schema, count) {
+  const container = document.getElementById('insp-body');
+  const rels = RELATIONS[coll] || [];
+  
+  let html = `
+    <div class="insp-coll-name">${coll}</div>
+    <div class="insp-coll-sub">collection · ${count} documents</div>
+    <div class="insp-section">Fields Schema</div>
+  `;
+  
+  for (const [field, types] of Object.entries(schema || {}).slice(0, 16)) {
+    html += `
+      <div class="insp-row">
+        <span class="insp-field">${esc(field)}</span>
+        <span class="insp-type">${types.join('|')}</span>
+      </div>
+    `;
+  }
+  
+  if (rels.length) {
+    html += `<div class="insp-section">Outbound Joins</div>`;
+    for (const r of rels) {
+      html += `
+        <div class="insp-row" title="${esc(r.desc)}">
+          <span class="insp-field">${esc(r.field)}</span>
+          <span class="insp-type" style="color:var(--purple)">→ ${esc(r.to)}</span>
+        </div>
+      `;
+    }
+  }
+  
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SNIPPETS TREE RENDERER
+// ═══════════════════════════════════════════════════════════════════
+function renderSnippetTree() {
+  const container = document.getElementById('snip-tree');
+  let html = '';
+  
+  for (const [cat, snips] of Object.entries(S.snippets)) {
+    html += `
+      <div class="snip-cat" id="scat-${escId(cat)}">
+        <div class="snip-cat-hdr" onclick="toggleSnippetCat('scat-${escId(cat)}')">
+          <span class="arrow">▼</span>
+          <span class="snip-cat-icon">📁</span>
+          <span>${esc(cat)}</span>
+        </div>
+        <div class="snip-items">
+    `;
+    for (const s of snips) {
+      html += `
+        <div class="snip-item" title="${esc(s.description)}" onclick="insertSnippet(${JSON.stringify(s.body).replace(/"/g, '&quot;')})">
+          <span class="snip-item-icon">◈</span>
+          <span>${esc(s.name)}</span>
+        </div>
+      `;
+    }
+    html += `</div></div>`;
+  }
+  container.innerHTML = html;
+}
+
+function toggleSnippetCat(id) {
+  document.getElementById(id)?.classList.toggle('collapsed');
+}
+
+function filterSnippets(q) {
+  document.querySelectorAll('.snip-item').forEach(el => {
+    el.style.display = el.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function insertSnippet(body) {
+  editor.replaceSelection(body);
+  editor.focus();
+}
+
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════════════
 // VIEWS SWITCHING
 // ═══════════════════════════════════════════════════════════════════
@@ -2905,6 +3387,8 @@ function showView(name) {
   }
 }
 
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════════════
 // FILES WORKSPACE MANAGEMENT (LocalStorage Sync)
 // ═══════════════════════════════════════════════════════════════════
@@ -3369,251 +3853,8 @@ function deleteActiveQueryFile(path) {
   }).catch(() => {});
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// DATABASE TREE RENDERER
-// ═══════════════════════════════════════════════════════════════════
-const SVG_COLLECTION_ICON = `<svg viewBox="0 0 16 16" width="13" height="13" style="margin-right:6px;flex-shrink:0" fill="#a7a7a7"><path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3zm2 1v2h8V4H4zm0 3v2h8V7H4zm0 3v2h8v-2H4z"/></svg>`;
-
-function renderDbTree() {
-  const container = document.getElementById('coll-list');
-  container.innerHTML = S.collections.map(c => `
-    <div class="tree-item ${c.name === S.activeCollection ? 'active' : ''}" 
-         onclick="setActiveCollection('${c.name}')"
-         style="display: flex; align-items: center; justify-content: space-between; padding-right: 8px;">
-      <div style="display: flex; align-items: center; min-width: 0; flex: 1;">
-        ${SVG_COLLECTION_ICON}
-        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.name}</span>
-        ${c.isCustom ? '<span class="custom-badge">custom</span>' : ''}
-      </div>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span class="tree-badge">${c.count}</span>
-        ${c.isCustom ? `<span class="delete-custom-btn" title="Delete dataset" onclick="deleteCustomCollection(event, '${c.name}')" style="font-weight: bold; cursor: pointer; color: var(--text3); font-size: 13px; padding: 2px;">×</span>` : ''}
-      </div>
-    </div>
-  `).join('');
-  container.style.display = S.dbRootOpen ? 'block' : 'none';
-}
-
-function deleteCustomCollection(event, name) {
-  event.stopPropagation();
-  if (!confirm(`Are you sure you want to delete the custom dataset "${name}"?`)) {
-    return;
-  }
-  const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
-  delete customCollsMap[name];
-  localStorage.setItem('mongosandbox_custom_collections', JSON.stringify(customCollsMap));
-  
-  if (S.activeCollection === name) {
-    S.activeCollection = null;
-  }
-  loadCollections();
-}
-
-function uploadCustomDataset(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const rawData = JSON.parse(e.target.result);
-      let docs = [];
-      if (Array.isArray(rawData)) {
-        docs = rawData;
-      } else if (rawData && typeof rawData === 'object') {
-        docs = [rawData];
-      } else {
-        throw new Error("Dataset JSON must be a list of objects or a single object.");
-      }
-      
-      let defaultName = file.name.replace(/\\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_]/g, "_");
-      let collName = prompt("Enter a name for this custom collection:", defaultName);
-      if (!collName) return;
-      collName = collName.trim();
-      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(collName)) {
-        alert("Invalid collection name. Use alphanumeric characters and underscores only, starting with a letter or underscore.");
-        return;
-      }
-      
-      const defaults = ['elite', 'users', 'orders', 'inventory', 'shipments', 'transactions'];
-      if (defaults.includes(collName)) {
-        alert(`Collection name "${collName}" is reserved for default datasets. Please use another name.`);
-        return;
-      }
-      
-      const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
-      customCollsMap[collName] = docs;
-      localStorage.setItem('mongosandbox_custom_collections', JSON.stringify(customCollsMap));
-      
-      loadCollections();
-      setActiveCollection(collName);
-      
-      event.target.value = '';
-      alert(`Collection "${collName}" (${docs.length} documents) successfully loaded into local in-memory sandbox!`);
-    } catch(err) {
-      alert("Failed to parse JSON file: " + err.message);
-      event.target.value = '';
-    }
-  };
-  reader.readAsText(file);
-}
-
-function getCustomCollectionSchema(docs) {
-  const schema = {};
-  
-  function getTypeName(val) {
-    if (val === null) return "Null";
-    if (typeof val === "boolean") return "Boolean";
-    if (typeof val === "number") return Number.isInteger(val) ? "Int32" : "Double";
-    if (typeof val === "string") return "String";
-    if (val instanceof Date) return "Date";
-    if (Array.isArray(val)) return "Array";
-    if (typeof val === "object") {
-      if (val.$oid) return "ObjectId";
-      if (val.$date) return "Date";
-      return "Object";
-    }
-    return typeof val;
-  }
-
-  function extract(obj, prefix) {
-    if (!obj || typeof obj !== 'object' || Array.isArray(obj) || obj.$oid || obj.$date) return;
-    for (const [key, val] of Object.entries(obj)) {
-      const fieldName = prefix ? `${prefix}.${key}` : key;
-      const type = getTypeName(val);
-      if (!schema[fieldName]) {
-        schema[fieldName] = new Set();
-      }
-      schema[fieldName].add(type);
-      if (val && typeof val === 'object' && !Array.isArray(val) && !val.$oid && !val.$date) {
-        extract(val, fieldName);
-      }
-    }
-  }
-
-  docs.slice(0, 100).forEach(doc => extract(doc, ''));
-  
-  const result = {};
-  for (const [field, typeSet] of Object.entries(schema)) {
-    result[field] = Array.from(typeSet).sort();
-  }
-  return result;
-}
-
-function filterCollections(q) {
-  document.querySelectorAll('.tree-item').forEach(el => {
-    el.style.display = el.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
-  });
-}
-
-function setActiveCollection(name) {
-  S.activeCollection = name;
-  document.getElementById('sb-coll').textContent = name;
-  
-  if (editor) {
-    editor.setValue(`db.${name}.find({})`);
-  }
-  
-  renderDbTree();
-  loadSchema(name);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SCHEMA INSPECTOR
-// ═══════════════════════════════════════════════════════════════════
-function loadSchema(coll) {
-  const collObj = S.collections.find(c => c.name === coll);
-  if (collObj && collObj.isCustom) {
-    const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
-    const docs = customCollsMap[coll] || [];
-    const schema = getCustomCollectionSchema(docs);
-    renderInspector(coll, schema, docs.length);
-  } else {
-    fetchAPI(`/api/schema/${coll}`).then(d => {
-      renderInspector(coll, d.schema, d.count);
-    });
-  }
-}
-
-function renderInspector(coll, schema, count) {
-  const container = document.getElementById('insp-body');
-  const rels = RELATIONS[coll] || [];
-  
-  let html = `
-    <div class="insp-coll-name">${coll}</div>
-    <div class="insp-coll-sub">collection · ${count} documents</div>
-    <div class="insp-section">Fields Schema</div>
-  `;
-  
-  for (const [field, types] of Object.entries(schema || {}).slice(0, 16)) {
-    html += `
-      <div class="insp-row">
-        <span class="insp-field">${esc(field)}</span>
-        <span class="insp-type">${types.join('|')}</span>
-      </div>
-    `;
-  }
-  
-  if (rels.length) {
-    html += `<div class="insp-section">Outbound Joins</div>`;
-    for (const r of rels) {
-      html += `
-        <div class="insp-row" title="${esc(r.desc)}">
-          <span class="insp-field">${esc(r.field)}</span>
-          <span class="insp-type" style="color:var(--purple)">→ ${esc(r.to)}</span>
-        </div>
-      `;
-    }
-  }
-  
-  container.innerHTML = html;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SNIPPETS TREE RENDERER
-// ═══════════════════════════════════════════════════════════════════
-function renderSnippetTree() {
-  const container = document.getElementById('snip-tree');
-  let html = '';
-  
-  for (const [cat, snips] of Object.entries(S.snippets)) {
-    html += `
-      <div class="snip-cat" id="scat-${escId(cat)}">
-        <div class="snip-cat-hdr" onclick="toggleSnippetCat('scat-${escId(cat)}')">
-          <span class="arrow">▼</span>
-          <span class="snip-cat-icon">📁</span>
-          <span>${esc(cat)}</span>
-        </div>
-        <div class="snip-items">
-    `;
-    for (const s of snips) {
-      html += `
-        <div class="snip-item" title="${esc(s.description)}" onclick="insertSnippet(${JSON.stringify(s.body).replace(/"/g, '&quot;')})">
-          <span class="snip-item-icon">◈</span>
-          <span>${esc(s.name)}</span>
-        </div>
-      `;
-    }
-    html += `</div></div>`;
-  }
-  container.innerHTML = html;
-}
-
-function toggleSnippetCat(id) {
-  document.getElementById(id)?.classList.toggle('collapsed');
-}
-
-function filterSnippets(q) {
-  document.querySelectorAll('.snip-item').forEach(el => {
-    el.style.display = el.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
-  });
-}
-
-function insertSnippet(body) {
-  editor.replaceSelection(body);
-  editor.focus();
-}
-
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════════════
 // EXECUTE QUERY RUNNER
 // ═══════════════════════════════════════════════════════════════════
@@ -4015,356 +4256,8 @@ function toggleFavHistory(id, event) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// SIDE PANEL TOGGLES
-// ═══════════════════════════════════════════════════════════════════
-function setSidePanel(name) {
-  S.sidePanel = name;
-  const panels = ['files', 'db', 'history', 'snippets', 'search'];
-  panels.forEach(p => {
-    const isAct = p === name;
-    document.getElementById(`panel-${p}`)?.classList.toggle('active', isAct);
-    document.getElementById(`act-${p}`)?.classList.toggle('active', isAct);
-  });
-  
-  // Uncheck welcome page active state
-  document.getElementById('act-welcome')?.classList.remove('active');
-  
-  // Update header title
-  const title = PANEL_TITLES[name] || "Explorer";
-  const titleEl = document.getElementById('sidebar-title');
-  if (titleEl) titleEl.textContent = title;
-  
-  // Force show sidebar if collapsed
-  if (!S.sidebarOpen) {
-    toggleSidebar();
-  }
-  
-  // Switch view to editor/ide when clicking other sidebar panels
-  if (S.view !== 'ide') {
-    showView('ide');
-  }
-  
-  if (name === 'history') {
-    renderHistoryPanel();
-  }
-}
-
-function toggleSidebar() {
-  S.sidebarOpen = !S.sidebarOpen;
-  document.getElementById('sidebar').style.display = S.sidebarOpen ? 'flex' : 'none';
-  document.getElementById('resizer').style.display = S.sidebarOpen ? 'block' : 'none';
-  setTimeout(() => editor.refresh(), 50);
-}
-
-function toggleInspector() {
-  S.inspectorOpen = !S.inspectorOpen;
-  document.getElementById('inspector').style.display = S.inspectorOpen ? 'flex' : 'none';
-  setTimeout(() => editor.refresh(), 50);
-}
-
-function toggleDbRoot() {
-  S.dbRootOpen = !S.dbRootOpen;
-  document.getElementById('coll-list').style.display = S.dbRootOpen ? 'block' : 'none';
-  document.getElementById('db-root-arrow').textContent = S.dbRootOpen ? '▼' : '▶';
-}
-
-function toggleFileSection() {
-  S.filesOpen = !S.filesOpen;
-  document.getElementById('file-section').classList.toggle('collapsed', !S.filesOpen);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// WINDOW & MENU ACTIONS
-// ═══════════════════════════════════════════════════════════════════
-function toggleMenu(el) {
-  event.stopPropagation();
-  const wasOpen = el.classList.contains('open');
-  closeMenus();
-  if (!wasOpen) el.classList.add('open');
-}
-
-function closeMenus() {
-  document.querySelectorAll('.wmenu.open').forEach(m => m.classList.remove('open'));
-}
-
-function formatQuery() {
-  // Mock layout query formatter
-  const val = editor.getValue();
-  // Simply trim and fix tabs/spaces layout
-  editor.setValue(val.trim());
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SCHEMA OVERLAY MODAL (Fields + Relationships)
-// ═══════════════════════════════════════════════════════════════════
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
-  if (id === 'schema-modal') {
-    updateSchemaModal(S.activeCollection);
-  } else if (id === 'settings-modal') {
-    loadSettingsFromLocalStorage();
-  }
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
-
-function closeAllModals() {
-  document.querySelectorAll('.modal-bg').forEach(el => el.classList.remove('open'));
-}
-
-function setModalTab(tab) {
-  ['fields', 'rels'].forEach(t => {
-    document.getElementById(`modal-tab-${t}`).classList.toggle('active', t === tab);
-    document.getElementById(`modal-${t}-view`).style.display = t === tab ? 'block' : 'none';
-  });
-}
-
-function updateSchemaModal(collName) {
-  document.getElementById('schema-coll-name').textContent = collName;
-  const coll = S.collections.find(c => c.name === collName);
-  document.getElementById('schema-coll-count').textContent = coll ? `${coll.count} documents` : '';
-  
-  fetchAPI(`/api/schema/${collName}`).then(d => {
-    const tbody = document.getElementById('schema-tbody');
-    tbody.innerHTML = Object.entries(d.schema || {}).map(([field, types], i) => `
-      <tr>
-        <td class="td-num">${i + 1}</td>
-        <td class="td-field">${esc(field)}</td>
-        <td class="td-type">${types.join('|')}</td>
-        <td class="td-sample">${esc(getSampleValue(field, collName))}</td>
-      </tr>
-    `).join('');
-  });
-}
-
-function getSampleValue(field, coll) {
-  const samples = {
-    '_id': '{"$oid": "603f7e2b..."}',
-    'userId': '"usr_1001"',
-    'orderId': '"ord_5001"',
-    'shipmentId': '"shp_3001"',
-    'sku': '"prod_9001"',
-    'amount': '250',
-    'totalAmount': '91.98',
-    'status': '"PAID"',
-    'qty': '2',
-    'unitPrice': '45.99',
-    'name': '"Ava Mitchell"',
-    'email': '"ava.mitchell@example.com"',
-    'demographics.age': '29',
-    'demographics.gender': '"Female"',
-    'payment.method': '"CREDIT_CARD"',
-    'payment.status': '"PAID"'
-  };
-  return samples[field] || samples[field.split('.').pop()] || '—';
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// COMMAND PALETTE
-// ═══════════════════════════════════════════════════════════════════
-const CMDS = [
-  { icon: '▶', label: 'Run MongoDB Query', key: 'Ctrl+Enter', action: runQuery },
-  { icon: '📁', label: 'Toggle Side Explorer Panel', key: 'Ctrl+B', action: toggleSidebar },
-  { icon: '📄', label: 'Create New Query File', key: 'Ctrl+N', action: createNewQueryFile },
-  { icon: '💾', label: 'Save Current File changes', key: 'Ctrl+S', action: saveQuery },
-  { icon: '⛁', label: 'Open Schema ER Details Dialog', key: 'F1', action: () => openModal('schema-modal') },
-  { icon: '🗑', label: 'Clear Result Console Panels', action: clearConsole },
-  { icon: '🔍', label: 'Toggle Right Inspector Widget', action: toggleInspector },
-  { icon: '🏠', label: 'Go to Welcome Screen Dashboard', action: () => showView('intro') }
-];
-
-function openPalette() {
-  document.getElementById('palette').classList.add('open');
-  document.getElementById('palette-input').value = '';
-  renderPalette('');
-  document.getElementById('palette-input').focus();
-}
-
-function closePalette() {
-  document.getElementById('palette').classList.remove('open');
-}
-
-function renderPalette(q) {
-  const filtered = CMDS.filter(c => c.label.toLowerCase().includes(q.toLowerCase()));
-  const container = document.getElementById('palette-list');
-  
-  container.innerHTML = filtered.map((c, i) => `
-    <div class="p-item ${i === 0 ? 'sel' : ''}" onclick="executePaletteCommand(${i})">
-      <span class="p-icon">${c.icon}</span>
-      <span>${esc(c.label)}</span>
-      ${c.key ? `<span class="p-key">${c.key}</span>` : ''}
-    </div>
-  `).join('');
-  
-  // Save commands list on window scope for invocation
-  window._filteredCmds = filtered;
-}
-
-function executePaletteCommand(idx) {
-  const cmd = window._filteredCmds[idx];
-  if (cmd) {
-    cmd.action();
-    closePalette();
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SIDEBAR RESIZER INTERACTIVE
-// ═══════════════════════════════════════════════════════════════════
-function initResizer() {
-  const handle = document.getElementById('resizer');
-  const sidebar = document.getElementById('sidebar');
-  let dragging = false, startX = 0, startW = 0;
-  
-  handle.addEventListener('mousedown', e => {
-    dragging = true;
-    startX = e.clientX;
-    startW = sidebar.offsetWidth;
-    handle.classList.add('dragging');
-    document.body.style.userSelect = 'none';
-  });
-  
-  document.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    const w = Math.max(160, Math.min(420, startW + e.clientX - startX));
-    sidebar.style.width = w + 'px';
-  });
-  
-  document.addEventListener('mouseup', () => {
-    if (dragging) {
-      dragging = false;
-      handle.classList.remove('dragging');
-      document.body.style.userSelect = '';
-      editor.refresh();
-    }
-  });
-}
-
-function initConsoleResizer() {
-  const handle = document.getElementById('console-resizer');
-  const consoleEl = document.getElementById('console');
-  if (!handle || !consoleEl) return;
-  
-  let dragging = false, startY = 0, startH = 0;
-  
-  handle.addEventListener('mousedown', e => {
-    dragging = true;
-    startY = e.clientY;
-    startH = consoleEl.offsetHeight;
-    document.body.style.userSelect = 'none';
-  });
-  
-  document.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    const dy = startY - e.clientY; // upwards drag increases height
-    const h = Math.max(100, Math.min(window.innerHeight * 0.8, startH + dy));
-    consoleEl.style.height = h + 'px';
-  });
-  
-  document.addEventListener('mouseup', () => {
-    if (dragging) {
-      dragging = false;
-      document.body.style.userSelect = '';
-      if (editor) editor.refresh();
-    }
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// HTML FORMAT ESCAPER
-// ═══════════════════════════════════════════════════════════════════
-function esc(s) {
-  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function escId(s) {
-  return String(s).replace(/[^A-Za-z0-9]/g, '_');
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SETTINGS OPERATIONS
-// ═══════════════════════════════════════════════════════════════════
-function loadSettingsFromLocalStorage() {
-  const defaults = {
-    fontFamily: 'Consolas',
-    fontSizeVal: 11,
-    fontSizeUnit: 'pt',
-    tabWidth: '4 spaces',
-    maxResults: 10000,
-    timeout: '30 s'
-  };
-  const saved = JSON.parse(localStorage.getItem('mongosandbox_settings') || '{}');
-  S.settings = { ...defaults, ...saved };
-  
-  // Backwards compatibility for old S.settings.fontSize (e.g. "13 pt")
-  if (saved.fontSize && !saved.fontSizeVal) {
-    const valMatch = String(saved.fontSize).match(/\\d+/);
-    const unitMatch = String(saved.fontSize).match(/[a-zA-Z]+/);
-    S.settings.fontSizeVal = valMatch ? parseInt(valMatch[0]) : 13;
-    S.settings.fontSizeUnit = unitMatch ? unitMatch[0] : 'pt';
-  }
-  
-  // Populate modal inputs
-  document.getElementById('set-font-family').value = S.settings.fontFamily;
-  document.getElementById('set-font-size-val').value = S.settings.fontSizeVal;
-  document.getElementById('set-font-size-unit').value = S.settings.fontSizeUnit;
-  document.getElementById('set-tab-width').value = S.settings.tabWidth;
-  document.getElementById('set-max-results').value = S.settings.maxResults;
-  document.getElementById('set-timeout').value = S.settings.timeout;
-}
-
-function saveSettings() {
-  S.settings.fontFamily = document.getElementById('set-font-family').value;
-  S.settings.fontSizeVal = parseInt(document.getElementById('set-font-size-val').value) || 11;
-  S.settings.fontSizeUnit = document.getElementById('set-font-size-unit').value;
-  S.settings.tabWidth = document.getElementById('set-tab-width').value;
-  S.settings.maxResults = parseInt(document.getElementById('set-max-results').value) || 10000;
-  S.settings.timeout = document.getElementById('set-timeout').value;
-  
-  // Maintain S.settings.fontSize for older dependencies
-  S.settings.fontSize = S.settings.fontSizeVal + S.settings.fontSizeUnit;
-  
-  localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings));
-  applySettings();
-  closeModal('settings-modal');
-  logOutput('[info] Editor and execution settings saved.');
-}
-
-function applySettings() {
-  if (!editor) return;
-  
-  // Extract number from tabWidth (e.g. "4 spaces" -> 4)
-  const tabMatch = String(S.settings.tabWidth || '4').match(/\\d+/);
-  const tabVal = tabMatch ? parseInt(tabMatch[0]) : 4;
-  editor.setOption('tabSize', tabVal);
-  editor.setOption('indentUnit', tabVal);
-  
-  // Apply styling dynamically (fontFamily, fontSize)
-  let styleEl = document.getElementById('cm-dyn-settings-style');
-  if (!styleEl) {
-    styleEl = document.createElement('style');
-    styleEl.id = 'cm-dyn-settings-style';
-    document.head.appendChild(styleEl);
-  }
-  
-  const sizeVal = (S.settings.fontSizeVal || 11) + (S.settings.fontSizeUnit || 'pt');
-  
-  styleEl.textContent = `
-    .CodeMirror,
-    .CodeMirror pre.CodeMirror-line,
-    .CodeMirror pre.CodeMirror-line-like,
-    .CodeMirror-linenumber,
-    .CodeMirror-lines * {
-      font-family: ${S.settings.fontFamily || 'Consolas'}, 'JetBrains Mono', monospace !important;
-      font-size: ${sizeVal} !important;
-    }
-  `;
-  editor.refresh();
-}
-
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════════════
 // MONGO INTELLISENSE AUTOCOMPLETION PROVIDER
 // ═══════════════════════════════════════════════════════════════════
@@ -4482,6 +4375,127 @@ function setupMongoIntelliSense() {
       to: to
     };
   });
+}
+
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // Initialize settings
+  loadSettingsFromLocalStorage();
+
+  // Initialize state from local storage fallback
+  loadHistoryFromLocalStorage();
+
+  // Setup CodeMirror IntelliSense Helper
+  setupMongoIntelliSense();
+
+  const tabVal = parseInt(S.settings.tabWidth) || 8;
+
+  // Setup CodeMirror
+  editor = CodeMirror.fromTextArea(document.getElementById('raw-editor'), {
+    mode: 'javascript',
+    theme: 'default',
+    lineNumbers: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    indentUnit: tabVal,
+    tabSize: tabVal,
+    styleActiveLine: true,
+    extraKeys: {
+      'Ctrl-Enter': runQuery,
+      'Cmd-Enter': runQuery,
+      'Ctrl-/': cm => cm.execCommand('toggleComment'),
+      'Alt-F': formatQuery,
+      'Ctrl-S': cm => { saveQuery(); },
+      'Ctrl-Space': cm => { cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false }); },
+    },
+  });
+  editor.setSize('100%', '100%');
+
+  // Trigger IntelliSense autocompletion as user types
+  editor.on('inputRead', (cm, change) => {
+    if (change.text[0] === '.' || change.text[0] === '$' || (change.text[0].length === 1 && change.text[0].match(/[a-zA-Z]/))) {
+      cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false });
+    }
+  });
+
+  // Track cursor position
+  editor.on('cursorActivity', () => {
+    const c = editor.getCursor();
+    document.getElementById('sb-pos').textContent = `Ln ${c.line + 1}, Col ${c.ch + 1}`;
+  });
+
+  // Track workspace changes and sync to tab state
+  editor.on('change', () => {
+    if (S.activeFile) {
+      const file = S.files.find(f => f.path === S.activeFile);
+      if (file) {
+        const val = editor.getValue().replace(/\\r\\n/g, '\\n');
+        const fileContent = file.content.replace(/\\r\\n/g, '\\n');
+        if (fileContent !== val) {
+          document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.add('dirty');
+        } else {
+          document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.remove('dirty');
+        }
+      }
+    }
+  });
+
+  // Apply visual theme override
+  applyEditorTheme();
+  applySettings();
+  initResizer();
+  initConsoleResizer();
+
+  // Load backend metrics & explorer data
+  loadFiles();
+  loadCollections();
+  loadSnippets();
+  recordLaunch();
+
+  // Setup Global Keyboard Shortcuts
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') { e.preventDefault(); toggleSidebar(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveQuery(); }
+    if (e.key === 'Escape') { closePalette(); closeAllModals(); closeMenus(); }
+    if (e.key === 'F1') { e.preventDefault(); openModal('schema-modal'); }
+  });
+
+  document.addEventListener('click', closeMenus);
+});
+
+// Apply VS Code dark theme style tokens directly
+function applyEditorTheme() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .CodeMirror { background:#1e1e1e !important; color:#d4d4d4 !important; }
+    .CodeMirror-gutters { background:#1e1e1e !important; border-right:1px solid #3c3c3c !important; }
+    .CodeMirror-linenumber { color:#858585 !important; }
+    .CodeMirror-activeline-background { background:#282828 !important; }
+    .CodeMirror-selected { background:#264f78 !important; }
+    .CodeMirror-cursor { border-left:2px solid #aeafad !important; }
+    .cm-keyword { color:#569cd6 !important; }
+    .cm-string, .cm-string-2 { color:#ce9178 !important; }
+    .cm-number { color:#b5cea8 !important; }
+    .cm-comment { color:#6a9955 !important; font-style:italic; }
+    .cm-property { color:#9cdcfe !important; }
+    .cm-variable { color:#9cdcfe !important; }
+    .cm-variable-2 { color:#9cdcfe !important; }
+    .cm-def { color:#dcdcaa !important; }
+    .cm-operator { color:#d4d4d4 !important; }
+    .cm-atom { color:#569cd6 !important; }
+    .cm-punctuation { color:#d4d4d4 !important; }
+    .CodeMirror-scroll { background:#1e1e1e !important; }
+    .CodeMirror-hints { background:#252526; border:1px solid #454545; z-index:1000; }
+    .CodeMirror-hint { color:#d4d4d4; }
+    .CodeMirror-hint-active { background:#094771 !important; color:#fff; }
+    .tab.dirty .tab-dot { display: block !important; }
+  `;
+  document.head.appendChild(style);
 }
 
 </script>

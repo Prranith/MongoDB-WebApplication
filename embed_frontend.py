@@ -13,11 +13,19 @@ if css_path.exists():
     css_content = css_path.read_text(encoding="utf-8")
     html = html.replace('<link rel="stylesheet" href="style.css"/>', f'<style>\n{css_content}\n</style>')
 
-# Read and inline app.js
-js_path = ROOT / "public" / "app.js"
-if js_path.exists():
-    js_content = js_path.read_text(encoding="utf-8")
-    html = html.replace('<script src="app.js"></script>', f'<script>\n{js_content}\n</script>')
+# Read and inline local JS scripts dynamically
+import re
+def inline_script(match):
+    src = match.group(1)
+    if src.startswith("http") or src.startswith("//") or src.startswith("https"):
+        return match.group(0)
+    js_path = ROOT / "public" / src
+    if js_path.exists():
+        js_content = js_path.read_text(encoding="utf-8")
+        return f'<script>\n{js_content}\n</script>'
+    return match.group(0)
+
+html = re.sub(r'<script src="([^"]+)"></script>', inline_script, html)
 
 # Read image as base64
 img_path = ROOT / "public" / "image.png"
