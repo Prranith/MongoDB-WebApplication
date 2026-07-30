@@ -573,7 +573,7 @@ def api_exam_submit_answer(room_id: str):
 
         # Run student query server-side for grading
         if query and dataset_ids:
-                    result = _execute_room_query(room_id, dataset_ids, query, max_results=100000)
+            result = _execute_room_query(room_id, dataset_ids, query, max_results=100000)
             if result.get("status") == "ok":
                 student_output = result.get("results", [])
 
