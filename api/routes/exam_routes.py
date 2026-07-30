@@ -141,18 +141,33 @@ def _execute_room_query(room_id: str, dataset_ids, query: str, max_results: int 
             continue
 
         meta = _hgetall(f"room:{room_id}:dataset:{d_id}:meta")
-        collection_name = meta.get("collection", meta.get("name", d_id))
+        raw_name = meta.get("name", "")
+        raw_coll = meta.get("collection", "")
+
+        names_to_register = set()
+        if raw_name:
+            names_to_register.add(raw_name)
+            names_to_register.add(raw_name.lower())
+            names_to_register.add("".join(c for c in raw_name.lower() if c.isalnum() or c == "_"))
+        if raw_coll:
+            names_to_register.add(raw_coll)
+            names_to_register.add(raw_coll.lower())
+        names_to_register.add(d_id)
 
         if docs:
-            parsed_docs = json_util.loads(_json.dumps(docs))
-            temp_db[collection_name].insert_many(parsed_docs)
+            for coll in names_to_register:
+                if coll:
+                    parsed_docs = json_util.loads(_json.dumps(docs))
+                    temp_db[coll].insert_many(parsed_docs)
             loaded_count += 1
 
     if loaded_count == 0:
         return {"status": "error", "error": "No datasets found/loaded in room"}
 
     result = web_execute(query, max_results=max_results, db=temp_db)
-    return result.to_dict()
+    res_dict = result.to_dict()
+    res_dict["results"] = res_dict.get("data") if res_dict.get("data") is not None else []
+    return res_dict
 
 
 # ── API Routes ────────────────────────────────────────────────────────────────
@@ -477,9 +492,7 @@ def api_exam_freeze_answer(room_id: str):
     if result.get("status") == "error":
         return jsonify(result), 400
 
-    docs = result.get("data") if result.get("data") is not None else result.get("results", [])
-    if not isinstance(docs, list):
-        docs = [docs] if docs is not None else []
+    docs = result.get("results", [])
 
     # Freeze the answer
     _redis_cmd([
@@ -550,7 +563,7 @@ def api_exam_submit_answer(room_id: str):
         if query and dataset_ids:
             result = _execute_room_query(room_id, dataset_ids, query, max_results=500)
             if result.get("status") == "ok":
-                student_output = result.get("data") if result.get("data") is not None else result.get("results", [])
+                student_output = result.get("results", [])
 
         # Fetch frozen answer
         frozen_json = _redis_one(["GET", f"room:{room_id}:question:{question_id}:answer"])
@@ -604,21 +617,19 @@ def api_exam_submit_answer(room_id: str):
 
 @exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/expected-preview", methods=["GET"])
 def api_exam_expected_preview(room_id: str, question_id: str):
-    """Retrieve first 2-3 documents of the frozen answer for a question as a preview."""
+    """Retrieve first 5 documents of the frozen answer for a question as a preview."""
     frozen_json = _redis_one(["GET", f"room:{room_id}:question:{question_id}:answer"])
     if not frozen_json:
         return jsonify({"status": "error", "error": "No frozen answer found"}), 404
     try:
         docs = json.loads(frozen_json)
-        if not isinstance(docs, list):
-            docs = [docs] if docs is not None else []
     except Exception:
         return jsonify({"status": "error", "error": "Failed to parse frozen answer"}), 500
 
     return jsonify({
         "status": "ok",
         "docCount": len(docs),
-        "preview": docs[:3],
+        "preview": docs[:2],
     })
 
 

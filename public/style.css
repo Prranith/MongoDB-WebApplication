@@ -3132,36 +3132,23 @@ li.CodeMirror-hint-active {
 }
 .exam-num-input:focus { border-color: var(--green2); }
 
-/* ── Exam mini editor CodeMirror dark theme overrides ── */
-.exam-mini-editor,
-.exam-mini-editor .CodeMirror,
-.exam-mini-editor .CodeMirror-gutters,
-.exam-overlay .CodeMirror,
-.exam-overlay .CodeMirror-gutters {
-  background: var(--bg) !important;
-  color: #e6edf3 !important;
-  border-color: var(--border2) !important;
+/* ── Mini CodeMirror Editor Dark Theme Override ──────────── */
+.exam-mini-editor .CodeMirror {
+  background: #0d1117 !important;
+  color: #c9d1d9 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
 }
-.exam-mini-editor .CodeMirror-cursor,
-.exam-overlay .CodeMirror-cursor {
+.exam-mini-editor .CodeMirror-gutters {
+  background: #161b22 !important;
+  border-right: 1px solid var(--border) !important;
+}
+.exam-mini-editor .CodeMirror-cursor {
   border-left: 2px solid var(--green2) !important;
 }
-.exam-mini-editor .CodeMirror-linenumber,
-.exam-overlay .CodeMirror-linenumber {
-  color: var(--text3) !important;
+.exam-mini-editor .CodeMirror-selected {
+  background: rgba(56, 139, 253, 0.25) !important;
 }
-.exam-mini-editor .cm-comment,
-.exam-overlay .cm-comment { color: var(--text3) !important; }
-.exam-mini-editor .cm-string,
-.exam-overlay .cm-string { color: var(--green2) !important; }
-.exam-mini-editor .cm-keyword,
-.exam-overlay .cm-keyword { color: var(--cyan) !important; }
-.exam-mini-editor .cm-variable,
-.exam-overlay .cm-variable { color: #e6edf3 !important; }
-.exam-mini-editor .cm-property,
-.exam-overlay .cm-property { color: #9cdcfe !important; }
-.exam-mini-editor .cm-number,
-.exam-overlay .cm-number { color: #b5cea8 !important; }
-.exam-mini-editor .cm-def,
-.exam-overlay .cm-def { color: #dcdcaa !important; }
 

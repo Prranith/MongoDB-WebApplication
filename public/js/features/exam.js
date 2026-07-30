@@ -701,9 +701,7 @@ const ExamPortal = (() => {
           docCount: res.docCount,
         });
         mentor._renderDatasetTable();
-        if (state.mentor.currentQId) {
-          mentor._renderQEditor(state.mentor.currentQId);
-        }
+        if (state.mentor.currentQId) mentor._renderQEditor(state.mentor.currentQId);
         showMsg('exam-upload-msg', `// "${res.name}" uploaded — ${res.docCount} documents`, false);
       } else {
         showMsg('exam-upload-msg', res.error || '// Upload failed', true);
@@ -751,9 +749,7 @@ const ExamPortal = (() => {
       });
       state.mentor.datasets = state.mentor.datasets.filter(d => d.datasetId !== datasetId);
       mentor._renderDatasetTable();
-      if (state.mentor.currentQId) {
-        mentor._renderQEditor(state.mentor.currentQId);
-      }
+      if (state.mentor.currentQId) mentor._renderQEditor(state.mentor.currentQId);
     },
 
     // ── Room Lifecycle ─────────────────────────────────────────────────────
@@ -1163,7 +1159,8 @@ const ExamPortal = (() => {
       if (q.type === 'query') {
         el('student-query-area').style.display = 'flex';
         el('student-mcq-area').style.display = 'none';
-        el('btn-inspect-dataset').style.display = q.datasetId ? 'flex' : 'none';
+        const hasDataset = (q.datasetIds && q.datasetIds.length > 0) || q.datasetId;
+        el('btn-inspect-dataset').style.display = hasDataset ? 'flex' : 'none';
 
         // Set editor content
         const cm = state.student.examEditor;
@@ -1179,7 +1176,7 @@ const ExamPortal = (() => {
         el('student-submit-query-btn').disabled = true;
         el('student-submit-query-btn').style.opacity = '0.4';
 
-        // Pre-fetch expected preview (2-3 docs)
+        // Automatically fetch expected preview on question select
         studentNS._fetchExpectedPreview(q.id);
 
       } else {
@@ -1269,22 +1266,21 @@ const ExamPortal = (() => {
       el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
       el('student-run-btn').disabled = false;
 
-      if (res.status === 'ok') {
-        const results = res.data !== undefined ? res.data : (res.results || []);
+      if (res.status === 'ok' || res.data || res.results) {
+        const results = res.results !== undefined ? res.results : (res.data || []);
         state.student.lastRunOutput = results;
-        const count = Array.isArray(results) ? results.length : (results ? 1 : 0);
-        el('student-console-status').textContent = `— ${count} doc(s)`;
+        el('student-console-status').textContent = `— ${results.length} doc(s)`;
         el('student-pane-yours').innerHTML = `<pre style="color:var(--text);font-size:11px;white-space:pre-wrap">${JSON.stringify(results, null, 2)}</pre>`;
         state.student.hasRunOnce = true;
         el('student-submit-query-btn').disabled = false;
         el('student-submit-query-btn').style.opacity = '1';
-
-        // Auto-refresh expected preview (2-3 docs)
-        studentNS._fetchExpectedPreview(q.id);
       } else {
         el('student-console-status').textContent = '— Error';
-        el('student-pane-yours').innerHTML = `<pre style="color:var(--red);font-size:11px;white-space:pre-wrap">${res.error || res.traceback_str || '// Unknown error'}</pre>`;
+        el('student-pane-yours').innerHTML = `<span style="color:var(--red)">${res.error || '// Unknown error'}</span>`;
       }
+
+      // Automatically fetch and update expected preview on query run
+      studentNS._fetchExpectedPreview(q.id);
     },
 
     clearEditor() {
