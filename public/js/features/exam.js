@@ -1690,3 +1690,6 @@ const ExamPortal = (() => {
     student: studentNS,
   };
 })(); // end ExamPortal IIFE
+
+window.ExamPortal = ExamPortal;
+

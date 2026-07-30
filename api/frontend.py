@@ -3325,6 +3325,7 @@ li.CodeMirror-hint-active {
         <div class="wmenu-sep"></div>
         <div class="wmenu-item" onclick="saveQuery()">Save Query<span>Ctrl+S</span></div>
         <div class="wmenu-sep"></div>
+        <div class="wmenu-item" onclick="window.ExamPortal && window.ExamPortal.showRoleSelection()">Exam Portal</div>
         <div class="wmenu-item" onclick="showView('intro')">Intro Page</div>
       </div>
     </div>
@@ -3399,6 +3400,10 @@ li.CodeMirror-hint-active {
     <!-- 6th: Search (magnifying glass) -->
     <button class="act-btn" id="act-search" data-tip="Search Workspace" onclick="setSidePanel('search')">
       <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    </button>
+    <!-- 7th: Exam Portal -->
+    <button class="act-btn" id="act-exam" data-tip="Exam Portal" onclick="window.ExamPortal && window.ExamPortal.showRoleSelection()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
     </button>
     <div class="act-spacer"></div>
     <!-- Bottom: Settings gear -->
@@ -3507,6 +3512,10 @@ li.CodeMirror-hint-active {
       <button class="tbtn tbtn-secondary" onclick="saveQuery()">Save</button>
       <div class="tb-sep"></div>
       <button class="tbtn tbtn-secondary" onclick="openModal('schema-modal')">⛁ Schema ER Details</button>
+      <button class="tbtn tbtn-secondary" onclick="window.ExamPortal && window.ExamPortal.showRoleSelection()" style="display:flex;align-items:center;gap:6px;background:rgba(22, 130, 93, 0.2);color:var(--green2);border:1px solid rgba(22, 130, 93, 0.4)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+        Exam Portal
+      </button>
       <div id="tb-right" style="display: flex; align-items: center; gap: 8px;">
         <button class="tbtn tbtn-secondary" onclick="toggleInspector()" style="display: flex; align-items: center; gap: 6px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
@@ -4361,6 +4370,7 @@ function getSampleValue(field, coll) {
 // ═══════════════════════════════════════════════════════════════════
 const CMDS = [
   { icon: '▶', label: 'Run MongoDB Query', key: 'Ctrl+Enter', action: runQuery },
+  { icon: '🎯', label: 'Open Exam Portal (Mentor & Student)', action: () => window.ExamPortal && window.ExamPortal.showRoleSelection() },
   { icon: '📁', label: 'Toggle Side Explorer Panel', key: 'Ctrl+B', action: toggleSidebar },
   { icon: '📄', label: 'Create New Query File', key: 'Ctrl+N', action: createNewQueryFile },
   { icon: '💾', label: 'Save Current File changes', key: 'Ctrl+S', action: saveQuery },
@@ -8134,6 +8144,9 @@ const ExamPortal = (() => {
     student: studentNS,
   };
 })(); // end ExamPortal IIFE
+
+window.ExamPortal = ExamPortal;
+
 
 </script>
 </body>
