@@ -975,8 +975,14 @@
   <div class="exam-topbar">
     <span class="exam-topbar-title" id="student-exam-room-title">Exam</span>
     <span style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-q-progress">Q 0/0</span>
-    <span style="margin-left:auto" id="student-exam-timer" style="display:none"></span>
-    <span class="exam-status-chip exam-chip-live" id="student-exam-status">LIVE</span>
+    <span style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <span id="student-exam-timer" style="display:none"></span>
+      <span class="exam-status-chip exam-chip-live" id="student-exam-status">LIVE</span>
+      <button class="exam-btn exam-btn-red" id="btn-student-submit-exam" onclick="ExamPortal.student.finishExam()" style="padding:4px 10px;font-size:11px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:3px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        Submit Exam
+      </button>
+    </span>
   </div>
 
   <div class="exam-student-shell">

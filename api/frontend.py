@@ -6150,8 +6150,14 @@ function applyEditorTheme() {
   <div class="exam-topbar">
     <span class="exam-topbar-title" id="student-exam-room-title">Exam</span>
     <span style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-q-progress">Q 0/0</span>
-    <span style="margin-left:auto" id="student-exam-timer" style="display:none"></span>
-    <span class="exam-status-chip exam-chip-live" id="student-exam-status">LIVE</span>
+    <span style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <span id="student-exam-timer" style="display:none"></span>
+      <span class="exam-status-chip exam-chip-live" id="student-exam-status">LIVE</span>
+      <button class="exam-btn exam-btn-red" id="btn-student-submit-exam" onclick="ExamPortal.student.finishExam()" style="padding:4px 10px;font-size:11px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:3px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        Submit Exam
+      </button>
+    </span>
   </div>
 
   <div class="exam-student-shell">
@@ -6616,6 +6622,7 @@ const ExamPortal = (() => {
         type,
         text: '',
         marks: 10,
+        datasetIds: [],
         datasetId: '',
         // Query specific
         expectedQuery: '',
@@ -6674,32 +6681,54 @@ const ExamPortal = (() => {
       mentor._renderQEditor(qId);
     },
 
+    toggleQDataset(qId, datasetId, checked) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+      if (!q.datasetIds) {
+        q.datasetIds = q.datasetId ? [q.datasetId] : [];
+      }
+      if (checked) {
+        if (!q.datasetIds.includes(datasetId)) q.datasetIds.push(datasetId);
+      } else {
+        q.datasetIds = q.datasetIds.filter(id => id !== datasetId);
+      }
+      q.datasetId = q.datasetIds[0] || '';
+      mentor._saveQDebounced();
+    },
+
     _renderQEditor(qId) {
       const q = state.mentor.questions.find(x => x.id === qId);
       if (!q) return;
       const qeditor = el('mentor-qeditor');
-      const dsOptions = state.mentor.datasets.map(ds =>
-        `<option value="${ds.datasetId}" ${q.datasetId === ds.datasetId ? 'selected' : ''}>${ds.name} (${ds.docCount} docs)</option>`
-      ).join('');
 
       if (q.type === 'query') {
+        const datasetCheckboxes = state.mentor.datasets.map(ds => {
+          const isChecked = (q.datasetIds && q.datasetIds.includes(ds.datasetId)) || q.datasetId === ds.datasetId ? 'checked' : '';
+          return `
+            <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;padding:2px 0">
+              <input type="checkbox" value="${ds.datasetId}" ${isChecked}
+                onchange="ExamPortal.mentor.toggleQDataset('${qId}',this.value,this.checked)"/>
+              <span style="font-family:'JetBrains Mono',monospace">${ds.name}</span>
+            </label>
+          `;
+        }).join('') || '<span style="color:var(--text3);font-size:11px">// No datasets uploaded yet</span>';
+
         qeditor.innerHTML = `
           <div class="exam-fieldset">
             <div class="exam-fieldset-title">Question Text</div>
             <textarea class="exam-textarea" id="qtext-${qId}" oninput="ExamPortal.mentor.updateQField('${qId}','text',this.value)" placeholder="Write the question for students...">${q.text}</textarea>
           </div>
-          <div style="display:flex;gap:12px;align-items:center">
+          <div style="display:flex;gap:12px;align-items:flex-start">
             <div class="exam-field" style="flex:1;margin:0">
               <label class="exam-label">Marks</label>
               <input class="exam-num-input" type="number" min="1" max="100" value="${q.marks}"
                 oninput="ExamPortal.mentor.updateQField('${qId}','marks',parseInt(this.value)||0)"/>
             </div>
             <div class="exam-field" style="flex:2;margin:0">
-              <label class="exam-label">Dataset</label>
-              <select class="exam-select" onchange="ExamPortal.mentor.updateQField('${qId}','datasetId',this.value)">
-                <option value="">Select dataset...</option>
-                ${dsOptions}
-              </select>
+              <label class="exam-label">Datasets (select multiple for joins/aggregates)</label>
+              <div style="display:flex;flex-direction:column;gap:4px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:6px;max-height:100px;overflow-y:auto">
+                ${datasetCheckboxes}
+              </div>
             </div>
           </div>
           <div class="exam-fieldset">
@@ -6852,8 +6881,10 @@ const ExamPortal = (() => {
       const cm = state.mentor.miniEditors[qId];
       const query = cm ? cm.getValue() : q.expectedQuery;
 
-      if (!q.datasetId) {
-        showMsg(`freeze-status-${qId}`, '// Select a dataset first', true);
+      const datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
+
+      if (datasetIds.length === 0) {
+        showMsg(`freeze-status-${qId}`, '// Select at least one dataset first', true);
         el(`freeze-status-${qId}`).style.display = 'block';
         return;
       }
@@ -6869,7 +6900,7 @@ const ExamPortal = (() => {
       const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/freeze`, 'POST', {
         mentorId: state.mentor.mentorId,
         questionId: qId,
-        datasetId: q.datasetId,
+        datasetIds,
         query,
       });
 
@@ -7467,7 +7498,8 @@ const ExamPortal = (() => {
       if (!cm) return;
       const query = cm.getValue();
       const q = state.student.questions[state.student.currentQIdx];
-      if (!q || !q.datasetId) {
+      const datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
+      if (!q || datasetIds.length === 0) {
         el('student-pane-yours').innerHTML = '<span style="color:var(--red)">// No dataset linked to this question</span>';
         return;
       }
@@ -7477,7 +7509,7 @@ const ExamPortal = (() => {
       el('student-console-status').textContent = '— Running...';
 
       const res = await apiCall(`/api/exam/room/${state.student.roomId}/query`, 'POST', {
-        datasetId: q.datasetId,
+        datasetIds,
         query,
         limit: 100,
       });
@@ -7508,30 +7540,34 @@ const ExamPortal = (() => {
 
     async inspectDataset() {
       const q = state.student.questions[state.student.currentQIdx];
-      if (!q || !q.datasetId) return;
+      if (!q) return;
+      const datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
+      if (datasetIds.length === 0) return;
 
       el('exam-schema-content').textContent = 'Loading schema...';
       openModal('exam-schema-modal');
 
-      const res = await apiCall(`/api/exam/room/${state.student.roomId}/dataset/${q.datasetId}/schema`);
-      if (res.status === 'ok') {
-        const schema = res.schema || {};
-        const rows = Object.entries(schema).map(([field, type]) =>
-          `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
-            <span style="color:var(--cyan)">${field}</span>
-            <span style="color:var(--green2)">${type}</span>
-          </div>`
-        ).join('');
-        el('exam-schema-content').innerHTML = `
-          <div style="margin-bottom:12px;color:var(--text2)">Collection: <span style="color:var(--cyan);font-weight:700">${res.collection}</span> — ${res.docCount} documents</div>
-          <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Field Schema (inferred from first 50 docs)</div>
-          ${rows}
-          <div style="margin-top:12px;font-size:11px;color:var(--text3)">Sample document:</div>
-          <pre style="font-size:11px;color:var(--text);white-space:pre-wrap;margin-top:4px;background:var(--bg);padding:8px;border-radius:4px">${JSON.stringify(res.sampleDocs?.[0] || {}, null, 2)}</pre>
-        `;
-      } else {
-        el('exam-schema-content').innerHTML = `<span style="color:var(--red)">${res.error || '// Failed to load schema'}</span>`;
+      let combinedHTML = '';
+      for (const dId of datasetIds) {
+        const res = await apiCall(`/api/exam/room/${state.student.roomId}/dataset/${dId}/schema`);
+        if (res.status === 'ok') {
+          const schema = res.schema || {};
+          const rows = Object.entries(schema).map(([field, type]) =>
+            `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+              <span style="color:var(--cyan)">${field}</span>
+              <span style="color:var(--green2)">${type}</span>
+            </div>`
+          ).join('');
+          combinedHTML += `
+            <div style="margin-bottom:16px;border-bottom:1px dashed var(--border);padding-bottom:12px">
+              <div style="margin-bottom:8px;color:var(--text2)">Collection: <span style="color:var(--cyan);font-weight:700">${res.collection}</span> — ${res.docCount} documents</div>
+              <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Field Schema</div>
+              ${rows}
+            </div>
+          `;
+        }
       }
+      el('exam-schema-content').innerHTML = combinedHTML || '<span style="color:var(--red)">// Failed to load schemas</span>';
     },
 
     async submitAnswer() {
@@ -7555,7 +7591,7 @@ const ExamPortal = (() => {
       } else {
         const cm = state.student.examEditor;
         body.query = cm ? cm.getValue() : '';
-        body.datasetId = q.datasetId;
+        body.datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
         body.studentOutput = state.student.lastRunOutput || [];
       }
 
@@ -7571,15 +7607,10 @@ const ExamPortal = (() => {
 
       if (res.status === 'ok') {
         if (q.type === 'mcq') {
-          el('student-mcq-status').textContent = res.correct
-            ? '// Correct! Submitted.'
-            : '// Submitted (incorrect answer)';
-          el('student-mcq-status').style.color = res.correct ? 'var(--green2)' : 'var(--yellow)';
+          el('student-mcq-status').textContent = '// Answer submitted.';
+          el('student-mcq-status').style.color = 'var(--green2)';
         } else {
-          el('student-console-status').textContent = res.correct
-            ? `— Correct! ${res.score} pts`
-            : `— Submitted (${res.score}/${q.marks} pts)`;
-
+          el('student-console-status').textContent = '— Answer submitted.';
           // Show expected output preview (max 5 docs)
           studentNS._fetchExpectedPreview(q.id);
         }
@@ -7596,12 +7627,40 @@ const ExamPortal = (() => {
     },
 
     async _fetchExpectedPreview(questionId) {
-      // We don't have a direct API for this — show a placeholder
-      // The server stores the frozen answer but we limit to 5 docs
-      el('student-pane-expected').innerHTML = `
-        <span style="color:var(--text3)">// Expected output preview not available client-side for security.</span>
-        <div class="exam-console-hint">// Full result is hidden — ${state.student.questions[state.student.currentQIdx]?.answerDocCount || '?'} documents in expected output</div>
-      `;
+      const pane = el('student-pane-expected');
+      if (!pane) return;
+      pane.innerHTML = '<span style="color:var(--text3)">// Fetching expected output preview...</span>';
+
+      const res = await apiCall(`/api/exam/room/${state.student.roomId}/question/${questionId}/expected-preview`);
+      if (res.status === 'ok') {
+        const docs = res.preview || [];
+        const count = res.docCount || 0;
+        pane.innerHTML = `
+          <pre style="color:var(--text);font-size:11px;white-space:pre-wrap">${JSON.stringify(docs, null, 2)}</pre>
+          <div class="exam-console-hint">// Showing first ${docs.length} of ${count} documents — full result hidden</div>
+        `;
+      } else {
+        pane.innerHTML = '<span style="color:var(--text3)">// Expected output preview not available</span>';
+      }
+    },
+
+    async finishExam() {
+      if (!confirm('Are you sure you want to submit the final exam? You will not be able to modify your answers after this.')) return;
+      const btn = el('btn-student-submit-exam');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+      }
+      const res = await apiCall(`/api/exam/room/${state.student.roomId}/student/${state.student.studentId}/finish`, 'POST');
+      if (res.status === 'ok') {
+        studentNS._lockExam();
+      } else {
+        alert(res.error || 'Failed to submit final exam. Please try again.');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:3px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Exam';
+        }
+      }
     },
 
     _lockExam() {
@@ -7611,17 +7670,24 @@ const ExamPortal = (() => {
       }
       // Show ended overlay
       const overlay = el('student-ended-overlay');
-      if (overlay) overlay.classList.add('active');
+      if (overlay) {
+        overlay.classList.add('active');
+        overlay.innerHTML = '<div class="exam-ended-msg">// Exam Submitted Successfully — Thank you!</div>';
+      }
       // Disable submit buttons
       const submitQ = el('student-submit-query-btn');
       const submitM = el('student-submit-mcq-btn');
       if (submitQ) { submitQ.disabled = true; submitQ.style.opacity = '0.4'; }
       if (submitM) { submitM.disabled = true; submitM.style.opacity = '0.4'; }
+      // Hide submit exam button
+      const submitExamBtn = el('btn-student-submit-exam');
+      if (submitExamBtn) submitExamBtn.style.display = 'none';
+
       // Update status chip
       const chip = el('student-exam-status');
       if (chip) {
         chip.className = 'exam-status-chip exam-chip-ended';
-        chip.textContent = 'ENDED';
+        chip.textContent = 'SUBMITTED';
       }
     },
   }; // end student namespace

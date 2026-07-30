@@ -112,32 +112,44 @@ def grade_query_answer(student_output: list, frozen_answer: list) -> dict:
 
 # ── Execute query against room dataset ────────────────────────────────────────
 
-def _execute_room_query(room_id: str, dataset_id: str, query: str, max_results: int = 100):
-    """Load dataset from Redis and execute query against it."""
+def _execute_room_query(room_id: str, dataset_ids, query: str, max_results: int = 100):
+    """Load datasets from Redis and execute query against them."""
     import json as _json
     import mongomock
     from bson import json_util
 
-    # Fetch dataset docs from Redis
-    docs_json = _redis_one(["GET", f"room:{room_id}:dataset:{dataset_id}:docs"])
-    if not docs_json:
-        return {"status": "error", "error": "Dataset not found in room"}
-
-    try:
-        docs = json.loads(docs_json)
-    except Exception:
-        return {"status": "error", "error": "Failed to parse dataset"}
-
-    # Get collection name for this dataset
-    meta = _hgetall(f"room:{room_id}:dataset:{dataset_id}:meta")
-    collection_name = meta.get("collection", f"exam_{room_id}_{dataset_id}")
+    if not isinstance(dataset_ids, list):
+        if dataset_ids:
+            dataset_ids = [dataset_ids]
+        else:
+            dataset_ids = []
 
     # Build temp mongomock DB
     temp_client = mongomock.MongoClient()
     temp_db = temp_client["exam_db"]
-    if docs:
-        parsed_docs = json_util.loads(_json.dumps(docs))
-        temp_db[collection_name].insert_many(parsed_docs)
+
+    loaded_count = 0
+    for d_id in dataset_ids:
+        if not d_id:
+            continue
+        docs_json = _redis_one(["GET", f"room:{room_id}:dataset:{d_id}:docs"])
+        if not docs_json:
+            continue
+        try:
+            docs = json.loads(docs_json)
+        except Exception:
+            continue
+
+        meta = _hgetall(f"room:{room_id}:dataset:{d_id}:meta")
+        collection_name = meta.get("collection", f"exam_{room_id.replace('-', '_').lower()}_{d_id}")
+
+        if docs:
+            parsed_docs = json_util.loads(_json.dumps(docs))
+            temp_db[collection_name].insert_many(parsed_docs)
+            loaded_count += 1
+
+    if loaded_count == 0:
+        return {"status": "error", "error": "No datasets found/loaded in room"}
 
     result = web_execute(query, max_results=max_results, db=temp_db)
     return result.to_dict()
@@ -430,14 +442,16 @@ def api_exam_dataset_schema(room_id: str, dataset_id: str):
 def api_exam_run_query(room_id: str):
     """Execute a query against a room dataset. Used by mentor (freeze answer) and student (submit)."""
     body = request.get_json(force=True, silent=True) or {}
-    dataset_id = body.get("datasetId", "")
+    dataset_ids = body.get("datasetIds", [])
+    if not dataset_ids and body.get("datasetId"):
+        dataset_ids = [body.get("datasetId")]
     query = body.get("query", "").strip()
     limit = int(body.get("limit", 100))
 
-    if not dataset_id or not query:
-        return jsonify({"status": "error", "error": "datasetId and query are required"}), 400
+    if not dataset_ids or not query:
+        return jsonify({"status": "error", "error": "datasetIds and query are required"}), 400
 
-    result = _execute_room_query(room_id, dataset_id, query, max_results=limit)
+    result = _execute_room_query(room_id, dataset_ids, query, max_results=limit)
     return jsonify(result)
 
 
@@ -447,17 +461,19 @@ def api_exam_freeze_answer(room_id: str):
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     question_id = body.get("questionId", "")
-    dataset_id = body.get("datasetId", "")
+    dataset_ids = body.get("datasetIds", [])
+    if not dataset_ids and body.get("datasetId"):
+        dataset_ids = [body.get("datasetId")]
     query = body.get("query", "").strip()
 
     meta = _hgetall(_room_key(room_id))
     if not meta or meta.get("mentorId") != mentor_id:
         return jsonify({"status": "error", "error": "Unauthorized"}), 403
 
-    if not question_id or not dataset_id or not query:
-        return jsonify({"status": "error", "error": "questionId, datasetId, and query are required"}), 400
+    if not question_id or not dataset_ids or not query:
+        return jsonify({"status": "error", "error": "questionId, datasetIds, and query are required"}), 400
 
-    result = _execute_room_query(room_id, dataset_id, query, max_results=500)
+    result = _execute_room_query(room_id, dataset_ids, query, max_results=500)
     if result.get("status") == "error":
         return jsonify(result), 400
 
@@ -523,12 +539,14 @@ def api_exam_submit_answer(room_id: str):
 
     else:  # query question
         query = body.get("query", "").strip()
-        dataset_id = body.get("datasetId", "")
+        dataset_ids = body.get("datasetIds", [])
+        if not dataset_ids and body.get("datasetId"):
+            dataset_ids = [body.get("datasetId")]
         student_output = body.get("studentOutput", [])
 
         # Run student query server-side for grading
-        if query and dataset_id:
-            result = _execute_room_query(room_id, dataset_id, query, max_results=500)
+        if query and dataset_ids:
+            result = _execute_room_query(room_id, dataset_ids, query, max_results=500)
             if result.get("status") == "ok":
                 student_output = result.get("results", [])
 
@@ -580,6 +598,44 @@ def api_exam_submit_answer(room_id: str):
         "maxMarks": marks,
         "correct": score > 0,
     })
+
+
+@exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/expected-preview", methods=["GET"])
+def api_exam_expected_preview(room_id: str, question_id: str):
+    """Retrieve first 5 documents of the frozen answer for a question as a preview."""
+    frozen_json = _redis_one(["GET", f"room:{room_id}:question:{question_id}:answer"])
+    if not frozen_json:
+        return jsonify({"status": "error", "error": "No frozen answer found"}), 404
+    try:
+        docs = json.loads(frozen_json)
+    except Exception:
+        return jsonify({"status": "error", "error": "Failed to parse frozen answer"}), 500
+
+    return jsonify({
+        "status": "ok",
+        "docCount": len(docs),
+        "preview": docs[:5],
+    })
+
+
+@exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/finish", methods=["POST"])
+def api_exam_student_finish(room_id: str, student_id: str):
+    """Submit the final exam for a student."""
+    p_json = _redis_one(["HGET", f"room:{room_id}:participants", student_id])
+    if not p_json:
+        return jsonify({"status": "error", "error": "Student not found"}), 404
+    try:
+        p = json.loads(p_json)
+    except Exception:
+        p = {}
+
+    p["finished"] = True
+    p["finishedAt"] = int(time.time())
+
+    _redis_cmd([
+        ["HSET", f"room:{room_id}:participants", student_id, json.dumps(p)],
+    ])
+    return jsonify({"status": "ok"})
 
 
 @exam_bp.route("/api/exam/room/<room_id>/leaderboard", methods=["GET"])
