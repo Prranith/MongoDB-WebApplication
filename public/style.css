@@ -3167,4 +3167,68 @@ li.CodeMirror-hint-active {
   justify-content: center;
   flex-shrink: 0;
 }
+.exam-notice-close {
+  background: transparent;
+  border: none;
+  color: #ff7b72;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 0 6px;
+  line-height: 1;
+  opacity: 0.8;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.exam-notice-close:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* ── Panel Drag Resizers ────────────────────────────────── */
+.exam-resizer-v {
+  width: 6px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background 0.15s;
+}
+.exam-resizer-v:hover,
+.exam-resizer-v.dragging {
+  background: var(--green2);
+  box-shadow: 0 0 8px rgba(0, 237, 100, 0.4);
+}
+
+.exam-resizer-h {
+  height: 6px;
+  background: var(--border);
+  cursor: row-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background 0.15s;
+}
+.exam-resizer-h:hover,
+.exam-resizer-h.dragging {
+  background: var(--green2);
+  box-shadow: 0 0 8px rgba(0, 237, 100, 0.4);
+}
+
+.exam-resizer-v-sub {
+  width: 6px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background 0.15s;
+}
+.exam-resizer-v-sub:hover,
+.exam-resizer-v-sub.dragging {
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 220, 255, 0.4);
+}
+
 

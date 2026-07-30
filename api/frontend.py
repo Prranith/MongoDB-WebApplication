@@ -3243,6 +3243,70 @@ li.CodeMirror-hint-active {
   justify-content: center;
   flex-shrink: 0;
 }
+.exam-notice-close {
+  background: transparent;
+  border: none;
+  color: #ff7b72;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 0 6px;
+  line-height: 1;
+  opacity: 0.8;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.exam-notice-close:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* ── Panel Drag Resizers ────────────────────────────────── */
+.exam-resizer-v {
+  width: 6px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background 0.15s;
+}
+.exam-resizer-v:hover,
+.exam-resizer-v.dragging {
+  background: var(--green2);
+  box-shadow: 0 0 8px rgba(0, 237, 100, 0.4);
+}
+
+.exam-resizer-h {
+  height: 6px;
+  background: var(--border);
+  cursor: row-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background 0.15s;
+}
+.exam-resizer-h:hover,
+.exam-resizer-h.dragging {
+  background: var(--green2);
+  box-shadow: 0 0 8px rgba(0, 237, 100, 0.4);
+}
+
+.exam-resizer-v-sub {
+  width: 6px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background 0.15s;
+}
+.exam-resizer-v-sub:hover,
+.exam-resizer-v-sub.dragging {
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 220, 255, 0.4);
+}
+
 
 
 </style>
@@ -5894,7 +5958,8 @@ function applyEditorTheme() {
   </div>
   <div class="exam-notice-bar">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-    Do not refresh your screen, Site will auto-refresh, Else Test will be cancelled
+    <span>Do not refresh your screen, Site will auto-refresh, Else Test will be cancelled</span>
+    <button onclick="this.parentElement.style.display='none'" class="exam-notice-close" title="Dismiss notice">&times;</button>
   </div>
 
   <div class="exam-dash-shell">
@@ -5930,6 +5995,9 @@ function applyEditorTheme() {
         </div>
       </div>
     </div>
+
+    <!-- Drag Resizer Vertical -->
+    <div class="exam-resizer-v" id="resizer-mentor-left" title="Drag to resize sidebar"></div>
 
     <!-- Main Panel -->
     <div class="exam-dash-main">
@@ -6195,7 +6263,8 @@ function applyEditorTheme() {
   </div>
   <div class="exam-notice-bar">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-    Do not refresh your screen, Site will auto-refresh, Else Test will be cancelled
+    <span>Do not refresh your screen, Site will auto-refresh, Else Test will be cancelled</span>
+    <button onclick="this.parentElement.style.display='none'" class="exam-notice-close" title="Dismiss notice">&times;</button>
   </div>
 
   <div class="exam-student-shell">
@@ -6206,6 +6275,9 @@ function applyEditorTheme() {
         <div class="exam-participants-empty">// Loading questions...</div>
       </div>
     </div>
+
+    <!-- Drag Resizer Vertical -->
+    <div class="exam-resizer-v" id="resizer-student-qnav" title="Drag to resize question list"></div>
 
     <!-- Main exam area -->
     <div class="exam-student-main">
@@ -6242,6 +6314,9 @@ function applyEditorTheme() {
 db.collection.find({})</textarea>
         </div>
 
+        <!-- Horizontal Resizer (Editor vs Console) -->
+        <div class="exam-resizer-h" id="resizer-student-console" title="Drag to resize console"></div>
+
         <!-- Exam ended overlay -->
         <div class="exam-ended-overlay" id="student-ended-overlay">
           <div class="exam-ended-msg">// Exam has ended — submissions are closed</div>
@@ -6255,9 +6330,9 @@ db.collection.find({})</textarea>
               <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-console-status">— Ready</span>
             </div>
           </div>
-          <div style="display:flex;flex:1;gap:1px;background:var(--border);overflow:hidden">
+          <div style="display:flex;flex:1;background:var(--border);overflow:hidden" id="student-console-panes-box">
             <!-- Left Side: Your Output -->
-            <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
+            <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;min-width:100px" id="box-pane-yours">
               <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--cyan)">
                 Your Output
               </div>
@@ -6265,8 +6340,10 @@ db.collection.find({})</textarea>
                 <span style="color:var(--text3)">// Run a query to see output here</span>
               </div>
             </div>
+            <!-- Vertical Splitter between panes -->
+            <div class="exam-resizer-v-sub" id="resizer-student-panes" title="Drag to adjust comparison width"></div>
             <!-- Right Side: Expected Output Preview -->
-            <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
+            <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;min-width:100px" id="box-pane-expected">
               <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--green2)">
                 Expected Output (Preview)
               </div>
@@ -7526,8 +7603,12 @@ const ExamPortal = (() => {
       });
       cm.setSize('100%', '100%');
       cm.on('change', () => {
-        if (state.student.status[state.student.questions[state.student.currentQIdx]?.id] !== 'submitted') {
-          const qId = state.student.questions[state.student.currentQIdx]?.id;
+        const currentQ = state.student.questions[state.student.currentQIdx];
+        if (currentQ) {
+          currentQ._studentDraft = cm.getValue();
+        }
+        if (state.student.status[currentQ?.id] !== 'submitted') {
+          const qId = currentQ?.id;
           if (qId && state.student.status[qId] !== 'submitted') {
             state.student.status[qId] = 'draft';
             studentNS._renderQNav();
@@ -7566,9 +7647,10 @@ const ExamPortal = (() => {
       }).join('');
     },
 
-    selectQuestion(idx) {
-      const qs = state.student.questions;
-      if (idx < 0 || idx >= qs.length) return;
+      // Preserve current draft before switching
+      if (state.student.currentQIdx !== null && state.student.examEditor && state.student.questions[state.student.currentQIdx]) {
+        state.student.questions[state.student.currentQIdx]._studentDraft = state.student.examEditor.getValue();
+      }
 
       state.student.currentQIdx = idx;
       const q = qs[idx];
@@ -7594,7 +7676,7 @@ const ExamPortal = (() => {
         // Set editor content
         const cm = state.student.examEditor;
         if (cm) {
-          cm.setValue(q._studentDraft || `// Question ${idx + 1}\\ndb.`);
+          cm.setValue(q._studentDraft !== undefined ? q._studentDraft : `// Question ${idx + 1}\\ndb.`);
           cm.focus();
         }
 
@@ -7807,10 +7889,21 @@ const ExamPortal = (() => {
         marks: q.marks,
       };
 
-      if (q.type === 'mcq') {
+      const isMCQ = q.type === 'mcq';
+      const submitBtn = isMCQ ? el('student-submit-mcq-btn') : el('student-submit-query-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+      }
+
+      if (isMCQ) {
         if (state.student.selectedOption === null) {
           el('student-mcq-status').textContent = '// Select an option first';
           el('student-mcq-status').style.color = 'var(--red)';
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Answer';
+          }
           return;
         }
         body.selectedOption = state.student.selectedOption;
@@ -7824,20 +7917,24 @@ const ExamPortal = (() => {
       // Optimistic UI: immediately mark as submitted
       state.student.status[q.id] = 'submitted';
       studentNS._renderQNav();
-      if (q.type === 'mcq') {
+      if (isMCQ) {
         el('student-mcq-status').textContent = '// Submitting...';
         el('student-mcq-status').style.color = 'var(--text3)';
       }
 
       const res = await apiCall(`/api/exam/room/${state.student.roomId}/submit`, 'POST', body);
 
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Answer';
+      }
+
       if (res.status === 'ok') {
-        if (q.type === 'mcq') {
+        if (isMCQ) {
           el('student-mcq-status').textContent = '// Answer submitted.';
           el('student-mcq-status').style.color = 'var(--green2)';
         } else {
           el('student-console-status').textContent = '— Answer submitted.';
-          // Show expected output preview (max 5 docs)
           studentNS._fetchExpectedPreview(q.id);
         }
         state.student.status[q.id] = 'submitted';
@@ -7848,7 +7945,7 @@ const ExamPortal = (() => {
         }
         // Revert optimistic update on error
         state.student.status[q.id] = 'draft';
-        if (q.type === 'mcq') {
+        if (isMCQ) {
           el('student-mcq-status').textContent = res.error || '// Submission failed';
           el('student-mcq-status').style.color = 'var(--red)';
         }
@@ -7913,6 +8010,122 @@ const ExamPortal = (() => {
   }; // end student namespace
 
   // ── Public API ─────────────────────────────────────────────────────────────
+  // ── Drag Resizers Initializer ──────────────────────────────────────────────
+  function initResizers() {
+    initVerticalResizer('resizer-mentor-left', '.exam-dash-left', 180, 500);
+    initVerticalResizer('resizer-student-qnav', '.exam-qnav', 180, 500);
+    initHorizontalResizer('resizer-student-console', '.exam-student-console', 100, 600);
+    initPaneSplitter('resizer-student-panes', 'box-pane-yours', 'box-pane-expected');
+  }
+
+  function initVerticalResizer(handleId, leftElSelector, minWidth, maxWidth) {
+    const handle = el(handleId);
+    if (!handle) return;
+    let startX, startWidth;
+
+    const onMouseMove = (e) => {
+      const leftEl = document.querySelector(leftElSelector);
+      if (!leftEl) return;
+      const dx = e.clientX - startX;
+      const newWidth = Math.min(Math.max(startWidth + dx, minWidth), maxWidth);
+      leftEl.style.width = newWidth + 'px';
+    };
+
+    const onMouseUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    handle.addEventListener('mousedown', (e) => {
+      const leftEl = document.querySelector(leftElSelector);
+      if (!leftEl) return;
+      startX = e.clientX;
+      startWidth = leftEl.getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  function initHorizontalResizer(handleId, bottomElSelector, minHeight, maxHeight) {
+    const handle = el(handleId);
+    if (!handle) return;
+    let startY, startHeight;
+
+    const onMouseMove = (e) => {
+      const bottomEl = document.querySelector(bottomElSelector);
+      if (!bottomEl) return;
+      const dy = startY - e.clientY;
+      const newHeight = Math.min(Math.max(startHeight + dy, minHeight), maxHeight);
+      bottomEl.style.height = newHeight + 'px';
+    };
+
+    const onMouseUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    handle.addEventListener('mousedown', (e) => {
+      const bottomEl = document.querySelector(bottomElSelector);
+      if (!bottomEl) return;
+      startY = e.clientY;
+      startHeight = bottomEl.getBoundingClientRect().height;
+      handle.classList.add('dragging');
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  function initPaneSplitter(handleId, leftBoxId, rightBoxId) {
+    const handle = el(handleId);
+    if (!handle) return;
+    let startX, startLeftFlex, startRightFlex;
+
+    const onMouseMove = (e) => {
+      const leftBox = el(leftBoxId);
+      const rightBox = el(rightBoxId);
+      const container = handle.parentElement;
+      if (!leftBox || !rightBox || !container) return;
+      const dx = e.clientX - startX;
+      const containerWidth = container.getBoundingClientRect().width;
+      const deltaRatio = dx / containerWidth;
+      const newLeftFlex = Math.max(0.1, Math.min(0.9, startLeftFlex + deltaRatio));
+      const newRightFlex = Math.max(0.1, Math.min(0.9, startRightFlex - deltaRatio));
+      leftBox.style.flex = newLeftFlex;
+      rightBox.style.flex = newRightFlex;
+    };
+
+    const onMouseUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    handle.addEventListener('mousedown', (e) => {
+      const leftBox = el(leftBoxId);
+      const rightBox = el(rightBoxId);
+      if (!leftBox || !rightBox) return;
+      startX = e.clientX;
+      const leftW = leftBox.getBoundingClientRect().width;
+      const rightW = rightBox.getBoundingClientRect().width;
+      const total = leftW + rightW;
+      startLeftFlex = leftW / total;
+      startRightFlex = rightW / total;
+      handle.classList.add('dragging');
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  // Initialize resizers once DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initResizers);
+  } else {
+    setTimeout(initResizers, 100);
+  }
+
   return {
     showRoleSelection,
     exitToHome,
@@ -7920,7 +8133,6 @@ const ExamPortal = (() => {
     mentor,
     student: studentNS,
   };
-
 })(); // end ExamPortal IIFE
 
 </script>

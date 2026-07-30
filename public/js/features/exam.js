@@ -1159,8 +1159,12 @@ const ExamPortal = (() => {
       });
       cm.setSize('100%', '100%');
       cm.on('change', () => {
-        if (state.student.status[state.student.questions[state.student.currentQIdx]?.id] !== 'submitted') {
-          const qId = state.student.questions[state.student.currentQIdx]?.id;
+        const currentQ = state.student.questions[state.student.currentQIdx];
+        if (currentQ) {
+          currentQ._studentDraft = cm.getValue();
+        }
+        if (state.student.status[currentQ?.id] !== 'submitted') {
+          const qId = currentQ?.id;
           if (qId && state.student.status[qId] !== 'submitted') {
             state.student.status[qId] = 'draft';
             studentNS._renderQNav();
@@ -1199,9 +1203,10 @@ const ExamPortal = (() => {
       }).join('');
     },
 
-    selectQuestion(idx) {
-      const qs = state.student.questions;
-      if (idx < 0 || idx >= qs.length) return;
+      // Preserve current draft before switching
+      if (state.student.currentQIdx !== null && state.student.examEditor && state.student.questions[state.student.currentQIdx]) {
+        state.student.questions[state.student.currentQIdx]._studentDraft = state.student.examEditor.getValue();
+      }
 
       state.student.currentQIdx = idx;
       const q = qs[idx];
@@ -1227,7 +1232,7 @@ const ExamPortal = (() => {
         // Set editor content
         const cm = state.student.examEditor;
         if (cm) {
-          cm.setValue(q._studentDraft || `// Question ${idx + 1}\ndb.`);
+          cm.setValue(q._studentDraft !== undefined ? q._studentDraft : `// Question ${idx + 1}\ndb.`);
           cm.focus();
         }
 
@@ -1440,10 +1445,21 @@ const ExamPortal = (() => {
         marks: q.marks,
       };
 
-      if (q.type === 'mcq') {
+      const isMCQ = q.type === 'mcq';
+      const submitBtn = isMCQ ? el('student-submit-mcq-btn') : el('student-submit-query-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+      }
+
+      if (isMCQ) {
         if (state.student.selectedOption === null) {
           el('student-mcq-status').textContent = '// Select an option first';
           el('student-mcq-status').style.color = 'var(--red)';
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Answer';
+          }
           return;
         }
         body.selectedOption = state.student.selectedOption;
@@ -1457,20 +1473,24 @@ const ExamPortal = (() => {
       // Optimistic UI: immediately mark as submitted
       state.student.status[q.id] = 'submitted';
       studentNS._renderQNav();
-      if (q.type === 'mcq') {
+      if (isMCQ) {
         el('student-mcq-status').textContent = '// Submitting...';
         el('student-mcq-status').style.color = 'var(--text3)';
       }
 
       const res = await apiCall(`/api/exam/room/${state.student.roomId}/submit`, 'POST', body);
 
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Answer';
+      }
+
       if (res.status === 'ok') {
-        if (q.type === 'mcq') {
+        if (isMCQ) {
           el('student-mcq-status').textContent = '// Answer submitted.';
           el('student-mcq-status').style.color = 'var(--green2)';
         } else {
           el('student-console-status').textContent = '— Answer submitted.';
-          // Show expected output preview (max 5 docs)
           studentNS._fetchExpectedPreview(q.id);
         }
         state.student.status[q.id] = 'submitted';
@@ -1481,7 +1501,7 @@ const ExamPortal = (() => {
         }
         // Revert optimistic update on error
         state.student.status[q.id] = 'draft';
-        if (q.type === 'mcq') {
+        if (isMCQ) {
           el('student-mcq-status').textContent = res.error || '// Submission failed';
           el('student-mcq-status').style.color = 'var(--red)';
         }
@@ -1546,6 +1566,122 @@ const ExamPortal = (() => {
   }; // end student namespace
 
   // ── Public API ─────────────────────────────────────────────────────────────
+  // ── Drag Resizers Initializer ──────────────────────────────────────────────
+  function initResizers() {
+    initVerticalResizer('resizer-mentor-left', '.exam-dash-left', 180, 500);
+    initVerticalResizer('resizer-student-qnav', '.exam-qnav', 180, 500);
+    initHorizontalResizer('resizer-student-console', '.exam-student-console', 100, 600);
+    initPaneSplitter('resizer-student-panes', 'box-pane-yours', 'box-pane-expected');
+  }
+
+  function initVerticalResizer(handleId, leftElSelector, minWidth, maxWidth) {
+    const handle = el(handleId);
+    if (!handle) return;
+    let startX, startWidth;
+
+    const onMouseMove = (e) => {
+      const leftEl = document.querySelector(leftElSelector);
+      if (!leftEl) return;
+      const dx = e.clientX - startX;
+      const newWidth = Math.min(Math.max(startWidth + dx, minWidth), maxWidth);
+      leftEl.style.width = newWidth + 'px';
+    };
+
+    const onMouseUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    handle.addEventListener('mousedown', (e) => {
+      const leftEl = document.querySelector(leftElSelector);
+      if (!leftEl) return;
+      startX = e.clientX;
+      startWidth = leftEl.getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  function initHorizontalResizer(handleId, bottomElSelector, minHeight, maxHeight) {
+    const handle = el(handleId);
+    if (!handle) return;
+    let startY, startHeight;
+
+    const onMouseMove = (e) => {
+      const bottomEl = document.querySelector(bottomElSelector);
+      if (!bottomEl) return;
+      const dy = startY - e.clientY;
+      const newHeight = Math.min(Math.max(startHeight + dy, minHeight), maxHeight);
+      bottomEl.style.height = newHeight + 'px';
+    };
+
+    const onMouseUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    handle.addEventListener('mousedown', (e) => {
+      const bottomEl = document.querySelector(bottomElSelector);
+      if (!bottomEl) return;
+      startY = e.clientY;
+      startHeight = bottomEl.getBoundingClientRect().height;
+      handle.classList.add('dragging');
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  function initPaneSplitter(handleId, leftBoxId, rightBoxId) {
+    const handle = el(handleId);
+    if (!handle) return;
+    let startX, startLeftFlex, startRightFlex;
+
+    const onMouseMove = (e) => {
+      const leftBox = el(leftBoxId);
+      const rightBox = el(rightBoxId);
+      const container = handle.parentElement;
+      if (!leftBox || !rightBox || !container) return;
+      const dx = e.clientX - startX;
+      const containerWidth = container.getBoundingClientRect().width;
+      const deltaRatio = dx / containerWidth;
+      const newLeftFlex = Math.max(0.1, Math.min(0.9, startLeftFlex + deltaRatio));
+      const newRightFlex = Math.max(0.1, Math.min(0.9, startRightFlex - deltaRatio));
+      leftBox.style.flex = newLeftFlex;
+      rightBox.style.flex = newRightFlex;
+    };
+
+    const onMouseUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    handle.addEventListener('mousedown', (e) => {
+      const leftBox = el(leftBoxId);
+      const rightBox = el(rightBoxId);
+      if (!leftBox || !rightBox) return;
+      startX = e.clientX;
+      const leftW = leftBox.getBoundingClientRect().width;
+      const rightW = rightBox.getBoundingClientRect().width;
+      const total = leftW + rightW;
+      startLeftFlex = leftW / total;
+      startRightFlex = rightW / total;
+      handle.classList.add('dragging');
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  // Initialize resizers once DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initResizers);
+  } else {
+    setTimeout(initResizers, 100);
+  }
+
   return {
     showRoleSelection,
     exitToHome,
@@ -1553,5 +1689,4 @@ const ExamPortal = (() => {
     mentor,
     student: studentNS,
   };
-
 })(); // end ExamPortal IIFE

@@ -307,6 +307,8 @@ def api_exam_join_room(room_id: str):
     pipeline = [
         ["HSET", f"room:{room_id}:participants", student_id, student_data],
         ["EXPIRE", f"room:{room_id}:participants", str(60 * 60 * 24 * 7)],
+        ["ZADD", f"room:{room_id}:leaderboard", "NX", "0", student_id],
+        ["EXPIRE", f"room:{room_id}:leaderboard", str(60 * 60 * 24 * 7)],
     ]
     _redis_cmd(pipeline)
 
@@ -619,15 +621,13 @@ def api_exam_submit_answer(room_id: str):
 
     score_delta = score - prev_score
 
-    # Store submission
+    # Store submission and update leaderboard sorted set
     pipeline = [
         ["HSET", f"room:{room_id}:student:{student_id}:submissions", question_id, submission],
         ["EXPIRE", f"room:{room_id}:student:{student_id}:submissions", str(60 * 60 * 24 * 7)],
+        ["ZINCRBY", f"room:{room_id}:leaderboard", str(score_delta), student_id],
+        ["EXPIRE", f"room:{room_id}:leaderboard", str(60 * 60 * 24 * 7)],
     ]
-
-    # Update leaderboard sorted set only if score changed
-    if score_delta != 0:
-        pipeline.append(["ZINCRBY", f"room:{room_id}:leaderboard", str(score_delta), student_id])
 
     _redis_cmd(pipeline)
 
@@ -728,6 +728,43 @@ def api_exam_leaderboard(room_id: str):
             "correct": correct,
             "lastSubmission": last_sub_time,
         })
+
+    # Include any participants not yet in sorted set
+    participants_raw = _hgetall(f"room:{room_id}:participants")
+    ranked_sids = {r["studentId"] for r in ranked}
+    for sid, p_json in participants_raw.items():
+        if sid not in ranked_sids:
+            student_info = {"name": "Unknown", "rollNo": "-", "branch": "-", "joinedAt": 0}
+            if p_json:
+                try:
+                    student_info = json.loads(p_json)
+                except Exception:
+                    pass
+            subs_raw = _hgetall(f"room:{room_id}:student:{sid}:submissions")
+            answered = len(subs_raw)
+            correct = sum(
+                1 for v in subs_raw.values()
+                if isinstance(v, str) and json.loads(v).get("score", 0) > 0
+            ) if subs_raw else 0
+            last_sub_time = 0
+            if subs_raw:
+                for v in subs_raw.values():
+                    try:
+                        t = json.loads(v).get("submittedAt", 0)
+                        if t > last_sub_time:
+                            last_sub_time = t
+                    except Exception:
+                        pass
+            ranked.append({
+                "studentId": sid,
+                "name": student_info.get("name", "Unknown"),
+                "rollNo": student_info.get("rollNo", "-"),
+                "branch": student_info.get("branch", "-"),
+                "totalScore": 0,
+                "answered": answered,
+                "correct": correct,
+                "lastSubmission": last_sub_time,
+            })
 
     # Fetch total possible score from questions
     questions_json = _redis_one(["GET", f"room:{room_id}:questions"])
