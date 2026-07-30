@@ -117,57 +117,68 @@ def _execute_room_query(room_id: str, dataset_ids, query: str, max_results: int 
     import json as _json
     import mongomock
     from bson import json_util
+    import traceback
 
-    if not isinstance(dataset_ids, list):
-        if dataset_ids:
-            dataset_ids = [dataset_ids]
-        else:
-            dataset_ids = []
+    try:
+        if not isinstance(dataset_ids, list):
+            if dataset_ids:
+                dataset_ids = [dataset_ids]
+            else:
+                dataset_ids = []
 
-    # Build temp mongomock DB
-    temp_client = mongomock.MongoClient()
-    temp_db = temp_client["exam_db"]
+        # Build temp mongomock DB
+        temp_client = mongomock.MongoClient()
+        temp_db = temp_client["exam_db"]
 
-    loaded_count = 0
-    for d_id in dataset_ids:
-        if not d_id:
-            continue
-        docs_json = _redis_one(["GET", f"room:{room_id}:dataset:{d_id}:docs"])
-        if not docs_json:
-            continue
-        try:
-            docs = json.loads(docs_json)
-        except Exception:
-            continue
+        loaded_count = 0
+        for d_id in dataset_ids:
+            if not d_id:
+                continue
+            docs_json = _redis_one(["GET", f"room:{room_id}:dataset:{d_id}:docs"])
+            if not docs_json:
+                continue
+            try:
+                docs = json.loads(docs_json)
+            except Exception:
+                continue
 
-        meta = _hgetall(f"room:{room_id}:dataset:{d_id}:meta")
-        raw_name = meta.get("name", "")
-        raw_coll = meta.get("collection", "")
+            meta = _hgetall(f"room:{room_id}:dataset:{d_id}:meta")
+            raw_name = meta.get("name", "")
+            raw_coll = meta.get("collection", "")
 
-        names_to_register = set()
-        if raw_name:
-            names_to_register.add(raw_name)
-            names_to_register.add(raw_name.lower())
-            names_to_register.add("".join(c for c in raw_name.lower() if c.isalnum() or c == "_"))
-        if raw_coll:
-            names_to_register.add(raw_coll)
-            names_to_register.add(raw_coll.lower())
-        names_to_register.add(d_id)
+            names_to_register = set()
+            if raw_name:
+                names_to_register.add(raw_name)
+                names_to_register.add(raw_name.lower())
+                names_to_register.add("".join(c for c in raw_name.lower() if c.isalnum() or c == "_"))
+            if raw_coll:
+                names_to_register.add(raw_coll)
+                names_to_register.add(raw_coll.lower())
+            names_to_register.add(d_id)
 
-        if docs:
-            for coll in names_to_register:
-                if coll:
-                    parsed_docs = json_util.loads(_json.dumps(docs))
-                    temp_db[coll].insert_many(parsed_docs)
-            loaded_count += 1
+            if docs:
+                for coll in names_to_register:
+                    if coll:
+                        try:
+                            parsed_docs = json_util.loads(_json.dumps(docs))
+                            for d in parsed_docs:
+                                if isinstance(d, dict):
+                                    d.pop("_id", None)
+                            if parsed_docs:
+                                temp_db[coll].insert_many(parsed_docs)
+                        except Exception:
+                            pass
+                loaded_count += 1
 
-    if loaded_count == 0:
-        return {"status": "error", "error": "No datasets found/loaded in room"}
+        if loaded_count == 0:
+            return {"status": "error", "error": "No datasets found/loaded in room"}
 
-    result = web_execute(query, max_results=max_results, db=temp_db)
-    res_dict = result.to_dict()
-    res_dict["results"] = res_dict.get("data") if res_dict.get("data") is not None else []
-    return res_dict
+        result = web_execute(query, max_results=max_results, db=temp_db)
+        res_dict = result.to_dict()
+        res_dict["results"] = res_dict.get("data") if res_dict.get("data") is not None else []
+        return res_dict
+    except Exception as e:
+        return {"status": "error", "error": f"Execution error: {str(e)}", "traceback": traceback.format_exc()}
 
 
 # ── API Routes ────────────────────────────────────────────────────────────────
@@ -493,10 +504,11 @@ def api_exam_freeze_answer(room_id: str):
         return jsonify(result), 400
 
     docs = result.get("results", [])
+    stored_docs = docs[:2000]
 
-    # Freeze the answer
+    # Freeze the answer safely
     _redis_cmd([
-        ["SET", f"room:{room_id}:question:{question_id}:answer", json.dumps(docs)],
+        ["SET", f"room:{room_id}:question:{question_id}:answer", json.dumps(stored_docs)],
         ["EXPIRE", f"room:{room_id}:question:{question_id}:answer", str(60 * 60 * 24 * 7)],
     ])
 
