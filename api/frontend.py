@@ -1991,7 +1991,7 @@ li.CodeMirror-hint-active {
   position: fixed;
   inset: 0;
   background: var(--bg);
-  z-index: 200;
+  z-index: 700;
   flex-direction: column;
   font-family: 'Segoe UI', system-ui, sans-serif;
 }
