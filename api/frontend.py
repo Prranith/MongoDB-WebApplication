@@ -3228,6 +3228,22 @@ li.CodeMirror-hint-active {
   background: rgba(56, 139, 253, 0.25) !important;
 }
 
+/* ── Warning Notice Bar ──────────────────────────────────── */
+.exam-notice-bar {
+  background: rgba(218, 54, 51, 0.15);
+  border-bottom: 1px solid rgba(218, 54, 51, 0.4);
+  color: #ff7b72;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 
 </style>
 </head>
@@ -5825,14 +5841,7 @@ function applyEditorTheme() {
   <div class="exam-body">
     <div class="exam-form-card">
       <div class="exam-form-title">New Exam Room</div>
-      <div class="exam-form-sub">// Auto-generated Room ID — share with students</div>
-
-      <div class="exam-room-id-badge" id="mentor-room-id-badge" title="Click to copy" onclick="ExamPortal.mentor.copyRoomId()">
-        <span class="exam-room-id-text" id="mentor-room-id-display">MNG-???</span>
-        <span class="exam-room-id-copy">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-        </span>
-      </div>
+      <div class="exam-form-sub">// Configure your assessment settings</div>
 
       <div class="exam-field">
         <label class="exam-label" for="mentor-title">Assessment Title</label>
@@ -5882,6 +5891,10 @@ function applyEditorTheme() {
         End Exam
       </button>
     </div>
+  </div>
+  <div class="exam-notice-bar">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+    Do not refresh your screen, Site will auto-refresh, Else Test will be cancelled
   </div>
 
   <div class="exam-dash-shell">
@@ -6179,6 +6192,10 @@ function applyEditorTheme() {
       </button>
     </span>
   </div>
+  <div class="exam-notice-bar">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+    Do not refresh your screen, Site will auto-refresh, Else Test will be cancelled
+  </div>
 
   <div class="exam-student-shell">
     <!-- Question Navigator -->
@@ -6229,20 +6246,33 @@ db.collection.find({})</textarea>
           <div class="exam-ended-msg">// Exam has ended — submissions are closed</div>
         </div>
 
-        <!-- Student two-tab console -->
-        <div class="exam-student-console">
-          <div class="exam-console-hdr">
-            <div class="exam-console-tab active" id="student-ctab-yours" onclick="ExamPortal.student.setConsoleTab('yours')">Your Output</div>
-            <div class="exam-console-tab" id="student-ctab-expected" onclick="ExamPortal.student.setConsoleTab('expected')">Expected (preview)</div>
-            <div style="margin-left:auto;padding-right:10px;display:flex;align-items:center;gap:6px">
+        <!-- Student side-by-side output console -->
+        <div class="exam-student-console" style="display:flex;flex-direction:column;height:220px">
+          <div class="exam-console-hdr" style="display:flex;justify-content:space-between;padding:0 12px;height:30px">
+            <span style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;line-height:30px">Query Output Comparison</span>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
               <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-console-status">— Ready</span>
             </div>
           </div>
-          <div class="exam-console-pane active" id="student-pane-yours">
-            <span style="color:var(--text3)">// Run a query to see output here</span>
-          </div>
-          <div class="exam-console-pane" id="student-pane-expected">
-            <span style="color:var(--text3)">// Submit at least once to see expected output preview</span>
+          <div style="display:flex;flex:1;gap:1px;background:var(--border);overflow:hidden">
+            <!-- Left Side: Your Output -->
+            <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
+              <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--cyan)">
+                Your Output
+              </div>
+              <div class="exam-console-pane active" id="student-pane-yours" style="flex:1;overflow-y:auto;padding:8px">
+                <span style="color:var(--text3)">// Run a query to see output here</span>
+              </div>
+            </div>
+            <!-- Right Side: Expected Output Preview -->
+            <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
+              <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--green2)">
+                Expected Output (Preview)
+              </div>
+              <div class="exam-console-pane active" id="student-pane-expected" style="flex:1;overflow-y:auto;padding:8px">
+                <span style="color:var(--text3)">// Select or run a query to load expected preview</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -6372,6 +6402,17 @@ const ExamPortal = (() => {
     panels.forEach(p => p.classList.remove('active'));
     const target = el(panelId);
     if (target) target.classList.add('active');
+
+    // Prevent accidental page refresh during active exam sessions
+    if (['exam-mentor-dash-panel', 'exam-student-waiting-panel', 'exam-student-exam-panel'].includes(panelId)) {
+      window.onbeforeunload = function(e) {
+        const msg = "Do not refresh your screen, Site will auto-refresh, Else Test will be cancelled";
+        if (e) e.returnValue = msg;
+        return msg;
+      };
+    } else {
+      window.onbeforeunload = null;
+    }
   }
 
   function hideAllExam() {
@@ -6945,7 +6986,7 @@ const ExamPortal = (() => {
         el(`freeze-status-${qId}`).style.display = 'block';
         return;
       }
-      if (!query || query.startsWith('//')) {
+      if (!query || !query.trim()) {
         showMsg(`freeze-status-${qId}`, '// Write the expected query first', true);
         el(`freeze-status-${qId}`).style.display = 'block';
         return;
@@ -7109,7 +7150,7 @@ const ExamPortal = (() => {
     _startParticipantPoll() {
       clearInterval(state.mentor.participantInterval);
       mentor._fetchParticipants();
-      state.mentor.participantInterval = setInterval(mentor._fetchParticipants, 3000);
+      state.mentor.participantInterval = setInterval(mentor._fetchParticipants, 2000);
     },
 
     async _fetchParticipants() {
@@ -7126,7 +7167,7 @@ const ExamPortal = (() => {
     _startLeaderboardPoll() {
       clearInterval(state.mentor.lbInterval);
       mentor.fetchLeaderboard();
-      state.mentor.lbInterval = setInterval(mentor.fetchLeaderboard, 5000);
+      state.mentor.lbInterval = setInterval(mentor.fetchLeaderboard, 2000);
     },
 
     async fetchLeaderboard() {

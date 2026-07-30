@@ -112,7 +112,7 @@ def grade_query_answer(student_output: list, frozen_answer: list) -> dict:
 
 # ── Execute query against room dataset ────────────────────────────────────────
 
-def _execute_room_query(room_id: str, dataset_ids, query: str, max_results: int = 100):
+def _execute_room_query(room_id: str, dataset_ids, query: str, max_results: int = 100000):
     """Load datasets from Redis and execute query against them."""
     import json as _json
     import mongomock
@@ -488,7 +488,7 @@ def api_exam_freeze_answer(room_id: str):
     if not question_id or not dataset_ids or not query:
         return jsonify({"status": "error", "error": "questionId, datasetIds, and query are required"}), 400
 
-    result = _execute_room_query(room_id, dataset_ids, query, max_results=500)
+    result = _execute_room_query(room_id, dataset_ids, query, max_results=100000)
     if result.get("status") == "error":
         return jsonify(result), 400
 
@@ -561,7 +561,7 @@ def api_exam_submit_answer(room_id: str):
 
         # Run student query server-side for grading
         if query and dataset_ids:
-            result = _execute_room_query(room_id, dataset_ids, query, max_results=500)
+                    result = _execute_room_query(room_id, dataset_ids, query, max_results=100000)
             if result.get("status") == "ok":
                 student_output = result.get("results", [])
 

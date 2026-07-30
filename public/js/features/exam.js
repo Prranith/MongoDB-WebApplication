@@ -60,6 +60,17 @@ const ExamPortal = (() => {
     panels.forEach(p => p.classList.remove('active'));
     const target = el(panelId);
     if (target) target.classList.add('active');
+
+    // Prevent accidental page refresh during active exam sessions
+    if (['exam-mentor-dash-panel', 'exam-student-waiting-panel', 'exam-student-exam-panel'].includes(panelId)) {
+      window.onbeforeunload = function(e) {
+        const msg = "Do not refresh your screen, Site will auto-refresh, Else Test will be cancelled";
+        if (e) e.returnValue = msg;
+        return msg;
+      };
+    } else {
+      window.onbeforeunload = null;
+    }
   }
 
   function hideAllExam() {
@@ -633,7 +644,7 @@ const ExamPortal = (() => {
         el(`freeze-status-${qId}`).style.display = 'block';
         return;
       }
-      if (!query || query.startsWith('//')) {
+      if (!query || !query.trim()) {
         showMsg(`freeze-status-${qId}`, '// Write the expected query first', true);
         el(`freeze-status-${qId}`).style.display = 'block';
         return;
@@ -797,7 +808,7 @@ const ExamPortal = (() => {
     _startParticipantPoll() {
       clearInterval(state.mentor.participantInterval);
       mentor._fetchParticipants();
-      state.mentor.participantInterval = setInterval(mentor._fetchParticipants, 3000);
+      state.mentor.participantInterval = setInterval(mentor._fetchParticipants, 2000);
     },
 
     async _fetchParticipants() {
@@ -814,7 +825,7 @@ const ExamPortal = (() => {
     _startLeaderboardPoll() {
       clearInterval(state.mentor.lbInterval);
       mentor.fetchLeaderboard();
-      state.mentor.lbInterval = setInterval(mentor.fetchLeaderboard, 5000);
+      state.mentor.lbInterval = setInterval(mentor.fetchLeaderboard, 2000);
     },
 
     async fetchLeaderboard() {

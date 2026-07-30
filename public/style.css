@@ -3152,3 +3152,19 @@ li.CodeMirror-hint-active {
   background: rgba(56, 139, 253, 0.25) !important;
 }
 
+/* ── Warning Notice Bar ──────────────────────────────────── */
+.exam-notice-bar {
+  background: rgba(218, 54, 51, 0.15);
+  border-bottom: 1px solid rgba(218, 54, 51, 0.4);
+  color: #ff7b72;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
