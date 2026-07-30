@@ -308,7 +308,13 @@
         </div>
 
         <button class="intro-enter" onclick="showView('ide')">
-          🚀 Enter Workspace →
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+          Enter Workspace
+        </button>
+
+        <button class="intro-exam-btn" id="btn-exam-portal" onclick="ExamPortal.showRoleSelection()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+          Exam Portal
         </button>
       </div>
 
@@ -578,5 +584,508 @@
 <script src="js/features/execution.js"></script>
 <script src="js/features/editor.js"></script>
 <script src="js/main.js"></script>
+
+<!-- ══ EXAM PORTAL OVERLAYS ══════════════════════════════════════════════ -->
+
+<!-- Role Selection -->
+<div class="exam-overlay" id="exam-role-panel">
+  <div class="exam-topbar">
+    <button class="exam-topbar-back" onclick="ExamPortal.exitToHome()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Back
+    </button>
+    <span class="exam-topbar-title">MongoSandbox — Exam Portal</span>
+  </div>
+  <div class="exam-body">
+    <div class="exam-section-title">Exam Portal</div>
+    <div class="exam-section-sub">// Select your role to continue</div>
+    <div class="exam-role-grid">
+      <div class="exam-role-card" id="role-card-mentor" onclick="ExamPortal.selectRole('mentor')" tabindex="0">
+        <div class="exam-role-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l5.59-5.59L18 8l-7 7z"/></svg>
+        </div>
+        <div class="exam-role-name">Mentor</div>
+        <div class="exam-role-desc">Create rooms, build questions, upload datasets, and monitor live leaderboards</div>
+      </div>
+      <div class="exam-role-card" id="role-card-student" onclick="ExamPortal.selectRole('student')" tabindex="0">
+        <div class="exam-role-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </div>
+        <div class="exam-role-name">Student</div>
+        <div class="exam-role-desc">Join a room, solve query and MCQ questions, submit answers in real-time</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mentor: Create Room -->
+<div class="exam-overlay" id="exam-mentor-create-panel">
+  <div class="exam-topbar">
+    <button class="exam-topbar-back" onclick="ExamPortal.showRoleSelection()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Back
+    </button>
+    <span class="exam-topbar-title">Mentor — Create Exam Room</span>
+  </div>
+  <div class="exam-body">
+    <div class="exam-form-card">
+      <div class="exam-form-title">New Exam Room</div>
+      <div class="exam-form-sub">// Auto-generated Room ID — share with students</div>
+
+      <div class="exam-room-id-badge" id="mentor-room-id-badge" title="Click to copy" onclick="ExamPortal.mentor.copyRoomId()">
+        <span class="exam-room-id-text" id="mentor-room-id-display">MNG-???</span>
+        <span class="exam-room-id-copy">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        </span>
+      </div>
+
+      <div class="exam-field">
+        <label class="exam-label" for="mentor-title">Assessment Title</label>
+        <input class="exam-input" id="mentor-title" type="text" placeholder="e.g. MongoDB Mid-Term 2026" autocomplete="off"/>
+        <div class="exam-input-err" id="mentor-title-err" style="display:none"></div>
+      </div>
+
+      <div class="exam-toggle-row">
+        <label class="exam-toggle">
+          <input type="checkbox" id="mentor-timed-toggle" onchange="ExamPortal.mentor.toggleTimed(this.checked)"/>
+          <div class="exam-toggle-track"></div>
+          <div class="exam-toggle-thumb"></div>
+        </label>
+        <span class="exam-toggle-label">Timed Exam</span>
+      </div>
+
+      <div class="exam-field" id="mentor-duration-field" style="display:none">
+        <label class="exam-label" for="mentor-duration">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
+          Duration (minutes)
+        </label>
+        <input class="exam-input exam-num-input" id="mentor-duration" type="number" min="1" max="300" value="60" style="width:100%"/>
+      </div>
+
+      <div id="mentor-create-err" class="exam-error-msg" style="display:none"></div>
+
+      <button class="exam-btn exam-btn-green exam-btn-full" id="btn-create-room" onclick="ExamPortal.mentor.createRoom()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        Create Room
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Mentor Dashboard -->
+<div class="exam-overlay" id="exam-mentor-dash-panel">
+  <div class="exam-topbar">
+    <span class="exam-topbar-title" id="mentor-dash-title">Exam Room</span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span class="exam-status-chip exam-chip-waiting" id="mentor-status-chip">WAITING</span>
+      <button class="exam-btn exam-btn-green" id="btn-start-exam" onclick="ExamPortal.mentor.startExam()" style="display:flex">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        Start Exam
+      </button>
+      <button class="exam-btn exam-btn-red" id="btn-end-exam" onclick="ExamPortal.mentor.endExam()" style="display:none">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+        End Exam
+      </button>
+    </div>
+  </div>
+
+  <div class="exam-dash-shell">
+    <!-- Left Sidebar -->
+    <div class="exam-dash-left">
+      <div class="exam-sidebar-hdr">Room Info</div>
+      <div class="exam-sidebar-body">
+        <div class="exam-sidebar-row">
+          <span class="exam-sidebar-key">Room ID</span>
+          <div class="exam-room-id-badge" style="padding:6px 12px;margin:0;cursor:pointer" onclick="ExamPortal.mentor.copyRoomId()">
+            <span class="exam-room-id-text" id="mentor-dash-room-id" style="font-size:16px;letter-spacing:2px">---</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="exam-room-id-copy"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          </div>
+        </div>
+        <div class="exam-sidebar-row">
+          <span class="exam-sidebar-key">Status</span>
+          <span class="exam-status-chip exam-chip-waiting" id="mentor-sidebar-chip">WAITING</span>
+        </div>
+        <div class="exam-sidebar-row" id="mentor-timer-row" style="display:none">
+          <span class="exam-sidebar-key">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:3px"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm.01 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23L12.5 13V7z"/></svg>
+            Time Remaining
+          </span>
+          <span class="exam-timer-display" id="mentor-timer-display">--:--</span>
+        </div>
+        <div class="exam-sidebar-row" style="margin-top:8px">
+          <span class="exam-sidebar-key">Questions</span>
+          <span class="exam-sidebar-val" id="mentor-q-count">0</span>
+        </div>
+        <div class="exam-sidebar-row">
+          <span class="exam-sidebar-key">Max Score</span>
+          <span class="exam-sidebar-val" id="mentor-max-score">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Panel -->
+    <div class="exam-dash-main">
+      <div class="exam-tabbar" id="mentor-tabbar">
+        <div class="exam-tab active" id="mentor-tab-questions" onclick="ExamPortal.mentor.setTab('questions')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          Questions
+        </div>
+        <div class="exam-tab" id="mentor-tab-dataset" onclick="ExamPortal.mentor.setTab('dataset')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 4.02 2 6.5v11c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2zm0 3c4.14 0 7.5 1.12 7.5 2.5S16.14 10 12 10 4.5 8.88 4.5 7.5 7.86 5 12 5zm0 14c-4.14 0-7.5-1.12-7.5-2.5v-2.7c1.37.74 4.1 1.2 7.5 1.2s6.13-.46 7.5-1.2v2.7c0 1.38-3.36 2.5-7.5 2.5zm0-5c-4.14 0-7.5-1.12-7.5-2.5v-2.7c1.37.74 4.1 1.2 7.5 1.2s6.13-.46 7.5-1.2v2.7c0 1.38-3.36 2.5-7.5 2.5z"/></svg>
+          Dataset
+        </div>
+        <div class="exam-tab" id="mentor-tab-live" onclick="ExamPortal.mentor.setTab('live')" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+          Leaderboard
+        </div>
+      </div>
+
+      <!-- Questions Tab -->
+      <div class="exam-tab-pane active" id="mentor-pane-questions">
+        <div class="exam-qbuilder">
+          <!-- Question List -->
+          <div class="exam-qlist">
+            <div class="exam-qlist-hdr">
+              <span class="exam-qlist-hdr-title">Questions</span>
+              <button class="phbtn" title="Add Query Question" onclick="ExamPortal.mentor.addQuestion('query')" id="btn-add-query-q">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              </button>
+            </div>
+            <div class="exam-qlist-body" id="mentor-qlist-body">
+              <div class="exam-qlist-empty" id="mentor-qlist-empty">
+                // No questions yet<br/>
+                Click + to add Query or MCQ questions
+              </div>
+            </div>
+            <div style="padding:8px;border-top:1px solid var(--border);display:flex;gap:6px">
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px" onclick="ExamPortal.mentor.addQuestion('query')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Query
+              </button>
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px" onclick="ExamPortal.mentor.addQuestion('mcq')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                MCQ
+              </button>
+            </div>
+          </div>
+
+          <!-- Question Editor -->
+          <div class="exam-qeditor" id="mentor-qeditor">
+            <div class="exam-qeditor-empty" id="mentor-qeditor-empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <div style="font-size:13px;color:var(--text3);text-align:center;font-family:'JetBrains Mono',monospace">
+                // Select or add a question to edit it
+              </div>
+            </div>
+            <!-- Question form injected here by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Dataset Tab -->
+      <div class="exam-tab-pane" id="mentor-pane-dataset">
+        <div class="exam-dataset-pane" style="flex:1;overflow-y:auto">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;font-weight:600;color:#bbbbbb;text-transform:uppercase;letter-spacing:.5px">Uploaded Datasets</span>
+            <button class="exam-btn exam-btn-secondary" onclick="document.getElementById('exam-dataset-upload').click()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              Upload Dataset
+            </button>
+            <input type="file" id="exam-dataset-upload" accept=".json,.csv" style="display:none" onchange="ExamPortal.mentor.uploadDataset(event)"/>
+          </div>
+          <div id="exam-upload-msg" style="display:none"></div>
+          <table class="exam-dataset-table">
+            <thead><tr>
+              <th>Name</th>
+              <th>Collection</th>
+              <th>Documents</th>
+              <th>Actions</th>
+            </tr></thead>
+            <tbody id="mentor-dataset-tbody">
+              <tr id="mentor-dataset-empty-row">
+                <td colspan="4" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">
+                  // No datasets uploaded yet
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Live Leaderboard Tab -->
+      <div class="exam-tab-pane" id="mentor-pane-live">
+        <div class="exam-lb-hdr">
+          <span class="exam-lb-title">Leaderboard</span>
+          <div class="exam-lb-refresh-dot pulsing" id="lb-pulse-dot"></div>
+          <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="lb-refresh-label">auto-refresh 5s</span>
+          <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3)" id="lb-max-score-label"></span>
+        </div>
+        <div class="exam-lb-wrap">
+          <table class="exam-lb-table">
+            <thead><tr>
+              <th style="width:50px;text-align:center">Rank</th>
+              <th>Name</th>
+              <th>Roll No</th>
+              <th>Branch</th>
+              <th>Score</th>
+              <th>Answered</th>
+              <th>Accuracy</th>
+              <th>Last Sub</th>
+            </tr></thead>
+            <tbody id="mentor-lb-tbody">
+              <tr><td colspan="8" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">// Waiting for submissions...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Participants / Export -->
+    <div class="exam-dash-right">
+      <!-- Participants (WAITING/LIVE) -->
+      <div id="mentor-participants-panel" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+        <div class="exam-participants-hdr">
+          <span class="exam-participants-title">Participants</span>
+          <span class="exam-participants-count" id="mentor-participants-count">(0)</span>
+        </div>
+        <div class="exam-participants-body" id="mentor-participants-body">
+          <div class="exam-participants-empty">// No participants yet</div>
+        </div>
+      </div>
+
+      <!-- Export (ENDED) -->
+      <div id="mentor-export-panel" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+        <div class="exam-participants-hdr">
+          <span class="exam-participants-title">Results Export</span>
+        </div>
+        <div class="exam-export-panel">
+          <div class="exam-sidebar-key">Sort by</div>
+          <div class="exam-export-sort-row">
+            <button class="exam-sort-btn active" id="sort-btn-score" onclick="ExamPortal.mentor.setSortMode('score')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+              Score
+            </button>
+            <button class="exam-sort-btn" id="sort-btn-roll" onclick="ExamPortal.mentor.setSortMode('roll')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z"/></svg>
+              Roll No
+            </button>
+          </div>
+          <button class="exam-btn exam-btn-green exam-btn-full" onclick="ExamPortal.mentor.exportXLSX()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+            Export Excel (.xlsx)
+          </button>
+          <button class="exam-btn exam-btn-red exam-btn-full" onclick="ExamPortal.mentor.cleanupRoom()" style="margin-top:8px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            Cleanup Room
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student: Join Room -->
+<div class="exam-overlay" id="exam-student-join-panel">
+  <div class="exam-topbar">
+    <button class="exam-topbar-back" onclick="ExamPortal.showRoleSelection()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Back
+    </button>
+    <span class="exam-topbar-title">Student — Join Exam Room</span>
+  </div>
+  <div class="exam-body">
+    <div class="exam-form-card">
+      <div class="exam-form-title">Join Exam Room</div>
+      <div class="exam-form-sub">// Enter your details and the Room ID</div>
+
+      <div class="exam-field">
+        <label class="exam-label" for="student-name">Name</label>
+        <input class="exam-input" id="student-name" type="text" placeholder="Your full name" autocomplete="name"/>
+        <div class="exam-input-err" id="student-name-err" style="display:none"></div>
+      </div>
+      <div class="exam-field">
+        <label class="exam-label" for="student-roll">Roll Number</label>
+        <input class="exam-input" id="student-roll" type="text" placeholder="e.g. 21R11A0501" autocomplete="off"/>
+        <div class="exam-input-err" id="student-roll-err" style="display:none"></div>
+      </div>
+      <div class="exam-field">
+        <label class="exam-label" for="student-branch">Branch</label>
+        <select class="exam-select" id="student-branch">
+          <option value="">Select branch...</option>
+          <option>CSE</option>
+          <option>IT</option>
+          <option>ECE</option>
+          <option>EEE</option>
+          <option>MECH</option>
+          <option>CIVIL</option>
+          <option>Other</option>
+        </select>
+        <div class="exam-input-err" id="student-branch-err" style="display:none"></div>
+      </div>
+      <div class="exam-field">
+        <label class="exam-label" for="student-room-id">Room ID</label>
+        <input class="exam-input" id="student-room-id" type="text" placeholder="e.g. MNG-4X9" autocomplete="off" maxlength="7"
+          style="font-family:'JetBrains Mono',monospace;font-size:18px;letter-spacing:2px;text-transform:uppercase"
+          oninput="ExamPortal.student.formatRoomId(this)"/>
+        <div class="exam-input-err" id="student-room-err" style="display:none"></div>
+      </div>
+
+      <div id="student-join-err" class="exam-error-msg" style="display:none"></div>
+
+      <button class="exam-btn exam-btn-green exam-btn-full" id="btn-join-room" onclick="ExamPortal.student.joinRoom()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M10 17l5-5-5-5v10zm-5 0l5-5-5-5v10z"/></svg>
+        Join Room
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Student: Waiting Room -->
+<div class="exam-overlay" id="exam-student-wait-panel">
+  <div class="exam-topbar">
+    <span class="exam-topbar-title" id="wait-room-title">Waiting Room</span>
+    <span class="exam-status-chip exam-chip-waiting" style="margin-left:auto">WAITING</span>
+  </div>
+  <div class="exam-body" style="justify-content:flex-start;padding-top:60px">
+    <div class="exam-wait-content">
+      <div class="exam-room-id-badge" style="width:fit-content;margin:0 auto">
+        <span class="exam-room-id-text" id="wait-room-id-display">---</span>
+      </div>
+      <div class="exam-wait-title" id="wait-room-name">Room Title</div>
+      <div class="exam-wait-status">
+        // Waiting for mentor to start the exam...<span class="exam-blink">_</span>
+      </div>
+
+      <!-- Participants list -->
+      <div style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <div class="exam-participants-hdr" style="border-bottom:1px solid var(--border)">
+          <span class="exam-participants-title">Participants in Room</span>
+          <span class="exam-participants-count" id="wait-participants-count">(0)</span>
+        </div>
+        <div style="max-height:240px;overflow-y:auto" id="wait-participants-body">
+          <div class="exam-participants-empty">// No participants yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student: Exam Interface -->
+<div class="exam-overlay" id="exam-student-exam-panel">
+  <div class="exam-topbar">
+    <span class="exam-topbar-title" id="student-exam-room-title">Exam</span>
+    <span style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-q-progress">Q 0/0</span>
+    <span style="margin-left:auto" id="student-exam-timer" style="display:none"></span>
+    <span class="exam-status-chip exam-chip-live" id="student-exam-status">LIVE</span>
+  </div>
+
+  <div class="exam-student-shell">
+    <!-- Question Navigator -->
+    <div class="exam-qnav">
+      <div class="exam-qnav-hdr">Questions</div>
+      <div class="exam-qnav-body" id="student-qnav-body">
+        <div class="exam-participants-empty">// Loading questions...</div>
+      </div>
+    </div>
+
+    <!-- Main exam area -->
+    <div class="exam-student-main">
+      <!-- Question display -->
+      <div class="exam-question-display" id="student-question-display" style="display:none">
+        <div class="exam-question-header">
+          <span class="exam-question-number" id="student-q-number">Q1</span>
+          <span class="exam-q-type-chip exam-q-type-query" id="student-q-type-chip">QUERY</span>
+          <button class="exam-btn exam-btn-secondary" style="font-size:11px;padding:3px 8px" id="btn-inspect-dataset" onclick="ExamPortal.student.inspectDataset()" style="display:none">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 4.02 2 6.5v11c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2zm0 3c4.14 0 7.5 1.12 7.5 2.5S16.14 10 12 10 4.5 8.88 4.5 7.5 7.86 5 12 5z"/></svg>
+            Inspect Dataset
+          </button>
+          <span class="exam-question-marks" id="student-q-marks">10 marks</span>
+        </div>
+        <div class="exam-question-text" id="student-q-text"></div>
+      </div>
+
+      <!-- Query question: Editor + Console -->
+      <div id="student-query-area" style="display:none;flex:1;display:none;flex-direction:column;overflow:hidden;position:relative">
+        <div class="exam-toolbar">
+          <button class="tbtn tbtn-run" id="student-run-btn" onclick="ExamPortal.student.runQuery()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+            Run
+          </button>
+          <button class="tbtn tbtn-secondary" onclick="ExamPortal.student.clearEditor()">Clear</button>
+          <div class="tb-sep"></div>
+          <button class="tbtn tbtn-run" id="student-submit-query-btn" onclick="ExamPortal.student.submitAnswer()" disabled style="opacity:0.4">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Submit Answer
+          </button>
+        </div>
+        <div class="exam-editor-wrap">
+          <textarea id="student-raw-editor" style="display:none">// Write your MongoDB query here
+db.collection.find({})</textarea>
+        </div>
+
+        <!-- Exam ended overlay -->
+        <div class="exam-ended-overlay" id="student-ended-overlay">
+          <div class="exam-ended-msg">// Exam has ended — submissions are closed</div>
+        </div>
+
+        <!-- Student two-tab console -->
+        <div class="exam-student-console">
+          <div class="exam-console-hdr">
+            <div class="exam-console-tab active" id="student-ctab-yours" onclick="ExamPortal.student.setConsoleTab('yours')">Your Output</div>
+            <div class="exam-console-tab" id="student-ctab-expected" onclick="ExamPortal.student.setConsoleTab('expected')">Expected (preview)</div>
+            <div style="margin-left:auto;padding-right:10px;display:flex;align-items:center;gap:6px">
+              <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-console-status">— Ready</span>
+            </div>
+          </div>
+          <div class="exam-console-pane active" id="student-pane-yours">
+            <span style="color:var(--text3)">// Run a query to see output here</span>
+          </div>
+          <div class="exam-console-pane" id="student-pane-expected">
+            <span style="color:var(--text3)">// Submit at least once to see expected output preview</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MCQ question area -->
+      <div id="student-mcq-area" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+        <div class="exam-mcq-options" id="student-mcq-options"></div>
+        <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <button class="exam-btn exam-btn-green" id="student-submit-mcq-btn" onclick="ExamPortal.student.submitAnswer()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Submit Answer
+          </button>
+          <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-mcq-status"></span>
+        </div>
+      </div>
+
+      <!-- No question selected -->
+      <div id="student-no-q-selected" style="flex:1;display:flex;align-items:center;justify-content:center">
+        <span style="font-size:13px;color:var(--text3);font-family:'JetBrains Mono',monospace">// Select a question from the left panel</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Dataset Schema Modal (reused for exam) -->
+<div class="modal-bg" id="exam-schema-modal">
+  <div class="modal-win">
+    <div class="modal-titlebar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="#9cdcfe" style="margin-right:6px"><path d="M12 2C6.48 2 2 4.02 2 6.5v11c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2z"/></svg>
+      <span class="modal-title">Dataset Schema</span>
+      <button class="modal-close-btn" onclick="closeModal('exam-schema-modal')">×</button>
+    </div>
+    <div class="modal-body" style="padding:16px;overflow-y:auto">
+      <div id="exam-schema-content" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text)">
+        Loading...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SheetJS for XLSX export -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<!-- Exam Portal Logic -->
+<script src="js/features/exam.js"></script>
 </body>
 </html>

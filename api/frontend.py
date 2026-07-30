@@ -1955,6 +1955,1260 @@ li.CodeMirror-hint-active {
   opacity: 1;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   EXAM PORTAL — COMPLETE STYLING SYSTEM
+   All components match the existing IDE aesthetic exactly.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Intro page: Exam Portal button ─────────────────────── */
+.intro-exam-btn {
+  background: transparent;
+  color: var(--green2);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 28px;
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.intro-exam-btn:hover {
+  background: rgba(22, 130, 93, 0.15);
+  border-color: var(--green2);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(46, 200, 176, 0.2);
+}
+
+/* ── Exam overlay panels (full-viewport) ─────────────────── */
+.exam-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  flex-direction: column;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.exam-overlay.active {
+  display: flex;
+}
+
+/* ── Exam top bar ────────────────────────────────────────── */
+.exam-topbar {
+  height: 40px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.exam-topbar-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+.exam-topbar-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: none;
+  border: none;
+  transition: all .15s;
+}
+.exam-topbar-back:hover {
+  background: var(--hl2);
+  color: var(--text);
+}
+
+/* ── Exam body (scrollable content area) ─────────────────── */
+.exam-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+/* ── Role selection cards ─────────────────────────────────── */
+.exam-role-grid {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+.exam-role-card {
+  width: 240px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 32px 24px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.exam-role-card:hover {
+  border-color: var(--green2);
+  background: rgba(78, 201, 176, 0.05);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(78,201,176,0.2);
+}
+.exam-role-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(78, 201, 176, 0.08);
+  border: 1px solid rgba(78, 201, 176, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.exam-role-icon svg { fill: var(--green2); }
+.exam-role-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.exam-role-desc {
+  font-size: 12px;
+  color: var(--text3);
+  line-height: 1.5;
+}
+
+/* ── Form card (room creation, join) ─────────────────────── */
+.exam-form-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 32px;
+  width: 100%;
+  max-width: 480px;
+}
+.exam-form-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.exam-form-sub {
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 24px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Room ID badge ───────────────────────────────────────── */
+.exam-room-id-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.exam-room-id-badge:hover { border-color: var(--green2); }
+.exam-room-id-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--green2);
+  letter-spacing: 3px;
+  flex: 1;
+  text-align: center;
+}
+.exam-room-id-copy {
+  color: var(--text3);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Form inputs ─────────────────────────────────────────── */
+.exam-field {
+  margin-bottom: 16px;
+}
+.exam-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 6px;
+}
+.exam-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s;
+}
+.exam-input:focus { border-color: var(--green2); }
+.exam-input::placeholder { color: var(--text3); }
+.exam-select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.exam-select:focus { border-color: var(--green2); }
+.exam-input-err {
+  font-size: 11px;
+  color: var(--red);
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.exam-input.has-err { border-color: var(--red); }
+
+/* ── Timed toggle ────────────────────────────────────────── */
+.exam-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.exam-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+}
+.exam-toggle input { display: none; }
+.exam-toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  transition: background .2s;
+}
+.exam-toggle input:checked ~ .exam-toggle-track {
+  background: var(--green);
+  border-color: var(--green2);
+}
+.exam-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform .2s;
+}
+.exam-toggle input:checked ~ .exam-toggle-thumb { transform: translateX(16px); }
+.exam-toggle-label { font-size: 12px; color: var(--text2); }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.exam-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.exam-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.exam-btn-green {
+  background: var(--green);
+  color: #fff;
+}
+.exam-btn-green:hover:not(:disabled) { background: #1ea368; }
+.exam-btn-red {
+  background: #6b1a19;
+  color: #f48771;
+  border: 1px solid #a83332;
+}
+.exam-btn-red:hover:not(:disabled) {
+  background: #8b2221;
+  color: #fff;
+}
+.exam-btn-secondary {
+  background: var(--bg4);
+  color: var(--text2);
+  border: 1px solid var(--border2);
+}
+.exam-btn-secondary:hover:not(:disabled) {
+  background: var(--hl2);
+  color: var(--text);
+}
+.exam-btn-full { width: 100%; justify-content: center; }
+
+/* ── Status chips ────────────────────────────────────────── */
+.exam-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.exam-status-chip::before {
+  content: '●';
+  font-size: 8px;
+}
+.exam-chip-waiting {
+  background: rgba(210, 153, 34, 0.15);
+  color: var(--yellow);
+  border: 1px solid rgba(210, 153, 34, 0.3);
+}
+.exam-chip-live {
+  background: rgba(22, 130, 93, 0.15);
+  color: var(--green2);
+  border: 1px solid rgba(22, 130, 93, 0.4);
+  animation: exam-live-pulse 2s infinite;
+}
+.exam-chip-ended {
+  background: rgba(218, 54, 51, 0.12);
+  color: var(--red);
+  border: 1px solid rgba(218, 54, 51, 0.3);
+}
+@keyframes exam-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ── Mentor Dashboard layout ─────────────────────────────── */
+.exam-dash-shell {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+.exam-dash-left {
+  width: 240px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.exam-dash-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.exam-dash-right {
+  width: 260px;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* ── Sidebar section in dash ─────────────────────────────── */
+.exam-sidebar-hdr {
+  height: 35px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #bbbbbb;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+}
+.exam-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.exam-sidebar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.exam-sidebar-key {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.exam-sidebar-val {
+  font-size: 12px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+.exam-timer-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--green2);
+  letter-spacing: 2px;
+}
+.exam-timer-warning { color: var(--yellow); }
+.exam-timer-critical { color: var(--red); animation: exam-live-pulse 0.8s infinite; }
+
+/* ── Tab bar in dash main panel ──────────────────────────── */
+.exam-tabbar {
+  height: 35px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+.exam-tab {
+  padding: 0 18px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-right: 1px solid var(--border);
+  border-bottom: 2px solid transparent;
+  user-select: none;
+  transition: all .1s;
+}
+.exam-tab:hover { background: var(--hl2); color: var(--text); }
+.exam-tab.active {
+  background: var(--bg);
+  color: var(--text);
+  border-bottom-color: var(--green2);
+}
+
+/* ── Tab content panes ───────────────────────────────────── */
+.exam-tab-pane {
+  display: none;
+  flex: 1;
+  overflow: hidden;
+  flex-direction: column;
+}
+.exam-tab-pane.active { display: flex; }
+
+/* ── Question builder ────────────────────────────────────── */
+.exam-qbuilder {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+.exam-qlist {
+  width: 260px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  background: var(--bg2);
+}
+.exam-qlist-hdr {
+  height: 35px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.exam-qlist-hdr-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #bbbbbb;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  flex: 1;
+}
+.exam-qlist-body {
+  flex: 1;
+  overflow-y: auto;
+}
+.exam-qlist-empty {
+  padding: 20px 12px;
+  font-size: 12px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  text-align: center;
+  line-height: 1.6;
+}
+.exam-q-card {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .1s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.exam-q-card:hover { background: var(--hl2); }
+.exam-q-card.active { background: var(--hl); border-left: 2px solid var(--green2); }
+.exam-q-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.exam-q-num {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+.exam-q-type-chip {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+}
+.exam-q-type-query {
+  background: rgba(22, 130, 93, 0.2);
+  color: var(--green2);
+  border: 1px solid rgba(22, 130, 93, 0.4);
+}
+.exam-q-type-mcq {
+  background: rgba(0, 122, 204, 0.2);
+  color: var(--blue2);
+  border: 1px solid rgba(0, 122, 204, 0.3);
+}
+.exam-q-marks-badge {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--yellow);
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+.exam-q-preview {
+  font-size: 11px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exam-q-card-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+/* ── Question editor form ─────────────────────────────────── */
+.exam-qeditor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 20px;
+  gap: 16px;
+  background: var(--bg);
+}
+.exam-qeditor-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px;
+}
+.exam-qeditor-type-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.exam-fieldset {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.exam-fieldset-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 4px;
+}
+.exam-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color .15s;
+}
+.exam-textarea:focus { border-color: var(--green2); }
+
+/* Mini CodeMirror wrapper for expected query */
+.exam-mini-editor {
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.exam-mini-editor.frozen { opacity: 0.6; pointer-events: none; }
+.exam-frozen-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.5);
+  z-index: 5;
+  pointer-events: none;
+}
+.exam-frozen-overlay svg { color: var(--green2); fill: var(--green2); }
+.exam-frozen-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(22, 130, 93, 0.15);
+  border: 1px solid rgba(22, 130, 93, 0.4);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--green2);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── MCQ option builder ──────────────────────────────────── */
+.exam-mcq-option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.exam-mcq-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  width: 22px;
+  flex-shrink: 0;
+}
+.exam-mcq-correct-radio {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--green2);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* ── Dataset tab ─────────────────────────────────────────── */
+.exam-dataset-pane {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.exam-dataset-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.exam-dataset-table th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+.exam-dataset-table td {
+  padding: 8px 10px;
+  color: var(--text);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  vertical-align: middle;
+}
+.exam-dataset-table tr:hover td { background: var(--hl2); }
+.exam-dataset-coll {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+}
+
+/* ── Participants panel ──────────────────────────────────── */
+.exam-participants-hdr {
+  height: 35px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.exam-participants-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #bbbbbb;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  flex: 1;
+}
+.exam-participants-count {
+  font-size: 11px;
+  color: var(--green2);
+  font-family: 'JetBrains Mono', monospace;
+}
+.exam-participants-body {
+  flex: 1;
+  overflow-y: auto;
+}
+.exam-participant-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.exam-participant-row:hover { background: var(--hl2); }
+.exam-participant-icon {
+  width: 28px;
+  height: 28px;
+  background: rgba(78, 201, 176, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.exam-participant-icon svg { fill: var(--green2); }
+.exam-participant-info { flex: 1; min-width: 0; }
+.exam-participant-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exam-participant-meta {
+  font-size: 11px;
+  color: var(--text3);
+  display: flex;
+  gap: 6px;
+}
+.exam-participant-branch {
+  background: rgba(78, 201, 176, 0.1);
+  color: var(--green2);
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.exam-participant-time {
+  font-size: 10px;
+  color: var(--text3);
+}
+.exam-participants-empty {
+  padding: 20px 12px;
+  font-size: 12px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  text-align: center;
+}
+
+/* ── Leaderboard table ────────────────────────────────────── */
+.exam-lb-wrap {
+  flex: 1;
+  overflow: auto;
+}
+.exam-lb-hdr {
+  height: 35px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.exam-lb-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #bbbbbb;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.exam-lb-refresh-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--green2);
+  border-radius: 50%;
+}
+.exam-lb-refresh-dot.pulsing { animation: pulse 1s infinite; }
+.exam-lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.exam-lb-table th {
+  text-align: left;
+  padding: 7px 14px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--text3);
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.exam-lb-table td {
+  padding: 8px 14px;
+  color: var(--text);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  vertical-align: middle;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.exam-lb-table tr:hover td { background: var(--hl2); }
+.exam-lb-rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text3);
+  text-align: center;
+}
+.exam-lb-rank-1 { color: #F0B429; }
+.exam-lb-rank-2 { color: #C0C0C0; }
+.exam-lb-rank-3 { color: #CD7F32; }
+.exam-lb-row-1 td:first-child { border-left: 3px solid #F0B429; }
+.exam-lb-row-2 td:first-child { border-left: 3px solid #C0C0C0; }
+.exam-lb-row-3 td:first-child { border-left: 3px solid #CD7F32; }
+.exam-lb-name {
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+.exam-lb-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--green2);
+}
+.exam-lb-accuracy {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text2);
+}
+.exam-lb-time {
+  font-size: 11px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Student exam layout ─────────────────────────────────── */
+.exam-student-shell {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+.exam-qnav {
+  width: 280px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.exam-qnav-hdr {
+  height: 35px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #bbbbbb;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+}
+.exam-qnav-body { flex: 1; overflow-y: auto; }
+.exam-qnav-card {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .1s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+}
+.exam-qnav-card:hover { background: var(--hl2); }
+.exam-qnav-card.active { background: var(--hl); border-left: 2px solid var(--green2); }
+.exam-q-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.exam-q-status-unattempted { background: var(--text3); opacity: 0.5; }
+.exam-q-status-draft { background: var(--yellow); }
+.exam-q-status-submitted { background: var(--green2); }
+
+/* ── Student exam main area ──────────────────────────────── */
+.exam-student-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.exam-question-display {
+  padding: 16px 20px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--green2);
+  flex-shrink: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.exam-question-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.exam-question-number {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+}
+.exam-question-marks {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--yellow);
+  font-family: 'JetBrains Mono', monospace;
+}
+.exam-question-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ── MCQ interface ───────────────────────────────────────── */
+.exam-mcq-options {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.exam-mcq-option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+.exam-mcq-option-item:hover {
+  border-color: var(--border2);
+  background: var(--hl2);
+}
+.exam-mcq-option-item:focus {
+  outline: 2px solid var(--green2);
+  outline-offset: 1px;
+}
+.exam-mcq-option-item.selected {
+  border-left: 3px solid var(--green2);
+  background: rgba(22, 130, 93, 0.08);
+}
+.exam-mcq-option-indicator {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.exam-mcq-option-item.selected .exam-mcq-option-indicator {
+  color: var(--green2);
+}
+.exam-mcq-option-text {
+  font-size: 13px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  flex: 1;
+}
+
+/* ── Student console (two-tab) ───────────────────────────── */
+.exam-student-console {
+  height: 220px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.exam-console-hdr {
+  height: 28px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+.exam-console-tab {
+  padding: 0 16px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  user-select: none;
+  transition: all .1s;
+}
+.exam-console-tab:hover { color: var(--text); background: var(--hl2); }
+.exam-console-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--blue);
+  background: var(--bg);
+}
+.exam-console-pane {
+  display: none;
+  flex: 1;
+  overflow: auto;
+  padding: 8px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.exam-console-pane.active { display: flex; flex-direction: column; }
+.exam-console-hint {
+  font-size: 11px;
+  color: var(--text3);
+  font-style: italic;
+  margin-top: 4px;
+  border-top: 1px dashed rgba(255,255,255,0.06);
+  padding-top: 6px;
+}
+
+/* ── Waiting room ────────────────────────────────────────── */
+.exam-wait-content {
+  max-width: 560px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.exam-wait-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+.exam-wait-status {
+  font-size: 13px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 10px 16px;
+  line-height: 1.6;
+}
+.exam-blink {
+  animation: exam-blink 1s step-end infinite;
+}
+@keyframes exam-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ── Exam ended overlay ──────────────────────────────────── */
+.exam-ended-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+}
+.exam-ended-overlay.active { display: flex; }
+.exam-ended-msg {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--red);
+  background: var(--bg2);
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  padding: 12px 24px;
+}
+
+/* ── Export panel ────────────────────────────────────────── */
+.exam-export-panel {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.exam-export-sort-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.exam-sort-btn {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 11px;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all .1s;
+}
+.exam-sort-btn:hover { background: var(--hl2); color: var(--text); }
+.exam-sort-btn.active {
+  background: rgba(22, 130, 93, 0.15);
+  border-color: var(--green2);
+  color: var(--green2);
+}
+
+/* ── Misc ────────────────────────────────────────────────── */
+.exam-section-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 4px;
+}
+.exam-section-sub {
+  font-size: 13px;
+  color: var(--text3);
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+}
+.exam-error-msg {
+  font-size: 11px;
+  color: var(--red);
+  font-family: 'JetBrains Mono', monospace;
+  padding: 6px 10px;
+  background: rgba(218, 54, 51, 0.1);
+  border: 1px solid rgba(218, 54, 51, 0.3);
+  border-radius: 4px;
+}
+.exam-info-msg {
+  font-size: 11px;
+  color: var(--green2);
+  font-family: 'JetBrains Mono', monospace;
+  padding: 6px 10px;
+  background: rgba(22, 130, 93, 0.1);
+  border: 1px solid rgba(22, 130, 93, 0.3);
+  border-radius: 4px;
+}
+.exam-toolbar {
+  height: 35px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.exam-editor-wrap {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.exam-num-input {
+  width: 70px;
+  padding: 6px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+}
+.exam-num-input:focus { border-color: var(--green2); }
+
+
 </style>
 </head>
 <body>
@@ -2194,7 +3448,13 @@ li.CodeMirror-hint-active {
         </div>
 
         <button class="intro-enter" onclick="showView('ide')">
-          🚀 Enter Workspace →
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+          Enter Workspace
+        </button>
+
+        <button class="intro-exam-btn" id="btn-exam-portal" onclick="ExamPortal.showRoleSelection()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+          Exam Portal
         </button>
       </div>
 
@@ -4497,6 +5757,1885 @@ function applyEditorTheme() {
   `;
   document.head.appendChild(style);
 }
+
+</script>
+
+<!-- ══ EXAM PORTAL OVERLAYS ══════════════════════════════════════════════ -->
+
+<!-- Role Selection -->
+<div class="exam-overlay" id="exam-role-panel">
+  <div class="exam-topbar">
+    <button class="exam-topbar-back" onclick="ExamPortal.exitToHome()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Back
+    </button>
+    <span class="exam-topbar-title">MongoSandbox — Exam Portal</span>
+  </div>
+  <div class="exam-body">
+    <div class="exam-section-title">Exam Portal</div>
+    <div class="exam-section-sub">// Select your role to continue</div>
+    <div class="exam-role-grid">
+      <div class="exam-role-card" id="role-card-mentor" onclick="ExamPortal.selectRole('mentor')" tabindex="0">
+        <div class="exam-role-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l5.59-5.59L18 8l-7 7z"/></svg>
+        </div>
+        <div class="exam-role-name">Mentor</div>
+        <div class="exam-role-desc">Create rooms, build questions, upload datasets, and monitor live leaderboards</div>
+      </div>
+      <div class="exam-role-card" id="role-card-student" onclick="ExamPortal.selectRole('student')" tabindex="0">
+        <div class="exam-role-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </div>
+        <div class="exam-role-name">Student</div>
+        <div class="exam-role-desc">Join a room, solve query and MCQ questions, submit answers in real-time</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mentor: Create Room -->
+<div class="exam-overlay" id="exam-mentor-create-panel">
+  <div class="exam-topbar">
+    <button class="exam-topbar-back" onclick="ExamPortal.showRoleSelection()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Back
+    </button>
+    <span class="exam-topbar-title">Mentor — Create Exam Room</span>
+  </div>
+  <div class="exam-body">
+    <div class="exam-form-card">
+      <div class="exam-form-title">New Exam Room</div>
+      <div class="exam-form-sub">// Auto-generated Room ID — share with students</div>
+
+      <div class="exam-room-id-badge" id="mentor-room-id-badge" title="Click to copy" onclick="ExamPortal.mentor.copyRoomId()">
+        <span class="exam-room-id-text" id="mentor-room-id-display">MNG-???</span>
+        <span class="exam-room-id-copy">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        </span>
+      </div>
+
+      <div class="exam-field">
+        <label class="exam-label" for="mentor-title">Assessment Title</label>
+        <input class="exam-input" id="mentor-title" type="text" placeholder="e.g. MongoDB Mid-Term 2026" autocomplete="off"/>
+        <div class="exam-input-err" id="mentor-title-err" style="display:none"></div>
+      </div>
+
+      <div class="exam-toggle-row">
+        <label class="exam-toggle">
+          <input type="checkbox" id="mentor-timed-toggle" onchange="ExamPortal.mentor.toggleTimed(this.checked)"/>
+          <div class="exam-toggle-track"></div>
+          <div class="exam-toggle-thumb"></div>
+        </label>
+        <span class="exam-toggle-label">Timed Exam</span>
+      </div>
+
+      <div class="exam-field" id="mentor-duration-field" style="display:none">
+        <label class="exam-label" for="mentor-duration">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
+          Duration (minutes)
+        </label>
+        <input class="exam-input exam-num-input" id="mentor-duration" type="number" min="1" max="300" value="60" style="width:100%"/>
+      </div>
+
+      <div id="mentor-create-err" class="exam-error-msg" style="display:none"></div>
+
+      <button class="exam-btn exam-btn-green exam-btn-full" id="btn-create-room" onclick="ExamPortal.mentor.createRoom()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        Create Room
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Mentor Dashboard -->
+<div class="exam-overlay" id="exam-mentor-dash-panel">
+  <div class="exam-topbar">
+    <span class="exam-topbar-title" id="mentor-dash-title">Exam Room</span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span class="exam-status-chip exam-chip-waiting" id="mentor-status-chip">WAITING</span>
+      <button class="exam-btn exam-btn-green" id="btn-start-exam" onclick="ExamPortal.mentor.startExam()" style="display:flex">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        Start Exam
+      </button>
+      <button class="exam-btn exam-btn-red" id="btn-end-exam" onclick="ExamPortal.mentor.endExam()" style="display:none">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+        End Exam
+      </button>
+    </div>
+  </div>
+
+  <div class="exam-dash-shell">
+    <!-- Left Sidebar -->
+    <div class="exam-dash-left">
+      <div class="exam-sidebar-hdr">Room Info</div>
+      <div class="exam-sidebar-body">
+        <div class="exam-sidebar-row">
+          <span class="exam-sidebar-key">Room ID</span>
+          <div class="exam-room-id-badge" style="padding:6px 12px;margin:0;cursor:pointer" onclick="ExamPortal.mentor.copyRoomId()">
+            <span class="exam-room-id-text" id="mentor-dash-room-id" style="font-size:16px;letter-spacing:2px">---</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="exam-room-id-copy"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          </div>
+        </div>
+        <div class="exam-sidebar-row">
+          <span class="exam-sidebar-key">Status</span>
+          <span class="exam-status-chip exam-chip-waiting" id="mentor-sidebar-chip">WAITING</span>
+        </div>
+        <div class="exam-sidebar-row" id="mentor-timer-row" style="display:none">
+          <span class="exam-sidebar-key">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:3px"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm.01 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23L12.5 13V7z"/></svg>
+            Time Remaining
+          </span>
+          <span class="exam-timer-display" id="mentor-timer-display">--:--</span>
+        </div>
+        <div class="exam-sidebar-row" style="margin-top:8px">
+          <span class="exam-sidebar-key">Questions</span>
+          <span class="exam-sidebar-val" id="mentor-q-count">0</span>
+        </div>
+        <div class="exam-sidebar-row">
+          <span class="exam-sidebar-key">Max Score</span>
+          <span class="exam-sidebar-val" id="mentor-max-score">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Panel -->
+    <div class="exam-dash-main">
+      <div class="exam-tabbar" id="mentor-tabbar">
+        <div class="exam-tab active" id="mentor-tab-questions" onclick="ExamPortal.mentor.setTab('questions')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          Questions
+        </div>
+        <div class="exam-tab" id="mentor-tab-dataset" onclick="ExamPortal.mentor.setTab('dataset')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 4.02 2 6.5v11c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2zm0 3c4.14 0 7.5 1.12 7.5 2.5S16.14 10 12 10 4.5 8.88 4.5 7.5 7.86 5 12 5zm0 14c-4.14 0-7.5-1.12-7.5-2.5v-2.7c1.37.74 4.1 1.2 7.5 1.2s6.13-.46 7.5-1.2v2.7c0 1.38-3.36 2.5-7.5 2.5zm0-5c-4.14 0-7.5-1.12-7.5-2.5v-2.7c1.37.74 4.1 1.2 7.5 1.2s6.13-.46 7.5-1.2v2.7c0 1.38-3.36 2.5-7.5 2.5z"/></svg>
+          Dataset
+        </div>
+        <div class="exam-tab" id="mentor-tab-live" onclick="ExamPortal.mentor.setTab('live')" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+          Leaderboard
+        </div>
+      </div>
+
+      <!-- Questions Tab -->
+      <div class="exam-tab-pane active" id="mentor-pane-questions">
+        <div class="exam-qbuilder">
+          <!-- Question List -->
+          <div class="exam-qlist">
+            <div class="exam-qlist-hdr">
+              <span class="exam-qlist-hdr-title">Questions</span>
+              <button class="phbtn" title="Add Query Question" onclick="ExamPortal.mentor.addQuestion('query')" id="btn-add-query-q">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              </button>
+            </div>
+            <div class="exam-qlist-body" id="mentor-qlist-body">
+              <div class="exam-qlist-empty" id="mentor-qlist-empty">
+                // No questions yet<br/>
+                Click + to add Query or MCQ questions
+              </div>
+            </div>
+            <div style="padding:8px;border-top:1px solid var(--border);display:flex;gap:6px">
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px" onclick="ExamPortal.mentor.addQuestion('query')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Query
+              </button>
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px" onclick="ExamPortal.mentor.addQuestion('mcq')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                MCQ
+              </button>
+            </div>
+          </div>
+
+          <!-- Question Editor -->
+          <div class="exam-qeditor" id="mentor-qeditor">
+            <div class="exam-qeditor-empty" id="mentor-qeditor-empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <div style="font-size:13px;color:var(--text3);text-align:center;font-family:'JetBrains Mono',monospace">
+                // Select or add a question to edit it
+              </div>
+            </div>
+            <!-- Question form injected here by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Dataset Tab -->
+      <div class="exam-tab-pane" id="mentor-pane-dataset">
+        <div class="exam-dataset-pane" style="flex:1;overflow-y:auto">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;font-weight:600;color:#bbbbbb;text-transform:uppercase;letter-spacing:.5px">Uploaded Datasets</span>
+            <button class="exam-btn exam-btn-secondary" onclick="document.getElementById('exam-dataset-upload').click()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              Upload Dataset
+            </button>
+            <input type="file" id="exam-dataset-upload" accept=".json,.csv" style="display:none" onchange="ExamPortal.mentor.uploadDataset(event)"/>
+          </div>
+          <div id="exam-upload-msg" style="display:none"></div>
+          <table class="exam-dataset-table">
+            <thead><tr>
+              <th>Name</th>
+              <th>Collection</th>
+              <th>Documents</th>
+              <th>Actions</th>
+            </tr></thead>
+            <tbody id="mentor-dataset-tbody">
+              <tr id="mentor-dataset-empty-row">
+                <td colspan="4" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">
+                  // No datasets uploaded yet
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Live Leaderboard Tab -->
+      <div class="exam-tab-pane" id="mentor-pane-live">
+        <div class="exam-lb-hdr">
+          <span class="exam-lb-title">Leaderboard</span>
+          <div class="exam-lb-refresh-dot pulsing" id="lb-pulse-dot"></div>
+          <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="lb-refresh-label">auto-refresh 5s</span>
+          <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3)" id="lb-max-score-label"></span>
+        </div>
+        <div class="exam-lb-wrap">
+          <table class="exam-lb-table">
+            <thead><tr>
+              <th style="width:50px;text-align:center">Rank</th>
+              <th>Name</th>
+              <th>Roll No</th>
+              <th>Branch</th>
+              <th>Score</th>
+              <th>Answered</th>
+              <th>Accuracy</th>
+              <th>Last Sub</th>
+            </tr></thead>
+            <tbody id="mentor-lb-tbody">
+              <tr><td colspan="8" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">// Waiting for submissions...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Participants / Export -->
+    <div class="exam-dash-right">
+      <!-- Participants (WAITING/LIVE) -->
+      <div id="mentor-participants-panel" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+        <div class="exam-participants-hdr">
+          <span class="exam-participants-title">Participants</span>
+          <span class="exam-participants-count" id="mentor-participants-count">(0)</span>
+        </div>
+        <div class="exam-participants-body" id="mentor-participants-body">
+          <div class="exam-participants-empty">// No participants yet</div>
+        </div>
+      </div>
+
+      <!-- Export (ENDED) -->
+      <div id="mentor-export-panel" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+        <div class="exam-participants-hdr">
+          <span class="exam-participants-title">Results Export</span>
+        </div>
+        <div class="exam-export-panel">
+          <div class="exam-sidebar-key">Sort by</div>
+          <div class="exam-export-sort-row">
+            <button class="exam-sort-btn active" id="sort-btn-score" onclick="ExamPortal.mentor.setSortMode('score')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+              Score
+            </button>
+            <button class="exam-sort-btn" id="sort-btn-roll" onclick="ExamPortal.mentor.setSortMode('roll')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z"/></svg>
+              Roll No
+            </button>
+          </div>
+          <button class="exam-btn exam-btn-green exam-btn-full" onclick="ExamPortal.mentor.exportXLSX()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+            Export Excel (.xlsx)
+          </button>
+          <button class="exam-btn exam-btn-red exam-btn-full" onclick="ExamPortal.mentor.cleanupRoom()" style="margin-top:8px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            Cleanup Room
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student: Join Room -->
+<div class="exam-overlay" id="exam-student-join-panel">
+  <div class="exam-topbar">
+    <button class="exam-topbar-back" onclick="ExamPortal.showRoleSelection()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Back
+    </button>
+    <span class="exam-topbar-title">Student — Join Exam Room</span>
+  </div>
+  <div class="exam-body">
+    <div class="exam-form-card">
+      <div class="exam-form-title">Join Exam Room</div>
+      <div class="exam-form-sub">// Enter your details and the Room ID</div>
+
+      <div class="exam-field">
+        <label class="exam-label" for="student-name">Name</label>
+        <input class="exam-input" id="student-name" type="text" placeholder="Your full name" autocomplete="name"/>
+        <div class="exam-input-err" id="student-name-err" style="display:none"></div>
+      </div>
+      <div class="exam-field">
+        <label class="exam-label" for="student-roll">Roll Number</label>
+        <input class="exam-input" id="student-roll" type="text" placeholder="e.g. 21R11A0501" autocomplete="off"/>
+        <div class="exam-input-err" id="student-roll-err" style="display:none"></div>
+      </div>
+      <div class="exam-field">
+        <label class="exam-label" for="student-branch">Branch</label>
+        <select class="exam-select" id="student-branch">
+          <option value="">Select branch...</option>
+          <option>CSE</option>
+          <option>IT</option>
+          <option>ECE</option>
+          <option>EEE</option>
+          <option>MECH</option>
+          <option>CIVIL</option>
+          <option>Other</option>
+        </select>
+        <div class="exam-input-err" id="student-branch-err" style="display:none"></div>
+      </div>
+      <div class="exam-field">
+        <label class="exam-label" for="student-room-id">Room ID</label>
+        <input class="exam-input" id="student-room-id" type="text" placeholder="e.g. MNG-4X9" autocomplete="off" maxlength="7"
+          style="font-family:'JetBrains Mono',monospace;font-size:18px;letter-spacing:2px;text-transform:uppercase"
+          oninput="ExamPortal.student.formatRoomId(this)"/>
+        <div class="exam-input-err" id="student-room-err" style="display:none"></div>
+      </div>
+
+      <div id="student-join-err" class="exam-error-msg" style="display:none"></div>
+
+      <button class="exam-btn exam-btn-green exam-btn-full" id="btn-join-room" onclick="ExamPortal.student.joinRoom()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M10 17l5-5-5-5v10zm-5 0l5-5-5-5v10z"/></svg>
+        Join Room
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Student: Waiting Room -->
+<div class="exam-overlay" id="exam-student-wait-panel">
+  <div class="exam-topbar">
+    <span class="exam-topbar-title" id="wait-room-title">Waiting Room</span>
+    <span class="exam-status-chip exam-chip-waiting" style="margin-left:auto">WAITING</span>
+  </div>
+  <div class="exam-body" style="justify-content:flex-start;padding-top:60px">
+    <div class="exam-wait-content">
+      <div class="exam-room-id-badge" style="width:fit-content;margin:0 auto">
+        <span class="exam-room-id-text" id="wait-room-id-display">---</span>
+      </div>
+      <div class="exam-wait-title" id="wait-room-name">Room Title</div>
+      <div class="exam-wait-status">
+        // Waiting for mentor to start the exam...<span class="exam-blink">_</span>
+      </div>
+
+      <!-- Participants list -->
+      <div style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <div class="exam-participants-hdr" style="border-bottom:1px solid var(--border)">
+          <span class="exam-participants-title">Participants in Room</span>
+          <span class="exam-participants-count" id="wait-participants-count">(0)</span>
+        </div>
+        <div style="max-height:240px;overflow-y:auto" id="wait-participants-body">
+          <div class="exam-participants-empty">// No participants yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student: Exam Interface -->
+<div class="exam-overlay" id="exam-student-exam-panel">
+  <div class="exam-topbar">
+    <span class="exam-topbar-title" id="student-exam-room-title">Exam</span>
+    <span style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-q-progress">Q 0/0</span>
+    <span style="margin-left:auto" id="student-exam-timer" style="display:none"></span>
+    <span class="exam-status-chip exam-chip-live" id="student-exam-status">LIVE</span>
+  </div>
+
+  <div class="exam-student-shell">
+    <!-- Question Navigator -->
+    <div class="exam-qnav">
+      <div class="exam-qnav-hdr">Questions</div>
+      <div class="exam-qnav-body" id="student-qnav-body">
+        <div class="exam-participants-empty">// Loading questions...</div>
+      </div>
+    </div>
+
+    <!-- Main exam area -->
+    <div class="exam-student-main">
+      <!-- Question display -->
+      <div class="exam-question-display" id="student-question-display" style="display:none">
+        <div class="exam-question-header">
+          <span class="exam-question-number" id="student-q-number">Q1</span>
+          <span class="exam-q-type-chip exam-q-type-query" id="student-q-type-chip">QUERY</span>
+          <button class="exam-btn exam-btn-secondary" style="font-size:11px;padding:3px 8px" id="btn-inspect-dataset" onclick="ExamPortal.student.inspectDataset()" style="display:none">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 4.02 2 6.5v11c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2zm0 3c4.14 0 7.5 1.12 7.5 2.5S16.14 10 12 10 4.5 8.88 4.5 7.5 7.86 5 12 5z"/></svg>
+            Inspect Dataset
+          </button>
+          <span class="exam-question-marks" id="student-q-marks">10 marks</span>
+        </div>
+        <div class="exam-question-text" id="student-q-text"></div>
+      </div>
+
+      <!-- Query question: Editor + Console -->
+      <div id="student-query-area" style="display:none;flex:1;display:none;flex-direction:column;overflow:hidden;position:relative">
+        <div class="exam-toolbar">
+          <button class="tbtn tbtn-run" id="student-run-btn" onclick="ExamPortal.student.runQuery()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+            Run
+          </button>
+          <button class="tbtn tbtn-secondary" onclick="ExamPortal.student.clearEditor()">Clear</button>
+          <div class="tb-sep"></div>
+          <button class="tbtn tbtn-run" id="student-submit-query-btn" onclick="ExamPortal.student.submitAnswer()" disabled style="opacity:0.4">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Submit Answer
+          </button>
+        </div>
+        <div class="exam-editor-wrap">
+          <textarea id="student-raw-editor" style="display:none">// Write your MongoDB query here
+db.collection.find({})</textarea>
+        </div>
+
+        <!-- Exam ended overlay -->
+        <div class="exam-ended-overlay" id="student-ended-overlay">
+          <div class="exam-ended-msg">// Exam has ended — submissions are closed</div>
+        </div>
+
+        <!-- Student two-tab console -->
+        <div class="exam-student-console">
+          <div class="exam-console-hdr">
+            <div class="exam-console-tab active" id="student-ctab-yours" onclick="ExamPortal.student.setConsoleTab('yours')">Your Output</div>
+            <div class="exam-console-tab" id="student-ctab-expected" onclick="ExamPortal.student.setConsoleTab('expected')">Expected (preview)</div>
+            <div style="margin-left:auto;padding-right:10px;display:flex;align-items:center;gap:6px">
+              <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-console-status">— Ready</span>
+            </div>
+          </div>
+          <div class="exam-console-pane active" id="student-pane-yours">
+            <span style="color:var(--text3)">// Run a query to see output here</span>
+          </div>
+          <div class="exam-console-pane" id="student-pane-expected">
+            <span style="color:var(--text3)">// Submit at least once to see expected output preview</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MCQ question area -->
+      <div id="student-mcq-area" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+        <div class="exam-mcq-options" id="student-mcq-options"></div>
+        <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <button class="exam-btn exam-btn-green" id="student-submit-mcq-btn" onclick="ExamPortal.student.submitAnswer()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Submit Answer
+          </button>
+          <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-mcq-status"></span>
+        </div>
+      </div>
+
+      <!-- No question selected -->
+      <div id="student-no-q-selected" style="flex:1;display:flex;align-items:center;justify-content:center">
+        <span style="font-size:13px;color:var(--text3);font-family:'JetBrains Mono',monospace">// Select a question from the left panel</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Dataset Schema Modal (reused for exam) -->
+<div class="modal-bg" id="exam-schema-modal">
+  <div class="modal-win">
+    <div class="modal-titlebar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="#9cdcfe" style="margin-right:6px"><path d="M12 2C6.48 2 2 4.02 2 6.5v11c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2z"/></svg>
+      <span class="modal-title">Dataset Schema</span>
+      <button class="modal-close-btn" onclick="closeModal('exam-schema-modal')">×</button>
+    </div>
+    <div class="modal-body" style="padding:16px;overflow-y:auto">
+      <div id="exam-schema-content" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text)">
+        Loading...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SheetJS for XLSX export -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<!-- Exam Portal Logic -->
+<script>
+/**
+ * js/features/exam.js
+ * Exam Portal — Full client-side logic
+ * Mentor flow, Student flow, CodeMirror editor instances, Redis polling
+ */
+
+const ExamPortal = (() => {
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  const state = {
+    // Mentor
+    mentor: {
+      roomId: null,
+      mentorId: null,
+      title: '',
+      timed: false,
+      duration: 60,
+      questions: [],       // array of question objects
+      datasets: [],        // array of dataset objects
+      currentQId: null,
+      miniEditors: {},     // qId → CodeMirror instance
+      leaderboardData: [],
+      sortMode: 'score',   // 'score' | 'roll'
+      status: 'waiting',
+      startedAt: null,
+      timerInterval: null,
+      lbInterval: null,
+      participantInterval: null,
+    },
+    // Student
+    student: {
+      roomId: null,
+      studentId: null,
+      name: '',
+      rollNo: '',
+      branch: '',
+      questions: [],
+      datasets: [],
+      currentQIdx: null,
+      status: {}, // qId → 'unattempted'|'draft'|'submitted'
+      roomStatus: 'waiting',
+      lastRunOutput: null,
+      hasRunOnce: false,
+      selectedOption: null,
+      pollInterval: null,
+      examEditor: null,
+      timerInterval: null,
+    }
+  };
+
+  // ── Utility ────────────────────────────────────────────────────────────────
+  function genId() {
+    return Math.random().toString(36).substr(2, 8).toUpperCase();
+  }
+
+  function el(id) { return document.getElementById(id); }
+
+  function showPanel(panelId) {
+    const panels = document.querySelectorAll('.exam-overlay');
+    panels.forEach(p => p.classList.remove('active'));
+    const target = el(panelId);
+    if (target) target.classList.add('active');
+  }
+
+  function hideAllExam() {
+    document.querySelectorAll('.exam-overlay').forEach(p => p.classList.remove('active'));
+  }
+
+  function formatTime(seconds) {
+    if (seconds < 0) seconds = 0;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  function timeAgo(ts) {
+    if (!ts) return '';
+    const diff = Math.floor((Date.now() / 1000) - ts);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return `${Math.floor(diff / 3600)}h ago`;
+  }
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    });
+  }
+
+  function showMsg(elId, text, isError = false) {
+    const e = el(elId);
+    if (!e) return;
+    e.textContent = text;
+    e.className = isError ? 'exam-error-msg' : 'exam-info-msg';
+    e.style.display = text ? 'block' : 'none';
+  }
+
+  async function apiCall(url, method = 'GET', body = null) {
+    try {
+      const opts = {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+      };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(url, opts);
+      return await res.json();
+    } catch (e) {
+      return { status: 'error', error: '// Connection error — retrying...' };
+    }
+  }
+
+  function renderParticipants(participants, bodyId, countId) {
+    const body = el(bodyId);
+    const countEl = el(countId);
+    if (!body) return;
+    if (!participants || participants.length === 0) {
+      body.innerHTML = '<div class="exam-participants-empty">// No participants yet</div>';
+      if (countEl) countEl.textContent = '(0)';
+      return;
+    }
+    if (countEl) countEl.textContent = `(${participants.length})`;
+    body.innerHTML = participants.map(p => `
+      <div class="exam-participant-row">
+        <div class="exam-participant-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </div>
+        <div class="exam-participant-info">
+          <div class="exam-participant-name">${p.name || 'Unknown'}</div>
+          <div class="exam-participant-meta">
+            <span>${p.rollNo || '-'}</span>
+            <span class="exam-participant-branch">${p.branch || '-'}</span>
+          </div>
+        </div>
+        <span class="exam-participant-time">${timeAgo(p.joinedAt)}</span>
+      </div>
+    `).join('');
+  }
+
+  // ── Main navigation ────────────────────────────────────────────────────────
+  function showRoleSelection() {
+    showPanel('exam-role-panel');
+  }
+
+  function exitToHome() {
+    hideAllExam();
+    // Ensure intro is shown
+    showView('intro');
+  }
+
+  function selectRole(role) {
+    if (role === 'mentor') {
+      // Generate room ID preview and show create form
+      _genPreviewRoomId();
+      showPanel('exam-mentor-create-panel');
+    } else {
+      showPanel('exam-student-join-panel');
+    }
+  }
+
+  // ── Mentor: Room ID Generation ─────────────────────────────────────────────
+  async function _genPreviewRoomId() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const part2 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const roomId = `MNG-${part2}`;
+    el('mentor-room-id-display').textContent = roomId;
+    state.mentor.roomId = roomId;
+  }
+
+  // ── MENTOR NAMESPACE ───────────────────────────────────────────────────────
+  const mentor = {
+
+    copyRoomId() {
+      const rid = state.mentor.roomId;
+      if (rid) {
+        copyText(rid);
+        // Brief visual feedback
+        const badge = el('mentor-room-id-badge') || el('mentor-dash-room-id');
+        if (badge) {
+          const prev = badge.textContent;
+          badge.style.color = 'var(--green2)';
+          setTimeout(() => badge.style.color = '', 800);
+        }
+      }
+    },
+
+    toggleTimed(checked) {
+      el('mentor-duration-field').style.display = checked ? 'block' : 'none';
+    },
+
+    async createRoom() {
+      const title = el('mentor-title').value.trim();
+      if (!title) {
+        el('mentor-title').classList.add('has-err');
+        el('mentor-title-err').textContent = '// Title is required';
+        el('mentor-title-err').style.display = 'block';
+        return;
+      }
+      el('mentor-title').classList.remove('has-err');
+      el('mentor-title-err').style.display = 'none';
+
+      const timed = el('mentor-timed-toggle').checked;
+      const duration = parseInt(el('mentor-duration').value) || 60;
+      const mentorId = state.mentor.mentorId || genId();
+      const roomId = state.mentor.roomId;
+
+      el('btn-create-room').disabled = true;
+      el('btn-create-room').textContent = 'Creating...';
+
+      const res = await apiCall('/api/exam/room/create', 'POST', {
+        title, mentorId, timed, duration, roomId
+      });
+
+      el('btn-create-room').disabled = false;
+      el('btn-create-room').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Create Room';
+
+      if (res.status === 'ok') {
+        state.mentor.roomId = res.roomId || roomId;
+        state.mentor.mentorId = res.mentorId || mentorId;
+        state.mentor.title = title;
+        state.mentor.timed = timed;
+        state.mentor.duration = duration;
+        state.mentor.status = 'waiting';
+
+        // Persist to localStorage
+        localStorage.setItem('exam_mentor_id', state.mentor.mentorId);
+        localStorage.setItem('exam_room_id', state.mentor.roomId);
+
+        mentor.initDashboard();
+      } else {
+        el('mentor-create-err').textContent = res.error || 'Failed to create room';
+        el('mentor-create-err').style.display = 'block';
+      }
+    },
+
+    initDashboard() {
+      const { roomId, title, status } = state.mentor;
+
+      // Update header
+      el('mentor-dash-title').textContent = `${title} — ${roomId}`;
+      el('mentor-dash-room-id').textContent = roomId;
+      if (el('mentor-dash-room-id')) el('mentor-dash-room-id').textContent = roomId;
+
+      // Update status chip
+      mentor._updateStatusUI(status);
+
+      // Counts
+      mentor._updateQCounts();
+
+      // Start polling participants
+      mentor._startParticipantPoll();
+
+      showPanel('exam-mentor-dash-panel');
+      mentor.setTab('questions');
+    },
+
+    _updateStatusUI(status) {
+      state.mentor.status = status;
+      const chips = [el('mentor-status-chip'), el('mentor-sidebar-chip')];
+      chips.forEach(chip => {
+        if (!chip) return;
+        chip.className = 'exam-status-chip';
+        if (status === 'waiting') {
+          chip.classList.add('exam-chip-waiting');
+          chip.textContent = 'WAITING';
+        } else if (status === 'live') {
+          chip.classList.add('exam-chip-live');
+          chip.textContent = 'LIVE';
+        } else {
+          chip.classList.add('exam-chip-ended');
+          chip.textContent = 'ENDED';
+        }
+      });
+
+      // Buttons
+      if (status === 'waiting') {
+        el('btn-start-exam').style.display = 'flex';
+        el('btn-end-exam').style.display = 'none';
+      } else if (status === 'live') {
+        el('btn-start-exam').style.display = 'none';
+        el('btn-end-exam').style.display = 'flex';
+        // Show leaderboard tab, hide questions tab
+        el('mentor-tab-live').style.display = 'flex';
+        el('mentor-tab-questions').style.display = 'none';
+        mentor.setTab('live');
+        mentor._startLeaderboardPoll();
+        // Start timer if timed
+        if (state.mentor.timed && state.mentor.startedAt) {
+          mentor._startTimer();
+        }
+      } else if (status === 'ended') {
+        el('btn-start-exam').style.display = 'none';
+        el('btn-end-exam').style.display = 'none';
+        // Show export panel
+        el('mentor-participants-panel').style.display = 'none';
+        el('mentor-export-panel').style.display = 'flex';
+        // Stop polls
+        clearInterval(state.mentor.participantInterval);
+        clearInterval(state.mentor.lbInterval);
+        clearInterval(state.mentor.timerInterval);
+      }
+    },
+
+    _startTimer() {
+      const { startedAt, duration } = state.mentor;
+      if (!startedAt || !state.mentor.timed) return;
+      el('mentor-timer-row').style.display = 'flex';
+
+      clearInterval(state.mentor.timerInterval);
+      state.mentor.timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() / 1000) - startedAt);
+        const remaining = (duration * 60) - elapsed;
+        const timerEl = el('mentor-timer-display');
+        if (!timerEl) return;
+        timerEl.textContent = formatTime(remaining);
+        timerEl.className = 'exam-timer-display';
+        if (remaining <= 60) timerEl.classList.add('exam-timer-critical');
+        else if (remaining <= 300) timerEl.classList.add('exam-timer-warning');
+        if (remaining <= 0) {
+          clearInterval(state.mentor.timerInterval);
+          mentor.endExam();
+        }
+      }, 1000);
+    },
+
+    _updateQCounts() {
+      const qs = state.mentor.questions;
+      const maxScore = qs.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0);
+      if (el('mentor-q-count')) el('mentor-q-count').textContent = qs.length;
+      if (el('mentor-max-score')) el('mentor-max-score').textContent = maxScore;
+    },
+
+    setTab(tab) {
+      ['questions', 'dataset', 'live'].forEach(t => {
+        const tabEl = el(`mentor-tab-${t}`);
+        const paneEl = el(`mentor-pane-${t}`);
+        if (tabEl) tabEl.classList.toggle('active', t === tab);
+        if (paneEl) paneEl.classList.toggle('active', t === tab);
+      });
+    },
+
+    // ── Question Builder ───────────────────────────────────────────────────
+
+    addQuestion(type) {
+      const id = genId();
+      const q = {
+        id,
+        type,
+        text: '',
+        marks: 10,
+        datasetId: '',
+        // Query specific
+        expectedQuery: '',
+        answerFrozen: false,
+        answerDocCount: 0,
+        // MCQ specific
+        options: type === 'mcq' ? ['', '', '', ''] : [],
+        correctOption: type === 'mcq' ? 0 : null,
+      };
+      state.mentor.questions.push(q);
+      state.mentor.currentQId = id;
+      mentor._renderQList();
+      mentor._renderQEditor(id);
+      mentor._saveQuestions();
+    },
+
+    deleteQuestion(qId) {
+      state.mentor.questions = state.mentor.questions.filter(q => q.id !== qId);
+      if (state.mentor.currentQId === qId) {
+        state.mentor.currentQId = null;
+        el('mentor-qeditor').innerHTML = '<div class="exam-qeditor-empty" id="mentor-qeditor-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><div style="font-size:13px;color:var(--text3);text-align:center;font-family:\\'JetBrains Mono\\',monospace">// Select or add a question to edit it</div></div>';
+      }
+      mentor._renderQList();
+      mentor._updateQCounts();
+      mentor._saveQuestions();
+    },
+
+    _renderQList() {
+      const body = el('mentor-qlist-body');
+      const qs = state.mentor.questions;
+      if (qs.length === 0) {
+        body.innerHTML = '<div class="exam-qlist-empty">// No questions yet<br/>Click + to add Query or MCQ questions</div>';
+        return;
+      }
+      body.innerHTML = qs.map((q, i) => `
+        <div class="exam-q-card ${state.mentor.currentQId === q.id ? 'active' : ''}"
+             id="qcard-${q.id}" onclick="ExamPortal.mentor.selectQuestion('${q.id}')">
+          <div class="exam-q-card-top">
+            <span class="exam-q-num">Q${i + 1}</span>
+            <span class="exam-q-type-chip ${q.type === 'query' ? 'exam-q-type-query' : 'exam-q-type-mcq'}">${q.type === 'query' ? 'QUERY' : 'MCQ'}</span>
+            <span class="exam-q-marks-badge">${q.marks}pts</span>
+            <button class="phbtn" style="margin-left:auto;color:var(--red)" title="Delete"
+              onclick="event.stopPropagation();ExamPortal.mentor.deleteQuestion('${q.id}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            </button>
+          </div>
+          <div class="exam-q-preview">${q.text ? q.text.substring(0, 60) + (q.text.length > 60 ? '...' : '') : '// No text yet'}</div>
+          ${q.type === 'query' && q.answerFrozen ? `<span class="exam-frozen-chip" style="font-size:10px;padding:2px 8px;margin-top:4px">Answer frozen — ${q.answerDocCount} docs</span>` : ''}
+        </div>
+      `).join('');
+    },
+
+    selectQuestion(qId) {
+      state.mentor.currentQId = qId;
+      mentor._renderQList();
+      mentor._renderQEditor(qId);
+    },
+
+    _renderQEditor(qId) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+      const qeditor = el('mentor-qeditor');
+      const dsOptions = state.mentor.datasets.map(ds =>
+        `<option value="${ds.datasetId}" ${q.datasetId === ds.datasetId ? 'selected' : ''}>${ds.name} (${ds.docCount} docs)</option>`
+      ).join('');
+
+      if (q.type === 'query') {
+        qeditor.innerHTML = `
+          <div class="exam-fieldset">
+            <div class="exam-fieldset-title">Question Text</div>
+            <textarea class="exam-textarea" id="qtext-${qId}" oninput="ExamPortal.mentor.updateQField('${qId}','text',this.value)" placeholder="Write the question for students...">${q.text}</textarea>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="exam-field" style="flex:1;margin:0">
+              <label class="exam-label">Marks</label>
+              <input class="exam-num-input" type="number" min="1" max="100" value="${q.marks}"
+                oninput="ExamPortal.mentor.updateQField('${qId}','marks',parseInt(this.value)||0)"/>
+            </div>
+            <div class="exam-field" style="flex:2;margin:0">
+              <label class="exam-label">Dataset</label>
+              <select class="exam-select" onchange="ExamPortal.mentor.updateQField('${qId}','datasetId',this.value)">
+                <option value="">Select dataset...</option>
+                ${dsOptions}
+              </select>
+            </div>
+          </div>
+          <div class="exam-fieldset">
+            <div class="exam-fieldset-title">Expected Query (Mentor's Solution)</div>
+            <div class="exam-mini-editor ${q.answerFrozen ? 'frozen' : ''}" id="mini-editor-wrap-${qId}">
+              <textarea id="mini-editor-${qId}">${q.expectedQuery || '// db.collection.find({})'}</textarea>
+              ${q.answerFrozen ? '<div class="exam-frozen-overlay"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>' : ''}
+            </div>
+            ${q.answerFrozen
+              ? `<span class="exam-frozen-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Answer frozen — ${q.answerDocCount} docs</span>`
+              : `<button class="exam-btn exam-btn-green" onclick="ExamPortal.mentor.freezeAnswer('${qId}')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                  Run &amp; Freeze Answer
+                </button>`
+            }
+            <div id="freeze-status-${qId}" style="display:none"></div>
+          </div>
+        `;
+        // Init mini CodeMirror
+        setTimeout(() => {
+          const ta = el(`mini-editor-${qId}`);
+          if (ta && typeof CodeMirror !== 'undefined' && !state.mentor.miniEditors[qId]) {
+            const cm = CodeMirror.fromTextArea(ta, {
+              mode: 'javascript',
+              theme: 'default',
+              lineNumbers: true,
+              matchBrackets: true,
+              autoCloseBrackets: true,
+              readOnly: q.answerFrozen,
+            });
+            cm.setSize('100%', '120px');
+            cm.on('change', () => {
+              mentor.updateQField(qId, 'expectedQuery', cm.getValue());
+            });
+            state.mentor.miniEditors[qId] = cm;
+          }
+        }, 50);
+
+      } else {
+        // MCQ editor
+        const opts = q.options || ['', '', '', ''];
+        qeditor.innerHTML = `
+          <div class="exam-fieldset">
+            <div class="exam-fieldset-title">Question Text</div>
+            <textarea class="exam-textarea" id="qtext-${qId}" oninput="ExamPortal.mentor.updateQField('${qId}','text',this.value)" placeholder="Write the multiple-choice question...">${q.text}</textarea>
+          </div>
+          <div class="exam-field" style="margin:0">
+            <label class="exam-label">Marks</label>
+            <input class="exam-num-input" type="number" min="1" max="100" value="${q.marks}"
+              oninput="ExamPortal.mentor.updateQField('${qId}','marks',parseInt(this.value)||0)"/>
+          </div>
+          <div class="exam-fieldset">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="exam-fieldset-title">Options</div>
+              <button class="exam-btn exam-btn-secondary" style="font-size:11px;padding:4px 10px"
+                onclick="ExamPortal.mentor.addMCQOption('${qId}')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Add Option
+              </button>
+            </div>
+            <div id="mcq-options-${qId}">
+              ${opts.map((opt, i) => mentor._renderMCQOptionRow(qId, i, opt, q.correctOption === i)).join('')}
+            </div>
+          </div>
+        `;
+      }
+    },
+
+    _renderMCQOptionRow(qId, idx, value, isCorrect) {
+      const label = String.fromCharCode(65 + idx); // A, B, C...
+      return `
+        <div class="exam-mcq-option-row" id="mcq-opt-row-${qId}-${idx}">
+          <input type="radio" class="exam-mcq-correct-radio" name="correct-${qId}" value="${idx}"
+            ${isCorrect ? 'checked' : ''}
+            onchange="ExamPortal.mentor.updateQField('${qId}','correctOption',${idx})"/>
+          <span class="exam-mcq-label">${label}</span>
+          <input class="exam-input" style="flex:1" value="${value}"
+            placeholder="Option ${label}..."
+            oninput="ExamPortal.mentor.updateMCQOption('${qId}',${idx},this.value)"/>
+          <button class="phbtn" style="color:var(--red)" onclick="ExamPortal.mentor.removeMCQOption('${qId}',${idx})"
+            ${idx < 2 ? 'disabled title="Need at least 2 options"' : ''}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
+        </div>
+      `;
+    },
+
+    addMCQOption(qId) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+      q.options.push('');
+      const container = el(`mcq-options-${qId}`);
+      const idx = q.options.length - 1;
+      container.insertAdjacentHTML('beforeend', mentor._renderMCQOptionRow(qId, idx, '', false));
+      mentor._saveQuestions();
+    },
+
+    removeMCQOption(qId, idx) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q || q.options.length <= 2) return;
+      q.options.splice(idx, 1);
+      if (q.correctOption >= q.options.length) q.correctOption = 0;
+      mentor._renderQEditor(qId);
+      mentor._saveQuestions();
+    },
+
+    updateMCQOption(qId, idx, value) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (q) {
+        q.options[idx] = value;
+        mentor._saveQDebounced();
+      }
+    },
+
+    updateQField(qId, field, value) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (q) {
+        q[field] = value;
+        if (field === 'text') {
+          mentor._renderQList();
+        }
+        if (field === 'marks') {
+          mentor._updateQCounts();
+        }
+        mentor._saveQDebounced();
+      }
+    },
+
+    _saveQDebounced: (() => {
+      let timer;
+      return () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => mentor._saveQuestions(), 600);
+      };
+    })(),
+
+    async _saveQuestions() {
+      if (!state.mentor.roomId || !state.mentor.mentorId) return;
+      await apiCall(`/api/exam/room/${state.mentor.roomId}/questions`, 'POST', {
+        mentorId: state.mentor.mentorId,
+        questions: state.mentor.questions,
+      });
+      mentor._updateQCounts();
+    },
+
+    async freezeAnswer(qId) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+
+      const cm = state.mentor.miniEditors[qId];
+      const query = cm ? cm.getValue() : q.expectedQuery;
+
+      if (!q.datasetId) {
+        showMsg(`freeze-status-${qId}`, '// Select a dataset first', true);
+        el(`freeze-status-${qId}`).style.display = 'block';
+        return;
+      }
+      if (!query || query.startsWith('//')) {
+        showMsg(`freeze-status-${qId}`, '// Write the expected query first', true);
+        el(`freeze-status-${qId}`).style.display = 'block';
+        return;
+      }
+
+      showMsg(`freeze-status-${qId}`, '// Running query...', false);
+      el(`freeze-status-${qId}`).style.display = 'block';
+
+      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/freeze`, 'POST', {
+        mentorId: state.mentor.mentorId,
+        questionId: qId,
+        datasetId: q.datasetId,
+        query,
+      });
+
+      if (res.status === 'ok') {
+        q.answerFrozen = true;
+        q.expectedQuery = query;
+        q.answerDocCount = res.docCount;
+        await mentor._saveQuestions();
+        mentor._renderQList();
+        mentor._renderQEditor(qId);
+      } else {
+        showMsg(`freeze-status-${qId}`, res.error || '// Error running query', true);
+      }
+    },
+
+    // ── Dataset Upload ─────────────────────────────────────────────────────
+
+    async uploadDataset(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      showMsg('exam-upload-msg', '// Reading file...', false);
+      el('exam-upload-msg').style.display = 'block';
+
+      const text = await file.text();
+      let docs;
+      try {
+        if (file.name.endsWith('.csv')) {
+          docs = mentor._csvToJson(text);
+        } else {
+          docs = JSON.parse(text);
+        }
+        if (!Array.isArray(docs)) docs = [docs];
+      } catch (e) {
+        showMsg('exam-upload-msg', `// Parse error: ${e.message}`, true);
+        return;
+      }
+
+      const name = file.name.replace(/\\.(json|csv)$/i, '');
+      showMsg('exam-upload-msg', `// Uploading ${docs.length} documents...`, false);
+
+      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/dataset`, 'POST', {
+        mentorId: state.mentor.mentorId,
+        name,
+        docs,
+      });
+
+      event.target.value = '';
+
+      if (res.status === 'ok') {
+        state.mentor.datasets.push({
+          datasetId: res.datasetId,
+          name: res.name,
+          collection: res.collection,
+          docCount: res.docCount,
+        });
+        mentor._renderDatasetTable();
+        showMsg('exam-upload-msg', `// "${res.name}" uploaded — ${res.docCount} documents`, false);
+      } else {
+        showMsg('exam-upload-msg', res.error || '// Upload failed', true);
+      }
+    },
+
+    _csvToJson(csv) {
+      const lines = csv.trim().split('\\n');
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      return lines.slice(1).map(line => {
+        const vals = line.split(',').map(v => v.trim().replace(/"/g, ''));
+        const obj = {};
+        headers.forEach((h, i) => {
+          const v = vals[i] || '';
+          obj[h] = isNaN(v) ? v : parseFloat(v);
+        });
+        return obj;
+      });
+    },
+
+    _renderDatasetTable() {
+      const tbody = el('mentor-dataset-tbody');
+      const datasets = state.mentor.datasets;
+      if (datasets.length === 0) {
+        tbody.innerHTML = '<tr id="mentor-dataset-empty-row"><td colspan="4" style="text-align:center;color:var(--text3);font-family:\\'JetBrains Mono\\',monospace;padding:20px">// No datasets uploaded yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = datasets.map(ds => `
+        <tr>
+          <td><strong>${ds.name}</strong></td>
+          <td class="exam-dataset-coll">${ds.collection}</td>
+          <td>${ds.docCount}</td>
+          <td>
+            <button class="phbtn" style="color:var(--red)" onclick="ExamPortal.mentor.deleteDataset('${ds.datasetId}')" title="Delete dataset">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    },
+
+    async deleteDataset(datasetId) {
+      await apiCall(`/api/exam/room/${state.mentor.roomId}/dataset/${datasetId}`, 'DELETE', {
+        mentorId: state.mentor.mentorId,
+      });
+      state.mentor.datasets = state.mentor.datasets.filter(d => d.datasetId !== datasetId);
+      mentor._renderDatasetTable();
+    },
+
+    // ── Room Lifecycle ─────────────────────────────────────────────────────
+
+    async startExam() {
+      if (state.mentor.questions.length === 0) {
+        alert('Add at least one question before starting the exam.');
+        return;
+      }
+      const unfrozen = state.mentor.questions.filter(q => q.type === 'query' && !q.answerFrozen);
+      if (unfrozen.length > 0) {
+        if (!confirm(`${unfrozen.length} query question(s) have no frozen answer. Students will get 0 marks for those. Continue?`)) return;
+      }
+
+      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/start`, 'POST', {
+        mentorId: state.mentor.mentorId,
+      });
+      if (res.status === 'ok') {
+        state.mentor.startedAt = res.startedAt;
+        mentor._updateStatusUI('live');
+      }
+    },
+
+    async endExam() {
+      if (!confirm('End the exam? Students will no longer be able to submit answers.')) return;
+      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/end`, 'POST', {
+        mentorId: state.mentor.mentorId,
+      });
+      if (res.status === 'ok') {
+        mentor._updateStatusUI('ended');
+        // Final leaderboard fetch
+        mentor.fetchLeaderboard();
+      }
+    },
+
+    // ── Participants Polling ───────────────────────────────────────────────
+
+    _startParticipantPoll() {
+      clearInterval(state.mentor.participantInterval);
+      mentor._fetchParticipants();
+      state.mentor.participantInterval = setInterval(mentor._fetchParticipants, 3000);
+    },
+
+    async _fetchParticipants() {
+      const roomId = state.mentor.roomId;
+      if (!roomId) return;
+      const res = await apiCall(`/api/exam/room/${roomId}`);
+      if (res.status === 'ok') {
+        renderParticipants(res.participants || [], 'mentor-participants-body', 'mentor-participants-count');
+      }
+    },
+
+    // ── Leaderboard Polling ────────────────────────────────────────────────
+
+    _startLeaderboardPoll() {
+      clearInterval(state.mentor.lbInterval);
+      mentor.fetchLeaderboard();
+      state.mentor.lbInterval = setInterval(mentor.fetchLeaderboard, 5000);
+    },
+
+    async fetchLeaderboard() {
+      const roomId = state.mentor.roomId;
+      if (!roomId) return;
+
+      // Pulse animation
+      const dot = el('lb-pulse-dot');
+      if (dot) {
+        dot.classList.remove('pulsing');
+        setTimeout(() => dot.classList.add('pulsing'), 50);
+      }
+
+      const res = await apiCall(`/api/exam/room/${roomId}/leaderboard`);
+      if (res.status !== 'ok') return;
+
+      state.mentor.leaderboardData = res.leaderboard || [];
+      const maxScore = res.maxScore || 0;
+      const totalQ = res.totalQuestions || 0;
+
+      if (el('lb-max-score-label')) el('lb-max-score-label').textContent = `Max: ${maxScore} pts | ${totalQ} questions`;
+
+      mentor.renderLeaderboard(state.mentor.leaderboardData, maxScore);
+    },
+
+    renderLeaderboard(data, maxScore) {
+      const tbody = el('mentor-lb-tbody');
+      if (!tbody) return;
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);font-family:\\'JetBrains Mono\\',monospace;padding:20px">// Waiting for submissions...</td></tr>';
+        return;
+      }
+
+      let sorted = [...data];
+      if (state.mentor.sortMode === 'roll') {
+        sorted.sort((a, b) => (a.rollNo || '').localeCompare(b.rollNo || ''));
+      }
+      // (default: already sorted by score from ZREVRANGE)
+
+      tbody.innerHTML = sorted.map((row, i) => {
+        const rank = i + 1;
+        const rankClass = rank <= 3 ? `exam-lb-rank-${rank}` : '';
+        const rowClass = rank <= 3 ? `exam-lb-row-${rank}` : '';
+        const accuracy = row.answered > 0
+          ? Math.round((row.correct / row.answered) * 100) + '%'
+          : '—';
+        const lastSub = row.lastSubmission ? timeAgo(row.lastSubmission) : '—';
+
+        return `
+          <tr class="${rowClass}">
+            <td class="exam-lb-rank ${rankClass}">${rank}</td>
+            <td class="exam-lb-name">${row.name}</td>
+            <td style="font-family:'JetBrains Mono',monospace">${row.rollNo}</td>
+            <td><span class="exam-participant-branch">${row.branch}</span></td>
+            <td class="exam-lb-score">${row.totalScore}/${maxScore}</td>
+            <td class="exam-lb-accuracy">${row.answered}/${(state.mentor.questions || []).length}</td>
+            <td class="exam-lb-accuracy">${accuracy}</td>
+            <td class="exam-lb-time">${lastSub}</td>
+          </tr>
+        `;
+      }).join('');
+    },
+
+    // ── Export ─────────────────────────────────────────────────────────────
+
+    setSortMode(mode) {
+      state.mentor.sortMode = mode;
+      el('sort-btn-score').classList.toggle('active', mode === 'score');
+      el('sort-btn-roll').classList.toggle('active', mode === 'roll');
+    },
+
+    async exportXLSX() {
+      // Fetch final leaderboard
+      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/leaderboard`);
+      let data = (res.leaderboard || []).map((row, i) => ({
+        Rank: i + 1,
+        Name: row.name,
+        'Roll No': row.rollNo,
+        Branch: row.branch,
+        Score: row.totalScore,
+        'Max Score': res.maxScore || 0,
+        Percentage: res.maxScore > 0 ? `${Math.round((row.totalScore / res.maxScore) * 100)}%` : '0%',
+        Answered: row.answered,
+        Correct: row.correct,
+      }));
+
+      if (state.mentor.sortMode === 'roll') {
+        data.sort((a, b) => (a['Roll No'] || '').localeCompare(b['Roll No'] || ''));
+        data.forEach((row, i) => { row.Rank = i + 1; });
+      }
+
+      if (typeof XLSX === 'undefined') {
+        alert('SheetJS not loaded. Please check your internet connection.');
+        return;
+      }
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Results');
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `${state.mentor.title.replace(/\\s+/g, '_')}_${date}_results.xlsx`;
+      XLSX.writeFile(wb, filename);
+    },
+
+    async cleanupRoom() {
+      if (!confirm('Delete all room data from Redis? This cannot be undone.')) return;
+      await apiCall(`/api/exam/room/${state.mentor.roomId}/cleanup`, 'DELETE', {
+        mentorId: state.mentor.mentorId,
+      });
+      localStorage.removeItem('exam_mentor_id');
+      localStorage.removeItem('exam_room_id');
+      showRoleSelection();
+    },
+  }; // end mentor namespace
+
+  // ── STUDENT NAMESPACE ──────────────────────────────────────────────────────
+  const studentNS = {
+
+    formatRoomId(input) {
+      let val = input.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+      // Auto-insert hyphen after MNG
+      if (val.length > 3 && val[3] !== '-') {
+        val = val.slice(0, 3) + '-' + val.slice(3);
+      }
+      input.value = val.slice(0, 7); // MNG-XXX = 7 chars
+    },
+
+    async joinRoom() {
+      const name = el('student-name').value.trim();
+      const rollNo = el('student-roll').value.trim();
+      const branch = el('student-branch').value;
+      const roomId = el('student-room-id').value.trim().toUpperCase();
+
+      // Validation
+      let valid = true;
+      if (!name) { el('student-name').classList.add('has-err'); el('student-name-err').textContent='// Name is required'; el('student-name-err').style.display='block'; valid=false; }
+      else { el('student-name').classList.remove('has-err'); el('student-name-err').style.display='none'; }
+      if (!rollNo) { el('student-roll').classList.add('has-err'); el('student-roll-err').textContent='// Roll number is required'; el('student-roll-err').style.display='block'; valid=false; }
+      else { el('student-roll').classList.remove('has-err'); el('student-roll-err').style.display='none'; }
+      if (!branch) { el('student-branch').classList.add('has-err'); el('student-branch-err').textContent='// Select a branch'; el('student-branch-err').style.display='block'; valid=false; }
+      else { el('student-branch').classList.remove('has-err'); el('student-branch-err').style.display='none'; }
+      if (!roomId || roomId.length < 7) { el('student-room-id').classList.add('has-err'); el('student-room-err').textContent='// Enter a valid Room ID (e.g. MNG-4X9)'; el('student-room-err').style.display='block'; valid=false; }
+      else { el('student-room-id').classList.remove('has-err'); el('student-room-err').style.display='none'; }
+      if (!valid) return;
+
+      el('btn-join-room').disabled = true;
+      el('btn-join-room').textContent = 'Joining...';
+
+      const res = await apiCall(`/api/exam/room/${roomId}/join`, 'POST', {
+        name, rollNo, branch,
+      });
+
+      el('btn-join-room').disabled = false;
+      el('btn-join-room').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M10 17l5-5-5-5v10zm-5 0l5-5-5-5v10z"/></svg> Join Room';
+
+      if (res.status === 'ok') {
+        state.student.roomId = roomId;
+        state.student.studentId = res.studentId;
+        state.student.name = name;
+        state.student.rollNo = rollNo;
+        state.student.branch = branch;
+
+        // Persist
+        localStorage.setItem('exam_student_id', res.studentId);
+        localStorage.setItem('exam_student_room', roomId);
+
+        if (res.roomStatus === 'live') {
+          // Exam already started — go directly to exam
+          await studentNS.initExam(roomId);
+        } else {
+          // Go to waiting room
+          studentNS.initWaitingRoom(roomId, res.roomTitle);
+        }
+      } else {
+        el('student-join-err').textContent = res.error || '// Failed to join room';
+        el('student-join-err').style.display = 'block';
+      }
+    },
+
+    initWaitingRoom(roomId, roomTitle) {
+      if (el('wait-room-id-display')) el('wait-room-id-display').textContent = roomId;
+      if (el('wait-room-name')) el('wait-room-name').textContent = roomTitle || roomId;
+      if (el('wait-room-title')) el('wait-room-title').textContent = roomTitle || roomId;
+
+      showPanel('exam-student-wait-panel');
+      studentNS._startWaitPoll(roomId);
+    },
+
+    _startWaitPoll(roomId) {
+      clearInterval(state.student.pollInterval);
+      state.student.pollInterval = setInterval(async () => {
+        const res = await apiCall(`/api/exam/room/${roomId}`);
+        if (res.status === 'ok') {
+          renderParticipants(res.participants || [], 'wait-participants-body', 'wait-participants-count');
+          if (res.meta && res.meta.status === 'live') {
+            clearInterval(state.student.pollInterval);
+            await studentNS.initExam(roomId);
+          }
+        }
+      }, 3000);
+    },
+
+    async initExam(roomId) {
+      const res = await apiCall(`/api/exam/room/${roomId}`);
+      if (res.status !== 'ok') return;
+
+      state.student.roomId = roomId;
+      state.student.questions = res.questions || [];
+      state.student.datasets = res.datasets || [];
+      state.student.roomStatus = res.meta?.status || 'live';
+
+      // Initialize question status
+      state.student.status = {};
+      state.student.questions.forEach(q => {
+        state.student.status[q.id] = 'unattempted';
+      });
+
+      // Update header
+      if (el('student-exam-room-title')) el('student-exam-room-title').textContent = res.meta?.title || roomId;
+
+      // Timer
+      if (res.meta?.timed === '1' && res.meta?.startedAt) {
+        studentNS._startExamTimer(parseInt(res.meta.startedAt), parseInt(res.meta.duration));
+      }
+
+      // Render question nav
+      studentNS._renderQNav();
+
+      showPanel('exam-student-exam-panel');
+
+      // Poll for exam end
+      clearInterval(state.student.pollInterval);
+      state.student.pollInterval = setInterval(async () => {
+        const statusRes = await apiCall(`/api/exam/room/${roomId}`);
+        if (statusRes.status === 'ok' && statusRes.meta?.status === 'ended') {
+          clearInterval(state.student.pollInterval);
+          clearInterval(state.student.timerInterval);
+          studentNS._lockExam();
+        }
+      }, 5000);
+
+      // Init student editor
+      setTimeout(() => studentNS._initStudentEditor(), 100);
+
+      // Select first question if available
+      if (state.student.questions.length > 0) {
+        studentNS.selectQuestion(0);
+      }
+    },
+
+    _startExamTimer(startedAt, durationMin) {
+      const timerEl = el('student-exam-timer');
+      if (!timerEl) return;
+      timerEl.style.display = 'flex';
+      timerEl.style.fontFamily = "'JetBrains Mono',monospace";
+      timerEl.style.fontSize = '12px';
+
+      clearInterval(state.student.timerInterval);
+      state.student.timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() / 1000) - startedAt);
+        const remaining = (durationMin * 60) - elapsed;
+        timerEl.textContent = formatTime(Math.max(0, remaining));
+        timerEl.style.color = remaining <= 60 ? 'var(--red)' : remaining <= 300 ? 'var(--yellow)' : 'var(--green2)';
+        if (remaining <= 0) {
+          clearInterval(state.student.timerInterval);
+          studentNS._lockExam();
+        }
+      }, 1000);
+    },
+
+    _initStudentEditor() {
+      const ta = el('student-raw-editor');
+      if (!ta || typeof CodeMirror === 'undefined') return;
+      if (state.student.examEditor) return; // already inited
+
+      const cm = CodeMirror.fromTextArea(ta, {
+        mode: 'javascript',
+        theme: 'default',
+        lineNumbers: true,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        styleActiveLine: true,
+        extraKeys: {
+          'Ctrl-Enter': () => studentNS.runQuery(),
+        },
+      });
+      cm.setSize('100%', '100%');
+      cm.on('change', () => {
+        if (state.student.status[state.student.questions[state.student.currentQIdx]?.id] !== 'submitted') {
+          const qId = state.student.questions[state.student.currentQIdx]?.id;
+          if (qId && state.student.status[qId] !== 'submitted') {
+            state.student.status[qId] = 'draft';
+            studentNS._renderQNav();
+          }
+        }
+      });
+      state.student.examEditor = cm;
+    },
+
+    _renderQNav() {
+      const body = el('student-qnav-body');
+      const qs = state.student.questions;
+      if (!body) return;
+      if (qs.length === 0) {
+        body.innerHTML = '<div class="exam-participants-empty">// No questions</div>';
+        return;
+      }
+      el('student-q-progress').textContent = `Q ${state.student.currentQIdx !== null ? state.student.currentQIdx + 1 : 0}/${qs.length}`;
+      body.innerHTML = qs.map((q, i) => {
+        const statusKey = state.student.status[q.id] || 'unattempted';
+        const dotClass = statusKey === 'submitted' ? 'exam-q-status-submitted'
+          : statusKey === 'draft' ? 'exam-q-status-draft'
+          : 'exam-q-status-unattempted';
+        return `
+          <div class="exam-qnav-card ${state.student.currentQIdx === i ? 'active' : ''}"
+               onclick="ExamPortal.student.selectQuestion(${i})">
+            <div class="exam-q-card-top">
+              <span class="exam-q-num">Q${i + 1}</span>
+              <span class="exam-q-type-chip ${q.type === 'query' ? 'exam-q-type-query' : 'exam-q-type-mcq'}">${q.type === 'query' ? 'QUERY' : 'MCQ'}</span>
+              <span class="exam-q-marks-badge">${q.marks}pts</span>
+              <div class="exam-q-status-dot ${dotClass}" style="margin-left:auto"></div>
+            </div>
+            <div class="exam-q-preview">${q.text ? q.text.substring(0, 50) + (q.text.length > 50 ? '...' : '') : '// No text'}</div>
+          </div>
+        `;
+      }).join('');
+    },
+
+    selectQuestion(idx) {
+      const qs = state.student.questions;
+      if (idx < 0 || idx >= qs.length) return;
+
+      state.student.currentQIdx = idx;
+      const q = qs[idx];
+
+      // Update header
+      el('student-q-number').textContent = `Q${idx + 1}`;
+      el('student-q-type-chip').textContent = q.type === 'query' ? 'QUERY' : 'MCQ';
+      el('student-q-type-chip').className = `exam-q-type-chip ${q.type === 'query' ? 'exam-q-type-query' : 'exam-q-type-mcq'}`;
+      el('student-q-marks').textContent = `${q.marks} marks`;
+      el('student-q-text').textContent = q.text;
+      el('student-question-display').style.display = 'block';
+      el('student-no-q-selected').style.display = 'none';
+
+      el('student-q-progress').textContent = `Q ${idx + 1}/${qs.length}`;
+
+      // Show/hide areas
+      if (q.type === 'query') {
+        el('student-query-area').style.display = 'flex';
+        el('student-mcq-area').style.display = 'none';
+        el('btn-inspect-dataset').style.display = q.datasetId ? 'flex' : 'none';
+
+        // Set editor content
+        const cm = state.student.examEditor;
+        if (cm) {
+          cm.setValue(q._studentDraft || `// Question ${idx + 1}\\ndb.`);
+          cm.focus();
+        }
+
+        // Reset console
+        el('student-pane-yours').innerHTML = '<span style="color:var(--text3)">// Run a query to see output here</span>';
+        el('student-console-status').textContent = '— Ready';
+        state.student.hasRunOnce = false;
+        el('student-submit-query-btn').disabled = true;
+        el('student-submit-query-btn').style.opacity = '0.4';
+
+      } else {
+        el('student-query-area').style.display = 'none';
+        el('student-mcq-area').style.display = 'flex';
+        el('btn-inspect-dataset').style.display = 'none';
+        state.student.selectedOption = null;
+        el('student-mcq-status').textContent = '';
+        studentNS._renderMCQOptions(q);
+      }
+
+      studentNS._renderQNav();
+    },
+
+    _renderMCQOptions(q) {
+      const container = el('student-mcq-options');
+      const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+      container.innerHTML = (q.options || []).map((opt, i) => `
+        <div class="exam-mcq-option-item ${state.student.selectedOption === i ? 'selected' : ''}"
+             data-idx="${i}"
+             tabindex="0"
+             onclick="ExamPortal.student.selectMCQOption(${i})"
+             onkeydown="ExamPortal.student.mcqKeyNav(event,${i},${(q.options || []).length})">
+          <span class="exam-mcq-option-indicator">${state.student.selectedOption === i ? '[x]' : `[${labels[i] || i}]`}</span>
+          <span class="exam-mcq-option-text">${opt}</span>
+        </div>
+      `).join('');
+    },
+
+    mcqKeyNav(event, currentIdx, total) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        const next = (currentIdx + 1) % total;
+        studentNS.selectMCQOption(next);
+        const nextEl = document.querySelector(`.exam-mcq-option-item[data-idx="${next}"]`);
+        if (nextEl) nextEl.focus();
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        const prev = (currentIdx - 1 + total) % total;
+        studentNS.selectMCQOption(prev);
+        const prevEl = document.querySelector(`.exam-mcq-option-item[data-idx="${prev}"]`);
+        if (prevEl) prevEl.focus();
+      } else if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        studentNS.selectMCQOption(currentIdx);
+      }
+    },
+
+    selectMCQOption(idx) {
+      state.student.selectedOption = idx;
+      const q = state.student.questions[state.student.currentQIdx];
+      if (q) {
+        state.student.status[q.id] = 'draft';
+        studentNS._renderMCQOptions(q);
+        studentNS._renderQNav();
+      }
+    },
+
+    setConsoleTab(tab) {
+      ['yours', 'expected'].forEach(t => {
+        el(`student-ctab-${t}`)?.classList.toggle('active', t === tab);
+        el(`student-pane-${t}`)?.classList.toggle('active', t === tab);
+      });
+    },
+
+    async runQuery() {
+      const cm = state.student.examEditor;
+      if (!cm) return;
+      const query = cm.getValue();
+      const q = state.student.questions[state.student.currentQIdx];
+      if (!q || !q.datasetId) {
+        el('student-pane-yours').innerHTML = '<span style="color:var(--red)">// No dataset linked to this question</span>';
+        return;
+      }
+
+      el('student-run-btn').textContent = 'Running...';
+      el('student-run-btn').disabled = true;
+      el('student-console-status').textContent = '— Running...';
+
+      const res = await apiCall(`/api/exam/room/${state.student.roomId}/query`, 'POST', {
+        datasetId: q.datasetId,
+        query,
+        limit: 100,
+      });
+
+      el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
+      el('student-run-btn').disabled = false;
+
+      if (res.status === 'ok') {
+        const results = res.results || [];
+        state.student.lastRunOutput = results;
+        el('student-console-status').textContent = `— ${results.length} doc(s)`;
+        el('student-pane-yours').innerHTML = `<pre style="color:var(--text);font-size:11px;white-space:pre-wrap">${JSON.stringify(results, null, 2)}</pre>`;
+        state.student.hasRunOnce = true;
+        el('student-submit-query-btn').disabled = false;
+        el('student-submit-query-btn').style.opacity = '1';
+      } else {
+        el('student-console-status').textContent = '— Error';
+        el('student-pane-yours').innerHTML = `<span style="color:var(--red)">${res.error || '// Unknown error'}</span>`;
+      }
+    },
+
+    clearEditor() {
+      if (state.student.examEditor) {
+        state.student.examEditor.setValue('');
+        state.student.examEditor.focus();
+      }
+    },
+
+    async inspectDataset() {
+      const q = state.student.questions[state.student.currentQIdx];
+      if (!q || !q.datasetId) return;
+
+      el('exam-schema-content').textContent = 'Loading schema...';
+      openModal('exam-schema-modal');
+
+      const res = await apiCall(`/api/exam/room/${state.student.roomId}/dataset/${q.datasetId}/schema`);
+      if (res.status === 'ok') {
+        const schema = res.schema || {};
+        const rows = Object.entries(schema).map(([field, type]) =>
+          `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+            <span style="color:var(--cyan)">${field}</span>
+            <span style="color:var(--green2)">${type}</span>
+          </div>`
+        ).join('');
+        el('exam-schema-content').innerHTML = `
+          <div style="margin-bottom:12px;color:var(--text2)">Collection: <span style="color:var(--cyan);font-weight:700">${res.collection}</span> — ${res.docCount} documents</div>
+          <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Field Schema (inferred from first 50 docs)</div>
+          ${rows}
+          <div style="margin-top:12px;font-size:11px;color:var(--text3)">Sample document:</div>
+          <pre style="font-size:11px;color:var(--text);white-space:pre-wrap;margin-top:4px;background:var(--bg);padding:8px;border-radius:4px">${JSON.stringify(res.sampleDocs?.[0] || {}, null, 2)}</pre>
+        `;
+      } else {
+        el('exam-schema-content').innerHTML = `<span style="color:var(--red)">${res.error || '// Failed to load schema'}</span>`;
+      }
+    },
+
+    async submitAnswer() {
+      const q = state.student.questions[state.student.currentQIdx];
+      if (!q) return;
+
+      let body = {
+        studentId: state.student.studentId,
+        questionId: q.id,
+        type: q.type,
+        marks: q.marks,
+      };
+
+      if (q.type === 'mcq') {
+        if (state.student.selectedOption === null) {
+          el('student-mcq-status').textContent = '// Select an option first';
+          el('student-mcq-status').style.color = 'var(--red)';
+          return;
+        }
+        body.selectedOption = state.student.selectedOption;
+      } else {
+        const cm = state.student.examEditor;
+        body.query = cm ? cm.getValue() : '';
+        body.datasetId = q.datasetId;
+        body.studentOutput = state.student.lastRunOutput || [];
+      }
+
+      // Optimistic UI: immediately mark as submitted
+      state.student.status[q.id] = 'submitted';
+      studentNS._renderQNav();
+      if (q.type === 'mcq') {
+        el('student-mcq-status').textContent = '// Submitting...';
+        el('student-mcq-status').style.color = 'var(--text3)';
+      }
+
+      const res = await apiCall(`/api/exam/room/${state.student.roomId}/submit`, 'POST', body);
+
+      if (res.status === 'ok') {
+        if (q.type === 'mcq') {
+          el('student-mcq-status').textContent = res.correct
+            ? '// Correct! Submitted.'
+            : '// Submitted (incorrect answer)';
+          el('student-mcq-status').style.color = res.correct ? 'var(--green2)' : 'var(--yellow)';
+        } else {
+          el('student-console-status').textContent = res.correct
+            ? `— Correct! ${res.score} pts`
+            : `— Submitted (${res.score}/${q.marks} pts)`;
+
+          // Show expected output preview (max 5 docs)
+          studentNS._fetchExpectedPreview(q.id);
+        }
+        state.student.status[q.id] = 'submitted';
+      } else {
+        // Revert optimistic update on error
+        state.student.status[q.id] = 'draft';
+        if (q.type === 'mcq') {
+          el('student-mcq-status').textContent = res.error || '// Submission failed';
+          el('student-mcq-status').style.color = 'var(--red)';
+        }
+      }
+      studentNS._renderQNav();
+    },
+
+    async _fetchExpectedPreview(questionId) {
+      // We don't have a direct API for this — show a placeholder
+      // The server stores the frozen answer but we limit to 5 docs
+      el('student-pane-expected').innerHTML = `
+        <span style="color:var(--text3)">// Expected output preview not available client-side for security.</span>
+        <div class="exam-console-hint">// Full result is hidden — ${state.student.questions[state.student.currentQIdx]?.answerDocCount || '?'} documents in expected output</div>
+      `;
+    },
+
+    _lockExam() {
+      // Lock editor
+      if (state.student.examEditor) {
+        state.student.examEditor.setOption('readOnly', 'nocursor');
+      }
+      // Show ended overlay
+      const overlay = el('student-ended-overlay');
+      if (overlay) overlay.classList.add('active');
+      // Disable submit buttons
+      const submitQ = el('student-submit-query-btn');
+      const submitM = el('student-submit-mcq-btn');
+      if (submitQ) { submitQ.disabled = true; submitQ.style.opacity = '0.4'; }
+      if (submitM) { submitM.disabled = true; submitM.style.opacity = '0.4'; }
+      // Update status chip
+      const chip = el('student-exam-status');
+      if (chip) {
+        chip.className = 'exam-status-chip exam-chip-ended';
+        chip.textContent = 'ENDED';
+      }
+    },
+  }; // end student namespace
+
+  // ── Public API ─────────────────────────────────────────────────────────────
+  return {
+    showRoleSelection,
+    exitToHome,
+    selectRole,
+    mentor,
+    student: studentNS,
+  };
+
+})(); // end ExamPortal IIFE
 
 </script>
 </body>
