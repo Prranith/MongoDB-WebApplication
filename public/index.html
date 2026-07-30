@@ -828,9 +828,10 @@
               <th>Answered</th>
               <th>Accuracy</th>
               <th>Last Sub</th>
+              <th>Action</th>
             </tr></thead>
             <tbody id="mentor-lb-tbody">
-              <tr><td colspan="8" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">// Waiting for submissions...</td></tr>
+              <tr><td colspan="9" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">// Waiting for submissions...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1107,6 +1108,30 @@ db.collection.find({})</textarea>
     </div>
   </div>
 </div>
+
+<!-- Student: Removed / Kicked Overlay -->
+<div class="exam-overlay" id="exam-student-kicked-panel">
+  <div class="exam-topbar" style="border-bottom:1px solid rgba(255, 77, 77, 0.3)">
+    <span class="exam-topbar-title" style="color:#ff4d4d;font-weight:600">MongoSandbox — Assessment Access Terminated</span>
+    <span class="exam-status-chip exam-chip-ended" style="margin-left:auto;background:rgba(255, 77, 77, 0.15);color:#ff4d4d;border:1px solid rgba(255, 77, 77, 0.4)">REMOVED BY MENTOR</span>
+  </div>
+  <div class="exam-body">
+    <div class="exam-form-card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;max-width:520px;border:1px solid rgba(255, 77, 77, 0.3);background:rgba(22, 14, 16, 0.95);box-shadow:0 12px 40px rgba(255, 0, 0, 0.2);padding:36px 28px">
+      <div style="width:72px;height:72px;background:rgba(255, 77, 77, 0.12);border:2px solid rgba(255, 77, 77, 0.4);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ff4d4d;box-shadow:0 0 24px rgba(255, 77, 77, 0.35)">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+      </div>
+      <div class="exam-section-title" style="font-size:22px;margin:0;color:#ff5555;font-weight:700;letter-spacing:-0.3px">Not Eligible For Test</div>
+      <div class="exam-section-sub" style="font-size:14px;line-height:1.6;color:var(--text2)">
+        <strong style="color:#ffffff;font-size:15px;display:block;margin-bottom:8px">Mentor Removed You</strong>
+        Your mentor has removed you from this assessment session. You are no longer eligible to participate or submit answers for this exam room.
+      </div>
+      <button class="exam-btn exam-btn-red" onclick="ExamPortal.exitToHome()" style="margin-top:8px;padding:9px 28px;font-weight:600;font-size:13px;border-radius:6px">
+        Return to Home Page
+      </button>
+    </div>
+  </div>
+</div>
+
 
 <!-- Dataset Schema Modal (reused for exam) -->
 <div class="modal-bg" id="exam-schema-modal">

@@ -258,6 +258,12 @@ def api_exam_get_room(room_id: str):
         except Exception:
             pass
 
+    # Kicked participants
+    kicked_raw = _redis_one(["SMEMBERS", f"room:{room_id}:kicked"])
+    kicked = []
+    if isinstance(kicked_raw, list):
+        kicked = [str(k) for k in kicked_raw]
+
     return jsonify({
         "status": "ok",
         "roomId": room_id,
@@ -265,6 +271,7 @@ def api_exam_get_room(room_id: str):
         "questions": questions,
         "participants": participants,
         "datasets": datasets,
+        "kicked": kicked,
     })
 
 
@@ -539,6 +546,11 @@ def api_exam_submit_answer(room_id: str):
     if meta.get("status") != "live":
         return jsonify({"status": "error", "error": "Exam is not live"}), 400
 
+    # Validate student is not kicked
+    is_kicked = _redis_one(["SISMEMBER", f"room:{room_id}:kicked", student_id])
+    if is_kicked:
+        return jsonify({"status": "error", "error": "kicked", "message": "You have been removed by the mentor"}), 403
+
     score = 0
     now = int(time.time())
 
@@ -766,3 +778,26 @@ def api_exam_cleanup_room(room_id: str):
         _redis_cmd([["DEL"] + all_keys])
 
     return jsonify({"status": "ok", "deletedKeys": len(all_keys)})
+
+
+@exam_bp.route("/api/exam/room/<room_id>/student/<student_id>", methods=["DELETE"])
+def api_exam_remove_student(room_id: str, student_id: str):
+    """Mentor removes/kicks a student from the exam room."""
+    body = request.get_json(force=True, silent=True) or {}
+    mentor_id = body.get("mentorId", "")
+
+    meta = _hgetall(_room_key(room_id))
+    if not meta or meta.get("mentorId") != mentor_id:
+        return jsonify({"status": "error", "error": "Unauthorized"}), 403
+
+    pipeline = [
+        ["HDEL", f"room:{room_id}:participants", student_id],
+        ["ZREM", f"room:{room_id}:leaderboard", student_id],
+        ["SADD", f"room:{room_id}:kicked", student_id],
+        ["EXPIRE", f"room:{room_id}:kicked", str(60 * 60 * 24 * 7)],
+        ["DEL", f"room:{room_id}:student:{student_id}:submissions"],
+    ]
+    _redis_cmd(pipeline)
+
+    return jsonify({"status": "ok", "studentId": student_id})
+

@@ -6039,9 +6039,10 @@ function applyEditorTheme() {
               <th>Answered</th>
               <th>Accuracy</th>
               <th>Last Sub</th>
+              <th>Action</th>
             </tr></thead>
             <tbody id="mentor-lb-tbody">
-              <tr><td colspan="8" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">// Waiting for submissions...</td></tr>
+              <tr><td colspan="9" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">// Waiting for submissions...</td></tr>
             </tbody>
           </table>
         </div>
@@ -6319,6 +6320,30 @@ db.collection.find({})</textarea>
   </div>
 </div>
 
+<!-- Student: Removed / Kicked Overlay -->
+<div class="exam-overlay" id="exam-student-kicked-panel">
+  <div class="exam-topbar" style="border-bottom:1px solid rgba(255, 77, 77, 0.3)">
+    <span class="exam-topbar-title" style="color:#ff4d4d;font-weight:600">MongoSandbox — Assessment Access Terminated</span>
+    <span class="exam-status-chip exam-chip-ended" style="margin-left:auto;background:rgba(255, 77, 77, 0.15);color:#ff4d4d;border:1px solid rgba(255, 77, 77, 0.4)">REMOVED BY MENTOR</span>
+  </div>
+  <div class="exam-body">
+    <div class="exam-form-card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;max-width:520px;border:1px solid rgba(255, 77, 77, 0.3);background:rgba(22, 14, 16, 0.95);box-shadow:0 12px 40px rgba(255, 0, 0, 0.2);padding:36px 28px">
+      <div style="width:72px;height:72px;background:rgba(255, 77, 77, 0.12);border:2px solid rgba(255, 77, 77, 0.4);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ff4d4d;box-shadow:0 0 24px rgba(255, 77, 77, 0.35)">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+      </div>
+      <div class="exam-section-title" style="font-size:22px;margin:0;color:#ff5555;font-weight:700;letter-spacing:-0.3px">Not Eligible For Test</div>
+      <div class="exam-section-sub" style="font-size:14px;line-height:1.6;color:var(--text2)">
+        <strong style="color:#ffffff;font-size:15px;display:block;margin-bottom:8px">Mentor Removed You</strong>
+        Your mentor has removed you from this assessment session. You are no longer eligible to participate or submit answers for this exam room.
+      </div>
+      <button class="exam-btn exam-btn-red" onclick="ExamPortal.exitToHome()" style="margin-top:8px;padding:9px 28px;font-weight:600;font-size:13px;border-radius:6px">
+        Return to Home Page
+      </button>
+    </div>
+  </div>
+</div>
+
+
 <!-- Dataset Schema Modal (reused for exam) -->
 <div class="modal-bg" id="exam-schema-modal">
   <div class="modal-win">
@@ -6477,6 +6502,7 @@ const ExamPortal = (() => {
       return;
     }
     if (countEl) countEl.textContent = `(${participants.length})`;
+    const isMentor = bodyId === 'mentor-participants-body';
     body.innerHTML = participants.map(p => `
       <div class="exam-participant-row">
         <div class="exam-participant-icon">
@@ -6490,6 +6516,14 @@ const ExamPortal = (() => {
           </div>
         </div>
         <span class="exam-participant-time">${timeAgo(p.joinedAt)}</span>
+        ${isMentor ? `
+          <button class="phbtn" style="color:#ff4d4d;margin-left:8px;padding:3px 7px;border:1px solid rgba(255,77,77,0.3);border-radius:4px;background:rgba(255,77,77,0.1);font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer"
+            onclick="ExamPortal.mentor.removeStudent('${p.studentId}', '${(p.name || 'Student').replace(/'/g, "\\\\'")}')"
+            title="Remove student from test">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            Remove
+          </button>
+        ` : ''}
       </div>
     `).join('');
   }
@@ -7227,6 +7261,14 @@ const ExamPortal = (() => {
             <td class="exam-lb-accuracy">${row.answered}/${(state.mentor.questions || []).length}</td>
             <td class="exam-lb-accuracy">${accuracy}</td>
             <td class="exam-lb-time">${lastSub}</td>
+            <td style="text-align:center">
+              <button class="phbtn" style="color:#ff4d4d;padding:3px 7px;border:1px solid rgba(255,77,77,0.3);border-radius:4px;background:rgba(255,77,77,0.1);font-size:11px;display:inline-flex;align-items:center;gap:3px;cursor:pointer"
+                onclick="ExamPortal.mentor.removeStudent('${row.studentId}', '${(row.name || 'Student').replace(/'/g, "\\\\'")}')"
+                title="Remove student">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                Remove
+              </button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -7281,6 +7323,19 @@ const ExamPortal = (() => {
       localStorage.removeItem('exam_mentor_id');
       localStorage.removeItem('exam_room_id');
       showRoleSelection();
+    },
+
+    async removeStudent(studentId, studentName) {
+      if (!confirm(`Are you sure you want to remove ${studentName || 'this student'} from the test?\\n\\nThey will be blocked and notified immediately.`)) return;
+      const roomId = state.mentor.roomId;
+      const mentorId = state.mentor.mentorId;
+      const res = await apiCall(`/api/exam/room/${roomId}/student/${studentId}`, 'DELETE', { mentorId });
+      if (res.status === 'ok') {
+        mentor._fetchParticipants();
+        mentor.fetchLeaderboard();
+      } else {
+        alert(res.error || 'Failed to remove student');
+      }
     },
   }; // end mentor namespace
 
@@ -7362,6 +7417,10 @@ const ExamPortal = (() => {
       state.student.pollInterval = setInterval(async () => {
         const res = await apiCall(`/api/exam/room/${roomId}`);
         if (res.status === 'ok') {
+          if (res.kicked && res.kicked.includes(state.student.studentId)) {
+            studentNS.handleKicked();
+            return;
+          }
           renderParticipants(res.participants || [], 'wait-participants-body', 'wait-participants-count');
           if (res.meta && res.meta.status === 'live') {
             clearInterval(state.student.pollInterval);
@@ -7374,6 +7433,10 @@ const ExamPortal = (() => {
     async initExam(roomId) {
       const res = await apiCall(`/api/exam/room/${roomId}`);
       if (res.status !== 'ok') return;
+      if (res.kicked && res.kicked.includes(state.student.studentId)) {
+        studentNS.handleKicked();
+        return;
+      }
 
       state.student.roomId = roomId;
       state.student.questions = res.questions || [];
@@ -7399,16 +7462,22 @@ const ExamPortal = (() => {
 
       showPanel('exam-student-exam-panel');
 
-      // Poll for exam end
+      // Poll for exam end & kicked status
       clearInterval(state.student.pollInterval);
       state.student.pollInterval = setInterval(async () => {
         const statusRes = await apiCall(`/api/exam/room/${roomId}`);
-        if (statusRes.status === 'ok' && statusRes.meta?.status === 'ended') {
-          clearInterval(state.student.pollInterval);
-          clearInterval(state.student.timerInterval);
-          studentNS._lockExam();
+        if (statusRes.status === 'ok') {
+          if (statusRes.kicked && statusRes.kicked.includes(state.student.studentId)) {
+            studentNS.handleKicked();
+            return;
+          }
+          if (statusRes.meta?.status === 'ended') {
+            clearInterval(state.student.pollInterval);
+            clearInterval(state.student.timerInterval);
+            studentNS._lockExam();
+          }
         }
-      }, 5000);
+      }, 3000);
 
       // Init student editor
       setTimeout(() => studentNS._initStudentEditor(), 100);
@@ -7773,6 +7842,10 @@ const ExamPortal = (() => {
         }
         state.student.status[q.id] = 'submitted';
       } else {
+        if (res.error === 'kicked' || res.status === 403) {
+          studentNS.handleKicked();
+          return;
+        }
         // Revert optimistic update on error
         state.student.status[q.id] = 'draft';
         if (q.type === 'mcq') {
@@ -7781,6 +7854,15 @@ const ExamPortal = (() => {
         }
       }
       studentNS._renderQNav();
+    },
+
+    handleKicked() {
+      clearInterval(state.student.pollInterval);
+      clearInterval(state.student.timerInterval);
+      localStorage.removeItem('exam_student_id');
+      localStorage.removeItem('exam_student_room');
+      window.onbeforeunload = null;
+      showPanel('exam-student-kicked-panel');
     },
 
     async _fetchExpectedPreview(questionId) {
