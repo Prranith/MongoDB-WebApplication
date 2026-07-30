@@ -91,11 +91,37 @@ def execute(raw_query: str, max_results: int = 1000, db: Any = None) -> QueryRes
         "True": True, "False": False, "None": None,
     }
 
+    code_lines = [l for l in tr.translated.splitlines() if l.strip() and not l.strip().startswith('#')]
+    clean_code = "\n".join(code_lines).strip()
+    if not clean_code:
+        return QueryResult(status="empty", data=[], raw_query=raw_query)
+
     t_start = time.perf_counter()
     try:
-        result_val = eval(tr.translated, {"__builtins__": {}}, safe_locals)  # noqa: S307
+        result_val = eval(clean_code, {"__builtins__": {}}, safe_locals)  # noqa: S307
         elapsed_ms = (time.perf_counter() - t_start) * 1000
         return _build_result(result_val, raw_query, tr.translated, tr.method, elapsed_ms, max_results)
+    except SyntaxError:
+        # Fallback to exec for multiline statement blocks
+        try:
+            exec_locals = dict(safe_locals)
+            exec(clean_code, {"__builtins__": {}}, exec_locals)
+            # Find the last returned expression or result_val variable
+            result_val = exec_locals.get("result", exec_locals.get("res", []))
+            elapsed_ms = (time.perf_counter() - t_start) * 1000
+            return _build_result(result_val, raw_query, tr.translated, tr.method, elapsed_ms, max_results)
+        except Exception as ex:
+            elapsed_ms = (time.perf_counter() - t_start) * 1000
+            tb = traceback.format_exc()
+            return QueryResult(
+                status="error",
+                error=str(ex),
+                traceback_str=tb,
+                raw_query=raw_query,
+                translated_query=tr.translated,
+                translation_method=tr.method,
+                timing_ms=elapsed_ms,
+            )
     except Exception as e:
         elapsed_ms = (time.perf_counter() - t_start) * 1000
         tb = traceback.format_exc()

@@ -6775,35 +6775,49 @@ const ExamPortal = (() => {
           </div>
           <div class="exam-fieldset">
             <div class="exam-fieldset-title">Expected Query (Mentor's Solution)</div>
-            <div class="exam-mini-editor ${q.answerFrozen ? 'frozen' : ''}" id="mini-editor-wrap-${qId}">
+            <div class="exam-mini-editor" id="mini-editor-wrap-${qId}">
               <textarea id="mini-editor-${qId}">${q.expectedQuery || '// db.collection.find({})'}</textarea>
-              ${q.answerFrozen ? '<div class="exam-frozen-overlay"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>' : ''}
             </div>
-            ${q.answerFrozen
-              ? `<span class="exam-frozen-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Answer frozen — ${q.answerDocCount} docs</span>`
-              : `<button class="exam-btn exam-btn-green" onclick="ExamPortal.mentor.freezeAnswer('${qId}')">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-                  Run &amp; Freeze Answer
-                </button>`
-            }
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+              <button class="exam-btn exam-btn-green" onclick="ExamPortal.mentor.freezeAnswer('${qId}')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                ${q.answerFrozen ? 'Re-run &amp; Update Frozen Answer' : 'Run &amp; Freeze Answer'}
+              </button>
+              ${q.answerFrozen
+                ? `<span class="exam-frozen-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Answer frozen — ${q.answerDocCount} docs</span>`
+                : ''
+              }
+            </div>
             <div id="freeze-status-${qId}" style="display:none"></div>
-            <div id="freeze-output-${qId}" style="display:none;margin-top:8px;max-height:160px;overflow-y:auto;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:8px;font-family:'JetBrains Mono',monospace;font-size:11px;white-space:pre-wrap"></div>
+            <div id="freeze-output-${qId}" style="${(q.lastOutputPreview || q.lastOutputError) ? 'display:block' : 'display:none'};margin-top:8px;max-height:180px;overflow-y:auto;background:var(--bg);border:1px solid ${q.lastOutputError ? 'var(--red)' : 'var(--border2)'};border-radius:4px;padding:8px;font-family:'JetBrains Mono',monospace;font-size:11px;white-space:pre-wrap">
+              ${q.lastOutputError
+                ? `<span style="color:var(--red)">// Query execution failed:</span>\\n${q.lastOutputError}`
+                : q.lastOutputPreview
+                  ? `<span style="color:var(--green2)">// Query executed successfully (${q.answerDocCount || 0} doc(s) returned). Output preview:</span>\\n${JSON.stringify(q.lastOutputPreview, null, 2)}`
+                  : ''
+              }
+            </div>
           </div>
         `;
         // Init mini CodeMirror
         setTimeout(() => {
           const ta = el(`mini-editor-${qId}`);
-          if (ta && typeof CodeMirror !== 'undefined' && !state.mentor.miniEditors[qId]) {
+          if (ta && typeof CodeMirror !== 'undefined') {
+            if (state.mentor.miniEditors[qId]) {
+              try { state.mentor.miniEditors[qId].toTextArea(); } catch(e) {}
+              delete state.mentor.miniEditors[qId];
+            }
             const cm = CodeMirror.fromTextArea(ta, {
               mode: 'javascript',
               theme: 'default',
               lineNumbers: true,
               matchBrackets: true,
               autoCloseBrackets: true,
-              readOnly: q.answerFrozen,
+              readOnly: false,
             });
-            cm.setSize('100%', '120px');
+            cm.setSize('100%', '130px');
             cm.on('change', () => {
+              q.expectedQuery = cm.getValue();
               mentor.updateQField(qId, 'expectedQuery', cm.getValue());
             });
             state.mentor.miniEditors[qId] = cm;
@@ -6947,27 +6961,20 @@ const ExamPortal = (() => {
         query,
       });
 
-      const out = el(`freeze-output-${qId}`);
       if (res.status === 'ok') {
         q.answerFrozen = true;
         q.expectedQuery = query;
         q.answerDocCount = res.docCount;
+        q.lastOutputPreview = res.preview || [];
+        q.lastOutputError = null;
         await mentor._saveQuestions();
         mentor._renderQList();
         mentor._renderQEditor(qId);
-
-        if (out) {
-          out.style.display = 'block';
-          out.style.borderColor = 'var(--green2)';
-          out.innerHTML = `<span style="color:var(--green2)">// Query executed successfully. Showing sample document preview:</span>\\n${JSON.stringify(res.preview || [], null, 2)}`;
-        }
       } else {
+        q.lastOutputError = res.error || '// Error running query';
+        q.lastOutputPreview = null;
         showMsg(`freeze-status-${qId}`, res.error || '// Error running query', true);
-        if (out) {
-          out.style.display = 'block';
-          out.style.borderColor = 'var(--red)';
-          out.innerHTML = `<span style="color:var(--red)">// Query execution failed:</span>\\n${res.error || 'Unknown query error'}`;
-        }
+        mentor._renderQEditor(qId);
       }
     },
 
