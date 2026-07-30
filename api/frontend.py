@@ -3208,6 +3208,39 @@ li.CodeMirror-hint-active {
 }
 .exam-num-input:focus { border-color: var(--green2); }
 
+/* ── Exam mini editor CodeMirror dark theme overrides ── */
+.exam-mini-editor,
+.exam-mini-editor .CodeMirror,
+.exam-mini-editor .CodeMirror-gutters,
+.exam-overlay .CodeMirror,
+.exam-overlay .CodeMirror-gutters {
+  background: var(--bg) !important;
+  color: #e6edf3 !important;
+  border-color: var(--border2) !important;
+}
+.exam-mini-editor .CodeMirror-cursor,
+.exam-overlay .CodeMirror-cursor {
+  border-left: 2px solid var(--green2) !important;
+}
+.exam-mini-editor .CodeMirror-linenumber,
+.exam-overlay .CodeMirror-linenumber {
+  color: var(--text3) !important;
+}
+.exam-mini-editor .cm-comment,
+.exam-overlay .cm-comment { color: var(--text3) !important; }
+.exam-mini-editor .cm-string,
+.exam-overlay .cm-string { color: var(--green2) !important; }
+.exam-mini-editor .cm-keyword,
+.exam-overlay .cm-keyword { color: var(--cyan) !important; }
+.exam-mini-editor .cm-variable,
+.exam-overlay .cm-variable { color: #e6edf3 !important; }
+.exam-mini-editor .cm-property,
+.exam-overlay .cm-property { color: #9cdcfe !important; }
+.exam-mini-editor .cm-number,
+.exam-overlay .cm-number { color: #b5cea8 !important; }
+.exam-mini-editor .cm-def,
+.exam-overlay .cm-def { color: #dcdcaa !important; }
+
 
 </style>
 </head>
@@ -6991,6 +7024,9 @@ const ExamPortal = (() => {
           docCount: res.docCount,
         });
         mentor._renderDatasetTable();
+        if (state.mentor.currentQId) {
+          mentor._renderQEditor(state.mentor.currentQId);
+        }
         showMsg('exam-upload-msg', `// "${res.name}" uploaded — ${res.docCount} documents`, false);
       } else {
         showMsg('exam-upload-msg', res.error || '// Upload failed', true);
@@ -7038,6 +7074,9 @@ const ExamPortal = (() => {
       });
       state.mentor.datasets = state.mentor.datasets.filter(d => d.datasetId !== datasetId);
       mentor._renderDatasetTable();
+      if (state.mentor.currentQId) {
+        mentor._renderQEditor(state.mentor.currentQId);
+      }
     },
 
     // ── Room Lifecycle ─────────────────────────────────────────────────────
@@ -7463,6 +7502,9 @@ const ExamPortal = (() => {
         el('student-submit-query-btn').disabled = true;
         el('student-submit-query-btn').style.opacity = '0.4';
 
+        // Pre-fetch expected preview (2-3 docs)
+        studentNS._fetchExpectedPreview(q.id);
+
       } else {
         el('student-query-area').style.display = 'none';
         el('student-mcq-area').style.display = 'flex';
@@ -7551,16 +7593,20 @@ const ExamPortal = (() => {
       el('student-run-btn').disabled = false;
 
       if (res.status === 'ok') {
-        const results = res.results || [];
+        const results = res.data !== undefined ? res.data : (res.results || []);
         state.student.lastRunOutput = results;
-        el('student-console-status').textContent = `— ${results.length} doc(s)`;
+        const count = Array.isArray(results) ? results.length : (results ? 1 : 0);
+        el('student-console-status').textContent = `— ${count} doc(s)`;
         el('student-pane-yours').innerHTML = `<pre style="color:var(--text);font-size:11px;white-space:pre-wrap">${JSON.stringify(results, null, 2)}</pre>`;
         state.student.hasRunOnce = true;
         el('student-submit-query-btn').disabled = false;
         el('student-submit-query-btn').style.opacity = '1';
+
+        // Auto-refresh expected preview (2-3 docs)
+        studentNS._fetchExpectedPreview(q.id);
       } else {
         el('student-console-status').textContent = '— Error';
-        el('student-pane-yours').innerHTML = `<span style="color:var(--red)">${res.error || '// Unknown error'}</span>`;
+        el('student-pane-yours').innerHTML = `<pre style="color:var(--red);font-size:11px;white-space:pre-wrap">${res.error || res.traceback_str || '// Unknown error'}</pre>`;
       }
     },
 

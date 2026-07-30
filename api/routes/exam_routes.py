@@ -477,7 +477,9 @@ def api_exam_freeze_answer(room_id: str):
     if result.get("status") == "error":
         return jsonify(result), 400
 
-    docs = result.get("results", [])
+    docs = result.get("data") if result.get("data") is not None else result.get("results", [])
+    if not isinstance(docs, list):
+        docs = [docs] if docs is not None else []
 
     # Freeze the answer
     _redis_cmd([
@@ -548,7 +550,7 @@ def api_exam_submit_answer(room_id: str):
         if query and dataset_ids:
             result = _execute_room_query(room_id, dataset_ids, query, max_results=500)
             if result.get("status") == "ok":
-                student_output = result.get("results", [])
+                student_output = result.get("data") if result.get("data") is not None else result.get("results", [])
 
         # Fetch frozen answer
         frozen_json = _redis_one(["GET", f"room:{room_id}:question:{question_id}:answer"])
@@ -602,19 +604,21 @@ def api_exam_submit_answer(room_id: str):
 
 @exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/expected-preview", methods=["GET"])
 def api_exam_expected_preview(room_id: str, question_id: str):
-    """Retrieve first 5 documents of the frozen answer for a question as a preview."""
+    """Retrieve first 2-3 documents of the frozen answer for a question as a preview."""
     frozen_json = _redis_one(["GET", f"room:{room_id}:question:{question_id}:answer"])
     if not frozen_json:
         return jsonify({"status": "error", "error": "No frozen answer found"}), 404
     try:
         docs = json.loads(frozen_json)
+        if not isinstance(docs, list):
+            docs = [docs] if docs is not None else []
     except Exception:
         return jsonify({"status": "error", "error": "Failed to parse frozen answer"}), 500
 
     return jsonify({
         "status": "ok",
         "docCount": len(docs),
-        "preview": docs[:5],
+        "preview": docs[:3],
     })
 
 
