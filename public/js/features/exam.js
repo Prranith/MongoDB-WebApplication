@@ -151,7 +151,7 @@ const ExamPortal = (() => {
         <span class="exam-participant-time">${timeAgo(p.joinedAt)}</span>
         ${isMentor ? `
           <button class="phbtn" style="color:#ff4d4d;margin-left:8px;padding:3px 7px;border:1px solid rgba(255,77,77,0.3);border-radius:4px;background:rgba(255,77,77,0.1);font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer"
-            onclick="ExamPortal.mentor.removeStudent('${p.studentId}', '${(p.name || 'Student').replace(/'/g, "\\'")}')"
+            onclick="ExamPortal.mentor.removeStudent('${p.studentId}')"
             title="Remove student from test">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             Remove
@@ -896,7 +896,7 @@ const ExamPortal = (() => {
             <td class="exam-lb-time">${lastSub}</td>
             <td style="text-align:center">
               <button class="phbtn" style="color:#ff4d4d;padding:3px 7px;border:1px solid rgba(255,77,77,0.3);border-radius:4px;background:rgba(255,77,77,0.1);font-size:11px;display:inline-flex;align-items:center;gap:3px;cursor:pointer"
-                onclick="ExamPortal.mentor.removeStudent('${row.studentId}', '${(row.name || 'Student').replace(/'/g, "\\'")}')"
+                onclick="ExamPortal.mentor.removeStudent('${row.studentId}')"
                 title="Remove student">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                 Remove
@@ -959,7 +959,11 @@ const ExamPortal = (() => {
     },
 
     async removeStudent(studentId, studentName) {
-      if (!confirm(`Are you sure you want to remove ${studentName || 'this student'} from the test?\n\nThey will be blocked and notified immediately.`)) return;
+      if (!studentName) {
+        const found = (state.mentor.leaderboardData || []).find(x => x.studentId === studentId);
+        studentName = found ? found.name : 'this student';
+      }
+      if (!confirm(`Are you sure you want to remove ${studentName} from the test?\n\nThey will be blocked and notified immediately.`)) return;
       const roomId = state.mentor.roomId;
       const mentorId = state.mentor.mentorId;
       const res = await apiCall(`/api/exam/room/${roomId}/student/${studentId}`, 'DELETE', { mentorId });
@@ -1074,7 +1078,7 @@ const ExamPortal = (() => {
       state.student.roomId = roomId;
       state.student.questions = res.questions || [];
       state.student.datasets = res.datasets || [];
-      state.student.roomStatus = res.meta?.status || 'live';
+      state.student.roomStatus = (res.meta && res.meta.status) ? res.meta.status : 'live';
 
       // Initialize question status
       state.student.status = {};
@@ -1083,10 +1087,10 @@ const ExamPortal = (() => {
       });
 
       // Update header
-      if (el('student-exam-room-title')) el('student-exam-room-title').textContent = res.meta?.title || roomId;
+      if (el('student-exam-room-title')) el('student-exam-room-title').textContent = (res.meta && res.meta.title) ? res.meta.title : roomId;
 
       // Timer
-      if (res.meta?.timed === '1' && res.meta?.startedAt) {
+      if (res.meta && res.meta.timed === '1' && res.meta.startedAt) {
         studentNS._startExamTimer(parseInt(res.meta.startedAt), parseInt(res.meta.duration));
       }
 
@@ -1104,7 +1108,7 @@ const ExamPortal = (() => {
             studentNS.handleKicked();
             return;
           }
-          if (statusRes.meta?.status === 'ended') {
+          if (statusRes.meta && statusRes.meta.status === 'ended') {
             clearInterval(state.student.pollInterval);
             clearInterval(state.student.timerInterval);
             studentNS._lockExam();
@@ -1162,11 +1166,8 @@ const ExamPortal = (() => {
         const currentQ = state.student.questions[state.student.currentQIdx];
         if (currentQ) {
           currentQ._studentDraft = cm.getValue();
-        }
-        if (state.student.status[currentQ?.id] !== 'submitted') {
-          const qId = currentQ?.id;
-          if (qId && state.student.status[qId] !== 'submitted') {
-            state.student.status[qId] = 'draft';
+          if (state.student.status[currentQ.id] !== 'submitted') {
+            state.student.status[currentQ.id] = 'draft';
             studentNS._renderQNav();
           }
         }
@@ -1202,6 +1203,10 @@ const ExamPortal = (() => {
         `;
       }).join('');
     },
+
+    selectQuestion(idx) {
+      const qs = state.student.questions;
+      if (!qs || !qs[idx]) return;
 
       // Preserve current draft before switching
       if (state.student.currentQIdx !== null && state.student.examEditor && state.student.questions[state.student.currentQIdx]) {
