@@ -6245,6 +6245,26 @@ db.collection.find({})</textarea>
       </div>
     </div>
   </div>
+<!-- Student: Thank You Screen -->
+<div class="exam-overlay" id="exam-thankyou-panel">
+  <div class="exam-topbar">
+    <span class="exam-topbar-title">MongoSandbox — Exam Submitted</span>
+  </div>
+  <div class="exam-body">
+    <div class="exam-form-card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;max-width:540px">
+      <div style="width:64px;height:64px;background:rgba(22, 130, 93, 0.1);border:1px solid rgba(22, 130, 93, 0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--green2)">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div class="exam-section-title" style="font-size:20px;margin:0">Thank you for taking the test!</div>
+      <div class="exam-section-sub" style="font-size:13px;line-height:1.6;color:var(--text2)">
+        Your exam has been submitted successfully.<br/>
+        Please contact your mentor for your final scores.
+      </div>
+      <button class="exam-btn exam-btn-secondary" onclick="ExamPortal.exitToHome()" style="margin-top:12px">
+        Return to Home
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Dataset Schema Modal (reused for exam) -->
@@ -6745,6 +6765,7 @@ const ExamPortal = (() => {
                 </button>`
             }
             <div id="freeze-status-${qId}" style="display:none"></div>
+            <div id="freeze-output-${qId}" style="display:none;margin-top:8px;max-height:160px;overflow-y:auto;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:8px;font-family:'JetBrains Mono',monospace;font-size:11px;white-space:pre-wrap"></div>
           </div>
         `;
         // Init mini CodeMirror
@@ -6904,6 +6925,7 @@ const ExamPortal = (() => {
         query,
       });
 
+      const out = el(`freeze-output-${qId}`);
       if (res.status === 'ok') {
         q.answerFrozen = true;
         q.expectedQuery = query;
@@ -6911,8 +6933,19 @@ const ExamPortal = (() => {
         await mentor._saveQuestions();
         mentor._renderQList();
         mentor._renderQEditor(qId);
+
+        if (out) {
+          out.style.display = 'block';
+          out.style.borderColor = 'var(--green2)';
+          out.innerHTML = `<span style="color:var(--green2)">// Query executed successfully. Showing sample document preview:</span>\\n${JSON.stringify(res.preview || [], null, 2)}`;
+        }
       } else {
         showMsg(`freeze-status-${qId}`, res.error || '// Error running query', true);
+        if (out) {
+          out.style.display = 'block';
+          out.style.borderColor = 'var(--red)';
+          out.innerHTML = `<span style="color:var(--red)">// Query execution failed:</span>\\n${res.error || 'Unknown query error'}`;
+        }
       }
     },
 
@@ -7544,30 +7577,75 @@ const ExamPortal = (() => {
       const datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
       if (datasetIds.length === 0) return;
 
-      el('exam-schema-content').textContent = 'Loading schema...';
+      el('exam-schema-content').textContent = 'Loading schema details...';
       openModal('exam-schema-modal');
 
-      let combinedHTML = '';
+      const loadedDatasets = [];
       for (const dId of datasetIds) {
         const res = await apiCall(`/api/exam/room/${state.student.roomId}/dataset/${dId}/schema`);
         if (res.status === 'ok') {
-          const schema = res.schema || {};
-          const rows = Object.entries(schema).map(([field, type]) =>
-            `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
-              <span style="color:var(--cyan)">${field}</span>
-              <span style="color:var(--green2)">${type}</span>
-            </div>`
-          ).join('');
-          combinedHTML += `
-            <div style="margin-bottom:16px;border-bottom:1px dashed var(--border);padding-bottom:12px">
-              <div style="margin-bottom:8px;color:var(--text2)">Collection: <span style="color:var(--cyan);font-weight:700">${res.collection}</span> — ${res.docCount} documents</div>
-              <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Field Schema</div>
-              ${rows}
-            </div>
-          `;
+          loadedDatasets.push({
+            id: dId,
+            name: res.collection || dId,
+            collection: res.collection,
+            docCount: res.docCount,
+            schema: res.schema || {},
+            sampleDocs: res.sampleDocs || [],
+          });
         }
       }
-      el('exam-schema-content').innerHTML = combinedHTML || '<span style="color:var(--red)">// Failed to load schemas</span>';
+
+      if (loadedDatasets.length === 0) {
+        el('exam-schema-content').innerHTML = '<span style="color:var(--red)">// Failed to load schemas</span>';
+        return;
+      }
+
+      window._inspectDatasets = loadedDatasets;
+      window._activeInspectTabIdx = 0;
+      studentNS.renderInspectModal();
+    },
+
+    renderInspectModal() {
+      const datasets = window._inspectDatasets || [];
+      const idx = window._activeInspectTabIdx || 0;
+      const ds = datasets[idx];
+      if (!ds) return;
+
+      const tabs = datasets.map((d, i) => `
+        <div class="exam-console-tab ${i === idx ? 'active' : ''}" style="height:28px"
+             onclick="window._activeInspectTabIdx = ${i}; ExamPortal.student.renderInspectModal();">
+          ${d.name}
+        </div>
+      `).join('');
+
+      const rows = Object.entries(ds.schema).map(([field, type]) =>
+        `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+          <span style="color:var(--cyan)">${field}</span>
+          <span style="color:var(--green2)">${type}</span>
+        </div>`
+      ).join('') || '<div style="color:var(--text3);font-size:11px">// No fields inferred</div>';
+
+      const firstDoc = ds.sampleDocs?.[0];
+      const previewHTML = firstDoc 
+        ? `<pre style="font-size:11px;color:var(--text);white-space:pre-wrap;background:var(--bg);padding:8px;border-radius:4px;max-height:220px;overflow-y:auto;text-align:left">${JSON.stringify(firstDoc, null, 2)}</pre>`
+        : '<div style="color:var(--text3);font-size:11px">// No documents in this dataset</div>';
+
+      el('exam-schema-content').innerHTML = `
+        <div class="exam-console-hdr" style="margin-bottom:12px;background:none;border-bottom:1px solid var(--border)">
+          ${tabs}
+        </div>
+        <div style="margin-bottom:12px;color:var(--text2)">Collection name: <span style="color:var(--cyan);font-weight:700">${ds.collection}</span> — ${ds.docCount} documents</div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px;text-align:left">
+            <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Field Schema</div>
+            <div style="max-height:220px;overflow-y:auto;padding-right:6px">${rows}</div>
+          </div>
+          <div style="flex:1.2;min-width:260px;text-align:left">
+            <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">First Document Entry</div>
+            ${previewHTML}
+          </div>
+        </div>
+      `;
     },
 
     async submitAnswer() {
@@ -7668,27 +7746,8 @@ const ExamPortal = (() => {
       if (state.student.examEditor) {
         state.student.examEditor.setOption('readOnly', 'nocursor');
       }
-      // Show ended overlay
-      const overlay = el('student-ended-overlay');
-      if (overlay) {
-        overlay.classList.add('active');
-        overlay.innerHTML = '<div class="exam-ended-msg">// Exam Submitted Successfully — Thank you!</div>';
-      }
-      // Disable submit buttons
-      const submitQ = el('student-submit-query-btn');
-      const submitM = el('student-submit-mcq-btn');
-      if (submitQ) { submitQ.disabled = true; submitQ.style.opacity = '0.4'; }
-      if (submitM) { submitM.disabled = true; submitM.style.opacity = '0.4'; }
-      // Hide submit exam button
-      const submitExamBtn = el('btn-student-submit-exam');
-      if (submitExamBtn) submitExamBtn.style.display = 'none';
-
-      // Update status chip
-      const chip = el('student-exam-status');
-      if (chip) {
-        chip.className = 'exam-status-chip exam-chip-ended';
-        chip.textContent = 'SUBMITTED';
-      }
+      // Redirect to thank you card panel
+      showPanel('exam-thankyou-panel');
     },
   }; // end student namespace
 

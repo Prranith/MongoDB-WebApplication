@@ -141,7 +141,7 @@ def _execute_room_query(room_id: str, dataset_ids, query: str, max_results: int 
             continue
 
         meta = _hgetall(f"room:{room_id}:dataset:{d_id}:meta")
-        collection_name = meta.get("collection", f"exam_{room_id.replace('-', '_').lower()}_{d_id}")
+        collection_name = meta.get("collection", meta.get("name", d_id))
 
         if docs:
             parsed_docs = json_util.loads(_json.dumps(docs))
@@ -363,7 +363,7 @@ def api_exam_upload_dataset(room_id: str):
 
     dataset_id = str(uuid.uuid4())[:8]
     safe_name = "".join(c for c in name.lower() if c.isalnum() or c == "_")
-    collection_name = f"exam_{room_id.replace('-', '_').lower()}_{safe_name}"
+    collection_name = safe_name
 
     pipeline = [
         ["HSET", f"room:{room_id}:dataset:{dataset_id}:meta",

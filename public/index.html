@@ -1070,6 +1070,26 @@ db.collection.find({})</textarea>
       </div>
     </div>
   </div>
+<!-- Student: Thank You Screen -->
+<div class="exam-overlay" id="exam-thankyou-panel">
+  <div class="exam-topbar">
+    <span class="exam-topbar-title">MongoSandbox — Exam Submitted</span>
+  </div>
+  <div class="exam-body">
+    <div class="exam-form-card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;max-width:540px">
+      <div style="width:64px;height:64px;background:rgba(22, 130, 93, 0.1);border:1px solid rgba(22, 130, 93, 0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--green2)">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div class="exam-section-title" style="font-size:20px;margin:0">Thank you for taking the test!</div>
+      <div class="exam-section-sub" style="font-size:13px;line-height:1.6;color:var(--text2)">
+        Your exam has been submitted successfully.<br/>
+        Please contact your mentor for your final scores.
+      </div>
+      <button class="exam-btn exam-btn-secondary" onclick="ExamPortal.exitToHome()" style="margin-top:12px">
+        Return to Home
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Dataset Schema Modal (reused for exam) -->
