@@ -726,40 +726,86 @@ def api_exam_submit_answer(room_id: str):
     now = int(time.time())
 
     if q_type == "mcq":
-        selected_option = body.get("selectedOption", "")
-        correct_option = body.get("correctOption", "")  # sent from client, verified server-side
-        # Fetch correct option from questions stored in Redis (server-side verification)
+        is_multi = False
+        correct_options = []
+        correct_option = ""
+        partial_grading = False
+
         if questions_json:
             try:
                 questions = json.loads(questions_json)
                 for q in questions:
                     if q.get("id") == question_id:
+                        is_multi = q.get("isMultiSelect", False)
+                        correct_options = q.get("correctOptions", [])
                         correct_option = q.get("correctOption", "")
+                        partial_grading = q.get("partialGrading", False)
                         break
             except Exception:
                 pass
-        score = marks if selected_option == correct_option else 0
-        submission = json.dumps({
-            "type": "mcq",
-            "selectedOption": selected_option,
-            "score": score,
-            "submittedAt": now,
-        })
+
+        if is_multi:
+            student_choices = [int(x) for x in body.get("selectedOptions", [])]
+            try:
+                correct_choices = [int(x) for x in correct_options]
+            except Exception:
+                correct_choices = []
+            
+            if not correct_choices and correct_option != "":
+                try:
+                    correct_choices = [int(correct_option)]
+                except Exception:
+                    pass
+
+            if set(student_choices) == set(correct_choices) and correct_choices:
+                score = marks
+            elif partial_grading and correct_choices:
+                incorrect = set(student_choices) - set(correct_choices)
+                if incorrect:
+                    score = 0
+                else:
+                    score = float(marks) * (len(student_choices) / len(correct_choices))
+                    score = round(score, 2)
+            else:
+                score = 0
+
+            submission = json.dumps({
+                "type": "mcq",
+                "selectedOptions": student_choices,
+                "score": score,
+                "submittedAt": now,
+            })
+        else:
+            selected_option = str(body.get("selectedOption", ""))
+            score = marks if selected_option == str(correct_option) else 0
+            submission = json.dumps({
+                "type": "mcq",
+                "selectedOption": selected_option,
+                "score": score,
+                "submittedAt": now,
+            })
 
     elif q_type == "coding":
         code = body.get("code", "")
         language = body.get("language", "python")
 
         test_cases = []
+        template_type = "scratch"
+        driver_code = ""
         if questions_json:
             try:
                 questions = json.loads(questions_json)
                 for q in questions:
                     if q.get("id") == question_id:
                         test_cases = q.get("testCases", [])
+                        template_type = q.get("templateType", "scratch")
+                        driver_code = q.get("templates", {}).get(language, {}).get("driverCode", "")
                         break
             except Exception:
                 pass
+
+        if template_type == "solve_function" and driver_code:
+            code = code + "\n\n" + driver_code
 
         all_passed = True
         for tc in test_cases:
@@ -1312,9 +1358,25 @@ def api_exam_run_code(room_id: str):
     """Run code using Paiza API sandbox for custom student inputs."""
     try:
         body = request.get_json(force=True, silent=True) or {}
+        question_id = body.get("questionId")
         language = body.get("language", "python")
         code = body.get("code", "")
         stdin = body.get("stdin", "")
+
+        if question_id:
+            questions_json = _redis_one(["HGET", f"room:{room_id}", "questions"])
+            if questions_json:
+                try:
+                    questions = json.loads(questions_json)
+                    for q in questions:
+                        if q.get("id") == question_id:
+                            if q.get("templateType") == "solve_function":
+                                driver = q.get("templates", {}).get(language, {}).get("driverCode", "")
+                                if driver:
+                                    code = code + "\n\n" + driver
+                            break
+                except Exception:
+                    pass
 
         res = run_piston_code(language, code, stdin)
         

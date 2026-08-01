@@ -700,6 +700,49 @@ const ExamPortal = (() => {
         }, 50);
 
       } else if (q.type === 'coding') {
+        // Initialize coding features if missing
+        if (!q.allowedLanguages) {
+          q.allowedLanguages = ['python', 'cpp', 'c', 'java'];
+        }
+        if (!q.templateType) {
+          q.templateType = 'scratch';
+        }
+        if (!q.templates) {
+          q.templates = {
+            python: { starterCode: q.starterCode || '', driverCode: '' },
+            cpp: { starterCode: q.starterCode || '', driverCode: '' },
+            c: { starterCode: q.starterCode || '', driverCode: '' },
+            java: { starterCode: q.starterCode || '', driverCode: '' }
+          };
+        }
+
+        const activeLang = state.mentor.activeConfigLang || q.allowedLanguages[0] || 'python';
+        state.mentor.activeConfigLang = activeLang;
+
+        // Render Allowed Languages checkboxes
+        const langCheckboxes = ['python', 'cpp', 'c', 'java'].map(lang => {
+          const isAllowed = q.allowedLanguages.includes(lang);
+          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java' };
+          return `
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer">
+              <input type="checkbox" value="${lang}" ${isAllowed ? 'checked' : ''}
+                onchange="ExamPortal.mentor.toggleAllowedLang('${qId}',this.value)"/>
+              <span>${labels[lang]}</span>
+            </label>
+          `;
+        }).join('');
+
+        // Render template configuration tabs
+        const langTabs = q.allowedLanguages.map(lang => {
+          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java' };
+          return `
+            <div class="exam-tab ${activeLang === lang ? 'active' : ''}" style="height:26px;padding:0 8px;font-size:11px;cursor:pointer"
+                 onclick="state.mentor.activeConfigLang = '${lang}'; ExamPortal.mentor._renderQEditor('${qId}');">
+              ${labels[lang]}
+            </div>
+          `;
+        }).join('');
+
         const testCasesRows = (q.testCases || []).map((tc, idx) => `
           <div class="exam-mcq-option-row" style="gap:10px;margin-bottom:8px;align-items:flex-start" id="tc-row-${qId}-${idx}">
             <div style="flex:1">
@@ -724,31 +767,51 @@ const ExamPortal = (() => {
 
         qeditor.innerHTML = `
           <div class="exam-fieldset">
-            <div class="exam-fieldset-title">Question Text</div>
+            <div class="exam-fieldset-title">Question Text (Markdown allowed)</div>
             <textarea class="exam-textarea" id="qtext-${qId}" oninput="ExamPortal.mentor.updateQField('${qId}','text',this.value)" placeholder="Write the coding question for students...">${q.text}</textarea>
           </div>
-          <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
-            <div class="exam-field" style="flex:1;margin:0">
+          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
+            <div class="exam-field" style="width:100px;margin:0">
               <label class="exam-label">Marks</label>
               <input class="exam-num-input" type="number" min="1" max="100" value="${q.marks}"
                 oninput="ExamPortal.mentor.updateQField('${qId}','marks',parseInt(this.value)||0)"/>
             </div>
             <div class="exam-field" style="flex:1;margin:0">
-              <label class="exam-label">Language</label>
-              <select class="exam-input" onchange="ExamPortal.mentor.updateCodingLanguage('${qId}',this.value)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:4px">
-                <option value="python" ${q.language === 'python' ? 'selected' : ''}>Python 3</option>
-                <option value="cpp" ${q.language === 'cpp' ? 'selected' : ''}>C++ (GCC)</option>
-                <option value="c" ${q.language === 'c' ? 'selected' : ''}>C (GCC)</option>
-                <option value="java" ${q.language === 'java' ? 'selected' : ''}>Java</option>
+              <label class="exam-label">Allowed Languages</label>
+              <div class="mentor-lang-checkboxes" style="background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:6px;min-height:30px">
+                ${langCheckboxes}
+              </div>
+            </div>
+            <div class="exam-field" style="flex:1;margin:0">
+              <label class="exam-label">Workspace Mode</label>
+              <select class="exam-input" onchange="ExamPortal.mentor.updateQField('${qId}','templateType',this.value); ExamPortal.mentor._renderQEditor('${qId}');" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:4px;width:100%">
+                <option value="scratch" ${q.templateType === 'scratch' ? 'selected' : ''}>Write from Scratch</option>
+                <option value="solve_function" ${q.templateType === 'solve_function' ? 'selected' : ''}>Solve Function (with driver code)</option>
               </select>
             </div>
           </div>
+
+          <!-- Configuration Tabs for each language -->
+          <div class="exam-tabbar" style="height:28px;margin-bottom:8px;background:none;border-bottom:1px solid var(--border)">
+            ${langTabs}
+          </div>
+
           <div class="exam-fieldset">
-            <div class="exam-fieldset-title">Starter Template / Starter Code</div>
-            <div class="exam-mini-editor" id="mini-editor-wrap-${qId}">
-              <textarea id="mini-editor-${qId}">${q.starterCode || ''}</textarea>
+            <div class="exam-fieldset-title">Starter Template (${activeLang})</div>
+            <div class="exam-mini-editor" id="starter-wrap-${qId}">
+              <textarea id="mini-editor-starter-${qId}">${q.templates[activeLang]?.starterCode || ''}</textarea>
             </div>
           </div>
+
+          ${q.templateType === 'solve_function' ? `
+          <div class="exam-fieldset">
+            <div class="exam-fieldset-title">Hidden Driver Code (${activeLang})</div>
+            <div class="exam-mini-editor" id="driver-wrap-${qId}">
+              <textarea id="mini-editor-driver-${qId}">${q.templates[activeLang]?.driverCode || ''}</textarea>
+            </div>
+          </div>
+          ` : ''}
+
           <div class="exam-fieldset">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
               <div class="exam-fieldset-title">Test Cases (for grading)</div>
@@ -764,51 +827,74 @@ const ExamPortal = (() => {
           </div>
         `;
 
-        // Init mini CodeMirror for starter code
+        // Init CodeMirror instances
         setTimeout(() => {
-          const ta = el(`mini-editor-${qId}`);
-          if (ta && typeof CodeMirror !== 'undefined') {
-            if (state.mentor.miniEditors[qId]) {
-              try { state.mentor.miniEditors[qId].toTextArea(); } catch(e) {}
-              delete state.mentor.miniEditors[qId];
+          // 1. Starter editor
+          const taStarter = el(`mini-editor-starter-${qId}`);
+          if (taStarter && typeof CodeMirror !== 'undefined') {
+            if (state.mentor.miniEditors[`starter-${qId}`]) {
+              try { state.mentor.miniEditors[`starter-${qId}`].toTextArea(); } catch(e) {}
+              delete state.mentor.miniEditors[`starter-${qId}`];
             }
             let cmMode = 'python';
-            if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
-            if (q.language === 'java') cmMode = 'text/x-java';
+            if (activeLang === 'cpp' || activeLang === 'c') cmMode = 'text/x-c++src';
+            if (activeLang === 'java') cmMode = 'text/x-java';
 
-            const cm = CodeMirror.fromTextArea(ta, {
+            const cmS = CodeMirror.fromTextArea(taStarter, {
               mode: cmMode,
               theme: 'default',
               lineNumbers: true,
               matchBrackets: true,
               autoCloseBrackets: true,
-              readOnly: false,
             });
-            cm.setSize('100%', '130px');
-            cm.on('change', () => {
-              q.starterCode = cm.getValue();
-              mentor.updateQField(qId, 'starterCode', cm.getValue());
+            cmS.setSize('100%', '130px');
+            cmS.on('change', () => {
+              q.templates[activeLang].starterCode = cmS.getValue();
+              // Backwards compatibility sync
+              q.starterCode = cmS.getValue();
+              q.language = activeLang;
+              mentor._saveQDebounced();
             });
-            state.mentor.miniEditors[qId] = cm;
+            state.mentor.miniEditors[`starter-${qId}`] = cmS;
           }
-        }, 50);
 
-      } else {
+          // 2. Driver editor
+          const taDriver = el(`mini-editor-driver-${qId}`);
+          if (taDriver && typeof CodeMirror !== 'undefined') {
+            if (state.mentor.miniEditors[`driver-${qId}`]) {
+              try { state.mentor.miniEditors[`driver-${qId}`].toTextArea(); } catch(e) {}
+              delete state.mentor.miniEditors[`driver-${qId}`];
+            }
+              } else {
         // MCQ editor
         const opts = q.options || ['', '', '', ''];
         qeditor.innerHTML = `
           <div class="exam-fieldset">
-            <div class="exam-fieldset-title">Question Text</div>
+            <div class="exam-fieldset-title">Question Text (Markdown allowed)</div>
             <textarea class="exam-textarea" id="qtext-${qId}" oninput="ExamPortal.mentor.updateQField('${qId}','text',this.value)" placeholder="Write the multiple-choice question...">${q.text}</textarea>
           </div>
-          <div class="exam-field" style="margin:0">
-            <label class="exam-label">Marks</label>
-            <input class="exam-num-input" type="number" min="1" max="100" value="${q.marks}"
-              oninput="ExamPortal.mentor.updateQField('${qId}','marks',parseInt(this.value)||0)"/>
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+            <div class="exam-field" style="width:100px;margin:0">
+              <label class="exam-label">Marks</label>
+              <input class="exam-num-input" type="number" min="1" max="100" value="${q.marks}"
+                oninput="ExamPortal.mentor.updateQField('${qId}','marks',parseInt(this.value)||0)"/>
+            </div>
+            <div class="exam-field" style="flex:1;margin:0;display:flex;align-items:center;gap:16px;height:35px;margin-top:15px">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
+                <input type="checkbox" ${q.isMultiSelect ? 'checked' : ''}
+                  onchange="ExamPortal.mentor.updateQField('${qId}','isMultiSelect',this.checked); ExamPortal.mentor._renderQEditor('${qId}');"/>
+                <span>Multiple Answers (Checkboxes)</span>
+              </label>
+              <label id="mcq-partial-wrap-${qId}" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;${q.isMultiSelect ? '' : 'display:none'}">
+                <input type="checkbox" ${q.partialGrading ? 'checked' : ''}
+                  onchange="ExamPortal.mentor.updateQField('${qId}','partialGrading',this.checked)"/>
+                <span>Partial Grading</span>
+              </label>
+            </div>
           </div>
           <div class="exam-fieldset">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <div class="exam-fieldset-title">Options</div>
+              <div class="exam-fieldset-title">Options (Markdown allowed)</div>
               <button class="exam-btn exam-btn-secondary" style="font-size:11px;padding:4px 10px"
                 onclick="ExamPortal.mentor.addMCQOption('${qId}')">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
@@ -824,12 +910,21 @@ const ExamPortal = (() => {
     },
 
     _renderMCQOptionRow(qId, idx, value, isCorrect) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      const isMulti = q ? q.isMultiSelect : false;
       const label = String.fromCharCode(65 + idx); // A, B, C...
+
+      const checkInput = isMulti
+        ? `<input type="checkbox" class="exam-mcq-correct-checkbox" style="margin-right:8px"
+             ${(q.correctOptions || []).includes(idx) ? 'checked' : ''}
+             onchange="ExamPortal.mentor.toggleCorrectOption('${qId}',${idx},this.checked)"/>`
+        : `<input type="radio" class="exam-mcq-correct-radio" name="correct-${qId}" value="${idx}"
+             ${isCorrect ? 'checked' : ''}
+             onchange="ExamPortal.mentor.updateQField('${qId}','correctOption',${idx})"/>`;
+
       return `
         <div class="exam-mcq-option-row" id="mcq-opt-row-${qId}-${idx}">
-          <input type="radio" class="exam-mcq-correct-radio" name="correct-${qId}" value="${idx}"
-            ${isCorrect ? 'checked' : ''}
-            onchange="ExamPortal.mentor.updateQField('${qId}','correctOption',${idx})"/>
+          ${checkInput}
           <span class="exam-mcq-label">${label}</span>
           <input class="exam-input" style="flex:1" value="${value}"
             placeholder="Option ${label}..."
@@ -927,6 +1022,50 @@ const ExamPortal = (() => {
         }
         mentor._saveQDebounced();
       }
+    },
+
+    toggleAllowedLang(qId, lang) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+      if (!q.allowedLanguages) q.allowedLanguages = ['python', 'cpp', 'c', 'java'];
+      if (!q.templates) {
+        q.templates = {
+          python: { starterCode: q.starterCode || '', driverCode: '' },
+          cpp: { starterCode: q.starterCode || '', driverCode: '' },
+          c: { starterCode: q.starterCode || '', driverCode: '' },
+          java: { starterCode: q.starterCode || '', driverCode: '' }
+        };
+      }
+      const idx = q.allowedLanguages.indexOf(lang);
+      if (idx > -1) {
+        if (q.allowedLanguages.length > 1) {
+          q.allowedLanguages.splice(idx, 1);
+        } else {
+          alert("At least one language must be allowed.");
+          return;
+        }
+      } else {
+        q.allowedLanguages.push(lang);
+      }
+      // Set active Config Lang to one of the allowed languages if current active is removed
+      if (!q.allowedLanguages.includes(state.mentor.activeConfigLang)) {
+        state.mentor.activeConfigLang = q.allowedLanguages[0];
+      }
+      mentor._renderQEditor(qId);
+      mentor._saveQuestions();
+    },
+
+    toggleCorrectOption(qId, idx, checked) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+      if (!q.correctOptions) q.correctOptions = [];
+      const idxPos = q.correctOptions.indexOf(idx);
+      if (checked) {
+        if (idxPos === -1) q.correctOptions.push(idx);
+      } else {
+        if (idxPos > -1) q.correctOptions.splice(idxPos, 1);
+      }
+      mentor._saveQuestions();
     },
 
     _saveQDebounced: (() => {
@@ -1888,7 +2027,14 @@ const ExamPortal = (() => {
               if (q.type === 'query') {
                 q._studentDraft = sub.query || `// Question\ndb.`;
               } else if (q.type === 'mcq') {
-                q._studentSelectedOption = sub.selectedOption !== undefined && sub.selectedOption !== null ? parseInt(sub.selectedOption) : null;
+                if (q.isMultiSelect) {
+                  q._studentSelectedOptions = (sub.selectedOptions || []).map(x => parseInt(x));
+                } else {
+                  q._studentSelectedOption = sub.selectedOption !== undefined && sub.selectedOption !== null ? parseInt(sub.selectedOption) : null;
+                }
+              } else if (q.type === 'coding') {
+                q._studentDraft = sub.code || '';
+                if (sub.language) q.language = sub.language;
               }
             }
           });
@@ -2029,8 +2175,15 @@ const ExamPortal = (() => {
       if (!qs || !qs[idx]) return;
 
       // Preserve current draft before switching
-      if (state.student.currentQIdx !== null && state.student.examEditor && state.student.questions[state.student.currentQIdx]) {
-        state.student.questions[state.student.currentQIdx]._studentDraft = state.student.examEditor.getValue();
+      const currentQ = state.student.currentQIdx !== null ? state.student.questions[state.student.currentQIdx] : null;
+      if (currentQ && state.student.examEditor) {
+        if (currentQ.type === 'coding') {
+          currentQ._studentDrafts = currentQ._studentDrafts || {};
+          currentQ._studentDrafts[currentQ.language || 'python'] = state.student.examEditor.getValue();
+          currentQ._studentDraft = state.student.examEditor.getValue();
+        } else {
+          currentQ._studentDraft = state.student.examEditor.getValue();
+        }
       }
 
       state.student.currentQIdx = idx;
@@ -2051,19 +2204,24 @@ const ExamPortal = (() => {
       el('student-q-type-chip').textContent = typeLabel;
       el('student-q-type-chip').className = `exam-q-type-chip ${typeClass}`;
       el('student-q-marks').textContent = `${q.marks} marks`;
-      el('student-q-text').textContent = q.text;
-      el('student-question-display').style.display = 'block';
+
+      // Render Markdown question description
+      const descHtml = typeof marked !== 'undefined' ? marked.parse(q.text || '') : (q.text || '');
+      el('student-q-text').innerHTML = descHtml;
       el('student-no-q-selected').style.display = 'none';
 
       el('student-q-progress').textContent = `Q ${idx + 1}/${qs.length}`;
 
+      // Reset default student activeTab to README for query/coding
+      state.student.activeTab = 'readme';
+
       // Show/hide areas
       if (q.type === 'query' || q.type === 'coding') {
-        el('student-query-area').style.display = 'flex';
         el('student-mcq-area').style.display = 'none';
-        
+
         const isQuery = q.type === 'query';
         el('btn-inspect-dataset').style.display = isQuery ? 'flex' : 'none';
+        el('student-lang-selector-wrap').style.display = isQuery ? 'none' : 'flex';
 
         if (isQuery) {
           el('student-pane-left-title').textContent = 'Your Output';
@@ -2076,7 +2234,6 @@ const ExamPortal = (() => {
           if (cm) {
             cm.setOption('mode', 'javascript');
             cm.setValue(q._studentDraft !== undefined ? q._studentDraft : `// Question ${idx + 1}\ndb.`);
-            cm.focus();
           }
 
           // Reset console
@@ -2102,15 +2259,34 @@ const ExamPortal = (() => {
           el('student-pane-expected').style.display = 'none';
           el('student-stdin-input').style.display = 'block';
 
-          // Set editor content
+          // Populate allowed languages select dropdown
+          const langSelect = el('student-lang-select');
+          const allowed = q.allowedLanguages || ['python', 'cpp', 'c', 'java'];
+          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java' };
+          langSelect.innerHTML = allowed.map(lang => `
+            <option value="${lang}">${labels[lang]}</option>
+          `).join('');
+
+          // Select first allowed language or keep active if allowed
+          if (!q.language || !allowed.includes(q.language)) {
+            q.language = allowed[0] || 'python';
+          }
+          langSelect.value = q.language;
+
+          // Set editor content based on active language draft or template
+          q._studentDrafts = q._studentDrafts || {};
+          let currentCode = q._studentDrafts[q.language];
+          if (currentCode === undefined) {
+            currentCode = q.templates?.[q.language]?.starterCode || q.starterCode || '';
+          }
+
           const cm = state.student.examEditor;
           if (cm) {
             let cmMode = 'python';
             if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
             if (q.language === 'java') cmMode = 'text/x-java';
             cm.setOption('mode', cmMode);
-            cm.setValue(q._studentDraft !== undefined ? q._studentDraft : (q.starterCode || ''));
-            cm.focus();
+            cm.setValue(currentCode);
           }
 
           // Reset console
@@ -2124,11 +2300,23 @@ const ExamPortal = (() => {
           el('student-submit-query-btn').style.opacity = '1';
         }
 
+        // Show tabs & select README by default
+        studentNS.selectWorkspaceTab('readme');
+
       } else {
+        // MCQ type
+        el('student-workspace-tabs').style.display = 'none';
+        el('student-question-display').style.display = 'block';
         el('student-query-area').style.display = 'none';
         el('student-mcq-area').style.display = 'flex';
         el('btn-inspect-dataset').style.display = 'none';
-        state.student.selectedOption = q._studentSelectedOption !== undefined && q._studentSelectedOption !== null ? q._studentSelectedOption : null;
+        
+        if (q.isMultiSelect) {
+          state.student.selectedOptions = q._studentSelectedOptions !== undefined && q._studentSelectedOptions !== null ? [...q._studentSelectedOptions] : [];
+        } else {
+          state.student.selectedOption = q._studentSelectedOption !== undefined && q._studentSelectedOption !== null ? q._studentSelectedOption : null;
+        }
+
         if (state.student.status[q.id] === 'submitted') {
           el('student-mcq-status').textContent = '// Answer submitted.';
           el('student-mcq-status').style.color = 'var(--green3)';
@@ -2144,16 +2332,30 @@ const ExamPortal = (() => {
     _renderMCQOptions(q) {
       const container = el('student-mcq-options');
       const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
-      container.innerHTML = (q.options || []).map((opt, i) => `
-        <div class="exam-mcq-option-item ${state.student.selectedOption === i ? 'selected' : ''}"
-             data-idx="${i}"
-             tabindex="0"
-             onclick="ExamPortal.student.selectMCQOption(${i})"
-             onkeydown="ExamPortal.student.mcqKeyNav(event,${i},${(q.options || []).length})">
-          <span class="exam-mcq-option-indicator">${state.student.selectedOption === i ? '[x]' : `[${labels[i] || i}]`}</span>
-          <span class="exam-mcq-option-text">${opt}</span>
-        </div>
-      `).join('');
+      const isMulti = q.isMultiSelect;
+
+      container.innerHTML = (q.options || []).map((opt, i) => {
+        const isSelected = isMulti
+          ? (state.student.selectedOptions || []).includes(i)
+          : state.student.selectedOption === i;
+
+        const optTextHtml = typeof marked !== 'undefined' ? marked.parse(opt) : opt;
+
+        const checkMark = isMulti
+          ? (isSelected ? '[x]' : '[ ]')
+          : (isSelected ? '[x]' : `[${labels[i] || i}]`);
+
+        return `
+          <div class="exam-mcq-option-item ${isSelected ? 'selected' : ''}"
+               data-idx="${i}"
+               tabindex="0"
+               onclick="ExamPortal.student.selectMCQOption(${i})"
+               onkeydown="ExamPortal.student.mcqKeyNav(event,${i},${(q.options || []).length})">
+            <span class="exam-mcq-option-indicator">${checkMark}</span>
+            <span class="exam-mcq-option-text">${optTextHtml}</span>
+          </div>
+        `;
+      }).join('');
     },
 
     mcqKeyNav(event, currentIdx, total) {
@@ -2176,14 +2378,27 @@ const ExamPortal = (() => {
     },
 
     selectMCQOption(idx) {
-      state.student.selectedOption = idx;
       const q = state.student.questions[state.student.currentQIdx];
-      if (q) {
-        state.student.status[q.id] = 'draft';
+      if (!q) return;
+
+      state.student.status[q.id] = 'draft';
+
+      if (q.isMultiSelect) {
+        state.student.selectedOptions = state.student.selectedOptions || [];
+        const pos = state.student.selectedOptions.indexOf(idx);
+        if (pos > -1) {
+          state.student.selectedOptions.splice(pos, 1);
+        } else {
+          state.student.selectedOptions.push(idx);
+        }
+        q._studentSelectedOptions = [...state.student.selectedOptions];
+      } else {
+        state.student.selectedOption = idx;
         q._studentSelectedOption = idx;
-        studentNS._renderMCQOptions(q);
-        studentNS._renderQNav();
       }
+
+      studentNS._renderMCQOptions(q);
+      studentNS._renderQNav();
     },
 
     setConsoleTab(tab) {
@@ -2375,16 +2590,29 @@ const ExamPortal = (() => {
       }
 
       if (isMCQ) {
-        if (state.student.selectedOption === null) {
-          el('student-mcq-status').textContent = '// Select an option first';
-          el('student-mcq-status').style.color = 'var(--red)';
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Answer';
+        if (q.isMultiSelect) {
+          if (!state.student.selectedOptions || state.student.selectedOptions.length === 0) {
+            el('student-mcq-status').textContent = '// Select at least one option first';
+            el('student-mcq-status').style.color = 'var(--red)';
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Answer';
+            }
+            return;
           }
-          return;
+          body.selectedOptions = state.student.selectedOptions;
+        } else {
+          if (state.student.selectedOption === null) {
+            el('student-mcq-status').textContent = '// Select an option first';
+            el('student-mcq-status').style.color = 'var(--red)';
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Answer';
+            }
+            return;
+          }
+          body.selectedOption = state.student.selectedOption;
         }
-        body.selectedOption = state.student.selectedOption;
       } else if (q.type === 'coding') {
         const cm = state.student.examEditor;
         body.code = cm ? cm.getValue() : '';
@@ -2416,7 +2644,11 @@ const ExamPortal = (() => {
         if (isMCQ) {
           el('student-mcq-status').textContent = '// Answer submitted.';
           el('student-mcq-status').style.color = 'var(--green3)';
-          q._studentSelectedOption = state.student.selectedOption;
+          if (q.isMultiSelect) {
+            q._studentSelectedOptions = [...state.student.selectedOptions];
+          } else {
+            q._studentSelectedOption = state.student.selectedOption;
+          }
         } else if (q.type === 'coding') {
           el('student-console-status').textContent = isCorrect ? '— Accepted' : '— Wrong Answer';
           el('student-console-status').style.color = isCorrect ? 'var(--green3)' : 'var(--red)';
@@ -2490,6 +2722,82 @@ const ExamPortal = (() => {
           btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:3px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Exam';
         }
       }
+    },
+
+    renderWorkspaceTabs(q) {
+      const tabsBar = el('student-workspace-tabs');
+      if (!tabsBar) return;
+      tabsBar.style.display = 'flex';
+
+      const activeTab = state.student.activeTab || 'readme';
+
+      // Find code file extension name
+      let codeFilename = 'query.mongo';
+      if (q.type === 'coding') {
+        const ext = { python: 'py', cpp: 'cpp', c: 'c', java: 'java' }[q.language || 'python'] || 'py';
+        const name = q.language === 'java' ? 'Solution' : 'solution';
+        codeFilename = `${name}.${ext}`;
+      }
+
+      tabsBar.innerHTML = `
+        <div class="workspace-tab ${activeTab === 'readme' ? 'active' : ''}" onclick="ExamPortal.student.selectWorkspaceTab('readme')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:2px"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          README.md
+        </div>
+        <div class="workspace-tab ${activeTab === 'code' ? 'active' : ''}" onclick="ExamPortal.student.selectWorkspaceTab('code')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:2px"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+          ${codeFilename}
+        </div>
+      `;
+    },
+
+    selectWorkspaceTab(tabId) {
+      state.student.activeTab = tabId;
+      const q = state.student.questions[state.student.currentQIdx];
+      if (!q) return;
+
+      studentNS.renderWorkspaceTabs(q);
+
+      if (tabId === 'readme') {
+        el('student-question-display').style.display = 'block';
+        el('student-query-area').style.display = 'none';
+      } else {
+        el('student-question-display').style.display = 'none';
+        el('student-query-area').style.display = 'flex';
+        setTimeout(() => {
+          state.student.examEditor?.refresh();
+          state.student.examEditor?.focus();
+        }, 50);
+      }
+    },
+
+    changeLanguage(newLang) {
+      const q = state.student.questions[state.student.currentQIdx];
+      if (!q || q.type !== 'coding') return;
+
+      q._studentDrafts = q._studentDrafts || {};
+      const currentCode = state.student.examEditor ? state.student.examEditor.getValue() : '';
+      q._studentDrafts[q.language || 'python'] = currentCode;
+
+      q.language = newLang;
+
+      let newCode = q._studentDrafts[newLang];
+      if (newCode === undefined) {
+        newCode = q.templates?.[newLang]?.starterCode || q.starterCode || '';
+      }
+
+      let cmMode = 'python';
+      if (newLang === 'cpp' || newLang === 'c') cmMode = 'text/x-c++src';
+      if (newLang === 'java') cmMode = 'text/x-java';
+
+      const cm = state.student.examEditor;
+      if (cm) {
+        cm.setOption('mode', cmMode);
+        cm.setValue(newCode);
+        setTimeout(() => cm.refresh(), 50);
+      }
+
+      studentNS.renderWorkspaceTabs(q);
     },
 
     _lockExam() {

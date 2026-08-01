@@ -61,12 +61,15 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <!-- Style Sheet -->
 <link rel="stylesheet" href="style.css"/>
@@ -1050,23 +1053,36 @@
 
     <!-- Main exam area -->
     <div class="exam-student-main">
-      <!-- Question display -->
+      <!-- VS Code Style Tab Bar (For Query/Coding Questions) -->
+      <div class="workspace-tabs-bar" id="student-workspace-tabs" style="display:none;background:var(--bg3);border-bottom:1px solid var(--border);height:35px;align-items:center;padding:0 8px;gap:4px;flex-shrink:0">
+        <!-- Renders dynamically: e.g. README.md, query.mongo, solution.py -->
+      </div>
+
+      <!-- Question display / README Pane -->
       <div class="exam-question-display" id="student-question-display" style="display:none">
         <div class="exam-question-header">
           <span class="exam-question-number" id="student-q-number">Q1</span>
           <span class="exam-q-type-chip exam-q-type-query" id="student-q-type-chip">QUERY</span>
-          <button class="exam-btn exam-btn-secondary" style="font-size:11px;padding:3px 8px" id="btn-inspect-dataset" onclick="ExamPortal.student.inspectDataset()" style="display:none">
+          <button class="exam-btn exam-btn-secondary" style="font-size:11px;padding:3px 8px;margin-left:8px;display:none" id="btn-inspect-dataset" onclick="ExamPortal.student.inspectDataset()">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 4.02 2 6.5v11c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2zm0 3c4.14 0 7.5 1.12 7.5 2.5S16.14 10 12 10 4.5 8.88 4.5 7.5 7.86 5 12 5z"/></svg>
             Inspect Dataset
           </button>
-          <span class="exam-question-marks" id="student-q-marks">10 marks</span>
+          <span class="exam-question-marks" id="student-q-marks" style="margin-left:auto">10 marks</span>
         </div>
-        <div class="exam-question-text" id="student-q-text"></div>
+        <div class="exam-question-text markdown-body" id="student-q-text"></div>
       </div>
 
-      <!-- Query question: Editor + Console -->
-      <div id="student-query-area" style="display:none;flex:1;display:none;flex-direction:column;overflow:hidden;position:relative">
+      <!-- Query / Coding question: Editor + Console -->
+      <div id="student-query-area" style="display:none;flex:1;flex-direction:column;overflow:hidden;position:relative">
         <div class="exam-toolbar">
+          <!-- Allowed languages selector for coding questions -->
+          <div id="student-lang-selector-wrap" style="display:none;align-items:center;gap:6px;margin-right:12px">
+            <span style="font-size:11px;color:var(--text3)">Language:</span>
+            <select class="exam-input" id="student-lang-select" onchange="ExamPortal.student.changeLanguage(this.value)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:3px 8px;font-size:11px">
+              <!-- Populated dynamically based on allowedLanguages -->
+            </select>
+          </div>
+
           <button class="tbtn tbtn-run" id="student-run-btn" onclick="ExamPortal.student.runQuery()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
             Run
