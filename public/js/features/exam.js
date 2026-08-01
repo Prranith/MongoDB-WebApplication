@@ -865,7 +865,27 @@ const ExamPortal = (() => {
               try { state.mentor.miniEditors[`driver-${qId}`].toTextArea(); } catch(e) {}
               delete state.mentor.miniEditors[`driver-${qId}`];
             }
-              } else {
+            let cmMode = 'python';
+            if (activeLang === 'cpp' || activeLang === 'c') cmMode = 'text/x-c++src';
+            if (activeLang === 'java') cmMode = 'text/x-java';
+
+            const cmD = CodeMirror.fromTextArea(taDriver, {
+              mode: cmMode,
+              theme: 'default',
+              lineNumbers: true,
+              matchBrackets: true,
+              autoCloseBrackets: true,
+            });
+            cmD.setSize('100%', '130px');
+            cmD.on('change', () => {
+              q.templates[activeLang].driverCode = cmD.getValue();
+              mentor._saveQDebounced();
+            });
+            state.mentor.miniEditors[`driver-${qId}`] = cmD;
+          }
+        }, 50);
+
+      } else {
         // MCQ editor
         const opts = q.options || ['', '', '', ''];
         qeditor.innerHTML = `
