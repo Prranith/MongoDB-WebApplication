@@ -506,7 +506,7 @@ def api_exam_save_questions(room_id: str):
         if q_type == "query" and q_id:
             exists = _redis_one(["HEXISTS", f"room:{room_id}", f"q_answer:{q_id}"])
             if not exists or str(exists) in ("0", "None"):
-                query = q.get("query", "").strip()
+                query = q.get("expectedQuery", "").strip()
                 dataset_ids = q.get("datasetIds", [])
                 if not dataset_ids and q.get("datasetId"):
                     dataset_ids = [q.get("datasetId")]

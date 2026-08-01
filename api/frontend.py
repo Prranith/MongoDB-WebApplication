@@ -6843,7 +6843,7 @@ const ExamPortal = (() => {
 
         // If a pre-loaded paper exists, import its questions & datasets now
         if (state.mentor.pendingPaper) {
-          el('btn-create-room').textContent = 'Loading Quiz Paper...';
+          el('btn-create-room').textContent = 'Running & freezing template queries...';
           await mentor.loadPaperData(state.mentor.roomId, state.mentor.mentorId, state.mentor.pendingPaper);
           state.mentor.pendingPaper = null; // Clear it
         }
