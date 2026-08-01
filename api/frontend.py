@@ -3242,6 +3242,7 @@ li.CodeMirror-hint-active {
   gap: 8px;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
 }
 .exam-notice-close {
   background: transparent;
@@ -3250,7 +3251,8 @@ li.CodeMirror-hint-active {
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
-  margin-left: auto;
+  position: absolute;
+  right: 12px;
   padding: 0 6px;
   line-height: 1;
   opacity: 0.8;
