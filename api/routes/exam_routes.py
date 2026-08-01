@@ -728,6 +728,48 @@ def api_exam_submit_answer(room_id: str):
             "submittedAt": now,
         })
 
+    elif q_type == "coding":
+        code = body.get("code", "")
+        language = body.get("language", "python")
+
+        test_cases = []
+        if questions_json:
+            try:
+                questions = json.loads(questions_json)
+                for q in questions:
+                    if q.get("id") == question_id:
+                        test_cases = q.get("testCases", [])
+                        break
+            except Exception:
+                pass
+
+        all_passed = True
+        for tc in test_cases:
+            tc_input = tc.get("input", "")
+            tc_expected = tc.get("expectedOutput", "")
+
+            run_res = run_piston_code(language, code, tc_input)
+            actual_out = run_res.get("stdout", "")
+            if run_res.get("stderr"):
+                actual_out += "\n" + run_res.get("stderr")
+
+            actual_lines = [line.strip() for line in actual_out.strip().splitlines() if line.strip()]
+            expected_lines = [line.strip() for line in tc_expected.strip().splitlines() if line.strip()]
+
+            matched = (actual_lines == expected_lines) and (run_res.get("code") == 0)
+            if not matched:
+                all_passed = False
+
+        score = marks if all_passed else 0
+        submission = json.dumps({
+            "type": "coding",
+            "code": code,
+            "language": language,
+            "score": score,
+            "allPassed": all_passed,
+            "submittedAt": now,
+        })
+
     else:  # query question
         query = body.get("query", "").strip()
         dataset_ids = body.get("datasetIds", [])
@@ -1181,4 +1223,62 @@ def api_exam_get_paper(room_id: str):
         "duration": meta.get("duration", "60"),
         "questions": questions,
         "datasets": datasets_list
+    })
+
+
+def run_piston_code(language: str, code: str, stdin: str = ""):
+    import requests
+    lang_map = {
+        "python": {"lang": "python", "version": "3.10.0"},
+        "cpp": {"lang": "c++", "version": "10.2.0"},
+        "c": {"lang": "c", "version": "10.2.0"},
+        "java": {"lang": "java", "version": "15.0.2"}
+    }
+    config = lang_map.get(language, {"lang": "python", "version": "3.10.0"})
+
+    payload = {
+        "language": config["lang"],
+        "version": config["version"],
+        "files": [
+            {
+                "content": code
+            }
+        ],
+        "stdin": stdin,
+        "compile_timeout": 10000,
+        "run_timeout": 10000
+    }
+
+    try:
+        r = requests.post("https://emkc.org/api/v2/piston/execute", json=payload, timeout=12)
+        if r.status_code == 200:
+            res = r.json()
+            run_info = res.get("run", {})
+            return {
+                "stdout": run_info.get("stdout", ""),
+                "stderr": run_info.get("stderr", ""),
+                "code": run_info.get("code", 0),
+                "output": run_info.get("output", "")
+            }
+    except Exception as e:
+        return {"error": str(e), "stdout": "", "stderr": f"Execution request failed: {e}", "output": ""}
+
+    return {"error": "Failed to run code", "stdout": "", "stderr": "Execution endpoint error", "output": ""}
+
+
+@exam_bp.route("/api/exam/room/<room_id>/run", methods=["POST"])
+def api_exam_run_code(room_id: str):
+    """Run code using Piston API sandbox for custom student inputs."""
+    body = request.get_json(force=True, silent=True) or {}
+    language = body.get("language", "python")
+    code = body.get("code", "")
+    stdin = body.get("stdin", "")
+
+    res = run_piston_code(language, code, stdin)
+    return jsonify({
+        "status": "ok",
+        "stdout": res.get("stdout", ""),
+        "stderr": res.get("stderr", ""),
+        "code": res.get("code", 0),
+        "output": res.get("output", "")
     })

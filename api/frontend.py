@@ -2518,6 +2518,11 @@ li.CodeMirror-hint-active {
   color: var(--blue2);
   border: 1px solid rgba(0, 122, 204, 0.3);
 }
+.exam-q-type-coding {
+  background: rgba(230, 126, 34, 0.2);
+  color: #e67e22;
+  border: 1px solid rgba(230, 126, 34, 0.4);
+}
 .exam-q-marks-badge {
   margin-left: auto;
   font-size: 10px;
@@ -6073,13 +6078,17 @@ function applyEditorTheme() {
               </div>
             </div>
             <div style="padding:8px;border-top:1px solid var(--border);display:flex;gap:6px">
-              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px" onclick="ExamPortal.mentor.addQuestion('query')">
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('query')">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 Query
               </button>
-              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px" onclick="ExamPortal.mentor.addQuestion('mcq')">
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('mcq')">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 MCQ
+              </button>
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('coding')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Coding
               </button>
             </div>
           </div>
@@ -6376,7 +6385,7 @@ db.collection.find({})</textarea>
           <div style="display:flex;flex:1;background:var(--border);overflow:hidden" id="student-console-panes-box">
             <!-- Left Side: Your Output -->
             <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;min-width:100px" id="box-pane-yours">
-              <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--cyan)">
+              <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--cyan)" id="student-pane-left-title">
                 Your Output
               </div>
               <div class="exam-console-pane active" id="student-pane-yours" style="flex:1;overflow-y:auto;padding:8px">
@@ -6387,12 +6396,13 @@ db.collection.find({})</textarea>
             <div class="exam-resizer-v-sub" id="resizer-student-panes" title="Drag to adjust comparison width"></div>
             <!-- Right Side: Expected Output Preview -->
             <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;min-width:100px" id="box-pane-expected">
-              <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--green2)">
+              <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--green2)" id="student-pane-right-title">
                 Expected Output (Preview)
               </div>
               <div class="exam-console-pane active" id="student-pane-expected" style="flex:1;overflow-y:auto;padding:8px">
                 <span style="color:var(--text3)">// Select or run a query to load expected preview</span>
               </div>
+              <textarea id="student-stdin-input" style="display:none;width:100%;height:100%;background:transparent;border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px;resize:none;outline:none" placeholder="// Type standard input (stdin) here..."></textarea>
             </div>
           </div>
         </div>
@@ -7105,6 +7115,10 @@ const ExamPortal = (() => {
         // MCQ specific
         options: type === 'mcq' ? ['', '', '', ''] : [],
         correctOption: type === 'mcq' ? 0 : null,
+        // Coding specific
+        language: type === 'coding' ? 'python' : '',
+        starterCode: type === 'coding' ? '# write your code here\\n' : '',
+        testCases: type === 'coding' ? [{input: '', expectedOutput: ''}] : [],
       };
       state.mentor.questions.push(q);
       state.mentor.currentQId = id;
@@ -7128,15 +7142,25 @@ const ExamPortal = (() => {
       const body = el('mentor-qlist-body');
       const qs = state.mentor.questions;
       if (qs.length === 0) {
-        body.innerHTML = '<div class="exam-qlist-empty">// No questions yet<br/>Click + to add Query or MCQ questions</div>';
+        body.innerHTML = '<div class="exam-qlist-empty">// No questions yet<br/>Click button below to add questions</div>';
         return;
       }
-      body.innerHTML = qs.map((q, i) => `
+      body.innerHTML = qs.map((q, i) => {
+        let typeLabel = 'QUERY';
+        let typeClass = 'exam-q-type-query';
+        if (q.type === 'mcq') {
+          typeLabel = 'MCQ';
+          typeClass = 'exam-q-type-mcq';
+        } else if (q.type === 'coding') {
+          typeLabel = 'CODING';
+          typeClass = 'exam-q-type-coding';
+        }
+        return `
         <div class="exam-q-card ${state.mentor.currentQId === q.id ? 'active' : ''}"
              id="qcard-${q.id}" onclick="ExamPortal.mentor.selectQuestion('${q.id}')">
           <div class="exam-q-card-top">
             <span class="exam-q-num">Q${i + 1}</span>
-            <span class="exam-q-type-chip ${q.type === 'query' ? 'exam-q-type-query' : 'exam-q-type-mcq'}">${q.type === 'query' ? 'QUERY' : 'MCQ'}</span>
+            <span class="exam-q-type-chip ${typeClass}">${typeLabel}</span>
             <span class="exam-q-marks-badge">${q.marks}pts</span>
             <button class="phbtn" style="margin-left:auto;color:var(--red)" title="Delete"
               onclick="event.stopPropagation();ExamPortal.mentor.deleteQuestion('${q.id}')">
@@ -7146,7 +7170,8 @@ const ExamPortal = (() => {
           <div class="exam-q-preview">${q.text ? q.text.substring(0, 60) + (q.text.length > 60 ? '...' : '') : '// No text yet'}</div>
           ${q.type === 'query' && q.answerFrozen ? `<span class="exam-frozen-chip" style="font-size:10px;padding:2px 8px;margin-top:4px">Answer frozen — ${q.answerDocCount} docs</span>` : ''}
         </div>
-      `).join('');
+      `;
+      }).join('');
     },
 
     selectQuestion(qId) {
@@ -7256,6 +7281,100 @@ const ExamPortal = (() => {
           }
         }, 50);
 
+      } else if (q.type === 'coding') {
+        const testCasesRows = (q.testCases || []).map((tc, idx) => `
+          <div class="exam-mcq-option-row" style="gap:10px;margin-bottom:8px;align-items:flex-start" id="tc-row-${qId}-${idx}">
+            <div style="flex:1">
+              <label class="exam-label" style="font-size:10px;color:var(--text3);margin-bottom:2px">Input (stdin)</label>
+              <textarea class="exam-textarea" style="height:45px;font-family:monospace;font-size:11px;padding:4px"
+                placeholder="Test Case Stdin..."
+                oninput="ExamPortal.mentor.updateTestCase('${qId}',${idx},'input',this.value)">${tc.input}</textarea>
+            </div>
+            <div style="flex:1">
+              <label class="exam-label" style="font-size:10px;color:var(--text3);margin-bottom:2px">Expected Output</label>
+              <textarea class="exam-textarea" style="height:45px;font-family:monospace;font-size:11px;padding:4px"
+                placeholder="Expected Stdout..."
+                oninput="ExamPortal.mentor.updateTestCase('${qId}',${idx},'expectedOutput',this.value)">${tc.expectedOutput}</textarea>
+            </div>
+            <button class="phbtn" style="color:var(--red);align-self:flex-end;margin-bottom:6px"
+              onclick="ExamPortal.mentor.removeTestCase('${qId}',${idx})"
+              ${(q.testCases || []).length <= 1 ? 'disabled title="Need at least 1 testcase"' : ''}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            </button>
+          </div>
+        `).join('');
+
+        qeditor.innerHTML = `
+          <div class="exam-fieldset">
+            <div class="exam-fieldset-title">Question Text</div>
+            <textarea class="exam-textarea" id="qtext-${qId}" oninput="ExamPortal.mentor.updateQField('${qId}','text',this.value)" placeholder="Write the coding question for students...">${q.text}</textarea>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+            <div class="exam-field" style="flex:1;margin:0">
+              <label class="exam-label">Marks</label>
+              <input class="exam-num-input" type="number" min="1" max="100" value="${q.marks}"
+                oninput="ExamPortal.mentor.updateQField('${qId}','marks',parseInt(this.value)||0)"/>
+            </div>
+            <div class="exam-field" style="flex:1;margin:0">
+              <label class="exam-label">Language</label>
+              <select class="exam-input" onchange="ExamPortal.mentor.updateCodingLanguage('${qId}',this.value)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:4px">
+                <option value="python" ${q.language === 'python' ? 'selected' : ''}>Python 3</option>
+                <option value="cpp" ${q.language === 'cpp' ? 'selected' : ''}>C++ (GCC)</option>
+                <option value="c" ${q.language === 'c' ? 'selected' : ''}>C (GCC)</option>
+                <option value="java" ${q.language === 'java' ? 'selected' : ''}>Java</option>
+              </select>
+            </div>
+          </div>
+          <div class="exam-fieldset">
+            <div class="exam-fieldset-title">Starter Template / Starter Code</div>
+            <div class="exam-mini-editor" id="mini-editor-wrap-${qId}">
+              <textarea id="mini-editor-${qId}">${q.starterCode || ''}</textarea>
+            </div>
+          </div>
+          <div class="exam-fieldset">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div class="exam-fieldset-title">Test Cases (for grading)</div>
+              <button class="exam-btn exam-btn-secondary" style="font-size:11px;padding:4px 10px"
+                onclick="ExamPortal.mentor.addTestCase('${qId}')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Add Test Case
+              </button>
+            </div>
+            <div id="test-cases-${qId}">
+              ${testCasesRows}
+            </div>
+          </div>
+        `;
+
+        // Init mini CodeMirror for starter code
+        setTimeout(() => {
+          const ta = el(`mini-editor-${qId}`);
+          if (ta && typeof CodeMirror !== 'undefined') {
+            if (state.mentor.miniEditors[qId]) {
+              try { state.mentor.miniEditors[qId].toTextArea(); } catch(e) {}
+              delete state.mentor.miniEditors[qId];
+            }
+            let cmMode = 'python';
+            if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
+            if (q.language === 'java') cmMode = 'text/x-java';
+
+            const cm = CodeMirror.fromTextArea(ta, {
+              mode: cmMode,
+              theme: 'default',
+              lineNumbers: true,
+              matchBrackets: true,
+              autoCloseBrackets: true,
+              readOnly: false,
+            });
+            cm.setSize('100%', '130px');
+            cm.on('change', () => {
+              q.starterCode = cm.getValue();
+              mentor.updateQField(qId, 'starterCode', cm.getValue());
+            });
+            state.mentor.miniEditors[qId] = cm;
+          }
+        }, 50);
+
       } else {
         // MCQ editor
         const opts = q.options || ['', '', '', ''];
@@ -7328,6 +7447,52 @@ const ExamPortal = (() => {
       const q = state.mentor.questions.find(x => x.id === qId);
       if (q) {
         q.options[idx] = value;
+        mentor._saveQDebounced();
+      }
+    },
+
+    updateCodingLanguage(qId, lang) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+      q.language = lang;
+
+      if (!q.starterCode || q.starterCode.trim() === '' || q.starterCode.includes('write your code here') || q.starterCode.includes('write your Python 3 code here')) {
+        if (lang === 'python') {
+          q.starterCode = "# write your Python 3 code here\\nimport sys\\n\\nfor line in sys.stdin:\\n    print(int(line) * 2)\\n";
+        } else if (lang === 'cpp') {
+          q.starterCode = "#include <iostream>\\nusing namespace std;\\n\\nint main() {\\n    int n;\\n    while (cin >> n) {\\n        cout << n * 2 << std::endl;\\n    }\\n    return 0;\\n}\\n";
+        } else if (lang === 'c') {
+          q.starterCode = "#include <stdio.h>\\n\\nint main() {\\n    int n;\\n    while (scanf(\\"%d\\", &n) != EOF) {\\n        printf(\\"%d\\\\n\\", n * 2);\\n    }\\n    return 0;\\n}\\n";
+        } else if (lang === 'java') {
+          q.starterCode = "import java.util.Scanner;\\n\\npublic class Main {\\n    public static void main(String[] args) {\\n        Scanner sc = new Scanner(System.in);\\n        while (sc.hasNextInt()) {\\n            int n = sc.nextInt();\\n            System.out.println(n * 2);\\n        }\\n    }\\n}\\n";
+        }
+      }
+
+      mentor._renderQEditor(qId);
+      mentor._saveQuestions();
+    },
+
+    addTestCase(qId) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+      if (!q.testCases) q.testCases = [];
+      q.testCases.push({input: '', expectedOutput: ''});
+      mentor._renderQEditor(qId);
+      mentor._saveQuestions();
+    },
+
+    removeTestCase(qId, idx) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q || !q.testCases || q.testCases.length <= 1) return;
+      q.testCases.splice(idx, 1);
+      mentor._renderQEditor(qId);
+      mentor._saveQuestions();
+    },
+
+    updateTestCase(qId, idx, field, value) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (q && q.testCases && q.testCases[idx]) {
+        q.testCases[idx][field] = value;
         mentor._saveQDebounced();
       }
     },
@@ -8046,12 +8211,22 @@ const ExamPortal = (() => {
         const statusClass = sub ? 'exam-q-status-submitted' : 'exam-q-status-unattempted';
         const scoreText = sub ? `${sub.score}/${q.marks}` : `0/${q.marks}`;
         
+        let typeLabel = 'QUERY';
+        let typeClass = 'exam-q-type-query';
+        if (q.type === 'mcq') {
+          typeLabel = 'MCQ';
+          typeClass = 'exam-q-type-mcq';
+        } else if (q.type === 'coding') {
+          typeLabel = 'CODING';
+          typeClass = 'exam-q-type-coding';
+        }
+
         return `
           <div class="exam-qnav-card ${state.mentor.currentSubQIdx === i ? 'active' : ''}"
                onclick="ExamPortal.mentor.selectSubmissionQuestion(${i})">
             <div class="exam-q-card-top">
               <span class="exam-q-num">Q${i + 1}</span>
-              <span class="exam-q-type-chip ${q.type === 'query' ? 'exam-q-type-query' : 'exam-q-type-mcq'}">${q.type === 'query' ? 'QUERY' : 'MCQ'}</span>
+              <span class="exam-q-type-chip ${typeClass}">${typeLabel}</span>
               <span class="exam-q-marks-badge" style="color:var(--text);font-weight:600">${scoreText}</span>
               <div class="exam-q-status-dot ${statusClass}" style="margin-left:auto"></div>
             </div>
@@ -8072,21 +8247,44 @@ const ExamPortal = (() => {
       // Re-render nav to highlight active
       mentor._renderSubQNav();
 
+      let typeLabel = 'QUERY';
+      let typeClass = 'exam-q-type-query';
+      if (q.type === 'mcq') {
+        typeLabel = 'MCQ';
+        typeClass = 'exam-q-type-mcq';
+      } else if (q.type === 'coding') {
+        typeLabel = 'CODING';
+        typeClass = 'exam-q-type-coding';
+      }
+
       el('mentor-sub-q-number').textContent = `Q${idx + 1}`;
-      el('mentor-sub-q-type-chip').textContent = q.type === 'query' ? 'QUERY' : 'MCQ';
-      el('mentor-sub-q-type-chip').className = `exam-q-type-chip ${q.type === 'query' ? 'exam-q-type-query' : 'exam-q-type-mcq'}`;
+      el('mentor-sub-q-type-chip').textContent = typeLabel;
+      el('mentor-sub-q-type-chip').className = `exam-q-type-chip ${typeClass}`;
       el('mentor-sub-q-marks').textContent = sub ? `Score: ${sub.score} / ${q.marks}` : `Score: 0 / ${q.marks}`;
       el('mentor-sub-q-text').textContent = q.text;
       
       el('mentor-sub-question-display').style.display = 'block';
       el('mentor-sub-no-q').style.display = 'none';
 
-      if (q.type === 'query') {
+      if (q.type === 'query' || q.type === 'coding') {
         el('mentor-sub-query-area').style.display = 'flex';
         el('mentor-sub-mcq-area').style.display = 'none';
         
         if (state.mentor.submissionEditor) {
-          state.mentor.submissionEditor.setValue(sub ? (sub.query || '// Empty submission') : '// No submission provided');
+          let codeVal = '';
+          if (sub) {
+            codeVal = q.type === 'coding' ? (sub.code || '// Empty submission') : (sub.query || '// Empty submission');
+          } else {
+            codeVal = '// No submission provided';
+          }
+          let cmMode = 'javascript';
+          if (q.type === 'coding') {
+            if (q.language === 'python') cmMode = 'python';
+            else if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
+            else if (q.language === 'java') cmMode = 'text/x-java';
+          }
+          state.mentor.submissionEditor.setOption('mode', cmMode);
+          state.mentor.submissionEditor.setValue(codeVal);
           // Refresh needed when element becomes visible
           setTimeout(() => state.mentor.submissionEditor.refresh(), 50);
         }
@@ -8384,12 +8582,21 @@ const ExamPortal = (() => {
         const dotClass = statusKey === 'submitted' ? 'exam-q-status-submitted'
           : statusKey === 'draft' ? 'exam-q-status-draft'
           : 'exam-q-status-unattempted';
+        let typeLabel = 'QUERY';
+        let typeClass = 'exam-q-type-query';
+        if (q.type === 'mcq') {
+          typeLabel = 'MCQ';
+          typeClass = 'exam-q-type-mcq';
+        } else if (q.type === 'coding') {
+          typeLabel = 'CODING';
+          typeClass = 'exam-q-type-coding';
+        }
         return `
           <div class="exam-qnav-card ${state.student.currentQIdx === i ? 'active' : ''}"
                onclick="ExamPortal.student.selectQuestion(${i})">
             <div class="exam-q-card-top">
               <span class="exam-q-num">Q${i + 1}</span>
-              <span class="exam-q-type-chip ${q.type === 'query' ? 'exam-q-type-query' : 'exam-q-type-mcq'}">${q.type === 'query' ? 'QUERY' : 'MCQ'}</span>
+              <span class="exam-q-type-chip ${typeClass}">${typeLabel}</span>
               <span class="exam-q-marks-badge">${q.marks}pts</span>
               <div class="exam-q-status-dot ${dotClass}" style="margin-left:auto"></div>
             </div>
@@ -8412,9 +8619,19 @@ const ExamPortal = (() => {
       const q = qs[idx];
 
       // Update header
+      let typeLabel = 'QUERY';
+      let typeClass = 'exam-q-type-query';
+      if (q.type === 'mcq') {
+        typeLabel = 'MCQ';
+        typeClass = 'exam-q-type-mcq';
+      } else if (q.type === 'coding') {
+        typeLabel = 'CODING';
+        typeClass = 'exam-q-type-coding';
+      }
+
       el('student-q-number').textContent = `Q${idx + 1}`;
-      el('student-q-type-chip').textContent = q.type === 'query' ? 'QUERY' : 'MCQ';
-      el('student-q-type-chip').className = `exam-q-type-chip ${q.type === 'query' ? 'exam-q-type-query' : 'exam-q-type-mcq'}`;
+      el('student-q-type-chip').textContent = typeLabel;
+      el('student-q-type-chip').className = `exam-q-type-chip ${typeClass}`;
       el('student-q-marks').textContent = `${q.marks} marks`;
       el('student-q-text').textContent = q.text;
       el('student-question-display').style.display = 'block';
@@ -8423,29 +8640,71 @@ const ExamPortal = (() => {
       el('student-q-progress').textContent = `Q ${idx + 1}/${qs.length}`;
 
       // Show/hide areas
-      if (q.type === 'query') {
+      if (q.type === 'query' || q.type === 'coding') {
         el('student-query-area').style.display = 'flex';
         el('student-mcq-area').style.display = 'none';
-        const hasDataset = (q.datasetIds && q.datasetIds.length > 0) || q.datasetId;
-        el('btn-inspect-dataset').style.display = hasDataset ? 'flex' : 'none';
+        
+        const isQuery = q.type === 'query';
+        el('btn-inspect-dataset').style.display = isQuery ? 'flex' : 'none';
 
-        // Set editor content
-        const cm = state.student.examEditor;
-        if (cm) {
-          cm.setValue(q._studentDraft !== undefined ? q._studentDraft : `// Question ${idx + 1}\\ndb.`);
-          cm.focus();
+        if (isQuery) {
+          el('student-pane-left-title').textContent = 'Your Output';
+          el('student-pane-right-title').textContent = 'Expected Output (Preview)';
+          el('student-pane-expected').style.display = 'block';
+          el('student-stdin-input').style.display = 'none';
+
+          // Set editor content
+          const cm = state.student.examEditor;
+          if (cm) {
+            cm.setOption('mode', 'javascript');
+            cm.setValue(q._studentDraft !== undefined ? q._studentDraft : `// Question ${idx + 1}\\ndb.`);
+            cm.focus();
+          }
+
+          // Reset console
+          el('student-pane-yours').innerHTML = '<span style="color:var(--text3)">// Run a query to see output here</span>';
+          el('student-console-status').textContent = '— Ready';
+          el('student-console-status').style.color = 'var(--text3)';
+          state.student.hasRunOnce = false;
+
+          if (state.student.status[q.id] === 'submitted') {
+            el('student-submit-query-btn').disabled = false;
+            el('student-submit-query-btn').style.opacity = '1';
+          } else {
+            el('student-submit-query-btn').disabled = true;
+            el('student-submit-query-btn').style.opacity = '0.4';
+          }
+
+          // Automatically fetch expected preview on question select
+          studentNS._fetchExpectedPreview(q.id);
+        } else {
+          // Coding question
+          el('student-pane-left-title').textContent = 'Console Output';
+          el('student-pane-right-title').textContent = 'Custom Input (stdin)';
+          el('student-pane-expected').style.display = 'none';
+          el('student-stdin-input').style.display = 'block';
+
+          // Set editor content
+          const cm = state.student.examEditor;
+          if (cm) {
+            let cmMode = 'python';
+            if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
+            if (q.language === 'java') cmMode = 'text/x-java';
+            cm.setOption('mode', cmMode);
+            cm.setValue(q._studentDraft !== undefined ? q._studentDraft : (q.starterCode || ''));
+            cm.focus();
+          }
+
+          // Reset console
+          el('student-pane-yours').innerHTML = '<span style="color:var(--text3)">// Run code to see output here</span>';
+          el('student-console-status').textContent = '— Ready';
+          el('student-console-status').style.color = 'var(--text3)';
+          state.student.hasRunOnce = false;
+
+          // Always enable submit button for coding questions
+          el('student-submit-query-btn').disabled = false;
+          el('student-submit-query-btn').style.opacity = '1';
         }
-
-        // Reset console
-        el('student-pane-yours').innerHTML = '<span style="color:var(--text3)">// Run a query to see output here</span>';
-        el('student-console-status').textContent = '— Ready';
-        el('student-console-status').style.color = 'var(--text3)';
-        state.student.hasRunOnce = false;
-        el('student-submit-query-btn').disabled = true;
-        el('student-submit-query-btn').style.opacity = '0.4';
-
-        // Automatically fetch expected preview on question select
-        studentNS._fetchExpectedPreview(q.id);
 
       } else {
         el('student-query-area').style.display = 'none';
@@ -8521,8 +8780,43 @@ const ExamPortal = (() => {
       if (!cm) return;
       const query = cm.getValue();
       const q = state.student.questions[state.student.currentQIdx];
+      if (!q) return;
+
+      if (q.type === 'coding') {
+        const stdin = el('student-stdin-input').value || '';
+        el('student-run-btn').textContent = 'Running...';
+        el('student-run-btn').disabled = true;
+        el('student-console-status').textContent = '— Running...';
+        el('student-console-status').style.color = 'var(--text3)';
+
+        const res = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
+          language: q.language,
+          code: query,
+          stdin: stdin
+        });
+
+        el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
+        el('student-run-btn').disabled = false;
+
+        let out = res.stdout || '';
+        if (res.stderr) {
+          out += (out ? '\\n' : '') + res.stderr;
+        }
+        if (!out) {
+          out = '// No output returned';
+        }
+
+        const isError = res.code !== 0 || !!res.stderr;
+        el('student-console-status').textContent = `— Exit Code: ${res.code}`;
+        el('student-console-status').style.color = isError ? 'var(--red)' : 'var(--text3)';
+
+        const escapedOut = out.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        el('student-pane-yours').innerHTML = `<pre style="color:${isError ? 'var(--red)' : 'var(--text)'};font-size:11px;white-space:pre-wrap;font-family:'JetBrains Mono',monospace">${escapedOut}</pre>`;
+        return;
+      }
+
       const datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
-      if (!q || datasetIds.length === 0) {
+      if (datasetIds.length === 0) {
         el('student-pane-yours').innerHTML = '<span style="color:var(--red)">// No dataset linked to this question</span>';
         return;
       }
@@ -8673,6 +8967,10 @@ const ExamPortal = (() => {
           return;
         }
         body.selectedOption = state.student.selectedOption;
+      } else if (q.type === 'coding') {
+        const cm = state.student.examEditor;
+        body.code = cm ? cm.getValue() : '';
+        body.language = q.language;
       } else {
         const cm = state.student.examEditor;
         body.query = cm ? cm.getValue() : '';
@@ -8701,6 +8999,10 @@ const ExamPortal = (() => {
           el('student-mcq-status').textContent = '// Answer submitted.';
           el('student-mcq-status').style.color = 'var(--green3)';
           q._studentSelectedOption = state.student.selectedOption;
+        } else if (q.type === 'coding') {
+          el('student-console-status').textContent = isCorrect ? '— Accepted' : '— Wrong Answer';
+          el('student-console-status').style.color = isCorrect ? 'var(--green3)' : 'var(--red)';
+          q._studentDraft = body.code;
         } else {
           el('student-console-status').textContent = isCorrect ? '— Accepted' : '— Wrong Answer';
           el('student-console-status').style.color = isCorrect ? 'var(--green3)' : 'var(--red)';

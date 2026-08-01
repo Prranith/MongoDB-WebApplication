@@ -795,13 +795,17 @@
               </div>
             </div>
             <div style="padding:8px;border-top:1px solid var(--border);display:flex;gap:6px">
-              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px" onclick="ExamPortal.mentor.addQuestion('query')">
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('query')">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 Query
               </button>
-              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px" onclick="ExamPortal.mentor.addQuestion('mcq')">
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('mcq')">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 MCQ
+              </button>
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('coding')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Coding
               </button>
             </div>
           </div>
@@ -1098,7 +1102,7 @@ db.collection.find({})</textarea>
           <div style="display:flex;flex:1;background:var(--border);overflow:hidden" id="student-console-panes-box">
             <!-- Left Side: Your Output -->
             <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;min-width:100px" id="box-pane-yours">
-              <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--cyan)">
+              <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--cyan)" id="student-pane-left-title">
                 Your Output
               </div>
               <div class="exam-console-pane active" id="student-pane-yours" style="flex:1;overflow-y:auto;padding:8px">
@@ -1109,12 +1113,13 @@ db.collection.find({})</textarea>
             <div class="exam-resizer-v-sub" id="resizer-student-panes" title="Drag to adjust comparison width"></div>
             <!-- Right Side: Expected Output Preview -->
             <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;min-width:100px" id="box-pane-expected">
-              <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--green2)">
+              <div style="padding:6px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--green2)" id="student-pane-right-title">
                 Expected Output (Preview)
               </div>
               <div class="exam-console-pane active" id="student-pane-expected" style="flex:1;overflow-y:auto;padding:8px">
                 <span style="color:var(--text3)">// Select or run a query to load expected preview</span>
               </div>
+              <textarea id="student-stdin-input" style="display:none;width:100%;height:100%;background:transparent;border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px;resize:none;outline:none" placeholder="// Type standard input (stdin) here..."></textarea>
             </div>
           </div>
         </div>

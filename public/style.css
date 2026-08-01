@@ -2442,6 +2442,11 @@ li.CodeMirror-hint-active {
   color: var(--blue2);
   border: 1px solid rgba(0, 122, 204, 0.3);
 }
+.exam-q-type-coding {
+  background: rgba(230, 126, 34, 0.2);
+  color: #e67e22;
+  border: 1px solid rgba(230, 126, 34, 0.4);
+}
 .exam-q-marks-badge {
   margin-left: auto;
   font-size: 10px;
