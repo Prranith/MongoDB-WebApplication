@@ -5899,6 +5899,14 @@ function applyEditorTheme() {
         <div class="exam-role-name">Student</div>
         <div class="exam-role-desc">Join a room, solve query and MCQ questions, submit answers in real-time</div>
       </div>
+      <div class="exam-role-card" id="role-card-playback" onclick="document.getElementById('file-import-session').click()" tabindex="0">
+        <div class="exam-role-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+        </div>
+        <div class="exam-role-name">Offline Viewer</div>
+        <div class="exam-role-desc">Upload a previously downloaded session archive (.json) to review final leaderboard, questions, and student code submissions offline</div>
+        <input type="file" id="file-import-session" accept=".json" style="display:none" onchange="ExamPortal.mentor.importSession(this)"/>
+      </div>
     </div>
   </div>
 </div>
@@ -5946,6 +5954,15 @@ function applyEditorTheme() {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         Create Room
       </button>
+
+      <div style="margin-top:16px;border-top:1px dashed var(--border);padding-top:16px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">// OR LOAD PRE-CONFIGURED TEST</span>
+        <button class="exam-btn exam-btn-secondary exam-btn-full" onclick="document.getElementById('file-import-paper-create').click()" style="display:flex;align-items:center;justify-content:center;gap:4px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+          Load Question Paper (.json)
+        </button>
+        <input type="file" id="file-import-paper-create" accept=".json" style="display:none" onchange="ExamPortal.mentor.loadPaperForCreate(this)"/>
+      </div>
     </div>
   </div>
 </div>
@@ -5956,6 +5973,10 @@ function applyEditorTheme() {
     <span class="exam-topbar-title" id="mentor-dash-title">Exam Room</span>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
       <span class="exam-status-chip exam-chip-waiting" id="mentor-status-chip">WAITING</span>
+      <button class="exam-btn exam-btn-secondary" id="btn-view-removed" onclick="ExamPortal.mentor.viewRemoved()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        Removed Students
+      </button>
       <button class="exam-btn exam-btn-green" id="btn-start-exam" onclick="ExamPortal.mentor.startExam()" style="display:flex">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
         Start Exam
@@ -6002,6 +6023,12 @@ function applyEditorTheme() {
         <div class="exam-sidebar-row">
           <span class="exam-sidebar-key">Max Score</span>
           <span class="exam-sidebar-val" id="mentor-max-score">0</span>
+        </div>
+        <div style="margin-top:16px;border-top:1px dashed var(--border);padding-top:16px" id="mentor-export-paper-row">
+          <button class="exam-btn exam-btn-secondary exam-btn-full" onclick="ExamPortal.mentor.exportPaper()" style="display:flex;align-items:center;justify-content:center;gap:4px;font-size:11px;padding:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 9l-5 5-5-5h3V3h4v6h3z"/></svg>
+            Export Paper (.json)
+          </button>
         </div>
       </div>
     </div>
@@ -6160,6 +6187,10 @@ function applyEditorTheme() {
           <button class="exam-btn exam-btn-green exam-btn-full" onclick="ExamPortal.mentor.exportXLSX()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
             Export Excel (.xlsx)
+          </button>
+          <button class="exam-btn exam-btn-full" onclick="ExamPortal.mentor.exportArchive()" style="margin-top:8px;background:#007acc;border-color:#007acc;color:white">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+            Download Playback Archive (.json)
           </button>
           <button class="exam-btn exam-btn-red exam-btn-full" onclick="ExamPortal.mentor.cleanupRoom()" style="margin-top:8px">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -6385,6 +6416,91 @@ db.collection.find({})</textarea>
   </div>
 </div>
 
+<!-- Mentor: View Submission Panel -->
+<div class="exam-overlay" id="exam-mentor-submission-panel">
+  <div class="exam-topbar">
+    <button class="exam-topbar-back" onclick="ExamPortal.mentor.closeSubmissionView()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Back to Dashboard
+    </button>
+    <span class="exam-topbar-title" id="mentor-sub-title">Viewing Submission</span>
+  </div>
+
+  <div class="exam-student-shell">
+    <!-- Question Navigator (Left) -->
+    <div class="exam-qnav">
+      <div class="exam-qnav-hdr">Questions</div>
+      <div class="exam-qnav-body" id="mentor-sub-qnav-body">
+        <div class="exam-participants-empty">// Loading...</div>
+      </div>
+    </div>
+
+    <div class="exam-resizer-v" id="resizer-mentor-sub-qnav" title="Drag to resize"></div>
+
+    <!-- Main Submission Area -->
+    <div class="exam-student-main">
+      <div class="exam-question-display" id="mentor-sub-question-display" style="display:none">
+        <div class="exam-question-header">
+          <span class="exam-question-number" id="mentor-sub-q-number">Q1</span>
+          <span class="exam-q-type-chip" id="mentor-sub-q-type-chip">TYPE</span>
+          <span class="exam-question-marks" id="mentor-sub-q-marks" style="margin-left:auto">Marks</span>
+        </div>
+        <div class="exam-question-text" id="mentor-sub-q-text"></div>
+      </div>
+
+      <!-- Query Submissions -->
+      <div id="mentor-sub-query-area" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+        <div class="exam-toolbar" style="border-bottom:1px solid var(--border)">
+          <span style="font-size:11px;font-weight:600;color:var(--text2);padding:0 12px;text-transform:uppercase;letter-spacing:0.5px">Student's Code</span>
+        </div>
+        <div class="exam-editor-wrap">
+          <textarea id="mentor-sub-editor" style="display:none"></textarea>
+        </div>
+      </div>
+
+      <!-- MCQ Submissions -->
+      <div id="mentor-sub-mcq-area" style="display:none;flex:1;flex-direction:column;overflow-y:auto">
+        <div class="exam-mcq-options" id="mentor-sub-mcq-options"></div>
+      </div>
+
+      <div id="mentor-sub-no-q" style="flex:1;display:flex;align-items:center;justify-content:center">
+        <span style="font-size:13px;color:var(--text3);font-family:'JetBrains Mono',monospace">// Select a question</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mentor: Removed Students Panel -->
+<div class="exam-overlay" id="exam-mentor-removed-panel">
+  <div class="exam-topbar">
+    <button class="exam-topbar-back" onclick="ExamPortal.mentor.closeRemovedView()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Back to Dashboard
+    </button>
+    <span class="exam-topbar-title">Removed Students</span>
+  </div>
+  <div class="exam-body" style="padding-top:20px;">
+    <div class="exam-form-card" style="max-width:800px;margin:0 auto">
+      <div class="exam-form-title">Kicked Participants</div>
+      <div class="exam-form-sub">// Students who have been removed from the exam room</div>
+      <div style="margin-top:20px">
+        <table class="exam-lb-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Roll No</th>
+              <th style="text-align:center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="mentor-removed-tbody">
+            <tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text3)">// No removed students</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Student: Thank You Screen -->
 <div class="exam-overlay" id="exam-thankyou-panel">
   <div class="exam-topbar">
@@ -6527,6 +6643,15 @@ const ExamPortal = (() => {
     }
   }
 
+  // Cleanup room on mentor page unload/hide if they forcefully leave
+  window.addEventListener('pagehide', function() {
+    if (state.mentor && state.mentor.roomId && state.mentor.mentorId) {
+      const url = `/api/exam/room/${state.mentor.roomId}/cleanup`;
+      const data = JSON.stringify({ mentorId: state.mentor.mentorId });
+      navigator.sendBeacon(url, data);
+    }
+  });
+
   function hideAllExam() {
     document.querySelectorAll('.exam-overlay').forEach(p => p.classList.remove('active'));
   }
@@ -6604,7 +6729,7 @@ const ExamPortal = (() => {
         </div>
         <span class="exam-participant-time">${timeAgo(p.joinedAt)}</span>
         ${isMentor ? `
-          <button class="phbtn" style="color:#ff4d4d;margin-left:8px;padding:3px 7px;border:1px solid rgba(255,77,77,0.3);border-radius:4px;background:rgba(255,77,77,0.1);font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer"
+          <button class="phbtn" style="width:auto;height:auto;color:#ff4d4d;margin-left:8px;padding:3px 7px;border:1px solid rgba(255,77,77,0.3);border-radius:4px;background:rgba(255,77,77,0.1);font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer"
             onclick="ExamPortal.mentor.removeStudent('${p.studentId}')"
             title="Remove student from test">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -6627,6 +6752,7 @@ const ExamPortal = (() => {
   }
 
   function selectRole(role) {
+    state.mentor.isPlayback = false;
     if (role === 'mentor') {
       // Generate room ID preview and show create form
       _genPreviewRoomId();
@@ -6689,9 +6815,6 @@ const ExamPortal = (() => {
         title, mentorId, timed, duration, roomId
       });
 
-      el('btn-create-room').disabled = false;
-      el('btn-create-room').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Create Room';
-
       if (res.status === 'ok') {
         state.mentor.roomId = res.roomId || roomId;
         state.mentor.mentorId = res.mentorId || mentorId;
@@ -6699,15 +6822,137 @@ const ExamPortal = (() => {
         state.mentor.timed = timed;
         state.mentor.duration = duration;
         state.mentor.status = 'waiting';
+        state.mentor.questions = [];
+        state.mentor.datasets = [];
 
         // Persist to localStorage
         localStorage.setItem('exam_mentor_id', state.mentor.mentorId);
         localStorage.setItem('exam_room_id', state.mentor.roomId);
 
+        // If a pre-loaded paper exists, import its questions & datasets now
+        if (state.mentor.pendingPaper) {
+          el('btn-create-room').textContent = 'Loading Quiz Paper...';
+          await mentor.loadPaperData(state.mentor.roomId, state.mentor.mentorId, state.mentor.pendingPaper);
+          state.mentor.pendingPaper = null; // Clear it
+        }
+
+        el('btn-create-room').disabled = false;
+        el('btn-create-room').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Create Room';
+
         mentor.initDashboard();
       } else {
+        el('btn-create-room').disabled = false;
+        el('btn-create-room').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Create Room';
         el('mentor-create-err').textContent = res.error || 'Failed to create room';
         el('mentor-create-err').style.display = 'block';
+      }
+    },
+
+    loadPaperForCreate(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const paper = JSON.parse(e.target.result);
+          if (!paper.questions) {
+            alert('Invalid quiz paper template file.');
+            return;
+          }
+
+          // Save pending paper configuration
+          state.mentor.pendingPaper = paper;
+
+          // Populate creation form fields
+          el('mentor-title').value = paper.title || 'Imported Quiz';
+          const isTimed = paper.timed === '1' || paper.timed === true;
+          el('mentor-timed-toggle').checked = isTimed;
+          mentor.toggleTimed(isTimed);
+          el('mentor-duration').value = parseInt(paper.duration) || 60;
+
+          alert(`Successfully pre-loaded quiz template: "${paper.title || 'Imported'}" (${paper.questions.length} questions, ${paper.datasets ? paper.datasets.length : 0} datasets).\\n\\nClick "Create Room" to instantiate the test.`);
+
+        } catch (err) {
+          alert('Failed to parse quiz template JSON: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      input.value = '';
+    },
+
+    async loadPaperData(roomId, mentorId, paper) {
+      try {
+        const datasetIdMap = {};
+        const paperDatasets = paper.datasets || [];
+
+        // 1. Sequentially upload each dataset
+        for (const ds of paperDatasets) {
+          try {
+            const res = await apiCall(`/api/exam/room/${roomId}/dataset`, 'POST', {
+              mentorId,
+              name: ds.name,
+              docs: ds.docs || [],
+            });
+            if (res.status === 'ok') {
+              datasetIdMap[ds.datasetId] = res.datasetId;
+              state.mentor.datasets.push({
+                datasetId: res.datasetId,
+                name: res.name,
+                collection: res.collection,
+                docCount: res.docCount,
+              });
+            }
+          } catch (e) {
+            console.error("Failed to load dataset:", ds.name, e);
+          }
+        }
+
+        // 2. Map dataset IDs inside questions
+        const questions = (paper.questions || []).map(q => {
+          const mappedQ = { ...q };
+          if (!mappedQ.datasetIds) {
+            mappedQ.datasetIds = mappedQ.datasetId ? [mappedQ.datasetId] : [];
+          }
+          mappedQ.datasetIds = mappedQ.datasetIds.map(id => datasetIdMap[id] || id);
+          if (mappedQ.datasetId) {
+            mappedQ.datasetId = datasetIdMap[mappedQ.datasetId] || mappedQ.datasetId;
+          }
+          return mappedQ;
+        });
+
+        // 3. Save the questions to Redis
+        state.mentor.questions = questions;
+        await apiCall(`/api/exam/room/${roomId}/questions`, 'POST', {
+          mentorId,
+          questions
+        });
+
+      } catch (err) {
+        console.error("Error loading paper data:", err);
+        alert("Failed to load paper questions completely: " + err.message);
+      }
+    },
+
+
+    async exportPaper() {
+      if (!state.mentor.roomId || !state.mentor.mentorId) return;
+      try {
+        const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/paper?mentorId=${state.mentor.mentorId}`);
+        if (res.status === 'ok') {
+          const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${res.title.replace(/\\s+/g, '_')}_questions.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } else {
+          alert(res.error || 'Failed to export question paper');
+        }
+      } catch (e) {
+        alert('Failed to connect to export question paper');
       }
     },
 
@@ -6730,6 +6975,11 @@ const ExamPortal = (() => {
 
       showPanel('exam-mentor-dash-panel');
       mentor.setTab('questions');
+
+      // Auto-select first question if questions are loaded and none is currently active
+      if (state.mentor.questions && state.mentor.questions.length > 0 && !state.mentor.currentQId) {
+        mentor.selectQuestion(state.mentor.questions[0].id);
+      }
     },
 
     _updateStatusUI(status) {
@@ -6746,22 +6996,32 @@ const ExamPortal = (() => {
           chip.textContent = 'LIVE';
         } else {
           chip.classList.add('exam-chip-ended');
-          chip.textContent = 'ENDED';
+          chip.textContent = state.mentor.isPlayback ? 'PLAYBACK' : 'ENDED';
         }
       });
+
+      const rightSidebar = document.querySelector('.exam-dash-right');
 
       // Buttons
       if (status === 'waiting') {
         el('btn-start-exam').style.display = 'flex';
         el('btn-end-exam').style.display = 'none';
+        el('mentor-participants-panel').style.display = 'flex';
+        el('mentor-export-panel').style.display = 'none';
+        if (rightSidebar) rightSidebar.style.display = 'flex';
       } else if (status === 'live') {
         el('btn-start-exam').style.display = 'none';
         el('btn-end-exam').style.display = 'flex';
+        el('mentor-participants-panel').style.display = 'none';
+        el('mentor-export-panel').style.display = 'none';
+        if (rightSidebar) rightSidebar.style.display = 'none'; // Hide sidebar during live test
         // Show leaderboard tab, hide questions tab
         el('mentor-tab-live').style.display = 'flex';
         el('mentor-tab-questions').style.display = 'none';
         mentor.setTab('live');
-        mentor._startLeaderboardPoll();
+        if (!state.mentor.isPlayback) {
+          mentor._startLeaderboardPoll();
+        }
         // Start timer if timed
         if (state.mentor.timed && state.mentor.startedAt) {
           mentor._startTimer();
@@ -6772,6 +7032,7 @@ const ExamPortal = (() => {
         // Show export panel
         el('mentor-participants-panel').style.display = 'none';
         el('mentor-export-panel').style.display = 'flex';
+        if (rightSidebar) rightSidebar.style.display = 'flex'; // Show sidebar for results export
         // Stop polls
         clearInterval(state.mentor.participantInterval);
         clearInterval(state.mentor.lbInterval);
@@ -6815,6 +7076,13 @@ const ExamPortal = (() => {
         if (tabEl) tabEl.classList.toggle('active', t === tab);
         if (paneEl) paneEl.classList.toggle('active', t === tab);
       });
+      if (tab === 'questions') {
+        mentor._renderQList();
+      } else if (tab === 'dataset') {
+        mentor._renderDatasetTable();
+      } else if (tab === 'live') {
+        mentor._startLeaderboardPoll();
+      }
     },
 
     // ── Question Builder ───────────────────────────────────────────────────
@@ -7269,9 +7537,10 @@ const ExamPortal = (() => {
     // ── Participants Polling ───────────────────────────────────────────────
 
     _startParticipantPoll() {
+      if (state.mentor.isPlayback) return;
       clearInterval(state.mentor.participantInterval);
       mentor._fetchParticipants();
-      state.mentor.participantInterval = setInterval(mentor._fetchParticipants, 2000);
+      state.mentor.participantInterval = setInterval(mentor._fetchParticipants, 5000);
     },
 
     async _fetchParticipants() {
@@ -7288,12 +7557,18 @@ const ExamPortal = (() => {
     _startLeaderboardPoll() {
       clearInterval(state.mentor.lbInterval);
       mentor.fetchLeaderboard();
-      state.mentor.lbInterval = setInterval(mentor.fetchLeaderboard, 2000);
+      state.mentor.lbInterval = setInterval(mentor.fetchLeaderboard, 4000);
     },
 
     async fetchLeaderboard() {
       const roomId = state.mentor.roomId;
       if (!roomId) return;
+
+      if (state.mentor.isPlayback) {
+        const maxScore = state.mentor.maxScore || 0;
+        mentor.renderLeaderboard(state.mentor.leaderboardData, maxScore);
+        return;
+      }
 
       // Pulse animation
       const dot = el('lb-pulse-dot');
@@ -7348,13 +7623,21 @@ const ExamPortal = (() => {
             <td class="exam-lb-accuracy">${row.answered}/${(state.mentor.questions || []).length}</td>
             <td class="exam-lb-accuracy">${accuracy}</td>
             <td class="exam-lb-time">${lastSub}</td>
-            <td style="text-align:center">
-              <button class="phbtn" style="color:#ff4d4d;padding:3px 7px;border:1px solid rgba(255,77,77,0.3);border-radius:4px;background:rgba(255,77,77,0.1);font-size:11px;display:inline-flex;align-items:center;gap:3px;cursor:pointer"
+            <td style="text-align:center;display:flex;gap:6px;justify-content:center">
+              <button class="exam-btn exam-btn-secondary" style="padding:4px 8px;font-size:11px;height:auto"
+                onclick="ExamPortal.mentor.viewSubmission('${row.studentId}')"
+                title="View student's submissions">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4C7 4 2.73 7.11 1 12c1.73 4.89 6 8 11 8s9.27-3.11 11-8c-1.73-4.89-6-8-11-8zm0 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                View
+              </button>
+              ${state.mentor.isPlayback ? '' : `
+              <button class="exam-btn exam-btn-red" style="padding:4px 8px;font-size:11px;height:auto"
                 onclick="ExamPortal.mentor.removeStudent('${row.studentId}')"
                 title="Remove student">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                 Remove
               </button>
+              `}
             </td>
           </tr>
         `;
@@ -7370,23 +7653,33 @@ const ExamPortal = (() => {
     },
 
     async exportXLSX() {
-      // Fetch final leaderboard
-      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/leaderboard`);
-      let data = (res.leaderboard || []).map((row, i) => ({
+      let data = [];
+      let maxScore = 0;
+      if (state.mentor.isPlayback) {
+        data = state.mentor.leaderboardData || [];
+        maxScore = state.mentor.maxScore || 0;
+      } else {
+        // Fetch final leaderboard
+        const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/leaderboard`);
+        data = res.leaderboard || [];
+        maxScore = res.maxScore || 0;
+      }
+
+      let formattedData = data.map((row, i) => ({
         Rank: i + 1,
         Name: row.name,
         'Roll No': row.rollNo,
         Branch: row.branch,
         Score: row.totalScore,
-        'Max Score': res.maxScore || 0,
-        Percentage: res.maxScore > 0 ? `${Math.round((row.totalScore / res.maxScore) * 100)}%` : '0%',
+        'Max Score': maxScore,
+        Percentage: maxScore > 0 ? `${Math.round((row.totalScore / maxScore) * 100)}%` : '0%',
         Answered: row.answered,
         Correct: row.correct,
       }));
 
       if (state.mentor.sortMode === 'roll') {
-        data.sort((a, b) => (a['Roll No'] || '').localeCompare(b['Roll No'] || ''));
-        data.forEach((row, i) => { row.Rank = i + 1; });
+        formattedData.sort((a, b) => (a['Roll No'] || '').localeCompare(b['Roll No'] || ''));
+        formattedData.forEach((row, i) => { row.Rank = i + 1; });
       }
 
       if (typeof XLSX === 'undefined') {
@@ -7394,7 +7687,7 @@ const ExamPortal = (() => {
         return;
       }
 
-      const ws = XLSX.utils.json_to_sheet(data);
+      const ws = XLSX.utils.json_to_sheet(formattedData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Results');
       const date = new Date().toISOString().split('T')[0];
@@ -7403,6 +7696,18 @@ const ExamPortal = (() => {
     },
 
     async cleanupRoom() {
+      if (state.mentor.isPlayback) {
+        state.mentor.isPlayback = false;
+        state.mentor.roomId = null;
+        state.mentor.title = null;
+        state.mentor.status = null;
+        state.mentor.questions = [];
+        state.mentor.participants = [];
+        state.mentor.leaderboardData = [];
+        state.mentor.offlineSubmissions = {};
+        showRoleSelection();
+        return;
+      }
       if (!confirm('Delete all room data from Redis? This cannot be undone.')) return;
       await apiCall(`/api/exam/room/${state.mentor.roomId}/cleanup`, 'DELETE', {
         mentorId: state.mentor.mentorId,
@@ -7410,6 +7715,204 @@ const ExamPortal = (() => {
       localStorage.removeItem('exam_mentor_id');
       localStorage.removeItem('exam_room_id');
       showRoleSelection();
+    },
+
+    async exportArchive() {
+      if (!state.mentor.roomId || !state.mentor.mentorId) return;
+      try {
+        const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/archive?mentorId=${state.mentor.mentorId}`);
+        if (res.status === 'ok') {
+          const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${res.roomId}_playback_archive.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } else {
+          alert(res.error || 'Failed to download playback archive');
+        }
+      } catch (e) {
+        alert('Failed to connect to export playback archive');
+      }
+    },
+
+    importSession(fileInput) {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const archive = JSON.parse(e.target.result);
+          if (!archive.roomId || !archive.meta || !archive.questions) {
+            alert('Invalid session archive file');
+            return;
+          }
+
+          // Clear any active intervals/state
+          clearInterval(state.mentor.participantInterval);
+          clearInterval(state.mentor.lbInterval);
+          clearInterval(state.mentor.timerInterval);
+
+          // Set playback state
+          state.mentor.isPlayback = true;
+          state.mentor.roomId = archive.roomId;
+          state.mentor.mentorId = archive.meta.mentorId;
+          state.mentor.title = archive.meta.title || 'Playback';
+          state.mentor.status = 'ended'; // Treat playback as ended/read-only
+          state.mentor.timed = archive.meta.timed === '1' || archive.meta.timed === true;
+          state.mentor.duration = parseInt(archive.meta.duration) || 60;
+          
+          // Load questions, participants, datasets, leaderboard, and submissions
+          state.mentor.questions = archive.questions || [];
+          
+          // Convert participants raw Hash to list for UI
+          const participants = [];
+          const pRaw = archive.participants || {};
+          for (const [sid, pVal] of Object.entries(pRaw)) {
+            try {
+              const p = typeof pVal === 'string' ? JSON.parse(pVal) : pVal;
+              p.studentId = sid;
+              participants.push(p);
+            } catch(err) {
+              participants.push({ studentId: sid, name: 'Unknown' });
+            }
+          }
+          state.mentor.participants = participants;
+          
+          // Store datasets
+          state.mentor.datasets = archive.datasets || {};
+          
+          // Store offline submissions and parse nested JSON strings if they are strings
+          const offlineSubmissions = {};
+          const archiveSubs = archive.submissions || {};
+          for (const [sid, subsRaw] of Object.entries(archiveSubs)) {
+            const parsedSubs = {};
+            for (const [qid, subVal] of Object.entries(subsRaw || {})) {
+              try {
+                parsedSubs[qid] = typeof subVal === 'string' ? JSON.parse(subVal) : subVal;
+              } catch(e) {
+                parsedSubs[qid] = subVal;
+              }
+            }
+            offlineSubmissions[sid] = parsedSubs;
+          }
+          state.mentor.offlineSubmissions = offlineSubmissions;
+
+          // Generate leaderboard data offline from the archive
+          const leaderboardRaw = archive.leaderboard || {};
+          const leaderboardData = [];
+          
+          // Construct leaderboardData exactly as backend rank list
+          for (const [sid, score] of Object.entries(leaderboardRaw)) {
+            const studentInfo = participants.find(p => p.studentId === sid) || { name: 'Unknown', rollNo: '-', branch: '-' };
+            const subsRaw = offlineSubmissions[sid] || {};
+            const answered = Object.keys(subsRaw).length;
+            const correct = Object.values(subsRaw).reduce((acc, subVal) => {
+              try {
+                const sub = typeof subVal === 'string' ? JSON.parse(subVal) : subVal;
+                return acc + (sub.score > 0 ? 1 : 0);
+              } catch(e) { return acc; }
+            }, 0);
+            
+            let lastSubTime = 0;
+            Object.values(subsRaw).forEach(subVal => {
+              try {
+                const sub = typeof subVal === 'string' ? JSON.parse(subVal) : subVal;
+                if (sub.submittedAt > lastSubTime) lastSubTime = sub.submittedAt;
+              } catch(e) {}
+            });
+
+            leaderboardData.push({
+              studentId: sid,
+              name: studentInfo.name || 'Unknown',
+              rollNo: studentInfo.rollNo || '-',
+              branch: studentInfo.branch || '-',
+              totalScore: parseInt(score) || 0,
+              answered,
+              correct,
+              lastSubmission: lastSubTime
+            });
+          }
+
+          // Include any participants not yet in sorted set
+          participants.forEach(p => {
+            if (!leaderboardData.some(r => r.studentId === p.studentId)) {
+              const subsRaw = offlineSubmissions[p.studentId] || {};
+              const answered = Object.keys(subsRaw).length;
+              const correct = Object.values(subsRaw).reduce((acc, subVal) => {
+                try {
+                  const sub = typeof subVal === 'string' ? JSON.parse(subVal) : subVal;
+                  return acc + (sub.score > 0 ? 1 : 0);
+                } catch(e) { return acc; }
+              }, 0);
+
+              let lastSubTime = 0;
+              Object.values(subsRaw).forEach(subVal => {
+                try {
+                  const sub = typeof subVal === 'string' ? JSON.parse(subVal) : subVal;
+                  if (sub.submittedAt > lastSubTime) lastSubTime = sub.submittedAt;
+                } catch(e) {}
+              });
+
+              leaderboardData.push({
+                studentId: p.studentId,
+                name: p.name || 'Unknown',
+                rollNo: p.rollNo || '-',
+                branch: p.branch || '-',
+                totalScore: 0,
+                answered,
+                correct,
+                lastSubmission: lastSubTime
+              });
+            }
+          });
+
+          leaderboardData.sort((a, b) => b.totalScore - a.totalScore || a.studentId.localeCompare(b.studentId));
+          state.mentor.leaderboardData = leaderboardData;
+
+          // Compute maxScore
+          state.mentor.maxScore = (archive.questions || []).reduce((acc, q) => acc + (parseInt(q.marks) || 0), 0);
+
+          // Render initial playback UI
+          mentor.initDashboard();
+
+          // Override UI elements for playback mode
+          el('mentor-dash-title').innerHTML = `<span style="color:var(--yellow);margin-right:8px;font-weight:700">[OFFLINE PLAYBACK]</span> ${archive.meta.title} — ${archive.roomId}`;
+          
+          // Hide room controls
+          el('btn-start-exam').style.display = 'none';
+          el('btn-end-exam').style.display = 'none';
+          el('mentor-timer-row').style.display = 'none';
+          
+          // Disable/hide editing functions
+          const addQBtn = el('btn-add-query') || document.querySelector('.exam-qlist-hdr button');
+          if (addQBtn) addQBtn.style.display = 'none';
+          const saveQuestionsBtn = el('btn-save-questions');
+          if (saveQuestionsBtn) saveQuestionsBtn.style.display = 'none';
+
+          // Render questions list and first question if available
+          mentor._renderQList();
+          mentor._updateQCounts();
+
+          // Hide participants panel and show export panel
+          el('mentor-participants-panel').style.display = 'none';
+          el('mentor-export-panel').style.display = 'flex';
+          const rightSidebar = document.querySelector('.exam-dash-right');
+          if (rightSidebar) rightSidebar.style.display = 'flex';
+
+          // Force leaderboard render
+          mentor.fetchLeaderboard();
+
+        } catch (err) {
+          alert('Failed to parse session archive JSON: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      // Reset input
+      fileInput.value = '';
     },
 
     async removeStudent(studentId, studentName) {
@@ -7428,6 +7931,222 @@ const ExamPortal = (() => {
         alert(res.error || 'Failed to remove student');
       }
     },
+
+    // ── Removed Students ─────────────────────────────────────────────────────
+
+    async viewRemoved() {
+      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/kicked?mentorId=${state.mentor.mentorId}`);
+      if (res.status === 'ok') {
+        const kicked = res.kicked || [];
+        const tbody = el('mentor-removed-tbody');
+        if (kicked.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text3)">// No removed students</td></tr>';
+        } else {
+          tbody.innerHTML = kicked.map(student => `
+            <tr>
+              <td class="exam-lb-name">${esc(student.name)}</td>
+              <td style="font-family:'JetBrains Mono',monospace">${esc(student.rollNo)}</td>
+              <td style="text-align:center">
+                <button class="exam-btn exam-btn-green" style="padding:4px 8px;font-size:11px;height:auto"
+                  onclick="ExamPortal.mentor.reallowStudent('${student.studentId}', '${esc(student.name)}')">
+                  Re-allow
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+        showPanel('exam-mentor-removed-panel');
+      }
+    },
+
+    closeRemovedView() {
+      showPanel('exam-mentor-dash-panel');
+    },
+
+    async reallowStudent(studentId, studentName) {
+      if (!confirm(`Are you sure you want to re-allow ${studentName} to join the test?`)) return;
+      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/student/${studentId}/reallow`, 'POST', {
+        mentorId: state.mentor.mentorId
+      });
+      if (res.status === 'ok') {
+        mentor.viewRemoved();
+        mentor.fetchLeaderboard();
+      } else {
+        alert(res.error || 'Failed to re-allow student');
+      }
+    },
+
+    // ── Submission Viewing ───────────────────────────────────────────────────
+
+    async viewSubmission(studentId) {
+      const student = (state.mentor.leaderboardData || []).find(x => x.studentId === studentId);
+      if (!student) return;
+
+      let submissions = {};
+      if (state.mentor.isPlayback) {
+        submissions = state.mentor.offlineSubmissions[studentId] || {};
+      } else {
+        const roomId = state.mentor.roomId;
+        const mentorId = state.mentor.mentorId;
+        const res = await apiCall(`/api/exam/room/${roomId}/student/${studentId}/submissions?mentorId=${mentorId}`);
+        if (res.status !== 'ok') {
+          alert(res.error || 'Failed to load submissions');
+          return;
+        }
+        submissions = res.submissions || {};
+      }
+
+      state.mentor.viewingStudent = student;
+      state.mentor.viewingSubmissions = submissions;
+      
+      el('mentor-sub-title').textContent = `Viewing Submission: ${student.name} (${student.rollNo})`;
+      
+      // Initialize read-only editor if not exists
+      if (!state.mentor.submissionEditor) {
+        const ta = el('mentor-sub-editor');
+        if (ta && typeof CodeMirror !== 'undefined') {
+          state.mentor.submissionEditor = CodeMirror.fromTextArea(ta, {
+            mode: 'javascript',
+            theme: 'default',
+            lineNumbers: true,
+            readOnly: 'nocursor',
+            matchBrackets: true
+          });
+          state.mentor.submissionEditor.setSize('100%', '100%');
+        }
+      }
+
+      mentor._renderSubQNav();
+      showPanel('exam-mentor-submission-panel');
+
+      if (state.mentor.questions && state.mentor.questions.length > 0) {
+        mentor.selectSubmissionQuestion(0);
+      }
+    },
+
+    closeSubmissionView() {
+      state.mentor.viewingStudent = null;
+      state.mentor.viewingSubmissions = null;
+      showPanel('exam-mentor-dash-panel');
+    },
+
+    _renderSubQNav() {
+      const qs = state.mentor.questions || [];
+      const body = el('mentor-sub-qnav-body');
+      if (!body) return;
+      if (qs.length === 0) {
+        body.innerHTML = '<div class="exam-participants-empty">// No questions found</div>';
+        return;
+      }
+
+      body.innerHTML = qs.map((q, i) => {
+        const sub = state.mentor.viewingSubmissions[q.id];
+        const statusClass = sub ? 'exam-q-status-submitted' : 'exam-q-status-unattempted';
+        const scoreText = sub ? `${sub.score}/${q.marks}` : `0/${q.marks}`;
+        
+        return `
+          <div class="exam-qnav-card ${state.mentor.currentSubQIdx === i ? 'active' : ''}"
+               onclick="ExamPortal.mentor.selectSubmissionQuestion(${i})">
+            <div class="exam-q-card-top">
+              <span class="exam-q-num">Q${i + 1}</span>
+              <span class="exam-q-type-chip ${q.type === 'query' ? 'exam-q-type-query' : 'exam-q-type-mcq'}">${q.type === 'query' ? 'QUERY' : 'MCQ'}</span>
+              <span class="exam-q-marks-badge" style="color:var(--text);font-weight:600">${scoreText}</span>
+              <div class="exam-q-status-dot ${statusClass}" style="margin-left:auto"></div>
+            </div>
+            <div class="exam-q-preview">${q.text ? q.text.substring(0, 50) + '...' : ''}</div>
+          </div>
+        `;
+      }).join('');
+    },
+
+    selectSubmissionQuestion(idx) {
+      const qs = state.mentor.questions || [];
+      if (!qs || !qs[idx]) return;
+
+      state.mentor.currentSubQIdx = idx;
+      const q = qs[idx];
+      const sub = state.mentor.viewingSubmissions[q.id];
+
+      // Re-render nav to highlight active
+      mentor._renderSubQNav();
+
+      el('mentor-sub-q-number').textContent = `Q${idx + 1}`;
+      el('mentor-sub-q-type-chip').textContent = q.type === 'query' ? 'QUERY' : 'MCQ';
+      el('mentor-sub-q-type-chip').className = `exam-q-type-chip ${q.type === 'query' ? 'exam-q-type-query' : 'exam-q-type-mcq'}`;
+      el('mentor-sub-q-marks').textContent = sub ? `Score: ${sub.score} / ${q.marks}` : `Score: 0 / ${q.marks}`;
+      el('mentor-sub-q-text').textContent = q.text;
+      
+      el('mentor-sub-question-display').style.display = 'block';
+      el('mentor-sub-no-q').style.display = 'none';
+
+      if (q.type === 'query') {
+        el('mentor-sub-query-area').style.display = 'flex';
+        el('mentor-sub-mcq-area').style.display = 'none';
+        
+        if (state.mentor.submissionEditor) {
+          state.mentor.submissionEditor.setValue(sub ? (sub.query || '// Empty submission') : '// No submission provided');
+          // Refresh needed when element becomes visible
+          setTimeout(() => state.mentor.submissionEditor.refresh(), 50);
+        }
+      } else {
+        el('mentor-sub-query-area').style.display = 'none';
+        el('mentor-sub-mcq-area').style.display = 'flex';
+        
+        const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const optionsHtml = (q.options || []).map((opt, i) => {
+          const isCorrect = String(i) === String(q.correctOption);
+          const isSelected = sub && String(sub.selectedOption) === String(i);
+          
+          let cardStyle = 'background:var(--bg3);border:1px solid var(--border);opacity:0.8;';
+          let indicatorHtml = '';
+          let ringColor = 'var(--text3)';
+
+          if (isSelected && isCorrect) {
+            // Selected & Correct: Vibrant Green
+            cardStyle = 'background:rgba(35,209,139,0.06);border:1px solid var(--green3);box-shadow:0 0 10px rgba(35,209,139,0.15);';
+            ringColor = 'var(--green3)';
+            indicatorHtml = `
+              <span style="margin-left:auto;font-size:10px;font-weight:700;color:var(--green3);background:rgba(35,209,139,0.15);padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px">
+                ✓ Correct Selection
+              </span>
+            `;
+          } else if (isSelected && !isCorrect) {
+            // Selected & Wrong: Vibrant Red
+            cardStyle = 'background:rgba(255,77,77,0.06);border:1px solid var(--red);box-shadow:0 0 10px rgba(255,77,77,0.1);';
+            ringColor = 'var(--red)';
+            indicatorHtml = `
+              <span style="margin-left:auto;font-size:10px;font-weight:700;color:var(--red);background:rgba(255,77,77,0.15);padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px">
+                ✗ Wrong Selection
+              </span>
+            `;
+          } else if (isCorrect) {
+            // Correct answer but not selected: Dotted/Dashed Green
+            cardStyle = 'background:rgba(78,201,176,0.03);border:1px dashed var(--green2);';
+            ringColor = 'var(--green2)';
+            indicatorHtml = `
+              <span style="margin-left:auto;font-size:10px;font-weight:600;color:var(--green2);background:rgba(78,201,176,0.1);padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px">
+                Correct Answer
+              </span>
+            `;
+          } else {
+            // Neutral Option
+            cardStyle = 'background:var(--bg3);border:1px solid var(--border);';
+          }
+
+          return `
+            <div class="exam-mcq-opt" style="display:flex;align-items:center;padding:12px 16px;margin-bottom:8px;border-radius:6px;transition:all 0.2s;${cardStyle}">
+              <div class="exam-mcq-ring" style="width:14px;height:14px;border:2px solid ${ringColor};border-radius:50%;margin-right:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                ${isSelected ? `<div style="width:6px;height:6px;background:${ringColor};border-radius:50%"></div>` : ''}
+              </div>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:${ringColor};margin-right:8px">[${labels[i] || i}]</span>
+              <div class="exam-mcq-text" style="font-size:13px;color:var(--text);font-family:'Segoe UI',system-ui,sans-serif">${esc(opt)}</div>
+              ${indicatorHtml}
+            </div>
+          `;
+        }).join('');
+        el('mentor-sub-mcq-options').innerHTML = optionsHtml;
+      }
+    }
   }; // end mentor namespace
 
   // ── STUDENT NAMESPACE ──────────────────────────────────────────────────────
@@ -7518,7 +8237,7 @@ const ExamPortal = (() => {
             await studentNS.initExam(roomId);
           }
         }
-      }, 3000);
+      }, 5000);
     },
 
     async initExam(roomId) {
@@ -7540,6 +8259,26 @@ const ExamPortal = (() => {
         state.student.status[q.id] = 'unattempted';
       });
 
+      // Fetch existing submissions for the student to restore their state
+      try {
+        const subsRes = await apiCall(`/api/exam/room/${roomId}/student/${state.student.studentId}/submissions?isStudent=1`);
+        if (subsRes.status === 'ok' && subsRes.submissions) {
+          state.student.questions.forEach(q => {
+            const sub = subsRes.submissions[q.id];
+            if (sub) {
+              state.student.status[q.id] = 'submitted';
+              if (q.type === 'query') {
+                q._studentDraft = sub.query || `// Question\\ndb.`;
+              } else if (q.type === 'mcq') {
+                q._studentSelectedOption = sub.selectedOption !== undefined && sub.selectedOption !== null ? parseInt(sub.selectedOption) : null;
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Failed to restore previous submissions:", err);
+      }
+
       // Update header
       if (el('student-exam-room-title')) el('student-exam-room-title').textContent = (res.meta && res.meta.title) ? res.meta.title : roomId;
 
@@ -7553,22 +8292,22 @@ const ExamPortal = (() => {
 
       showPanel('exam-student-exam-panel');
 
-      // Poll for exam end & kicked status
+      // Poll for exam end & kicked status using optimized status check
       clearInterval(state.student.pollInterval);
       state.student.pollInterval = setInterval(async () => {
-        const statusRes = await apiCall(`/api/exam/room/${roomId}`);
+        const statusRes = await apiCall(`/api/exam/room/${roomId}/status`);
         if (statusRes.status === 'ok') {
           if (statusRes.kicked && statusRes.kicked.includes(state.student.studentId)) {
             studentNS.handleKicked();
             return;
           }
-          if (statusRes.meta && statusRes.meta.status === 'ended') {
+          if (statusRes.roomStatus === 'ended') {
             clearInterval(state.student.pollInterval);
             clearInterval(state.student.timerInterval);
             studentNS._lockExam();
           }
         }
-      }, 3000);
+      }, 6000);
 
       // Init student editor
       setTimeout(() => studentNS._initStudentEditor(), 100);
@@ -7698,6 +8437,7 @@ const ExamPortal = (() => {
         // Reset console
         el('student-pane-yours').innerHTML = '<span style="color:var(--text3)">// Run a query to see output here</span>';
         el('student-console-status').textContent = '— Ready';
+        el('student-console-status').style.color = 'var(--text3)';
         state.student.hasRunOnce = false;
         el('student-submit-query-btn').disabled = true;
         el('student-submit-query-btn').style.opacity = '0.4';
@@ -7709,8 +8449,13 @@ const ExamPortal = (() => {
         el('student-query-area').style.display = 'none';
         el('student-mcq-area').style.display = 'flex';
         el('btn-inspect-dataset').style.display = 'none';
-        state.student.selectedOption = null;
-        el('student-mcq-status').textContent = '';
+        state.student.selectedOption = q._studentSelectedOption !== undefined && q._studentSelectedOption !== null ? q._studentSelectedOption : null;
+        if (state.student.status[q.id] === 'submitted') {
+          el('student-mcq-status').textContent = '// Answer submitted.';
+          el('student-mcq-status').style.color = 'var(--green3)';
+        } else {
+          el('student-mcq-status').textContent = '';
+        }
         studentNS._renderMCQOptions(q);
       }
 
@@ -7756,6 +8501,7 @@ const ExamPortal = (() => {
       const q = state.student.questions[state.student.currentQIdx];
       if (q) {
         state.student.status[q.id] = 'draft';
+        q._studentSelectedOption = idx;
         studentNS._renderMCQOptions(q);
         studentNS._renderQNav();
       }
@@ -7782,6 +8528,7 @@ const ExamPortal = (() => {
       el('student-run-btn').textContent = 'Running...';
       el('student-run-btn').disabled = true;
       el('student-console-status').textContent = '— Running...';
+      el('student-console-status').style.color = 'var(--text3)';
 
       const res = await apiCall(`/api/exam/room/${state.student.roomId}/query`, 'POST', {
         datasetIds,
@@ -7796,12 +8543,14 @@ const ExamPortal = (() => {
         const results = res.results !== undefined ? res.results : (res.data || []);
         state.student.lastRunOutput = results;
         el('student-console-status').textContent = `— ${results.length} doc(s)`;
+        el('student-console-status').style.color = 'var(--text3)';
         el('student-pane-yours').innerHTML = `<pre style="color:var(--text);font-size:11px;white-space:pre-wrap">${JSON.stringify(results, null, 2)}</pre>`;
         state.student.hasRunOnce = true;
         el('student-submit-query-btn').disabled = false;
         el('student-submit-query-btn').style.opacity = '1';
       } else {
         el('student-console-status').textContent = '— Error';
+        el('student-console-status').style.color = 'var(--red)';
         el('student-pane-yours').innerHTML = `<span style="color:var(--red)">${res.error || '// Unknown error'}</span>`;
       }
 
@@ -7945,11 +8694,15 @@ const ExamPortal = (() => {
       }
 
       if (res.status === 'ok') {
+        const isCorrect = res.correct;
         if (isMCQ) {
           el('student-mcq-status').textContent = '// Answer submitted.';
-          el('student-mcq-status').style.color = 'var(--green2)';
+          el('student-mcq-status').style.color = 'var(--green3)';
+          q._studentSelectedOption = state.student.selectedOption;
         } else {
-          el('student-console-status').textContent = '— Answer submitted.';
+          el('student-console-status').textContent = isCorrect ? '— Accepted' : '— Wrong Answer';
+          el('student-console-status').style.color = isCorrect ? 'var(--green3)' : 'var(--red)';
+          q._studentDraft = body.query;
           studentNS._fetchExpectedPreview(q.id);
         }
         state.student.status[q.id] = 'submitted';
@@ -7963,6 +8716,9 @@ const ExamPortal = (() => {
         if (isMCQ) {
           el('student-mcq-status').textContent = res.error || '// Submission failed';
           el('student-mcq-status').style.color = 'var(--red)';
+        } else {
+          el('student-console-status').textContent = '— Submission failed';
+          el('student-console-status').style.color = 'var(--red)';
         }
       }
       studentNS._renderQNav();

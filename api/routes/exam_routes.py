@@ -48,7 +48,20 @@ def _hgetall(key: str) -> dict:
 
 
 def _room_key(room_id: str) -> str:
-    return f"room:{room_id}:meta"
+    return f"room:{room_id}"
+
+
+def _get_room_meta(room_id: str) -> dict:
+    """Fetch metadata of the room from its single Redis Hash key."""
+    fields = ["title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt"]
+    raw = _redis_one(["HMGET", f"room:{room_id}"] + fields)
+    if not isinstance(raw, list) or len(raw) != len(fields):
+        return {}
+    result = {}
+    for k, v in zip(fields, raw):
+        if v is not None:
+            result[k] = v
+    return result
 
 
 # ── Room ID generation ────────────────────────────────────────────────────────
@@ -61,7 +74,7 @@ def _gen_room_id() -> str:
         part2 = "".join(random.choices(chars, k=3))
         room_id = f"{part1}-{part2}"
         # Collision check
-        exists = _redis_one(["EXISTS", _room_key(room_id)])
+        exists = _redis_one(["EXISTS", f"room:{room_id}"])
         if not exists:
             return room_id
     # Fallback: longer random id
@@ -130,11 +143,25 @@ def _execute_room_query(room_id: str, dataset_ids, query: str, max_results: int 
         temp_client = mongomock.MongoClient()
         temp_db = temp_client["exam_db"]
 
+        # Batch HMGET for all dataset docs and metadata to optimize DB roundtrips
+        hmget_fields = []
+        for d_id in dataset_ids:
+            if d_id:
+                hmget_fields.extend([f"dataset_docs:{d_id}", f"dataset_meta:{d_id}"])
+        
+        raw_data = []
+        if hmget_fields:
+            raw_data = _redis_one(["HMGET", f"room:{room_id}"] + hmget_fields) or []
+
         loaded_count = 0
+        idx = 0
         for d_id in dataset_ids:
             if not d_id:
                 continue
-            docs_json = _redis_one(["GET", f"room:{room_id}:dataset:{d_id}:docs"])
+            docs_json = raw_data[idx] if idx < len(raw_data) else None
+            meta_json = raw_data[idx+1] if idx+1 < len(raw_data) else None
+            idx += 2
+
             if not docs_json:
                 continue
             try:
@@ -142,7 +169,12 @@ def _execute_room_query(room_id: str, dataset_ids, query: str, max_results: int 
             except Exception:
                 continue
 
-            meta = _hgetall(f"room:{room_id}:dataset:{d_id}:meta")
+            meta = {}
+            if meta_json:
+                try:
+                    meta = json.loads(meta_json)
+                except Exception:
+                    pass
             raw_name = meta.get("name", "")
             raw_coll = meta.get("collection", "")
 
@@ -223,12 +255,27 @@ def api_exam_create_room():
 @exam_bp.route("/api/exam/room/<room_id>", methods=["GET"])
 def api_exam_get_room(room_id: str):
     """Fetch room metadata + questions + participants."""
-    meta = _hgetall(_room_key(room_id))
-    if not meta:
+    fields = [
+        "title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt",
+        "questions", "participants", "datasets", "kicked"
+    ]
+    raw = _redis_one(["HMGET", f"room:{room_id}"] + fields)
+    if not raw or all(v is None for v in raw):
         return jsonify({"status": "error", "error": "Room not found"}), 404
 
+    # Extract metadata fields
+    meta_keys = ["title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt"]
+    meta = {}
+    for k, v in zip(meta_keys, raw[:8]):
+        if v is not None:
+            meta[k] = v
+
+    questions_json = raw[8]
+    participants_json = raw[9]
+    datasets_json = raw[10]
+    kicked_json = raw[11]
+
     # Questions
-    questions_json = _redis_one(["GET", f"room:{room_id}:questions"])
     questions = []
     if questions_json:
         try:
@@ -236,33 +283,37 @@ def api_exam_get_room(room_id: str):
         except Exception:
             pass
 
+    # Strip correctOption from questions if not requested by the mentor
+    is_mentor = request.args.get("mentorId", "") == meta.get("mentorId", "")
+    if not is_mentor:
+        for q in questions:
+            if q.get("type") == "mcq":
+                q.pop("correctOption", None)
+
     # Participants
-    participants_raw = _hgetall(f"room:{room_id}:participants")
+    participants_raw = json.loads(participants_json) if participants_json else {}
     participants = []
-    for sid, p_json in participants_raw.items():
+    for sid, p_val in participants_raw.items():
         try:
-            p = json.loads(p_json)
+            p = json.loads(p_val) if isinstance(p_val, str) else p_val
             p["studentId"] = sid
             participants.append(p)
         except Exception:
             pass
 
     # Datasets
-    datasets_raw = _hgetall(f"room:{room_id}:datasets")
+    datasets_raw = json.loads(datasets_json) if datasets_json else {}
     datasets = []
-    for ds_id, ds_json in datasets_raw.items():
+    for ds_id, ds_val in datasets_raw.items():
         try:
-            ds = json.loads(ds_json)
+            ds = json.loads(ds_val) if isinstance(ds_val, str) else ds_val
             ds["datasetId"] = ds_id
             datasets.append(ds)
         except Exception:
             pass
 
     # Kicked participants
-    kicked_raw = _redis_one(["SMEMBERS", f"room:{room_id}:kicked"])
-    kicked = []
-    if isinstance(kicked_raw, list):
-        kicked = [str(k) for k in kicked_raw]
+    kicked = json.loads(kicked_json) if kicked_json else []
 
     return jsonify({
         "status": "ok",
@@ -275,10 +326,33 @@ def api_exam_get_room(room_id: str):
     })
 
 
+@exam_bp.route("/api/exam/room/<room_id>/status", methods=["GET"])
+def api_exam_get_room_status(room_id: str):
+    """Lightweight status check for room metadata and kicked list."""
+    fields = ["status", "startedAt", "endedAt", "kicked"]
+    raw = _redis_one(["HMGET", f"room:{room_id}"] + fields)
+    if not raw or all(v is None for v in raw):
+        return jsonify({"status": "error", "error": "Room not found"}), 404
+
+    status = raw[0]
+    started_at = raw[1]
+    ended_at = raw[2]
+    kicked_json = raw[3]
+    kicked = json.loads(kicked_json) if kicked_json else []
+
+    return jsonify({
+        "status": "ok",
+        "roomStatus": status,
+        "startedAt": started_at,
+        "endedAt": ended_at,
+        "kicked": kicked
+    })
+
+
 @exam_bp.route("/api/exam/room/<room_id>/join", methods=["POST"])
 def api_exam_join_room(room_id: str):
     """Student joins a room."""
-    meta = _hgetall(_room_key(room_id))
+    meta = _get_room_meta(room_id)
     if not meta:
         return jsonify({"status": "error", "error": "Room not found"}), 404
 
@@ -294,21 +368,55 @@ def api_exam_join_room(room_id: str):
     if not name or not roll_no or not branch:
         return jsonify({"status": "error", "error": "Name, Roll No, and Branch are required"}), 400
 
-    student_id = str(uuid.uuid4())[:8]
+    participants_json = _redis_one(["HGET", f"room:{room_id}", "participants"])
+    participants_raw = json.loads(participants_json) if participants_json else {}
+    existing_student_id = None
+    
+    if participants_raw:
+        for sid, p_val in participants_raw.items():
+            try:
+                p = json.loads(p_val) if isinstance(p_val, str) else p_val
+                if p.get("rollNo") == roll_no:
+                    # Same roll number found. Does name match?
+                    if p.get("name", "").lower() == name.lower():
+                        existing_student_id = sid
+                    else:
+                        return jsonify({"status": "error", "error": "Roll number already in use by another name"}), 403
+            except Exception:
+                pass
+                
+    if existing_student_id:
+        student_id = existing_student_id
+        # Check if they are kicked
+        kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
+        kicked = json.loads(kicked_json) if kicked_json else []
+        if student_id in kicked:
+            return jsonify({"status": "error", "error": "kicked", "message": "You have been removed by the mentor"}), 403
+    else:
+        student_id = str(uuid.uuid4())[:8]
+
     now = int(time.time())
 
-    student_data = json.dumps({
+    student_data = {
         "name": name,
         "rollNo": roll_no,
         "branch": branch,
         "joinedAt": now,
-    })
+    }
+
+    participants_raw[student_id] = student_data
+
+    # Update leaderboard
+    leaderboard_json = _redis_one(["HGET", f"room:{room_id}", "leaderboard"])
+    leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
+    if student_id not in leaderboard_raw:
+        leaderboard_raw[student_id] = 0
 
     pipeline = [
-        ["HSET", f"room:{room_id}:participants", student_id, student_data],
-        ["EXPIRE", f"room:{room_id}:participants", str(60 * 60 * 24 * 7)],
-        ["ZADD", f"room:{room_id}:leaderboard", "NX", "0", student_id],
-        ["EXPIRE", f"room:{room_id}:leaderboard", str(60 * 60 * 24 * 7)],
+        ["HSET", f"room:{room_id}",
+         "participants", json.dumps(participants_raw),
+         "leaderboard", json.dumps(leaderboard_raw)],
+        ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
     ]
     _redis_cmd(pipeline)
 
@@ -354,28 +462,51 @@ def api_exam_end_room(room_id: str):
 
     now = int(time.time())
     _redis_cmd([
-        ["HSET", _room_key(room_id), "status", "ended", "endedAt", str(now)],
+        ["HSET", f"room:{room_id}", "status", "ended", "endedAt", str(now)],
     ])
     return jsonify({"status": "ok", "endedAt": now})
 
 
 @exam_bp.route("/api/exam/room/<room_id>/questions", methods=["POST"])
 def api_exam_save_questions(room_id: str):
-    """Save questions array for a room."""
+    """Save questions array for a room and clean up stale data for deleted questions."""
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     questions = body.get("questions", [])
 
-    meta = _hgetall(_room_key(room_id))
+    meta = _get_room_meta(room_id)
     if not meta:
         return jsonify({"status": "error", "error": "Room not found"}), 404
     if meta.get("mentorId") != mentor_id:
         return jsonify({"status": "error", "error": "Unauthorized"}), 403
 
-    _redis_cmd([
-        ["SET", f"room:{room_id}:questions", json.dumps(questions)],
-        ["EXPIRE", f"room:{room_id}:questions", str(60 * 60 * 24 * 7)],
-    ])
+    # Fetch existing questions to find deleted ones
+    old_questions_json = _redis_one(["HGET", f"room:{room_id}", "questions"])
+    old_questions = []
+    if old_questions_json:
+        try:
+            old_questions = json.loads(old_questions_json)
+        except Exception:
+            pass
+
+    # Find deleted question IDs
+    old_ids = {q.get("id") for q in old_questions if q.get("id")}
+    new_ids = {q.get("id") for q in questions if q.get("id")}
+    deleted_ids = old_ids - new_ids
+
+    pipeline = [
+        ["HSET", f"room:{room_id}", "questions", json.dumps(questions)],
+        ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
+    ]
+
+    # Delete frozen answers for deleted questions from the room Hash
+    if deleted_ids:
+        hdel_cmd = ["HDEL", f"room:{room_id}"]
+        for q_id in deleted_ids:
+            hdel_cmd.append(f"q_answer:{q_id}")
+        pipeline.append(hdel_cmd)
+
+    _redis_cmd(pipeline)
     return jsonify({"status": "ok", "count": len(questions)})
 
 
@@ -387,7 +518,7 @@ def api_exam_upload_dataset(room_id: str):
     name = body.get("name", "dataset").strip()
     docs = body.get("docs", [])
 
-    meta = _hgetall(_room_key(room_id))
+    meta = _get_room_meta(room_id)
     if not meta:
         return jsonify({"status": "error", "error": "Room not found"}), 404
     if meta.get("mentorId") != mentor_id:
@@ -400,18 +531,20 @@ def api_exam_upload_dataset(room_id: str):
     safe_name = "".join(c for c in name.lower() if c.isalnum() or c == "_")
     collection_name = safe_name
 
+    datasets_json = _redis_one(["HGET", f"room:{room_id}", "datasets"])
+    datasets_dict = json.loads(datasets_json) if datasets_json else {}
+    datasets_dict[dataset_id] = {
+        "name": name,
+        "collection": collection_name,
+        "docCount": len(docs)
+    }
+
     pipeline = [
-        ["HSET", f"room:{room_id}:dataset:{dataset_id}:meta",
-         "name", name,
-         "collection", collection_name,
-         "docCount", str(len(docs))],
-        ["EXPIRE", f"room:{room_id}:dataset:{dataset_id}:meta", str(60 * 60 * 24 * 7)],
-        ["SET", f"room:{room_id}:dataset:{dataset_id}:docs", json.dumps(docs)],
-        ["EXPIRE", f"room:{room_id}:dataset:{dataset_id}:docs", str(60 * 60 * 24 * 7)],
-        # Track dataset in room's dataset index
-        ["HSET", f"room:{room_id}:datasets", dataset_id,
-         json.dumps({"name": name, "collection": collection_name, "docCount": len(docs)})],
-        ["EXPIRE", f"room:{room_id}:datasets", str(60 * 60 * 24 * 7)],
+        ["HSET", f"room:{room_id}",
+         f"dataset_meta:{dataset_id}", json.dumps({"name": name, "collection": collection_name, "docCount": len(docs)}),
+         f"dataset_docs:{dataset_id}", json.dumps(docs),
+         "datasets", json.dumps(datasets_dict)],
+        ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
     ]
     _redis_cmd(pipeline)
 
@@ -430,14 +563,18 @@ def api_exam_delete_dataset(room_id: str, dataset_id: str):
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
 
-    meta = _hgetall(_room_key(room_id))
+    meta = _get_room_meta(room_id)
     if not meta or meta.get("mentorId") != mentor_id:
         return jsonify({"status": "error", "error": "Unauthorized"}), 403
 
+    datasets_json = _redis_one(["HGET", f"room:{room_id}", "datasets"])
+    datasets_dict = json.loads(datasets_json) if datasets_json else {}
+    datasets_dict.pop(dataset_id, None)
+
     _redis_cmd([
-        ["DEL", f"room:{room_id}:dataset:{dataset_id}:meta"],
-        ["DEL", f"room:{room_id}:dataset:{dataset_id}:docs"],
-        ["HDEL", f"room:{room_id}:datasets", dataset_id],
+        ["HDEL", f"room:{room_id}", f"dataset_meta:{dataset_id}", f"dataset_docs:{dataset_id}"],
+        ["HSET", f"room:{room_id}", "datasets", json.dumps(datasets_dict)],
+        ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)]
     ])
     return jsonify({"status": "ok"})
 
@@ -445,7 +582,7 @@ def api_exam_delete_dataset(room_id: str, dataset_id: str):
 @exam_bp.route("/api/exam/room/<room_id>/dataset/<dataset_id>/schema", methods=["GET"])
 def api_exam_dataset_schema(room_id: str, dataset_id: str):
     """Get schema (field names and types) for a room dataset."""
-    docs_json = _redis_one(["GET", f"room:{room_id}:dataset:{dataset_id}:docs"])
+    docs_json = _redis_one(["HGET", f"room:{room_id}", f"dataset_docs:{dataset_id}"])
     if not docs_json:
         return jsonify({"status": "error", "error": "Dataset not found"}), 404
 
@@ -463,7 +600,8 @@ def api_exam_dataset_schema(room_id: str, dataset_id: str):
                 if k not in schema:
                     schema[k] = type(v).__name__
 
-    meta = _hgetall(f"room:{room_id}:dataset:{dataset_id}:meta")
+    meta_json = _redis_one(["HGET", f"room:{room_id}", f"dataset_meta:{dataset_id}"])
+    meta = json.loads(meta_json) if meta_json else {}
     return jsonify({
         "status": "ok",
         "schema": schema,
@@ -501,7 +639,7 @@ def api_exam_freeze_answer(room_id: str):
         dataset_ids = [body.get("datasetId")]
     query = body.get("query", "").strip()
 
-    meta = _hgetall(_room_key(room_id))
+    meta = _get_room_meta(room_id)
     if not meta or meta.get("mentorId") != mentor_id:
         return jsonify({"status": "error", "error": "Unauthorized"}), 403
 
@@ -517,8 +655,8 @@ def api_exam_freeze_answer(room_id: str):
 
     # Freeze the answer safely
     _redis_cmd([
-        ["SET", f"room:{room_id}:question:{question_id}:answer", json.dumps(stored_docs)],
-        ["EXPIRE", f"room:{room_id}:question:{question_id}:answer", str(60 * 60 * 24 * 7)],
+        ["HSET", f"room:{room_id}", f"q_answer:{question_id}", json.dumps(stored_docs)],
+        ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
     ])
 
     return jsonify({
@@ -541,16 +679,29 @@ def api_exam_submit_answer(room_id: str):
     if not student_id or not question_id:
         return jsonify({"status": "error", "error": "studentId and questionId are required"}), 400
 
-    # Validate room is live
-    meta = _hgetall(_room_key(room_id))
-    if not meta:
+    # Batch retrieve all validation data from Redis Hash in 1 single roundtrip
+    fields = [
+        "status", "kicked", "questions",
+        f"q_answer:{question_id}", f"submissions:{student_id}", "leaderboard"
+    ]
+    raw = _redis_one(["HMGET", f"room:{room_id}"] + fields)
+    if not raw or all(v is None for v in raw):
         return jsonify({"status": "error", "error": "Room not found"}), 404
-    if meta.get("status") != "live":
+
+    status = raw[0]
+    kicked_json = raw[1]
+    questions_json = raw[2]
+    frozen_json = raw[3]
+    subs_json = raw[4]
+    leaderboard_json = raw[5]
+
+    # Validate room is live
+    if status != "live":
         return jsonify({"status": "error", "error": "Exam is not live"}), 400
 
     # Validate student is not kicked
-    is_kicked = _redis_one(["SISMEMBER", f"room:{room_id}:kicked", student_id])
-    if is_kicked:
+    kicked = json.loads(kicked_json) if kicked_json else []
+    if student_id in kicked:
         return jsonify({"status": "error", "error": "kicked", "message": "You have been removed by the mentor"}), 403
 
     score = 0
@@ -560,7 +711,6 @@ def api_exam_submit_answer(room_id: str):
         selected_option = body.get("selectedOption", "")
         correct_option = body.get("correctOption", "")  # sent from client, verified server-side
         # Fetch correct option from questions stored in Redis (server-side verification)
-        questions_json = _redis_one(["GET", f"room:{room_id}:questions"])
         if questions_json:
             try:
                 questions = json.loads(questions_json)
@@ -592,7 +742,6 @@ def api_exam_submit_answer(room_id: str):
                 student_output = result.get("results", [])
 
         # Fetch frozen answer
-        frozen_json = _redis_one(["GET", f"room:{room_id}:question:{question_id}:answer"])
         frozen_answer = []
         if frozen_json:
             try:
@@ -611,22 +760,28 @@ def api_exam_submit_answer(room_id: str):
         })
 
     # Fetch previous submission score for this question
-    prev_submission_json = _redis_one(["HGET", f"room:{room_id}:student:{student_id}:submissions", question_id])
+    submissions = json.loads(subs_json) if subs_json else {}
+    prev_submission_json = submissions.get(question_id)
     prev_score = 0
     if prev_submission_json:
         try:
-            prev_score = json.loads(prev_submission_json).get("score", 0)
+            prev_score = json.loads(prev_submission_json).get("score", 0) if isinstance(prev_submission_json, str) else prev_submission_json.get("score", 0)
         except Exception:
             pass
 
     score_delta = score - prev_score
 
-    # Store submission and update leaderboard sorted set
+    # Update leaderboard
+    leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
+    leaderboard_raw[student_id] = leaderboard_raw.get(student_id, 0) + score_delta
+
+    # Store submission and update leaderboard in Hash
+    submissions[question_id] = submission
     pipeline = [
-        ["HSET", f"room:{room_id}:student:{student_id}:submissions", question_id, submission],
-        ["EXPIRE", f"room:{room_id}:student:{student_id}:submissions", str(60 * 60 * 24 * 7)],
-        ["ZINCRBY", f"room:{room_id}:leaderboard", str(score_delta), student_id],
-        ["EXPIRE", f"room:{room_id}:leaderboard", str(60 * 60 * 24 * 7)],
+        ["HSET", f"room:{room_id}",
+         f"submissions:{student_id}", json.dumps(submissions),
+         "leaderboard", json.dumps(leaderboard_raw)],
+        ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
     ]
 
     _redis_cmd(pipeline)
@@ -642,7 +797,7 @@ def api_exam_submit_answer(room_id: str):
 @exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/expected-preview", methods=["GET"])
 def api_exam_expected_preview(room_id: str, question_id: str):
     """Retrieve first 5 documents of the frozen answer for a question as a preview."""
-    frozen_json = _redis_one(["GET", f"room:{room_id}:question:{question_id}:answer"])
+    frozen_json = _redis_one(["HGET", f"room:{room_id}", f"q_answer:{question_id}"])
     if not frozen_json:
         return jsonify({"status": "error", "error": "No frozen answer found"}), 404
     try:
@@ -653,66 +808,67 @@ def api_exam_expected_preview(room_id: str, question_id: str):
     return jsonify({
         "status": "ok",
         "docCount": len(docs),
-        "preview": docs[:2],
+        "preview": docs[:5],
     })
 
 
 @exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/finish", methods=["POST"])
 def api_exam_student_finish(room_id: str, student_id: str):
     """Submit the final exam for a student."""
-    p_json = _redis_one(["HGET", f"room:{room_id}:participants", student_id])
-    if not p_json:
+    participants_json = _redis_one(["HGET", f"room:{room_id}", "participants"])
+    participants_raw = json.loads(participants_json) if participants_json else {}
+    p_val = participants_raw.get(student_id)
+    if not p_val:
         return jsonify({"status": "error", "error": "Student not found"}), 404
     try:
-        p = json.loads(p_json)
+        p = json.loads(p_val) if isinstance(p_val, str) else p_val
     except Exception:
         p = {}
 
     p["finished"] = True
     p["finishedAt"] = int(time.time())
+    participants_raw[student_id] = p
 
     _redis_cmd([
-        ["HSET", f"room:{room_id}:participants", student_id, json.dumps(p)],
+        ["HSET", f"room:{room_id}", "participants", json.dumps(participants_raw)],
     ])
     return jsonify({"status": "ok"})
 
 
 @exam_bp.route("/api/exam/room/<room_id>/leaderboard", methods=["GET"])
 def api_exam_leaderboard(room_id: str):
-    """Fetch leaderboard from Redis sorted set."""
-    # ZREVRANGE with scores
-    raw = _redis_one(["ZREVRANGE", f"room:{room_id}:leaderboard", "0", "-1", "WITHSCORES"])
-    if not isinstance(raw, list):
-        raw = []
+    """Fetch leaderboard from room Hash key."""
+    leaderboard_json = _redis_one(["HGET", f"room:{room_id}", "leaderboard"])
+    leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
 
-    # raw is [studentId, score, studentId, score, ...]
+    participants_json = _redis_one(["HGET", f"room:{room_id}", "participants"])
+    participants_raw = json.loads(participants_json) if participants_json else {}
+
     ranked = []
-    for i in range(0, len(raw) - 1, 2):
-        sid = raw[i]
-        total_score = float(raw[i + 1]) if i + 1 < len(raw) else 0
-
-        # Fetch student info
-        p_json = _redis_one(["HGET", f"room:{room_id}:participants", sid])
+    for sid, score in leaderboard_raw.items():
+        total_score = float(score)
+        p_val = participants_raw.get(sid)
         student_info = {"name": "Unknown", "rollNo": "-", "branch": "-", "joinedAt": 0}
-        if p_json:
+        if p_val:
             try:
-                student_info = json.loads(p_json)
+                student_info = json.loads(p_val) if isinstance(p_val, str) else p_val
             except Exception:
                 pass
 
         # Fetch submissions for answered/accuracy counts
-        subs_raw = _hgetall(f"room:{room_id}:student:{sid}:submissions")
+        subs_json = _redis_one(["HGET", f"room:{room_id}", f"submissions:{sid}"])
+        subs_raw = json.loads(subs_json) if subs_json else {}
         answered = len(subs_raw)
         correct = sum(
             1 for v in subs_raw.values()
-            if isinstance(v, str) and json.loads(v).get("score", 0) > 0
+            if (json.loads(v) if isinstance(v, str) else v).get("score", 0) > 0
         ) if subs_raw else 0
 
         last_sub_time = 0
         if subs_raw:
             for v in subs_raw.values():
                 try:
-                    t = json.loads(v).get("submittedAt", 0)
+                    t = (json.loads(v) if isinstance(v, str) else v).get("submittedAt", 0)
                     if t > last_sub_time:
                         last_sub_time = t
                 except Exception:
@@ -730,27 +886,26 @@ def api_exam_leaderboard(room_id: str):
         })
 
     # Include any participants not yet in sorted set
-    participants_raw = _hgetall(f"room:{room_id}:participants")
-    ranked_sids = {r["studentId"] for r in ranked}
-    for sid, p_json in participants_raw.items():
-        if sid not in ranked_sids:
+    for sid, p_val in participants_raw.items():
+        if not any(r["studentId"] == sid for r in ranked):
             student_info = {"name": "Unknown", "rollNo": "-", "branch": "-", "joinedAt": 0}
-            if p_json:
+            if p_val:
                 try:
-                    student_info = json.loads(p_json)
+                    student_info = json.loads(p_val) if isinstance(p_val, str) else p_val
                 except Exception:
                     pass
-            subs_raw = _hgetall(f"room:{room_id}:student:{sid}:submissions")
+            subs_json = _redis_one(["HGET", f"room:{room_id}", f"submissions:{sid}"])
+            subs_raw = json.loads(subs_json) if subs_json else {}
             answered = len(subs_raw)
             correct = sum(
                 1 for v in subs_raw.values()
-                if isinstance(v, str) and json.loads(v).get("score", 0) > 0
+                if (json.loads(v) if isinstance(v, str) else v).get("score", 0) > 0
             ) if subs_raw else 0
             last_sub_time = 0
             if subs_raw:
                 for v in subs_raw.values():
                     try:
-                        t = json.loads(v).get("submittedAt", 0)
+                        t = (json.loads(v) if isinstance(v, str) else v).get("submittedAt", 0)
                         if t > last_sub_time:
                             last_sub_time = t
                     except Exception:
@@ -766,8 +921,11 @@ def api_exam_leaderboard(room_id: str):
                 "lastSubmission": last_sub_time,
             })
 
+    # Sort in memory: totalScore desc, studentId asc
+    ranked.sort(key=lambda r: (-r["totalScore"], r["studentId"]))
+
     # Fetch total possible score from questions
-    questions_json = _redis_one(["GET", f"room:{room_id}:questions"])
+    questions_json = _redis_one(["HGET", f"room:{room_id}", "questions"])
     max_score = 0
     total_questions = 0
     if questions_json:
@@ -786,35 +944,20 @@ def api_exam_leaderboard(room_id: str):
     })
 
 
-@exam_bp.route("/api/exam/room/<room_id>/cleanup", methods=["DELETE"])
+@exam_bp.route("/api/exam/room/<room_id>/cleanup", methods=["DELETE", "POST"])
 def api_exam_cleanup_room(room_id: str):
-    """Delete all room:{roomId}:* keys from Redis after export."""
+    """Delete the single room Hash key from Redis."""
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
 
-    meta = _hgetall(_room_key(room_id))
+    meta = _get_room_meta(room_id)
     if not meta or meta.get("mentorId") != mentor_id:
         return jsonify({"status": "error", "error": "Unauthorized"}), 403
 
-    # SCAN for all room:{roomId}:* keys and delete them
-    # Upstash REST: SCAN 0 MATCH room:{roomId}:* COUNT 100
-    prefix = f"room:{room_id}:"
-    cursor = "0"
-    all_keys = []
-    for _ in range(20):  # max 20 scan iterations
-        res = _redis_one(["SCAN", cursor, "MATCH", f"{prefix}*", "COUNT", "100"])
-        if not isinstance(res, list) or len(res) < 2:
-            break
-        cursor = str(res[0])
-        batch = res[1] if isinstance(res[1], list) else []
-        all_keys.extend(batch)
-        if cursor == "0":
-            break
+    # Delete the single room Hash key
+    _redis_one(["DEL", f"room:{room_id}"])
 
-    if all_keys:
-        _redis_cmd([["DEL"] + all_keys])
-
-    return jsonify({"status": "ok", "deletedKeys": len(all_keys)})
+    return jsonify({"status": "ok", "deletedKeys": 1})
 
 
 @exam_bp.route("/api/exam/room/<room_id>/student/<student_id>", methods=["DELETE"])
@@ -823,18 +966,219 @@ def api_exam_remove_student(room_id: str, student_id: str):
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
 
-    meta = _hgetall(_room_key(room_id))
+    meta = _get_room_meta(room_id)
     if not meta or meta.get("mentorId") != mentor_id:
         return jsonify({"status": "error", "error": "Unauthorized"}), 403
 
+    leaderboard_json = _redis_one(["HGET", f"room:{room_id}", "leaderboard"])
+    leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
+    leaderboard_raw.pop(student_id, None)
+
+    kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
+    kicked_raw = json.loads(kicked_json) if kicked_json else []
+    if student_id not in kicked_raw:
+        kicked_raw.append(student_id)
+
     pipeline = [
-        ["HDEL", f"room:{room_id}:participants", student_id],
-        ["ZREM", f"room:{room_id}:leaderboard", student_id],
-        ["SADD", f"room:{room_id}:kicked", student_id],
-        ["EXPIRE", f"room:{room_id}:kicked", str(60 * 60 * 24 * 7)],
-        ["DEL", f"room:{room_id}:student:{student_id}:submissions"],
+        ["HSET", f"room:{room_id}",
+         "leaderboard", json.dumps(leaderboard_raw),
+         "kicked", json.dumps(kicked_raw)],
+        ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
     ]
     _redis_cmd(pipeline)
 
     return jsonify({"status": "ok", "studentId": student_id})
 
+
+@exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/reallow", methods=["POST"])
+def api_exam_reallow_student(room_id: str, student_id: str):
+    """Mentor re-allows a kicked student."""
+    body = request.get_json(force=True, silent=True) or {}
+    mentor_id = body.get("mentorId", "")
+
+    meta = _get_room_meta(room_id)
+    if not meta or meta.get("mentorId") != mentor_id:
+        return jsonify({"status": "error", "error": "Unauthorized"}), 403
+
+    # Calculate their total score from submissions
+    subs_json = _redis_one(["HGET", f"room:{room_id}", f"submissions:{student_id}"])
+    submissions = json.loads(subs_json) if subs_json else {}
+    total_score = 0
+    if submissions:
+        for sub_val in submissions.values():
+            try:
+                sub = json.loads(sub_val) if isinstance(sub_val, str) else sub_val
+                total_score += sub.get("score", 0)
+            except Exception:
+                pass
+
+    leaderboard_json = _redis_one(["HGET", f"room:{room_id}", "leaderboard"])
+    leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
+    leaderboard_raw[student_id] = total_score
+
+    kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
+    kicked_raw = json.loads(kicked_json) if kicked_json else []
+    if student_id in kicked_raw:
+        kicked_raw.remove(student_id)
+
+    pipeline = [
+        ["HSET", f"room:{room_id}",
+         "leaderboard", json.dumps(leaderboard_raw),
+         "kicked", json.dumps(kicked_raw)],
+        ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
+    ]
+    _redis_cmd(pipeline)
+    return jsonify({"status": "ok"})
+
+
+@exam_bp.route("/api/exam/room/<room_id>/kicked", methods=["GET"])
+def api_exam_kicked_list(room_id: str):
+    """Mentor fetches the list of kicked students."""
+    mentor_id = request.args.get("mentorId", "")
+
+    meta = _get_room_meta(room_id)
+    if not meta or meta.get("mentorId") != mentor_id:
+        return jsonify({"status": "error", "error": "Unauthorized"}), 403
+
+    kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
+    kicked_raw = json.loads(kicked_json) if kicked_json else []
+    kicked_students = []
+
+    participants_json = _redis_one(["HGET", f"room:{room_id}", "participants"])
+    participants_raw = json.loads(participants_json) if participants_json else {}
+
+    for sid in kicked_raw:
+        p_val = participants_raw.get(sid)
+        if p_val:
+            try:
+                p = json.loads(p_val) if isinstance(p_val, str) else p_val
+                p["studentId"] = sid
+                kicked_students.append(p)
+            except Exception:
+                pass
+        else:
+            kicked_students.append({"studentId": sid, "name": "Unknown", "rollNo": "Unknown"})
+
+    return jsonify({"status": "ok", "kicked": kicked_students})
+
+
+@exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/submissions", methods=["GET"])
+def api_exam_student_submissions(room_id: str, student_id: str):
+    """Mentor fetches all submissions for a specific student or student restores their own state."""
+    mentor_id = request.args.get("mentorId", "")
+    is_student_themselves = request.args.get("isStudent", "") == "1"
+
+    meta = _get_room_meta(room_id)
+    if not meta:
+        return jsonify({"status": "error", "error": "Room not found"}), 404
+
+    if not is_student_themselves and meta.get("mentorId") != mentor_id:
+        return jsonify({"status": "error", "error": "Unauthorized"}), 403
+
+    subs_json = _redis_one(["HGET", f"room:{room_id}", f"submissions:{student_id}"])
+    submissions_raw = json.loads(subs_json) if subs_json else {}
+    submissions = {}
+    if submissions_raw:
+        for q_id, sub_val in submissions_raw.items():
+            try:
+                submissions[q_id] = json.loads(sub_val) if isinstance(sub_val, str) else sub_val
+            except Exception:
+                pass
+
+    return jsonify({"status": "ok", "submissions": submissions})
+
+
+@exam_bp.route("/api/exam/room/<room_id>/archive", methods=["GET"])
+def api_exam_room_archive(room_id: str):
+    """Fetch all room data (meta, questions, participants, leaderboard, and submissions) as a single JSON file for offline playback."""
+    mentor_id = request.args.get("mentorId", "")
+
+    meta = _get_room_meta(room_id)
+    if not meta or meta.get("mentorId") != mentor_id:
+        return jsonify({"status": "error", "error": "Unauthorized"}), 403
+
+    # Questions
+    questions_json = _redis_one(["HGET", f"room:{room_id}", "questions"])
+    questions = json.loads(questions_json) if questions_json else []
+
+    # Participants
+    participants_json = _redis_one(["HGET", f"room:{room_id}", "participants"])
+    participants_raw = json.loads(participants_json) if participants_json else {}
+
+    # Datasets
+    datasets_json = _redis_one(["HGET", f"room:{room_id}", "datasets"])
+    datasets_raw = json.loads(datasets_json) if datasets_json else {}
+
+    # Kicked
+    kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
+    kicked = json.loads(kicked_json) if kicked_json else []
+
+    # Leaderboard
+    leaderboard_json = _redis_one(["HGET", f"room:{room_id}", "leaderboard"])
+    leaderboard = json.loads(leaderboard_json) if leaderboard_json else {}
+
+    # Submissions (Fetch for all participants)
+    submissions = {}
+    for sid in participants_raw.keys():
+        subs_json = _redis_one(["HGET", f"room:{room_id}", f"submissions:{sid}"])
+        if subs_json:
+            try:
+                raw_subs = json.loads(subs_json)
+                parsed_subs = {}
+                for qid, sub_val in raw_subs.items():
+                    try:
+                        parsed_subs[qid] = json.loads(sub_val) if isinstance(sub_val, str) else sub_val
+                    except Exception:
+                        parsed_subs[qid] = sub_val
+                submissions[sid] = parsed_subs
+            except Exception:
+                pass
+
+    return jsonify({
+        "status": "ok",
+        "roomId": room_id,
+        "meta": meta,
+        "questions": questions,
+        "datasets": datasets_raw,
+        "participants": participants_raw,
+        "kicked": kicked,
+        "leaderboard": leaderboard,
+        "submissions": submissions,
+    })
+
+
+@exam_bp.route("/api/exam/room/<room_id>/paper", methods=["GET"])
+def api_exam_get_paper(room_id: str):
+    """Retrieve the full question paper (metadata, questions, and datasets docs) for export."""
+    mentor_id = request.args.get("mentorId", "")
+    meta = _get_room_meta(room_id)
+    if not meta or meta.get("mentorId") != mentor_id:
+        return jsonify({"status": "error", "error": "Unauthorized"}), 403
+
+    # Questions
+    questions_json = _redis_one(["HGET", f"room:{room_id}", "questions"])
+    questions = json.loads(questions_json) if questions_json else []
+
+    # Datasets
+    datasets_json = _redis_one(["HGET", f"room:{room_id}", "datasets"])
+    datasets_dict = json.loads(datasets_json) if datasets_json else {}
+
+    datasets_list = []
+    for d_id, d_meta in datasets_dict.items():
+        docs_json = _redis_one(["HGET", f"room:{room_id}", f"dataset_docs:{d_id}"])
+        docs = json.loads(docs_json) if docs_json else []
+        datasets_list.append({
+            "datasetId": d_id,
+            "name": d_meta.get("name", ""),
+            "collection": d_meta.get("collection", ""),
+            "docs": docs
+        })
+
+    return jsonify({
+        "status": "ok",
+        "title": meta.get("title", "Quiz"),
+        "timed": meta.get("timed", "0"),
+        "duration": meta.get("duration", "60"),
+        "questions": questions,
+        "datasets": datasets_list
+    })
