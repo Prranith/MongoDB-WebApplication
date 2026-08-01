@@ -1228,42 +1228,60 @@ def api_exam_get_paper(room_id: str):
 
 def run_piston_code(language: str, code: str, stdin: str = ""):
     import requests
+    import time
+
     lang_map = {
-        "python": {"lang": "python", "version": "3.10.0"},
-        "cpp": {"lang": "c++", "version": "10.2.0"},
-        "c": {"lang": "c", "version": "10.2.0"},
-        "java": {"lang": "java", "version": "15.0.2"}
+        "python": "python3",
+        "cpp": "cpp",
+        "c": "c",
+        "java": "java"
     }
-    config = lang_map.get(language, {"lang": "python", "version": "3.10.0"})
+    paiza_lang = lang_map.get(language, "python3")
 
     payload = {
-        "language": config["lang"],
-        "version": config["version"],
-        "files": [
-            {
-                "content": code
-            }
-        ],
-        "stdin": stdin,
-        "compile_timeout": 10000,
-        "run_timeout": 10000
+        "source_code": code,
+        "language": paiza_lang,
+        "input": stdin,
+        "api_key": "guest"
     }
 
     try:
-        r = requests.post("https://emkc.org/api/v2/piston/execute", json=payload, timeout=12)
-        if r.status_code == 200:
-            res = r.json()
-            run_info = res.get("run", {})
-            return {
-                "stdout": run_info.get("stdout", ""),
-                "stderr": run_info.get("stderr", ""),
-                "code": run_info.get("code", 0),
-                "output": run_info.get("output", "")
-            }
+        r_create = requests.post("https://api.paiza.io/runners/create", json=payload, timeout=8)
+        if r_create.status_code != 200:
+            return {"error": "Failed to create runtime session", "stdout": "", "stderr": f"HTTP status: {r_create.status_code}", "code": 1, "output": ""}
+            
+        create_res = r_create.json()
+        run_id = create_res.get("id")
+        if not run_id:
+            return {"error": "Failed to obtain runner ID", "stdout": "", "stderr": str(create_res), "code": 1, "output": ""}
+            
+        for _ in range(10):
+            time.sleep(1)
+            r_details = requests.get(f"https://api.paiza.io/runners/get_details?id={run_id}&api_key=guest", timeout=8)
+            if r_details.status_code == 200:
+                res = r_details.json()
+                status = res.get("status")
+                if status == "completed":
+                    return {
+                        "stdout": res.get("stdout", ""),
+                        "stderr": res.get("stderr", ""),
+                        "code": res.get("exit_code", 0),
+                        "output": res.get("stdout", "") or res.get("stderr", "")
+                    }
+                elif status == "running":
+                    continue
+                else:
+                    return {
+                        "stdout": "",
+                        "stderr": f"Execution status: {status}",
+                        "code": 1,
+                        "output": ""
+                    }
+        
+        return {"error": "Execution timeout", "stdout": "", "stderr": "Program compilation or execution timed out.", "code": 1, "output": ""}
+        
     except Exception as e:
-        return {"error": str(e), "stdout": "", "stderr": f"Execution request failed: {e}", "output": ""}
-
-    return {"error": "Failed to run code", "stdout": "", "stderr": "Execution endpoint error", "output": ""}
+        return {"error": str(e), "stdout": "", "stderr": f"Execution failed: {e}", "code": 1, "output": ""}
 
 
 @exam_bp.route("/api/exam/room/<room_id>/run", methods=["POST"])
