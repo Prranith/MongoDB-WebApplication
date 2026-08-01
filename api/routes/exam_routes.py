@@ -1400,3 +1400,43 @@ def api_exam_run_code(room_id: str):
             "code": 1,
             "output": ""
         }), 500
+
+
+@exam_bp.route("/api/exam/room/<room_id>/generate_test_cases", methods=["POST"])
+def api_exam_generate_test_cases(room_id: str):
+    try:
+        body = request.get_json(force=True, silent=True) or {}
+        language = body.get("language", "python")
+        code = body.get("editorialCode", "")
+        inputs = body.get("inputs", [])
+        template_type = body.get("templateType", "scratch")
+        driver_code = body.get("driverCode", "")
+
+        if template_type == "solve_function" and driver_code:
+            code = code + "\n\n" + driver_code
+
+        outputs = []
+        for inp in inputs:
+            res = run_piston_code(language, code, inp)
+            stdout = res.get("stdout", "")
+            stderr = res.get("stderr", "")
+            try:
+                code_val = int(res.get("code", 0))
+            except (ValueError, TypeError):
+                code_val = 0
+
+            if code_val != 0 or stderr:
+                return jsonify({
+                    "status": "error",
+                    "error": f"Execution failed: {stderr or stdout}"
+                })
+
+            outputs.append(stdout)
+
+        return jsonify({
+            "status": "ok",
+            "outputs": outputs
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+

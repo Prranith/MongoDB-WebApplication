@@ -3381,3 +3381,36 @@ li.CodeMirror-hint-active {
   cursor: pointer;
   font-size: 12px;
 }
+
+/* README active panel - expands to take full screen height */
+.exam-question-display.workspace-readme-active {
+  flex: 1 !important;
+  max-height: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  overflow-y: auto !important;
+  background: var(--bg2) !important;
+}
+
+/* Markdown pre code overrides - resets general code styling inside blocks */
+.markdown-body pre code {
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--text) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  border-radius: 0 !important;
+}
+
+/* Student CodeMirror wrapper and scrollable area styling */
+.exam-editor-wrap .CodeMirror {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.exam-editor-wrap .CodeMirror-scroll {
+  flex: 1 !important;
+  height: 100% !important;
+}
+

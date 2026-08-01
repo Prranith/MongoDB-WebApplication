@@ -3461,6 +3461,39 @@ li.CodeMirror-hint-active {
   font-size: 12px;
 }
 
+/* README active panel - expands to take full screen height */
+.exam-question-display.workspace-readme-active {
+  flex: 1 !important;
+  max-height: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  overflow-y: auto !important;
+  background: var(--bg2) !important;
+}
+
+/* Markdown pre code overrides - resets general code styling inside blocks */
+.markdown-body pre code {
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--text) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  border-radius: 0 !important;
+}
+
+/* Student CodeMirror wrapper and scrollable area styling */
+.exam-editor-wrap .CodeMirror {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.exam-editor-wrap .CodeMirror-scroll {
+  flex: 1 !important;
+  height: 100% !important;
+}
+
+
 </style>
 </head>
 <body>
@@ -7353,9 +7386,27 @@ const ExamPortal = (() => {
       mentor._saveQDebounced();
     },
 
+
+    _cleanupMentorMiniEditors() {
+      if (state.mentor.miniEditors) {
+        Object.keys(state.mentor.miniEditors).forEach(key => {
+          try { state.mentor.miniEditors[key].toTextArea(); } catch(e) {}
+          delete state.mentor.miniEditors[key];
+        });
+      } else {
+        state.mentor.miniEditors = {};
+      }
+    },
+
+    switchConfigLang(lang, qId) {
+      state.mentor.activeConfigLang = lang;
+      mentor._renderQEditor(qId);
+    },
+
     _renderQEditor(qId) {
       const q = state.mentor.questions.find(x => x.id === qId);
       if (!q) return;
+      mentor._cleanupMentorMiniEditors();
       const qeditor = el('mentor-qeditor');
 
       if (q.type === 'query') {
@@ -7455,6 +7506,8 @@ const ExamPortal = (() => {
             java: { starterCode: q.starterCode || '', driverCode: '' }
           };
         }
+        q.expectedOutputMode = q.expectedOutputMode || 'manual';
+        q.editorialCode = q.editorialCode || '';
 
         const activeLang = state.mentor.activeConfigLang || q.allowedLanguages[0] || 'python';
         state.mentor.activeConfigLang = activeLang;
@@ -7472,17 +7525,18 @@ const ExamPortal = (() => {
           `;
         }).join('');
 
-        // Render template configuration tabs
+        // Render template configuration tabs - triggers global ExamPortal switchConfigLang
         const langTabs = q.allowedLanguages.map(lang => {
           const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java' };
           return `
             <div class="exam-tab ${activeLang === lang ? 'active' : ''}" style="height:26px;padding:0 8px;font-size:11px;cursor:pointer"
-                 onclick="state.mentor.activeConfigLang = '${lang}'; ExamPortal.mentor._renderQEditor('${qId}');">
+                 onclick="ExamPortal.mentor.switchConfigLang('${lang}','${qId}');">
               ${labels[lang]}
             </div>
           `;
         }).join('');
 
+        const isAuto = q.expectedOutputMode === 'editorial';
         const testCasesRows = (q.testCases || []).map((tc, idx) => `
           <div class="exam-mcq-option-row" style="gap:10px;margin-bottom:8px;align-items:flex-start" id="tc-row-${qId}-${idx}">
             <div style="flex:1">
@@ -7492,10 +7546,10 @@ const ExamPortal = (() => {
                 oninput="ExamPortal.mentor.updateTestCase('${qId}',${idx},'input',this.value)">${tc.input}</textarea>
             </div>
             <div style="flex:1">
-              <label class="exam-label" style="font-size:10px;color:var(--text3);margin-bottom:2px">Expected Output</label>
-              <textarea class="exam-textarea" style="height:45px;font-family:monospace;font-size:11px;padding:4px"
-                placeholder="Expected Stdout..."
-                oninput="ExamPortal.mentor.updateTestCase('${qId}',${idx},'expectedOutput',this.value)">${tc.expectedOutput}</textarea>
+              <label class="exam-label" style="font-size:10px;color:var(--text3);margin-bottom:2px">Expected Output ${isAuto ? '(Auto-generated)' : ''}</label>
+              <textarea class="exam-textarea" style="height:45px;font-family:monospace;font-size:11px;padding:4px;${isAuto ? 'background:var(--bg3);opacity:0.8;' : ''}"
+                placeholder="${isAuto ? 'Click Generate to populate...' : 'Expected Stdout...'}"
+                ${isAuto ? 'readonly' : `oninput="ExamPortal.mentor.updateTestCase('${qId}',${idx},'expectedOutput',this.value)"`}>${tc.expectedOutput}</textarea>
             </div>
             <button class="phbtn" style="color:var(--red);align-self:flex-end;margin-bottom:6px"
               onclick="ExamPortal.mentor.removeTestCase('${qId}',${idx})"
@@ -7549,6 +7603,34 @@ const ExamPortal = (() => {
             <div class="exam-mini-editor" id="driver-wrap-${qId}">
               <textarea id="mini-editor-driver-${qId}">${q.templates[activeLang]?.driverCode || ''}</textarea>
             </div>
+          </div>
+          ` : ''}
+
+          <!-- Expected Output Mode selection -->
+          <div class="exam-fieldset">
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+              <div class="exam-fieldset-title" style="margin:0">Expected Output Mode</div>
+              <select class="exam-input" onchange="ExamPortal.mentor.updateQField('${qId}','expectedOutputMode',this.value); ExamPortal.mentor._renderQEditor('${qId}');" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:3px 8px;font-size:11px;width:230px">
+                <option value="manual" ${q.expectedOutputMode === 'manual' ? 'selected' : ''}>Manual Input</option>
+                <option value="editorial" ${q.expectedOutputMode === 'editorial' ? 'selected' : ''}>Auto-Generate from Editorial Solution</option>
+              </select>
+            </div>
+          </div>
+
+          ${q.expectedOutputMode === 'editorial' ? `
+          <div class="exam-fieldset">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div class="exam-fieldset-title">Editorial Correct Code (${activeLang})</div>
+              <button class="exam-btn exam-btn-green" style="font-size:11px;padding:4px 10px"
+                onclick="ExamPortal.mentor.generateCodingOutputs('${qId}')" id="btn-gen-outputs-${qId}">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="margin-right:3px"><path d="M12 2C6.48 2 2 4.02 2 6.5v11c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2zm0 3c4.14 0 7.5 1.12 7.5 2.5S16.14 10 12 10 4.5 8.88 4.5 7.5 7.86 5 12 5z"/></svg>
+                Generate &amp; Freeze Outputs
+              </button>
+            </div>
+            <div class="exam-mini-editor" id="editorial-wrap-${qId}">
+              <textarea id="mini-editor-editorial-${qId}">${q.editorialCode || ''}</textarea>
+            </div>
+            <div id="gen-status-${qId}" style="display:none;font-size:11px;color:var(--text3);margin-top:4px"></div>
           </div>
           ` : ''}
 
@@ -7622,6 +7704,32 @@ const ExamPortal = (() => {
               mentor._saveQDebounced();
             });
             state.mentor.miniEditors[`driver-${qId}`] = cmD;
+          }
+
+          // 3. Editorial editor
+          const taEditorial = el(`mini-editor-editorial-${qId}`);
+          if (taEditorial && typeof CodeMirror !== 'undefined') {
+            if (state.mentor.miniEditors[`editorial-${qId}`]) {
+              try { state.mentor.miniEditors[`editorial-${qId}`].toTextArea(); } catch(e) {}
+              delete state.mentor.miniEditors[`editorial-${qId}`];
+            }
+            let cmMode = 'python';
+            if (activeLang === 'cpp' || activeLang === 'c') cmMode = 'text/x-c++src';
+            if (activeLang === 'java') cmMode = 'text/x-java';
+
+            const cmE = CodeMirror.fromTextArea(taEditorial, {
+              mode: cmMode,
+              theme: 'default',
+              lineNumbers: true,
+              matchBrackets: true,
+              autoCloseBrackets: true,
+            });
+            cmE.setSize('100%', '130px');
+            cmE.on('change', () => {
+              q.editorialCode = cmE.getValue();
+              mentor._saveQDebounced();
+            });
+            state.mentor.miniEditors[`editorial-${qId}`] = cmE;
           }
         }, 50);
 
@@ -7889,6 +7997,67 @@ const ExamPortal = (() => {
         q.lastOutputPreview = null;
         showMsg(`freeze-status-${qId}`, res.error || '// Error running query', true);
         mentor._renderQEditor(qId);
+      }
+    },
+
+    async generateCodingOutputs(qId) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+
+      const activeLang = state.mentor.activeConfigLang || q.allowedLanguages[0] || 'python';
+      const cmE = state.mentor.miniEditors[`editorial-${qId}`];
+      const editorialCode = cmE ? cmE.getValue() : q.editorialCode;
+
+      if (!editorialCode || !editorialCode.trim()) {
+        alert("Please write the editorial correct solution code first.");
+        return;
+      }
+
+      if (!q.testCases || q.testCases.length === 0) {
+        alert("Please add at least one testcase first.");
+        return;
+      }
+
+      const statusEl = el(`gen-status-${qId}`);
+      const btn = el(`btn-gen-outputs-${qId}`);
+      if (statusEl) {
+        statusEl.textContent = '// Running editorial code against inputs...';
+        statusEl.style.color = 'var(--text3)';
+        statusEl.style.display = 'block';
+      }
+      if (btn) btn.disabled = true;
+
+      const inputs = q.testCases.map(tc => tc.input || '');
+      const driverCode = q.templates?.[activeLang]?.driverCode || '';
+
+      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/generate_test_cases`, 'POST', {
+        language: activeLang,
+        editorialCode: editorialCode,
+        inputs: inputs,
+        templateType: q.templateType,
+        driverCode: driverCode
+      });
+
+      if (btn) btn.disabled = false;
+
+      if (res.status === 'ok' && res.outputs) {
+        if (statusEl) {
+          statusEl.textContent = '// Expected outputs generated and frozen successfully!';
+          statusEl.style.color = 'var(--green3)';
+        }
+        res.outputs.forEach((out, idx) => {
+          if (q.testCases[idx]) {
+            q.testCases[idx].expectedOutput = out;
+          }
+        });
+        q.editorialCode = editorialCode;
+        await mentor._saveQuestions();
+        mentor._renderQEditor(qId);
+      } else {
+        if (statusEl) {
+          statusEl.textContent = `// Error: ${res.error || 'Failed to execute solution'}`;
+          statusEl.style.color = 'var(--red)';
+        }
       }
     },
 
@@ -8918,13 +9087,12 @@ const ExamPortal = (() => {
         return `
           <div class="exam-qnav-card ${state.student.currentQIdx === i ? 'active' : ''}"
                onclick="ExamPortal.student.selectQuestion(${i})">
-            <div class="exam-q-card-top">
+            <div class="exam-q-card-top" style="margin-bottom:0">
               <span class="exam-q-num">Q${i + 1}</span>
               <span class="exam-q-type-chip ${typeClass}">${typeLabel}</span>
               <span class="exam-q-marks-badge">${q.marks}pts</span>
               <div class="exam-q-status-dot ${dotClass}" style="margin-left:auto"></div>
             </div>
-            <div class="exam-q-preview">${q.text ? q.text.substring(0, 50) + (q.text.length > 50 ? '...' : '') : '// No text'}</div>
           </div>
         `;
       }).join('');
@@ -9032,6 +9200,15 @@ const ExamPortal = (() => {
             q.language = allowed[0] || 'python';
           }
           langSelect.value = q.language;
+
+          if (!q.templates) {
+            q.templates = {
+              python: { starterCode: q.starterCode || '# write your Python 3 code here\\nimport sys\\n\\nfor line in sys.stdin:\\n    print(int(line) * 2)\\n', driverCode: '' },
+              cpp: { starterCode: '#include <iostream>\\nusing namespace std;\\n\\nint main() {\\n    int n;\\n    while (cin >> n) {\\n        cout << n * 2 << endl;\\n    }\\n    return 0;\\n}', driverCode: '' },
+              c: { starterCode: '#include <stdio.h>\\n\\nint main() {\\n    int n;\\n    while (scanf("%d", &n) != EOF) {\\n        printf("%d\\\\n", n * 2);\\n    }\\n    return 0;\\n}', driverCode: '' },
+              java: { starterCode: 'import java.util.Scanner;\\n\\npublic class Solution {\\n    public static void main(String[] args) {\\n        Scanner sc = new Scanner(System.in);\\n        while (sc.hasNextInt()) {\\n            int n = sc.nextInt();\\n            System.out.println(n * 2);\\n        }\\n    }\\n}', driverCode: '' }
+            };
+          }
 
           // Set editor content based on active language draft or template
           q._studentDrafts = q._studentDrafts || {};
@@ -9520,9 +9697,11 @@ const ExamPortal = (() => {
 
       if (tabId === 'readme') {
         el('student-question-display').style.display = 'block';
+        el('student-question-display').classList.add('workspace-readme-active');
         el('student-query-area').style.display = 'none';
       } else {
         el('student-question-display').style.display = 'none';
+        el('student-question-display').classList.remove('workspace-readme-active');
         el('student-query-area').style.display = 'flex';
         setTimeout(() => {
           state.student.examEditor?.refresh();
