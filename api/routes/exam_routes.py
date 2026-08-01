@@ -756,7 +756,12 @@ def api_exam_submit_answer(room_id: str):
             actual_lines = [line.strip() for line in actual_out.strip().splitlines() if line.strip()]
             expected_lines = [line.strip() for line in tc_expected.strip().splitlines() if line.strip()]
 
-            matched = (actual_lines == expected_lines) and (run_res.get("code") == 0)
+            try:
+                res_code = int(run_res.get("code", 0))
+            except (ValueError, TypeError):
+                res_code = 0
+
+            matched = (actual_lines == expected_lines) and (res_code == 0)
             if not matched:
                 all_passed = False
 
@@ -1286,17 +1291,32 @@ def run_piston_code(language: str, code: str, stdin: str = ""):
 
 @exam_bp.route("/api/exam/room/<room_id>/run", methods=["POST"])
 def api_exam_run_code(room_id: str):
-    """Run code using Piston API sandbox for custom student inputs."""
-    body = request.get_json(force=True, silent=True) or {}
-    language = body.get("language", "python")
-    code = body.get("code", "")
-    stdin = body.get("stdin", "")
+    """Run code using Paiza API sandbox for custom student inputs."""
+    try:
+        body = request.get_json(force=True, silent=True) or {}
+        language = body.get("language", "python")
+        code = body.get("code", "")
+        stdin = body.get("stdin", "")
 
-    res = run_piston_code(language, code, stdin)
-    return jsonify({
-        "status": "ok",
-        "stdout": res.get("stdout", ""),
-        "stderr": res.get("stderr", ""),
-        "code": res.get("code", 0),
-        "output": res.get("output", "")
-    })
+        res = run_piston_code(language, code, stdin)
+        
+        try:
+            code_val = int(res.get("code", 0))
+        except (ValueError, TypeError):
+            code_val = 0
+
+        return jsonify({
+            "status": "ok",
+            "stdout": res.get("stdout", ""),
+            "stderr": res.get("stderr", ""),
+            "code": code_val,
+            "output": res.get("output", "")
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "stdout": "",
+            "stderr": f"Server error: {e}",
+            "code": 1,
+            "output": ""
+        }), 500
