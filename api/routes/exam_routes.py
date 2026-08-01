@@ -499,6 +499,24 @@ def api_exam_save_questions(room_id: str):
         ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
     ]
 
+    # Auto-freeze query expected answers if missing (e.g. during template imports)
+    for q in questions:
+        q_id = q.get("id")
+        q_type = q.get("type", "query")
+        if q_type == "query" and q_id:
+            exists = _redis_one(["HEXISTS", f"room:{room_id}", f"q_answer:{q_id}"])
+            if not exists or str(exists) in ("0", "None"):
+                query = q.get("query", "").strip()
+                dataset_ids = q.get("datasetIds", [])
+                if not dataset_ids and q.get("datasetId"):
+                    dataset_ids = [q.get("datasetId")]
+                if query and dataset_ids:
+                    res = _execute_room_query(room_id, dataset_ids, query, max_results=100000)
+                    if res.get("status") == "ok":
+                        docs = res.get("results", [])
+                        stored_docs = docs[:2000]
+                        pipeline.append(["HSET", f"room:{room_id}", f"q_answer:{q_id}", json.dumps(stored_docs)])
+
     # Delete frozen answers for deleted questions from the room Hash
     if deleted_ids:
         hdel_cmd = ["HDEL", f"room:{room_id}"]
