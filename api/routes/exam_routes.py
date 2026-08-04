@@ -223,6 +223,9 @@ def api_exam_create_room():
     mentor_id = body.get("mentorId", str(uuid.uuid4()))
     timed = bool(body.get("timed", False))
     duration = int(body.get("duration", 60))
+    fullscreen_mode = "1" if bool(body.get("fullscreenMode", False)) else "0"
+    block_copypaste = "1" if bool(body.get("blockCopyPaste", False)) else "0"
+    max_exits = str(int(body.get("maxFullscreenExits", 5)))
 
     if not title:
         return jsonify({"status": "error", "error": "Title is required"}), 400
@@ -237,7 +240,10 @@ def api_exam_create_room():
          "timed", "1" if timed else "0",
          "duration", str(duration),
          "status", "waiting",
-         "createdAt", str(now)],
+         "createdAt", str(now),
+         "fullscreenMode", fullscreen_mode,
+         "blockCopyPaste", block_copypaste,
+         "maxFullscreenExits", max_exits],
         ["EXPIRE", _room_key(room_id), str(60 * 60 * 24 * 7)],  # 7-day TTL
     ]
     res = _redis_cmd(pipeline)
@@ -257,18 +263,26 @@ def api_exam_get_room(room_id: str):
     """Fetch room metadata + questions + participants."""
     fields = [
         "title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt",
-        "questions", "participants", "datasets", "kicked"
+        "questions", "participants", "datasets", "kicked", "fullscreenMode", "blockCopyPaste", "maxFullscreenExits"
     ]
     raw = _redis_one(["HMGET", f"room:{room_id}"] + fields)
     if not raw or all(v is None for v in raw):
         return jsonify({"status": "error", "error": "Room not found"}), 404
 
     # Extract metadata fields
-    meta_keys = ["title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt"]
+    meta_keys = [
+        "title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt",
+        "fullscreenMode", "blockCopyPaste", "maxFullscreenExits"
+    ]
     meta = {}
-    for k, v in zip(meta_keys, raw[:8]):
+    for k, v in zip(meta_keys, raw[:8] + [raw[12], raw[13], raw[14]]):
         if v is not None:
             meta[k] = v
+        else:
+            if k in ["fullscreenMode", "blockCopyPaste"]:
+                meta[k] = "0"
+            elif k == "maxFullscreenExits":
+                meta[k] = "5"
 
     questions_json = raw[8]
     participants_json = raw[9]
@@ -392,6 +406,20 @@ def api_exam_join_room(room_id: str):
         kicked = json.loads(kicked_json) if kicked_json else []
         if student_id in kicked:
             return jsonify({"status": "error", "error": "kicked", "message": "You have been removed by the mentor"}), 403
+
+        # Prevent rejoin after the student has already finished/submitted the exam.
+        p_val = participants_raw.get(student_id)
+        if p_val:
+            try:
+                p = json.loads(p_val) if isinstance(p_val, str) else p_val
+            except Exception:
+                p = {}
+            if p.get("finished"):
+                return jsonify({
+                    "status": "error",
+                    "error": "already_submitted",
+                    "message": "Thanks for writing the test. Your test is already submitted."
+                }), 403
     else:
         student_id = str(uuid.uuid4())[:8]
 
@@ -724,6 +752,9 @@ def api_exam_submit_answer(room_id: str):
 
     score = 0
     now = int(time.time())
+    passed_count = 0
+    total_count = 0
+    all_passed = False
 
     if q_type == "mcq":
         is_multi = False
@@ -736,20 +767,32 @@ def api_exam_submit_answer(room_id: str):
                 questions = json.loads(questions_json)
                 for q in questions:
                     if q.get("id") == question_id:
-                        is_multi = q.get("isMultiSelect", False)
+                        is_multi = q.get("isMultiSelect", False) in [True, "true", "True", 1, "1"]
                         correct_options = q.get("correctOptions", [])
                         correct_option = q.get("correctOption", "")
-                        partial_grading = q.get("partialGrading", False)
+                        partial_grading = q.get("partialGrading") in [True, "true", "True", 1, "1"]
+                        try:
+                            marks = int(q.get("marks", marks))
+                        except Exception:
+                            pass
                         break
             except Exception:
                 pass
 
         if is_multi:
-            student_choices = [int(x) for x in body.get("selectedOptions", [])]
-            try:
-                correct_choices = [int(x) for x in correct_options]
-            except Exception:
-                correct_choices = []
+            student_choices = []
+            for x in body.get("selectedOptions", []):
+                try:
+                    student_choices.append(int(x))
+                except Exception:
+                    pass
+                    
+            correct_choices = []
+            for x in correct_options:
+                try:
+                    correct_choices.append(int(x))
+                except Exception:
+                    pass
             
             if not correct_choices and correct_option != "":
                 try:
@@ -757,9 +800,9 @@ def api_exam_submit_answer(room_id: str):
                 except Exception:
                     pass
 
-            if set(student_choices) == set(correct_choices) and correct_choices:
+            if correct_choices and set(student_choices) == set(correct_choices):
                 score = marks
-            elif partial_grading and correct_choices:
+            elif partial_grading and correct_choices and student_choices:
                 incorrect = set(student_choices) - set(correct_choices)
                 if incorrect:
                     score = 0
@@ -807,7 +850,8 @@ def api_exam_submit_answer(room_id: str):
         if template_type == "solve_function" and driver_code:
             code = code + "\n\n" + driver_code
 
-        all_passed = True
+        passed_count = 0
+        total_count = len(test_cases)
         for tc in test_cases:
             tc_input = tc.get("input", "")
             tc_expected = tc.get("expectedOutput", "")
@@ -826,16 +870,23 @@ def api_exam_submit_answer(room_id: str):
                 res_code = 0
 
             matched = (actual_lines == expected_lines) and (res_code == 0)
-            if not matched:
-                all_passed = False
+            if matched:
+                passed_count += 1
 
-        score = marks if all_passed else 0
+        all_passed = (passed_count == total_count) if total_count > 0 else True
+        if total_count > 0:
+            score = round((float(marks) / total_count) * passed_count, 2)
+        else:
+            score = marks
+
         submission = json.dumps({
             "type": "coding",
             "code": code,
             "language": language,
             "score": score,
             "allPassed": all_passed,
+            "passedCount": passed_count,
+            "totalCount": total_count,
             "submittedAt": now,
         })
 
@@ -897,12 +948,19 @@ def api_exam_submit_answer(room_id: str):
 
     _redis_cmd(pipeline)
 
-    return jsonify({
+    ret_data = {
         "status": "ok",
         "score": score,
         "maxMarks": marks,
-        "correct": score > 0,
-    })
+    }
+    if q_type == "coding":
+        ret_data["correct"] = all_passed
+        ret_data["passedCount"] = passed_count
+        ret_data["totalCount"] = total_count
+    else:
+        ret_data["correct"] = score > 0
+
+    return jsonify(ret_data)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/expected-preview", methods=["GET"])
@@ -946,6 +1004,50 @@ def api_exam_student_finish(room_id: str, student_id: str):
     return jsonify({"status": "ok"})
 
 
+@exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/self-kick", methods=["POST"])
+def api_exam_student_self_kick(room_id: str, student_id: str):
+    """Student is self-kicked due to proctoring violation. Submit exam and add to kicked list."""
+    participants_json = _redis_one(["HGET", f"room:{room_id}", "participants"])
+    participants_raw = json.loads(participants_json) if participants_json else {}
+    p_val = participants_raw.get(student_id)
+    if p_val:
+        try:
+            p = json.loads(p_val) if isinstance(p_val, str) else p_val
+        except Exception:
+            p = {}
+        p["finished"] = True
+        p["finishedAt"] = int(time.time())
+        participants_raw[student_id] = p
+
+    # Add to kicked list
+    kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
+    kicked_raw = json.loads(kicked_json) if kicked_json else {}
+    if isinstance(kicked_raw, list):
+        kicked_raw = {sid: "Terminated by System" for sid in kicked_raw}
+    
+    # Get reason from payload if provided
+    try:
+        req_data = request.get_json(silent=True) or {}
+        reason = req_data.get("reason", "Terminated: Proctoring Rules Violation")
+    except:
+        reason = "Terminated: Proctoring Rules Violation"
+
+    kicked_raw[student_id] = reason
+
+    # Remove from leaderboard
+    leaderboard_json = _redis_one(["HGET", f"room:{room_id}", "leaderboard"])
+    leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
+    leaderboard_raw.pop(student_id, None)
+
+    _redis_cmd([
+        ["HSET", f"room:{room_id}", 
+         "participants", json.dumps(participants_raw),
+         "kicked", json.dumps(kicked_raw),
+         "leaderboard", json.dumps(leaderboard_raw)],
+    ])
+    return jsonify({"status": "ok"})
+
+
 @exam_bp.route("/api/exam/room/<room_id>/leaderboard", methods=["GET"])
 def api_exam_leaderboard(room_id: str):
     """Fetch leaderboard from room Hash key."""
@@ -954,6 +1056,11 @@ def api_exam_leaderboard(room_id: str):
 
     participants_json = _redis_one(["HGET", f"room:{room_id}", "participants"])
     participants_raw = json.loads(participants_json) if participants_json else {}
+
+    kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
+    kicked_raw = json.loads(kicked_json) if kicked_json else {}
+    if isinstance(kicked_raw, list):
+        kicked_raw = {sid: "Removed by Mentor" for sid in kicked_raw}
 
     ranked = []
     for sid, score in leaderboard_raw.items():
@@ -994,6 +1101,8 @@ def api_exam_leaderboard(room_id: str):
             "answered": answered,
             "correct": correct,
             "lastSubmission": last_sub_time,
+            "isBlocked": sid in kicked_raw,
+            "blockReason": kicked_raw.get(sid, ""),
         })
 
     # Include any participants not yet in sorted set
@@ -1030,6 +1139,8 @@ def api_exam_leaderboard(room_id: str):
                 "answered": answered,
                 "correct": correct,
                 "lastSubmission": last_sub_time,
+                "isBlocked": sid in kicked_raw,
+                "blockReason": kicked_raw.get(sid, ""),
             })
 
     # Sort in memory: totalScore desc, studentId asc
@@ -1071,11 +1182,53 @@ def api_exam_cleanup_room(room_id: str):
     return jsonify({"status": "ok", "deletedKeys": 1})
 
 
+@exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/violation", methods=["POST"])
+def api_exam_student_violation(room_id: str, student_id: str):
+    """Student reports a proctoring violation (fullscreen exit or copy-paste attempt)."""
+    body = request.get_json(force=True, silent=True) or {}
+    violation_type = body.get("violationType", "")
+
+    participants_json = _redis_one(["HGET", f"room:{room_id}", "participants"])
+    participants_raw = json.loads(participants_json) if participants_json else {}
+    p_val = participants_raw.get(student_id)
+    if not p_val:
+        return jsonify({"status": "error", "error": "Student not found"}), 404
+
+    try:
+        p = json.loads(p_val) if isinstance(p_val, str) else p_val
+    except Exception:
+        p = {}
+
+    # Initialize fields if missing
+    if "fullscreenExits" not in p:
+        p["fullscreenExits"] = 0
+    if "copyPasteAttempts" not in p:
+        p["copyPasteAttempts"] = 0
+
+    if violation_type == "fullscreen_exit":
+        p["fullscreenExits"] += 1
+    elif violation_type == "copy_paste_attempt":
+        p["copyPasteAttempts"] += 1
+
+    p["lastFlaggedAt"] = int(time.time())
+    participants_raw[student_id] = p
+
+    _redis_cmd([
+        ["HSET", f"room:{room_id}", "participants", json.dumps(participants_raw)],
+    ])
+    return jsonify({
+        "status": "ok",
+        "fullscreenExits": p["fullscreenExits"],
+        "copyPasteAttempts": p["copyPasteAttempts"],
+        "lastFlaggedAt": p["lastFlaggedAt"]
+    })
+
+
 @exam_bp.route("/api/exam/room/<room_id>/student/<student_id>", methods=["DELETE"])
 def api_exam_remove_student(room_id: str, student_id: str):
     """Mentor removes/kicks a student from the exam room."""
-    body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId", "")
+    mentor_id = request.args.get("mentorId", "")
+    keep_leaderboard = request.args.get("keepInLeaderboard", "0") == "1"
 
     meta = _get_room_meta(room_id)
     if not meta or meta.get("mentorId") != mentor_id:
@@ -1083,12 +1236,15 @@ def api_exam_remove_student(room_id: str, student_id: str):
 
     leaderboard_json = _redis_one(["HGET", f"room:{room_id}", "leaderboard"])
     leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
-    leaderboard_raw.pop(student_id, None)
+    if not keep_leaderboard:
+        leaderboard_raw.pop(student_id, None)
 
     kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
-    kicked_raw = json.loads(kicked_json) if kicked_json else []
-    if student_id not in kicked_raw:
-        kicked_raw.append(student_id)
+    kicked_raw = json.loads(kicked_json) if kicked_json else {}
+    if isinstance(kicked_raw, list):
+        kicked_raw = {sid: "Removed by Mentor" for sid in kicked_raw}
+    
+    kicked_raw[student_id] = "Removed by Mentor"
 
     pipeline = [
         ["HSET", f"room:{room_id}",
@@ -1128,9 +1284,12 @@ def api_exam_reallow_student(room_id: str, student_id: str):
     leaderboard_raw[student_id] = total_score
 
     kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
-    kicked_raw = json.loads(kicked_json) if kicked_json else []
-    if student_id in kicked_raw:
-        kicked_raw.remove(student_id)
+    kicked_raw = json.loads(kicked_json) if kicked_json else {}
+    if isinstance(kicked_raw, list):
+        if student_id in kicked_raw:
+            kicked_raw.remove(student_id)
+    else:
+        kicked_raw.pop(student_id, None)
 
     pipeline = [
         ["HSET", f"room:{room_id}",
@@ -1152,23 +1311,26 @@ def api_exam_kicked_list(room_id: str):
         return jsonify({"status": "error", "error": "Unauthorized"}), 403
 
     kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
-    kicked_raw = json.loads(kicked_json) if kicked_json else []
-    kicked_students = []
+    kicked_raw = json.loads(kicked_json) if kicked_json else {}
+    if isinstance(kicked_raw, list):
+        kicked_raw = {sid: "Removed by Mentor" for sid in kicked_raw}
 
+    kicked_students = []
     participants_json = _redis_one(["HGET", f"room:{room_id}", "participants"])
     participants_raw = json.loads(participants_json) if participants_json else {}
 
-    for sid in kicked_raw:
+    for sid, reason in kicked_raw.items():
         p_val = participants_raw.get(sid)
         if p_val:
             try:
                 p = json.loads(p_val) if isinstance(p_val, str) else p_val
                 p["studentId"] = sid
+                p["kickReason"] = reason
                 kicked_students.append(p)
             except Exception:
                 pass
         else:
-            kicked_students.append({"studentId": sid, "name": "Unknown", "rollNo": "Unknown"})
+            kicked_students.append({"studentId": sid, "name": "Unknown", "rollNo": "Unknown", "kickReason": reason})
 
     return jsonify({"status": "ok", "kicked": kicked_students})
 
@@ -1290,14 +1452,89 @@ def api_exam_get_paper(room_id: str):
         "title": meta.get("title", "Quiz"),
         "timed": meta.get("timed", "0"),
         "duration": meta.get("duration", "60"),
+        "fullscreenMode": meta.get("fullscreenMode", "0"),
+        "blockCopyPaste": meta.get("blockCopyPaste", "0"),
+        "maxFullscreenExits": meta.get("maxFullscreenExits", "5"),
         "questions": questions,
         "datasets": datasets_list
     })
 
 
-def run_piston_code(language: str, code: str, stdin: str = ""):
+def run_piston_api(language: str, code: str, stdin: str = ""):
+    import requests
+    import re
+
+    lang_map = {
+        "python": "python",
+        "cpp": "cpp",
+        "c": "c",
+        "java": "java"
+    }
+    piston_lang = lang_map.get(language, "python")
+    
+    filename = "main.py"
+    if piston_lang == "java":
+        filename = "Main.java"
+        class_match = re.search(r"\bclass\s+(\w+)", code)
+        if class_match:
+            original_class_name = class_match.group(1)
+            if original_class_name != "Main":
+                code = re.sub(r"\bclass\s+" + re.escape(original_class_name) + r"\b", "class Main", code)
+                code = re.sub(r"\b" + re.escape(original_class_name) + r"\b", "Main", code)
+    elif piston_lang == "cpp":
+        filename = "main.cpp"
+    elif piston_lang == "c":
+        filename = "main.c"
+
+    payload = {
+        "language": piston_lang,
+        "version": "*",
+        "files": [
+            {
+                "name": filename,
+                "content": code
+            }
+        ],
+        "stdin": stdin
+    }
+
+    try:
+        r = requests.post("https://emkc.org/api/v2/piston/execute", json=payload, timeout=8)
+        if r.status_code == 200:
+            res = r.json()
+            compile_res = res.get("compile", {})
+            run_res = res.get("run", {})
+            
+            if compile_res and compile_res.get("code", 0) != 0:
+                stderr = compile_res.get("stderr", "") or compile_res.get("output", "")
+                return {
+                    "stdout": "",
+                    "stderr": stderr,
+                    "code": compile_res.get("code", 1),
+                    "output": stderr
+                }
+            
+            stdout = run_res.get("stdout", "")
+            stderr = run_res.get("stderr", "")
+            exit_code = run_res.get("code")
+            if exit_code is None:
+                exit_code = 0
+            
+            return {
+                "stdout": stdout,
+                "stderr": stderr,
+                "code": exit_code,
+                "output": stdout if stdout else stderr
+            }
+    except Exception:
+        pass
+    return None
+
+
+def run_paiza_api(language: str, code: str, stdin: str = ""):
     import requests
     import time
+    import re
 
     lang_map = {
         "python": "python3",
@@ -1306,6 +1543,14 @@ def run_piston_code(language: str, code: str, stdin: str = ""):
         "java": "java"
     }
     paiza_lang = lang_map.get(language, "python3")
+
+    if paiza_lang == "java":
+        class_match = re.search(r"\bclass\s+(\w+)", code)
+        if class_match:
+            original_class_name = class_match.group(1)
+            if original_class_name != "Main":
+                code = re.sub(r"\bclass\s+" + re.escape(original_class_name) + r"\b", "class Main", code)
+                code = re.sub(r"\b" + re.escape(original_class_name) + r"\b", "Main", code)
 
     payload = {
         "source_code": code,
@@ -1331,11 +1576,27 @@ def run_piston_code(language: str, code: str, stdin: str = ""):
                 res = r_details.json()
                 status = res.get("status")
                 if status == "completed":
+                    build_stderr = res.get("build_stderr") or ""
+                    stderr = res.get("stderr") or ""
+                    if build_stderr:
+                        stderr = build_stderr + ("\n" + stderr if stderr else "")
+                    
+                    exit_code = res.get("exit_code")
+                    if exit_code is None:
+                        exit_code = 0
+                    try:
+                        exit_code = int(exit_code)
+                    except (ValueError, TypeError):
+                        exit_code = 0
+                        
+                    if res.get("build_result") == "failure" and exit_code == 0:
+                        exit_code = 1
+
                     return {
                         "stdout": res.get("stdout", ""),
-                        "stderr": res.get("stderr", ""),
-                        "code": res.get("exit_code", 0),
-                        "output": res.get("stdout", "") or res.get("stderr", "")
+                        "stderr": stderr,
+                        "code": exit_code,
+                        "output": res.get("stdout", "") or stderr
                     }
                 elif status == "running":
                     continue
@@ -1353,15 +1614,22 @@ def run_piston_code(language: str, code: str, stdin: str = ""):
         return {"error": str(e), "stdout": "", "stderr": f"Execution failed: {e}", "code": 1, "output": ""}
 
 
+def run_piston_code(language: str, code: str, stdin: str = ""):
+    res = run_piston_api(language, code, stdin)
+    if res is not None:
+        return res
+    return run_paiza_api(language, code, stdin)
+
+
 @exam_bp.route("/api/exam/room/<room_id>/run", methods=["POST"])
 def api_exam_run_code(room_id: str):
-    """Run code using Paiza API sandbox for custom student inputs."""
+    """Run code using Piston/Paiza API sandbox concurrently for multiple inputs."""
     try:
         body = request.get_json(force=True, silent=True) or {}
         question_id = body.get("questionId")
         language = body.get("language", "python")
         code = body.get("code", "")
-        stdin = body.get("stdin", "")
+        stdins = body.get("stdins")
 
         if question_id:
             questions_json = _redis_one(["HGET", f"room:{room_id}", "questions"])
@@ -1378,20 +1646,44 @@ def api_exam_run_code(room_id: str):
                 except Exception:
                     pass
 
-        res = run_piston_code(language, code, stdin)
-        
-        try:
-            code_val = int(res.get("code", 0))
-        except (ValueError, TypeError):
-            code_val = 0
+        if isinstance(stdins, list):
+            from concurrent.futures import ThreadPoolExecutor
+            
+            def run_single(inp):
+                res = run_piston_code(language, code, inp)
+                try:
+                    code_val = int(res.get("code", 0))
+                except (ValueError, TypeError):
+                    code_val = 0
+                return {
+                    "stdout": res.get("stdout", ""),
+                    "stderr": res.get("stderr", ""),
+                    "code": code_val,
+                    "output": res.get("output", "")
+                }
+                
+            with ThreadPoolExecutor(max_workers=min(len(stdins), 6)) as executor:
+                results = list(executor.map(run_single, stdins))
 
-        return jsonify({
-            "status": "ok",
-            "stdout": res.get("stdout", ""),
-            "stderr": res.get("stderr", ""),
-            "code": code_val,
-            "output": res.get("output", "")
-        })
+            return jsonify({
+                "status": "ok",
+                "results": results
+            })
+        else:
+            stdin = body.get("stdin", "")
+            res = run_piston_code(language, code, stdin)
+            try:
+                code_val = int(res.get("code", 0))
+            except (ValueError, TypeError):
+                code_val = 0
+
+            return jsonify({
+                "status": "ok",
+                "stdout": res.get("stdout", ""),
+                "stderr": res.get("stderr", ""),
+                "code": code_val,
+                "output": res.get("output", "")
+            })
     except Exception as e:
         return jsonify({
             "status": "error",
@@ -1415,23 +1707,32 @@ def api_exam_generate_test_cases(room_id: str):
         if template_type == "solve_function" and driver_code:
             code = code + "\n\n" + driver_code
 
-        outputs = []
-        for inp in inputs:
+        from concurrent.futures import ThreadPoolExecutor
+
+        def gen_single(inp):
             res = run_piston_code(language, code, inp)
-            stdout = res.get("stdout", "")
-            stderr = res.get("stderr", "")
             try:
                 code_val = int(res.get("code", 0))
             except (ValueError, TypeError):
                 code_val = 0
+            return {
+                "stdout": res.get("stdout", ""),
+                "stderr": res.get("stderr", ""),
+                "code": code_val,
+                "output": res.get("output", "")
+            }
 
-            if code_val != 0 or stderr:
+        with ThreadPoolExecutor(max_workers=min(len(inputs), 6)) as executor:
+            task_results = list(executor.map(gen_single, inputs))
+
+        outputs = []
+        for tr in task_results:
+            if tr["code"] != 0 or tr["stderr"]:
                 return jsonify({
                     "status": "error",
-                    "error": f"Execution failed: {stderr or stdout}"
+                    "error": f"Execution failed: {tr['stderr'] or tr['stdout']}"
                 })
-
-            outputs.append(stdout)
+            outputs.append(tr["stdout"])
 
         return jsonify({
             "status": "ok",
