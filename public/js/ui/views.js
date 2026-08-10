@@ -16,9 +16,11 @@ function showView(name) {
     if (statusbar) statusbar.style.display = 'none';
     
     // Set welcome icon active, others inactive
-    document.getElementById('act-welcome')?.classList.add('active');
+    const actWelcome = document.getElementById('act-welcome');
+    if (actWelcome) actWelcome.classList.add('active');
     ['files', 'db', 'history', 'snippets', 'search'].forEach(p => {
-      document.getElementById(`act-${p}`)?.classList.remove('active');
+      const actBtn = document.getElementById(`act-${p}`);
+      if (actBtn) actBtn.classList.remove('active');
     });
   } else {
     intro.classList.remove('active');
@@ -28,8 +30,10 @@ function showView(name) {
     if (statusbar) statusbar.style.display = 'flex';
     
     // Set current side panel button to active
-    document.getElementById('act-welcome')?.classList.remove('active');
-    document.getElementById(`act-${S.sidePanel}`)?.classList.add('active');
+    const actWelcome2 = document.getElementById('act-welcome');
+    if (actWelcome2) actWelcome2.classList.remove('active');
+    const actSide = document.getElementById(`act-${S.sidePanel}`);
+    if (actSide) actSide.classList.add('active');
     
     setTimeout(() => {
       editor.refresh();

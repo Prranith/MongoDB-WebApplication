@@ -276,8 +276,9 @@ function setConTab(tab) {
   const lang = langSelect ? langSelect.value : 'mongodb';
   const isMongo = lang === 'mongodb';
 
-  ['output', 'logs', 'stdin'].forEach(t => {
-    document.getElementById(`ctab-${t}`)?.classList.toggle('active', t === tab);
+  ['output', 'logs', 'stdin'].forEach(function(t) {
+    const el = document.getElementById(`ctab-${t}`);
+    if (el) el.classList.toggle('active', t === tab);
   });
   
   const treeView = document.getElementById('tree-view');

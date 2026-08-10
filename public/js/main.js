@@ -54,10 +54,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if (file) {
         const val = editor.getValue().replace(/\r\n/g, '\n');
         const fileContent = file.content.replace(/\r\n/g, '\n');
-        if (fileContent !== val) {
-          document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.add('dirty');
-        } else {
-          document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.remove('dirty');
+        const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
+        if (tabEl) {
+          if (fileContent !== val) {
+            tabEl.classList.add('dirty');
+          } else {
+            tabEl.classList.remove('dirty');
+          }
         }
       }
     }

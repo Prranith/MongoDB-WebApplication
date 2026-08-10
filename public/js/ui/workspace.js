@@ -235,7 +235,8 @@ function saveQuery() {
   
   // Save locally in browser
   localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
-  document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.remove('dirty');
+  const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
+  if (tabEl) tabEl.classList.remove('dirty');
   logOutput(`[info] Saved ${file.name} to local storage`);
   
   // Try saving on server

@@ -6,12 +6,15 @@ function setSidePanel(name) {
   const panels = ['files', 'db', 'history', 'snippets', 'search'];
   panels.forEach(p => {
     const isAct = p === name;
-    document.getElementById(`panel-${p}`)?.classList.toggle('active', isAct);
-    document.getElementById(`act-${p}`)?.classList.toggle('active', isAct);
+    const panel = document.getElementById(`panel-${p}`);
+    if (panel) panel.classList.toggle('active', isAct);
+    const act = document.getElementById(`act-${p}`);
+    if (act) act.classList.toggle('active', isAct);
   });
   
   // Uncheck welcome page active state
-  document.getElementById('act-welcome')?.classList.remove('active');
+  const actWelcome = document.getElementById('act-welcome');
+  if (actWelcome) actWelcome.classList.remove('active');
   
   // Update header title
   const title = PANEL_TITLES[name] || "Explorer";

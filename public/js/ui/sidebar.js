@@ -229,7 +229,8 @@ function renderSnippetTree() {
 }
 
 function toggleSnippetCat(id) {
-  document.getElementById(id)?.classList.toggle('collapsed');
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('collapsed');
 }
 
 function filterSnippets(q) {

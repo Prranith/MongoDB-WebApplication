@@ -4613,12 +4613,15 @@ function setSidePanel(name) {
   const panels = ['files', 'db', 'history', 'snippets', 'search'];
   panels.forEach(p => {
     const isAct = p === name;
-    document.getElementById(`panel-${p}`)?.classList.toggle('active', isAct);
-    document.getElementById(`act-${p}`)?.classList.toggle('active', isAct);
+    const panel = document.getElementById(`panel-${p}`);
+    if (panel) panel.classList.toggle('active', isAct);
+    const act = document.getElementById(`act-${p}`);
+    if (act) act.classList.toggle('active', isAct);
   });
   
   // Uncheck welcome page active state
-  document.getElementById('act-welcome')?.classList.remove('active');
+  const actWelcome = document.getElementById('act-welcome');
+  if (actWelcome) actWelcome.classList.remove('active');
   
   // Update header title
   const title = PANEL_TITLES[name] || "Explorer";
@@ -5097,7 +5100,8 @@ function renderSnippetTree() {
 }
 
 function toggleSnippetCat(id) {
-  document.getElementById(id)?.classList.toggle('collapsed');
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('collapsed');
 }
 
 function filterSnippets(q) {
@@ -5131,9 +5135,11 @@ function showView(name) {
     if (statusbar) statusbar.style.display = 'none';
     
     // Set welcome icon active, others inactive
-    document.getElementById('act-welcome')?.classList.add('active');
+    const actWelcome = document.getElementById('act-welcome');
+    if (actWelcome) actWelcome.classList.add('active');
     ['files', 'db', 'history', 'snippets', 'search'].forEach(p => {
-      document.getElementById(`act-${p}`)?.classList.remove('active');
+      const actBtn = document.getElementById(`act-${p}`);
+      if (actBtn) actBtn.classList.remove('active');
     });
   } else {
     intro.classList.remove('active');
@@ -5143,8 +5149,10 @@ function showView(name) {
     if (statusbar) statusbar.style.display = 'flex';
     
     // Set current side panel button to active
-    document.getElementById('act-welcome')?.classList.remove('active');
-    document.getElementById(`act-${S.sidePanel}`)?.classList.add('active');
+    const actWelcome2 = document.getElementById('act-welcome');
+    if (actWelcome2) actWelcome2.classList.remove('active');
+    const actSide = document.getElementById(`act-${S.sidePanel}`);
+    if (actSide) actSide.classList.add('active');
     
     setTimeout(() => {
       editor.refresh();
@@ -5392,7 +5400,8 @@ function saveQuery() {
   
   // Save locally in browser
   localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
-  document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.remove('dirty');
+  const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
+  if (tabEl) tabEl.classList.remove('dirty');
   logOutput(`[info] Saved ${file.name} to local storage`);
   
   // Try saving on server
@@ -5996,8 +6005,9 @@ function setConTab(tab) {
   const lang = langSelect ? langSelect.value : 'mongodb';
   const isMongo = lang === 'mongodb';
 
-  ['output', 'logs', 'stdin'].forEach(t => {
-    document.getElementById(`ctab-${t}`)?.classList.toggle('active', t === tab);
+  ['output', 'logs', 'stdin'].forEach(function(t) {
+    const el = document.getElementById(`ctab-${t}`);
+    if (el) el.classList.toggle('active', t === tab);
   });
   
   const treeView = document.getElementById('tree-view');
@@ -6569,10 +6579,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if (file) {
         const val = editor.getValue().replace(/\\r\\n/g, '\\n');
         const fileContent = file.content.replace(/\\r\\n/g, '\\n');
-        if (fileContent !== val) {
-          document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.add('dirty');
-        } else {
-          document.getElementById(`tab-${escId(S.activeFile)}`)?.classList.remove('dirty');
+        const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
+        if (tabEl) {
+          if (fileContent !== val) {
+            tabEl.classList.add('dirty');
+          } else {
+            tabEl.classList.remove('dirty');
+          }
         }
       }
     }
@@ -8424,7 +8437,7 @@ const ExamPortal = (() => {
           <div class="exam-fieldset">
             <div class="exam-fieldset-title">Starter Template (${activeLang})</div>
             <div class="exam-mini-editor" id="starter-wrap-${qId}">
-              <textarea id="mini-editor-starter-${qId}">${q.templates[activeLang]?.starterCode || ''}</textarea>
+              <textarea id="mini-editor-starter-${qId}">${(q.templates && q.templates[activeLang]) ? q.templates[activeLang].starterCode : ''}</textarea>
             </div>
           </div>
 
@@ -8432,7 +8445,7 @@ const ExamPortal = (() => {
           <div class="exam-fieldset">
             <div class="exam-fieldset-title">Hidden Driver Code (${activeLang})</div>
             <div class="exam-mini-editor" id="driver-wrap-${qId}">
-              <textarea id="mini-editor-driver-${qId}">${q.templates[activeLang]?.driverCode || ''}</textarea>
+              <textarea id="mini-editor-driver-${qId}">${(q.templates && q.templates[activeLang]) ? q.templates[activeLang].driverCode : ''}</textarea>
             </div>
           </div>
           ` : ''}
@@ -8447,7 +8460,7 @@ const ExamPortal = (() => {
               </button>
             </div>
             <div class="exam-mini-editor" id="editorial-wrap-${qId}">
-              <textarea id="mini-editor-editorial-${qId}">${q.templates[activeLang]?.editorialCode || ''}</textarea>
+              <textarea id="mini-editor-editorial-${qId}">${(q.templates && q.templates[activeLang]) ? q.templates[activeLang].editorialCode : ''}</textarea>
             </div>
             <div id="gen-status-${qId}" style="display:none;font-size:11px;color:var(--text3);margin-top:4px"></div>
           </div>
@@ -8832,7 +8845,7 @@ const ExamPortal = (() => {
 
       const activeLang = state.mentor.activeConfigLang || q.allowedLanguages[0] || 'python';
       const cmE = state.mentor.miniEditors[`editorial-${qId}`];
-      const editorialCode = cmE ? cmE.getValue() : (q.templates[activeLang]?.editorialCode || '');
+      const editorialCode = cmE ? cmE.getValue() : (((q.templates && q.templates[activeLang]) ? q.templates[activeLang].editorialCode : null) || '');
 
       if (!editorialCode || !editorialCode.trim()) {
         alert("Please write the editorial correct solution code first.");
@@ -8854,7 +8867,7 @@ const ExamPortal = (() => {
       if (btn) btn.disabled = true;
 
       const inputs = q.testCases.map(tc => tc.input || '');
-      const driverCode = q.templates?.[activeLang]?.driverCode || '';
+      const driverCode = ((q.templates && q.templates[activeLang]) ? q.templates[activeLang].driverCode : null) || '';
 
       const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/generate_test_cases`, 'POST', {
         language: activeLang,
@@ -9975,9 +9988,9 @@ const ExamPortal = (() => {
             cm.setOption('mode', 'javascript');
             cm.setValue(q._studentDraft !== undefined ? q._studentDraft : `// Write your MongoDB query here\\ndb.collection.find({})`);
           } else if (q.type === 'coding') {
-            let currentCode = q._studentDrafts?.[q.language];
+            let currentCode = q._studentDrafts ? q._studentDrafts[q.language] : undefined;
             if (currentCode === undefined) {
-              currentCode = q.templates?.[q.language]?.starterCode || q.starterCode || '';
+              currentCode = ((q.templates && q.templates[q.language]) ? q.templates[q.language].starterCode : null) || q.starterCode || '';
             }
             let cmMode = 'python';
             if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
@@ -10143,7 +10156,7 @@ const ExamPortal = (() => {
           q._studentDrafts = q._studentDrafts || {};
           let currentCode = q._studentDrafts[q.language];
           if (currentCode === undefined) {
-            currentCode = q.templates?.[q.language]?.starterCode || q.starterCode || '';
+            currentCode = ((q.templates && q.templates[q.language]) ? q.templates[q.language].starterCode : null) || q.starterCode || '';
           }
 
           const cm = state.student.examEditor;
@@ -10275,9 +10288,11 @@ const ExamPortal = (() => {
     },
 
     setConsoleTab(tab) {
-      ['yours', 'expected'].forEach(t => {
-        el(`student-ctab-${t}`)?.classList.toggle('active', t === tab);
-        el(`student-pane-${t}`)?.classList.toggle('active', t === tab);
+      ['yours', 'expected'].forEach(function(t) {
+        const tabBtn = el(`student-ctab-${t}`);
+        if (tabBtn) tabBtn.classList.toggle('active', t === tab);
+        const pane = el(`student-pane-${t}`);
+        if (pane) pane.classList.toggle('active', t === tab);
       });
     },
 
@@ -10470,7 +10485,7 @@ const ExamPortal = (() => {
         </div>`
       ).join('') || '<div style="color:var(--text3);font-size:11px">// No fields inferred</div>';
 
-      const firstDoc = ds.sampleDocs?.[0];
+      const firstDoc = (ds.sampleDocs && ds.sampleDocs.length > 0) ? ds.sampleDocs[0] : null;
       const previewHTML = firstDoc 
         ? `<pre style="font-size:11px;color:var(--text);white-space:pre-wrap;background:var(--bg);padding:8px;border-radius:4px;max-height:220px;overflow-y:auto;text-align:left">${JSON.stringify(firstDoc, null, 2)}</pre>`
         : '<div style="color:var(--text3);font-size:11px">// No documents in this dataset</div>';
@@ -10827,8 +10842,10 @@ const ExamPortal = (() => {
         el('student-question-display').classList.remove('workspace-readme-active');
         el('student-query-area').style.display = 'flex';
         setTimeout(() => {
-          state.student.examEditor?.refresh();
-          state.student.examEditor?.focus();
+          if (state.student.examEditor) {
+            state.student.examEditor.refresh();
+            state.student.examEditor.focus();
+          }
         }, 50);
       }
     },
@@ -10845,7 +10862,7 @@ const ExamPortal = (() => {
 
       let newCode = q._studentDrafts[newLang];
       if (newCode === undefined) {
-        newCode = q.templates?.[newLang]?.starterCode || q.starterCode || '';
+        newCode = ((q.templates && q.templates[newLang]) ? q.templates[newLang].starterCode : null) || q.starterCode || '';
       }
 
       let cmMode = 'python';
@@ -11295,8 +11312,10 @@ const ExamPortal = (() => {
       if (state.student.ignoreFullscreenChange) {
         return;
       }
-      const kickedActive = el('exam-student-kicked-panel')?.classList.contains('active');
-      const thankYouActive = el('exam-thankyou-panel')?.classList.contains('active');
+      const panelKicked = el('exam-student-kicked-panel');
+      const kickedActive = panelKicked ? panelKicked.classList.contains('active') : false;
+      const panelThankYou = el('exam-thankyou-panel');
+      const thankYouActive = panelThankYou ? panelThankYou.classList.contains('active') : false;
       if (kickedActive || thankYouActive) {
         return;
       }
