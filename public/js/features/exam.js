@@ -3190,22 +3190,6 @@ const ExamPortal = (() => {
 
       studentNS.handleKicked(reason);
     },
-      clearInterval(state.student.pollInterval);
-      clearInterval(state.student.timerInterval);
-      state.student.ignoreFullscreenChange = true;
-
-      // Submit the exam
-      try {
-        await apiCall(`/api/exam/room/${state.student.roomId}/student/${state.student.studentId}/self-kick`, 'POST', { reason });
-      } catch (err) {
-        console.error("Self-kick submission failed:", err);
-      }
-
-      studentNS.handleKicked(reason);
-      setTimeout(() => {
-        state.student.ignoreFullscreenChange = false;
-      }, 1000);
-    },
 
     requestFullscreen() {
       const docEl = document.documentElement;
