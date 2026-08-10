@@ -350,12 +350,13 @@ function loadHistoryFromLocalStorage() {
 }
 
 function saveToHistory(queryText, status, docsCount, executionTime) {
+  const timeNum = parseFloat(executionTime) || 0;
   const entry = {
     id: Date.now(),
     query: queryText,
     status: status,
     docs: docsCount,
-    time: executionTime,
+    time: timeNum,
     favorite: false,
     timestamp: new Date().toLocaleTimeString()
   };
@@ -395,6 +396,7 @@ function renderHistoryPanel() {
         const star = item.favorite ? '★' : '☆';
         const ok = item.status === 'ok' ? '✅' : '❌';
         const displayQ = item.query.replace(/\n/g, ' ').substring(0, 48);
+        const tVal = typeof item.time === 'number' ? item.time : (parseFloat(item.time) || 0);
         return `
           <div class="history-item" onclick="loadHistoryEntry(${item.id})">
             <div class="history-item-top">
@@ -403,7 +405,7 @@ function renderHistoryPanel() {
               <span class="history-fav-star" onclick="toggleFavHistory(${item.id}, event)">${star}</span>
             </div>
             <div class="history-item-meta">
-              <span>⏱ ${item.time.toFixed(1)}ms</span>
+              <span>⏱ ${tVal.toFixed(1)}ms</span>
               <span>${item.docs} docs</span>
               <span>${item.timestamp}</span>
             </div>
