@@ -9796,6 +9796,8 @@ const ExamPortal = (() => {
         if (res.status === 'ok') {
           if (isStudentKicked(res.kicked, state.student.studentId)) {
             const reason = res.kicked[state.student.studentId];
+            clearInterval(state.student.pollInterval);
+            await studentNS.autoSaveAllResponses();
             studentNS.handleKicked(reason);
             return;
           }
@@ -9813,6 +9815,7 @@ const ExamPortal = (() => {
       if (res.status !== 'ok') return;
       if (isStudentKicked(res.kicked, state.student.studentId)) {
         const reason = res.kicked[state.student.studentId];
+        await studentNS.autoSaveAllResponses();
         studentNS.handleKicked(reason);
         return;
       }
@@ -9886,12 +9889,16 @@ const ExamPortal = (() => {
         if (statusRes.status === 'ok') {
           if (isStudentKicked(statusRes.kicked, state.student.studentId)) {
             const reason = statusRes.kicked[state.student.studentId];
+            clearInterval(state.student.pollInterval);
+            clearInterval(state.student.timerInterval);
+            await studentNS.autoSaveAllResponses();
             studentNS.handleKicked(reason);
             return;
           }
           if (statusRes.roomStatus === 'ended') {
             clearInterval(state.student.pollInterval);
             clearInterval(state.student.timerInterval);
+            await studentNS.autoSaveAllResponses();
             studentNS._lockExam();
           }
         }
@@ -9921,7 +9928,9 @@ const ExamPortal = (() => {
         timerEl.style.color = remaining <= 60 ? 'var(--red)' : remaining <= 300 ? 'var(--yellow)' : 'var(--green2)';
         if (remaining <= 0) {
           clearInterval(state.student.timerInterval);
-          studentNS._lockExam();
+          studentNS.autoSaveAllResponses().then(function() {
+            studentNS._lockExam();
+          });
         }
       }, 1000);
     },
@@ -10639,6 +10648,90 @@ const ExamPortal = (() => {
       studentNS._renderQNav();
     },
 
+    saveCurrentActiveDraft() {
+      if (state.student.currentQIdx === null || state.student.currentQIdx === undefined) return;
+      const q = state.student.questions[state.student.currentQIdx];
+      if (!q) return;
+      const cm = state.student.examEditor;
+      if (!cm) return;
+      
+      if (q.type === 'query') {
+        q._studentDraft = cm.getValue();
+      } else if (q.type === 'coding') {
+        q._studentDrafts = q._studentDrafts || {};
+        q._studentDrafts[q.language || 'python'] = cm.getValue();
+        q._studentDraft = cm.getValue();
+      }
+    },
+
+    async autoSaveAllResponses() {
+      // 1. Sync current active editor value to drafts
+      studentNS.saveCurrentActiveDraft();
+      
+      // 2. Prepare submission payloads for all modified questions
+      const promises = [];
+      
+      if (state.student.questions && state.student.questions.length > 0) {
+        state.student.questions.forEach(function(q) {
+          let body = {
+            studentId: state.student.studentId,
+            questionId: q.id,
+            type: q.type,
+            marks: q.marks,
+            isAutoSave: true
+          };
+          
+          let hasValue = false;
+          
+          if (q.type === 'mcq') {
+            if (q.isMultiSelect) {
+              if (state.student.selectedOptions && state.student.selectedOptions.length > 0) {
+                body.selectedOptions = state.student.selectedOptions;
+                hasValue = true;
+              } else if (q._studentSelectedOptions && q._studentSelectedOptions.length > 0) {
+                body.selectedOptions = q._studentSelectedOptions;
+                hasValue = true;
+              }
+            } else {
+              if (state.student.selectedOption !== null && state.student.selectedOption !== undefined) {
+                body.selectedOption = state.student.selectedOption;
+                hasValue = true;
+              } else if (q._studentSelectedOption !== null && q._studentSelectedOption !== undefined) {
+                body.selectedOption = q._studentSelectedOption;
+                hasValue = true;
+              }
+            }
+          } else if (q.type === 'coding') {
+            const draft = q._studentDrafts ? q._studentDrafts[q.language] : q._studentDraft;
+            if (draft && draft.trim()) {
+              body.code = draft;
+              body.language = q.language;
+              hasValue = true;
+            }
+          } else if (q.type === 'query') {
+            const draft = q._studentDraft;
+            if (draft && draft.trim()) {
+              body.query = draft;
+              body.datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
+              body.studentOutput = (state.student.currentQIdx === state.student.questions.indexOf(q)) ? (state.student.lastRunOutput || []) : [];
+              hasValue = true;
+            }
+          }
+          
+          if (hasValue) {
+            promises.push(
+              apiCall(`/api/exam/room/${state.student.roomId}/submit`, 'POST', body)
+                .catch(function(err) { console.error("Auto-save failed for question " + q.id, err); })
+            );
+          }
+        });
+      }
+      
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
+    },
+
     handleKicked(reason) {
       clearInterval(state.student.pollInterval);
       clearInterval(state.student.timerInterval);
@@ -10708,6 +10801,9 @@ const ExamPortal = (() => {
       clearInterval(state.student.pollInterval);
       clearInterval(state.student.timerInterval);
       state.student.ignoreFullscreenChange = true;
+
+      // Auto save all current responses first!
+      await studentNS.autoSaveAllResponses();
 
       // Submit the exam
       try {
@@ -10786,6 +10882,10 @@ const ExamPortal = (() => {
         btn.disabled = true;
         btn.textContent = 'Submitting...';
       }
+
+      // Auto save all responses (including current active question's draft)!
+      await studentNS.autoSaveAllResponses();
+
       const res = await apiCall(`/api/exam/room/${state.student.roomId}/student/${state.student.studentId}/finish`, 'POST');
       if (res.status === 'ok') {
         studentNS._lockExam();
