@@ -641,37 +641,30 @@ const ExamPortal = (() => {
         body.innerHTML = '<div class="exam-qlist-empty">// No questions yet<br/>Click button below to add questions</div>';
         return;
       }
-      body.innerHTML = qs.map(function(q, i) {
-        let typeLabel = 'Query';
-        let badgeClass = 'badge-query';
+      body.innerHTML = qs.map((q, i) => {
+        let typeLabel = 'QUERY';
+        let typeClass = 'exam-q-type-query';
         if (q.type === 'mcq') {
           typeLabel = 'MCQ';
-          badgeClass = 'badge-mcq';
+          typeClass = 'exam-q-type-mcq';
         } else if (q.type === 'coding') {
-          typeLabel = 'Coding';
-          badgeClass = 'badge-coding';
+          typeLabel = 'CODING';
+          typeClass = 'exam-q-type-coding';
         }
-        
         return `
-        <div class="mentor-q-list-item ${state.mentor.currentQId === q.id ? 'active' : ''}"
+        <div class="exam-q-card ${state.mentor.currentQId === q.id ? 'active' : ''}"
              id="qcard-${q.id}" onclick="ExamPortal.mentor.selectQuestion('${q.id}')">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px">
-            <div style="display:flex; align-items:center; gap:6px">
-              <span class="badge ${badgeClass}">${typeLabel}</span>
-              <span style="font-size:11px; font-weight:700; color:var(--text-muted); font-family:'JetBrains Mono',monospace">Q${i + 1}</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:6px">
-              <span style="font-size:11px; font-weight:600; color:var(--accent)">${q.marks} pts</span>
-              <button class="phbtn" style="color:var(--danger)" title="Delete"
-                onclick="event.stopPropagation();ExamPortal.mentor.deleteQuestion('${q.id}')">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-              </button>
-            </div>
+          <div class="exam-q-card-top">
+            <span class="exam-q-num">Q${i + 1}</span>
+            <span class="exam-q-type-chip ${typeClass}">${typeLabel}</span>
+            <span class="exam-q-marks-badge">${q.marks}pts</span>
+            <button class="phbtn" style="margin-left:auto;color:var(--red)" title="Delete"
+              onclick="event.stopPropagation();ExamPortal.mentor.deleteQuestion('${q.id}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            </button>
           </div>
-          <div class="mentor-q-list-item-title" style="font-size:12px; font-weight:500; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
-            ${q.text ? q.text.replace(/<[^>]*>/g, '').substring(0, 45) + (q.text.length > 45 ? '...' : '') : '// Empty question description'}
-          </div>
-          ${q.type === 'query' && q.answerFrozen ? `<span class="badge" style="background:rgba(79, 140, 255, 0.08); color:var(--accent); font-size:9px; padding:1px 4px; margin-top:4px; display:inline-block">Frozen (${q.answerDocCount} docs)</span>` : ''}
+          <div class="exam-q-preview">${q.text ? q.text.substring(0, 60) + (q.text.length > 60 ? '...' : '') : '// No text yet'}</div>
+          ${q.type === 'query' && q.answerFrozen ? `<span class="exam-frozen-chip" style="font-size:10px;padding:2px 8px;margin-top:4px">Answer frozen — ${q.answerDocCount} docs</span>` : ''}
         </div>
       `;
       }).join('');
@@ -1586,7 +1579,7 @@ const ExamPortal = (() => {
           : '—';
         const lastSub = row.lastSubmission ? timeAgo(row.lastSubmission) : '—';
 
-        const blockedBadge = row.isBlocked ? `<span class="badge" style="font-size:9.5px; margin-left:6px; padding:2px 6px; background:rgba(240, 68, 56, 0.1); color:var(--danger);" title="Reason: ${esc(row.blockReason || 'Kicked')}">BLOCKED</span>` : '';
+        const blockedBadge = row.isBlocked ? `<span class="exam-status-chip exam-chip-ended" style="font-size: 10px; margin-left: 6px; padding: 2px 6px; background: rgba(255, 77, 77, 0.08); color: #ff4d4d; border: 1px solid rgba(255, 77, 77, 0.3);" title="Reason: ${esc(row.blockReason || 'Kicked')}">BLOCKED</span>` : '';
         const nameContent = row.isBlocked ? `<span style="text-decoration: line-through; opacity: 0.6;">${esc(row.name)}</span> ${blockedBadge}` : esc(row.name);
 
         return `
@@ -2501,44 +2494,29 @@ const ExamPortal = (() => {
         return;
       }
       el('student-q-progress').textContent = `Q ${state.student.currentQIdx !== null ? state.student.currentQIdx + 1 : 0}/${qs.length}`;
-      
-      // Calculate progress
-      const completedCount = qs.filter(function(q) {
-        return state.student.status[q.id] === 'submitted';
-      }).length;
-      
-      const progTextEl = el('student-sidebar-progress-text');
-      const progBarEl = el('student-sidebar-progress-bar');
-      if (progTextEl) progTextEl.textContent = `${completedCount} / ${qs.length} completed`;
-      if (progBarEl) {
-        const pct = qs.length > 0 ? (completedCount / qs.length) * 100 : 0;
-        progBarEl.style.width = pct + '%';
-      }
-
-      body.innerHTML = qs.map(function(q, i) {
+      body.innerHTML = qs.map((q, i) => {
         const statusKey = state.student.status[q.id] || 'unattempted';
-        let statusIndicator = '<span class="student-q-status-icon unattempted" style="color:var(--text-muted)">○</span>';
-        if (statusKey === 'submitted') {
-          statusIndicator = '<span class="student-q-status-icon submitted" style="color:var(--success)">✓</span>';
-        } else if (statusKey === 'draft') {
-          statusIndicator = '<span class="student-q-status-icon draft" style="color:var(--accent)">●</span>';
-        }
-
-        let typeLabel = 'Query';
+        const dotClass = statusKey === 'submitted' ? 'exam-q-status-submitted'
+          : statusKey === 'draft' ? 'exam-q-status-draft'
+          : 'exam-q-status-unattempted';
+        let typeLabel = 'QUERY';
+        let typeClass = 'exam-q-type-query';
         if (q.type === 'mcq') {
           typeLabel = 'MCQ';
+          typeClass = 'exam-q-type-mcq';
         } else if (q.type === 'coding') {
-          typeLabel = 'Coding';
+          typeLabel = 'CODING';
+          typeClass = 'exam-q-type-coding';
         }
-
         return `
-          <div class="student-q-chip ${state.student.currentQIdx === i ? 'active' : ''}"
+          <div class="exam-qnav-card ${state.student.currentQIdx === i ? 'active' : ''}"
                onclick="ExamPortal.student.selectQuestion(${i})">
-            <div class="student-q-chip-left">
-              <span class="student-q-chip-title">${String(i + 1).padStart(2, '0')}. ${typeLabel}</span>
-              <span class="student-q-chip-status">${q.marks} pts</span>
+            <div class="exam-q-card-top" style="margin-bottom:0">
+              <span class="exam-q-num">Q${i + 1}</span>
+              <span class="exam-q-type-chip ${typeClass}">${typeLabel}</span>
+              <span class="exam-q-marks-badge">${q.marks}pts</span>
+              <div class="exam-q-status-dot ${dotClass}" style="margin-left:auto"></div>
             </div>
-            ${statusIndicator}
           </div>
         `;
       }).join('');
@@ -2732,10 +2710,9 @@ const ExamPortal = (() => {
 
         const optTextHtml = typeof marked !== 'undefined' ? marked.parse(opt) : opt;
 
-        const letter = labels[i] || i;
-        const selectorControl = isMulti
-          ? `<span class="exam-selector-box ${isSelected ? 'checked' : ''}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`
-          : `<span class="exam-selector-circle ${isSelected ? 'checked' : ''}"></span>`;
+        const checkMark = isMulti
+          ? (isSelected ? '[x]' : '[ ]')
+          : (isSelected ? '[x]' : `[${labels[i] || i}]`);
 
         return `
           <div class="exam-mcq-option-item ${isSelected ? 'selected' : ''}"
@@ -2743,8 +2720,7 @@ const ExamPortal = (() => {
                tabindex="0"
                onclick="ExamPortal.student.selectMCQOption(${i})"
                onkeydown="ExamPortal.student.mcqKeyNav(event,${i},${(q.options || []).length})">
-            <span class="exam-mcq-option-letter">${letter}</span>
-            ${selectorControl}
+            <span class="exam-mcq-option-indicator">${checkMark}</span>
             <span class="exam-mcq-option-text">${optTextHtml}</span>
           </div>
         `;

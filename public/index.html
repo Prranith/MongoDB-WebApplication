@@ -305,84 +305,44 @@
       <canvas id="particle-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></canvas>
 
       <div class="intro-wrap" style="position: relative; z-index: 2; background: transparent;">
-        <div class="intro-subtitle">Interactive Assessment & Cloud IDE</div>
         <h1 class="intro-title">Welcome to <span class="gradient-text">Codexa Labs</span></h1>
-        <p class="intro-tagline">A production-ready environment for coding assessments, database challenges, real-time evaluation, and technical interviews.</p>
+        <h2 class="intro-subtitle">Interactive Cloud IDE & Polyglot Sandbox</h2>
+        <p class="intro-tagline">A premium, highly interactive environment to execute databases & code</p>
         
-        <div class="intro-main-content">
-          <div class="intro-left-actions">
-            <button class="intro-enter" onclick="showView('ide')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-              Enter Workspace
-            </button>
-
-            <button class="intro-exam-btn" id="btn-exam-portal" onclick="ExamPortal.showRoleSelection()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
-              Exam Portal
-            </button>
-
-            <!-- Glassmorphic Stats Counters -->
-            <div class="intro-stats-grid">
-              <div class="intro-stat-card">
-                <div class="intro-stat-icon-wrapper">
-                  <span class="pulse-dot"></span>
-                </div>
-                <div class="intro-stat-value" id="stat-active">—</div>
-                <div class="intro-stat-label">Active Users</div>
-              </div>
-              <div class="intro-stat-card">
-                <div class="intro-stat-icon-wrapper">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                </div>
-                <div class="intro-stat-value" id="stat-visited">—</div>
-                <div class="intro-stat-label">Total Visited</div>
-              </div>
+        <img class="intro-logo" id="logo-img" src="image.png" alt="Codexa Labs logo" onclick="showView('ide')"/>
+        
+        <!-- Glassmorphic Stats Counters -->
+        <div class="intro-stats-grid">
+          <div class="intro-stat-card">
+            <div class="intro-stat-icon-wrapper">
+              <span class="pulse-dot"></span>
             </div>
+            <div class="intro-stat-value" id="stat-active">—</div>
+            <div class="intro-stat-label">Active Users</div>
           </div>
-
-          <div class="intro-right-preview">
-            <img class="intro-logo" id="logo-img" src="image.png" alt="Codexa Labs logo" onclick="showView('ide')" style="width: 100%; height: auto; max-height: 280px; object-fit: contain; margin: 0; filter: drop-shadow(0 0 24px rgba(79, 140, 255, 0.2)); transition: all 300ms ease; cursor: pointer;"/>
+          <div class="intro-stat-card">
+            <div class="intro-stat-icon-wrapper">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--mongo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div class="intro-stat-value" id="stat-visited">—</div>
+            <div class="intro-stat-label">Total Visited</div>
           </div>
         </div>
 
-        <!-- feature cards below -->
-        <div class="intro-feature-section">
-          <div class="intro-feature-card">
-            <div class="intro-feature-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            </div>
-            <div class="intro-feature-title">Polyglot Code Execution</div>
-            <div class="intro-feature-desc">Write and execute C, C++, Python, and Java programs in an integrated high-performance playground environment.</div>
-          </div>
-          <div class="intro-feature-card">
-            <div class="intro-feature-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path></svg>
-            </div>
-            <div class="intro-feature-title">MongoDB Challenges</div>
-            <div class="intro-feature-desc">Interactive database sandbox. Write aggregations, verify documents, and explore collection schemas in real-time.</div>
-          </div>
-          <div class="intro-feature-card">
-            <div class="intro-feature-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-            </div>
-            <div class="intro-feature-title">Real-Time Evaluation</div>
-            <div class="intro-feature-desc">Instant verification of code logic against automated grading test cases, generating instant feedback and score counts.</div>
-          </div>
-          <div class="intro-feature-card">
-            <div class="intro-feature-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"></path><path d="M12 2a5 5 0 0 0-5 5v3c0 2.2 1.8 4 4 4h2c2.2 0 4-1.8 4-4V7a5 5 0 0 0-5-5z"></path></svg>
-            </div>
-            <div class="intro-feature-title">Live Leaderboards</div>
-            <div class="intro-feature-desc">Watch student rank performance live. Automatically tracks accuracy, score, answered questions, and last activity time.</div>
-          </div>
-        </div>
+        <button class="intro-enter" onclick="showView('ide')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+          Enter Workspace
+        </button>
 
+        <button class="intro-exam-btn" id="btn-exam-portal" onclick="ExamPortal.showRoleSelection()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+          Exam Portal
+        </button>
       </div>
 
-      <div class="intro-footer-row" style="position: relative; z-index: 2; background: transparent; border-top: 1px solid var(--border); padding: 24px; display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);">
-        <div>&copy; 2026 Codexa Labs. All rights reserved.</div>
+      <div class="intro-footer-row" style="position: relative; z-index: 2; background: transparent; border-top: 1px solid var(--border);">
         <div class="intro-dev">
-          Developed by <a href="https://www.linkedin.com/in/prranith-swargam-a620a6334/" target="_blank" style="color: var(--accent); text-decoration: none;">Prranith Swargam</a>
+          Developed by <a href="https://www.linkedin.com/in/prranith-swargam-a620a6334/" target="_blank">Prranith Swargam</a>
         </div>
       </div>
     </div>
@@ -1103,17 +1063,17 @@
 </div>
 
 <!-- Student: Enforce Fullscreen Glassmorphic Overlay -->
-<div class="exam-overlay" id="student-fullscreen-overlay" style="display:none; z-index:99999; background:rgba(11, 13, 16, 0.96); backdrop-filter: blur(12px);">
+<div class="exam-overlay" id="student-fullscreen-overlay" style="display:none; z-index:99999; background:rgba(10, 10, 12, 0.96); backdrop-filter: blur(12px);">
   <div class="exam-body" style="display:flex; justify-content:center; align-items:center; height:100vh;">
-    <div class="exam-form-card" style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; max-width:480px; padding:40px 30px;">
-      <div style="width:64px; height:64px; background:var(--accent-soft); border:2px solid var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--accent)">
+    <div class="exam-form-card" style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; max-width:480px; padding:40px 30px; border:1px solid rgba(255,255,255,0.1); background: rgba(30, 30, 35, 0.8);">
+      <div style="width:64px; height:64px; background:rgba(0, 237, 100, 0.1); border:2px solid var(--green2); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--green2)">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 20v-4m0 4h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
       </div>
       <div class="exam-section-title" style="font-size:20px; margin:0; color:#ffffff; font-weight:700;">Fullscreen Mode Required</div>
-      <div class="exam-section-sub" style="font-size:13px; line-height:1.5; color:var(--text-secondary);">
+      <div class="exam-section-sub" style="font-size:13px; line-height:1.5; color:var(--text2);">
         This assessment is configured with strict proctoring rules. You must enter fullscreen mode to proceed with the exam. Exiting fullscreen will flag your assessment.
       </div>
-      <button class="exam-btn exam-btn-primary exam-btn-full" onclick="ExamPortal.student.requestFullscreen()" style="padding:10px 24px; font-weight:600; font-size:13px;">
+      <button class="exam-btn exam-btn-green exam-btn-full" onclick="ExamPortal.student.requestFullscreen()" style="padding:10px 24px; font-weight:600; font-size:13px;">
         Enter Fullscreen & Begin
       </button>
     </div>
@@ -1142,21 +1102,10 @@
 
   <div class="exam-student-shell">
     <!-- Question Navigator -->
-    <div class="exam-qnav" style="display:flex; flex-direction:column; justify-content:space-between; height: 100%;">
-      <div style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
-        <div class="exam-qnav-hdr">Questions</div>
-        <div class="exam-qnav-body" id="student-qnav-body" style="flex:1; overflow-y:auto;">
-          <div class="exam-participants-empty">// Loading questions...</div>
-        </div>
-      </div>
-      <div class="student-qnav-footer" style="padding:16px; border-top:1px solid var(--border-default); background:var(--bg-secondary)">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
-          <span style="font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase">Progress</span>
-          <span style="font-size:12px; font-weight:700; color:var(--accent); font-family:'JetBrains Mono',monospace" id="student-sidebar-progress-text">0 / 0</span>
-        </div>
-        <div style="height:6px; background:var(--bg-tertiary); border-radius:3px; overflow:hidden">
-          <div id="student-sidebar-progress-bar" style="height:100%; width:0%; background:var(--accent); transition: width 300ms ease"></div>
-        </div>
+    <div class="exam-qnav">
+      <div class="exam-qnav-hdr">Questions</div>
+      <div class="exam-qnav-body" id="student-qnav-body">
+        <div class="exam-participants-empty">// Loading questions...</div>
       </div>
     </div>
 
@@ -1427,13 +1376,13 @@ db.collection.find({})</textarea>
   <div class="exam-topbar">
     <span class="exam-topbar-title">Codexa Labs — Exam Submitted</span>
   </div>
-  <div class="exam-body" style="display:flex; justify-content:center; align-items:center; height:calc(100vh - 50px);">
+  <div class="exam-body">
     <div class="exam-form-card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;max-width:540px">
-      <div style="width:64px;height:64px;background:var(--accent-soft);border:2px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--accent)">
+      <div style="width:64px;height:64px;background:rgba(22, 130, 93, 0.1);border:1px solid rgba(22, 130, 93, 0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--green2)">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
       <div class="exam-section-title" style="font-size:20px;margin:0">Thank you for taking the test!</div>
-      <div class="exam-section-sub" style="font-size:13px;line-height:1.6;color:var(--text-secondary)">
+      <div class="exam-section-sub" style="font-size:13px;line-height:1.6;color:var(--text2)">
         Your exam has been submitted successfully.<br/>
         Please contact your mentor for your final scores.
       </div>
@@ -1446,18 +1395,18 @@ db.collection.find({})</textarea>
 
 <!-- Student: Removed / Kicked Overlay -->
 <div class="exam-overlay" id="exam-student-kicked-panel">
-  <div class="exam-topbar" style="border-bottom:1px solid var(--border-strong)">
-    <span class="exam-topbar-title" style="color:var(--danger);font-weight:600">Codexa Labs — Assessment Access Terminated</span>
-    <span class="exam-status-chip exam-chip-ended" id="kicked-status-chip" style="margin-left:auto;background:rgba(240, 68, 56, 0.1);color:var(--danger);border:1px solid rgba(240, 68, 56, 0.3)">REMOVED BY MENTOR</span>
+  <div class="exam-topbar" style="border-bottom:1px solid rgba(255, 77, 77, 0.3)">
+    <span class="exam-topbar-title" style="color:#ff4d4d;font-weight:600">Codexa Labs — Assessment Access Terminated</span>
+    <span class="exam-status-chip exam-chip-ended" id="kicked-status-chip" style="margin-left:auto;background:rgba(255, 77, 77, 0.15);color:#ff4d4d;border:1px solid rgba(255, 77, 77, 0.4)">REMOVED BY MENTOR</span>
   </div>
-  <div class="exam-body" style="display:flex; justify-content:center; align-items:center; height:calc(100vh - 50px);">
-    <div class="exam-form-card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;max-width:520px;border-color:var(--danger);box-shadow:0 12px 40px rgba(240, 68, 56, 0.08);padding:36px 28px">
-      <div style="width:72px;height:72px;background:rgba(240, 68, 56, 0.08);border:2px solid var(--danger);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger)">
+  <div class="exam-body">
+    <div class="exam-form-card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;max-width:520px;border:1px solid rgba(255, 77, 77, 0.3);background:rgba(22, 14, 16, 0.95);box-shadow:0 12px 40px rgba(255, 0, 0, 0.2);padding:36px 28px">
+      <div style="width:72px;height:72px;background:rgba(255, 77, 77, 0.12);border:2px solid rgba(255, 77, 77, 0.4);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ff4d4d;box-shadow:0 0 24px rgba(255, 77, 77, 0.35)">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
       </div>
-      <div class="exam-section-title" id="kicked-title" style="font-size:22px;margin:0;color:var(--danger);font-weight:700;letter-spacing:-0.3px">Not Eligible For Test</div>
-      <div class="exam-section-sub" id="kicked-message" style="font-size:14px;line-height:1.6;color:var(--text-secondary)">
-        <strong style="color:var(--text-primary);font-size:15px;display:block;margin-bottom:8px">Mentor Removed You</strong>
+      <div class="exam-section-title" id="kicked-title" style="font-size:22px;margin:0;color:#ff5555;font-weight:700;letter-spacing:-0.3px">Not Eligible For Test</div>
+      <div class="exam-section-sub" id="kicked-message" style="font-size:14px;line-height:1.6;color:var(--text2)">
+        <strong style="color:#ffffff;font-size:15px;display:block;margin-bottom:8px">Mentor Removed You</strong>
         Your mentor has removed you from this assessment session. You are no longer eligible to participate or submit answers for this exam room.
       </div>
       <button class="exam-btn exam-btn-red" onclick="ExamPortal.exitToHome()" style="margin-top:8px;padding:9px 28px;font-weight:600;font-size:13px;border-radius:6px">
