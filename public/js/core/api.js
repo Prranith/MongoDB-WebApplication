@@ -138,7 +138,7 @@ function initParticles() {
     draw() {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 200, 80, 0.7)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
       ctx.fill();
     }
   }
@@ -167,11 +167,11 @@ function initParticles() {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < connectionDistance) {
-          const alpha = (1 - dist / connectionDistance) * 0.65;
+          const alpha = (1 - dist / connectionDistance) * 0.4;
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(0, 200, 80, ${alpha})`;
+          ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
           ctx.lineWidth = 1;
           ctx.stroke();
         }

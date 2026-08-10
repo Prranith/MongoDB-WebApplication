@@ -18,10 +18,10 @@
   --hl2:        #2a2d2e;
   --blue:       #007acc;
   --blue2:      #4fc1ff;
-  --green:      #16825d;
-  --green2:     #4ec9b0;
-  --green3:     #23d18b;
-  --mongo:      #00684a;
+  --green:      #2a2a2a;
+  --green2:     #cccccc;
+  --green3:     #e0e0e0;
+  --mongo:      #1a1a1a;
   --orange:     #ce9178;
   --yellow:     #dcdcaa;
   --purple:     #c586c0;
@@ -1244,11 +1244,11 @@ body {
 }
 
 .sb-green {
-  background: #16825d;
+  background: #333333;
 }
 
 .sb-green:hover {
-  background: #1a9469;
+  background: #444444;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1286,7 +1286,7 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #00ed64 0%, #00684a 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #a1a1a1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
@@ -1368,25 +1368,25 @@ body {
 .pulse-dot {
   width: 10px;
   height: 10px;
-  background: #00ed64;
+  background: #ffffff;
   border-radius: 50%;
   display: inline-block;
-  box-shadow: 0 0 0 0 rgba(0, 237, 100, 0.7);
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
   animation: pulse 1.8s infinite;
 }
 
 @keyframes pulse {
   0% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 237, 100, 0.7);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
   }
   70% {
     transform: scale(1);
-    box-shadow: 0 0 0 8px rgba(0, 237, 100, 0);
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
   }
   100% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 237, 100, 0);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
   }
 }
 
@@ -1424,10 +1424,10 @@ body {
 }
 
 .intro-enter:hover {
-  background-color: #00ed64;
+  background-color: #ffffff;
   color: #000000;
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(0, 237, 100, 0.45);
+  box-shadow: 0 12px 30px rgba(255, 255, 255, 0.25);
 }
 
 .intro-footer-row {
@@ -1448,10 +1448,10 @@ body {
 }
 
 .intro-dev a {
-  color: #00ed64;
+  color: #cccccc;
   text-decoration: none;
   font-weight: 700;
-  border-bottom: 1px dashed rgba(0, 237, 100, 0.4);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.3);
   transition: all 0.2s ease;
   margin-left: 3px;
 }
@@ -1756,10 +1756,10 @@ body {
    VS CODE DARK PLUS EDITOR THEME & INTELLISENSE STYLING
    ═══════════════════════════════════════════════════════════════ */
 .CodeMirror {
-  background: #1e1e1e !important;
-  color: #d4d4d4 !important;
-  line-height: 1.5 !important;
-  font-family: 'Consolas', 'JetBrains Mono', monospace !important;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  line-height: 1.5;
+  font-family: 'Consolas', 'JetBrains Mono', monospace;
 }
 
 .CodeMirror-gutters {
@@ -2178,7 +2178,7 @@ li.CodeMirror-hint-active {
   background: var(--green);
   color: #fff;
 }
-.exam-btn-green:hover:not(:disabled) { background: #1ea368; }
+.exam-btn-green:hover:not(:disabled) { background: #444444; }
 .exam-btn-red {
   background: #6b1a19;
   color: #f48771;
@@ -2646,6 +2646,7 @@ li.CodeMirror-hint-active {
 .exam-participant-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 8px 12px;
   border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -3412,5 +3413,191 @@ li.CodeMirror-hint-active {
 .exam-editor-wrap .CodeMirror-scroll {
   flex: 1 !important;
   height: 100% !important;
+}
+
+/* LeetCode Style Console Tab Bar Item */
+.console-tabbar-item {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  height: 100%;
+  font-size: 11px;
+  color: var(--text3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+
+.console-tabbar-item:hover {
+  color: var(--text2);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.console-tabbar-item.active {
+  color: var(--cyan);
+  border-bottom-color: var(--cyan);
+  background: rgba(255, 255, 255, 0.02);
+  font-weight: 600;
+}
+
+/* Custom CodeMirror Editor Themes */
+
+/* Default/Classic Dark Theme */
+.CodeMirror.cm-theme-default {
+  background: var(--bg2) !important;
+  color: var(--text) !important;
+  font-family: 'JetBrains Mono', monospace;
+}
+.CodeMirror.cm-theme-default .CodeMirror-gutters {
+  background: var(--bg3) !important;
+  border-right: 1px solid var(--border) !important;
+}
+.CodeMirror.cm-theme-default .CodeMirror-linenumber {
+  color: var(--text3) !important;
+}
+.CodeMirror.cm-theme-default .CodeMirror-cursor {
+  border-left: 2px solid var(--cyan) !important;
+}
+.CodeMirror.cm-theme-default .cm-keyword { color: #f43f5e !important; font-weight: bold; }
+.CodeMirror.cm-theme-default .cm-comment { color: #6b7280 !important; font-style: italic; }
+.CodeMirror.cm-theme-default .cm-string { color: #10b981 !important; }
+.CodeMirror.cm-theme-default .cm-number { color: #f59e0b !important; }
+.CodeMirror.cm-theme-default .cm-variable { color: #e2e8f0 !important; }
+.CodeMirror.cm-theme-default .cm-def { color: #38bdf8 !important; }
+.CodeMirror.cm-theme-default .cm-operator { color: #f43f5e !important; }
+
+/* Cyberpunk Neon Theme */
+.CodeMirror.cm-theme-cyberpunk {
+  background: #0f051d !important;
+  color: #00ffcc !important;
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
+}
+.CodeMirror.cm-theme-cyberpunk .CodeMirror-gutters {
+  background: #140b24 !important;
+  border-right: 1px solid #ff007f !important;
+}
+.CodeMirror.cm-theme-cyberpunk .CodeMirror-linenumber {
+  color: #ff007f !important;
+}
+.CodeMirror.cm-theme-cyberpunk .CodeMirror-cursor {
+  border-left: 2px solid #ff007f !important;
+}
+.CodeMirror.cm-theme-cyberpunk .cm-keyword { color: #ff007f !important; font-weight: bold; text-shadow: 0 0 5px #ff007f; }
+.CodeMirror.cm-theme-cyberpunk .cm-comment { color: #725e9c !important; font-style: italic; }
+.CodeMirror.cm-theme-cyberpunk .cm-string { color: #ffff00 !important; text-shadow: 0 0 5px #ffff00; }
+.CodeMirror.cm-theme-cyberpunk .cm-number { color: #00ffff !important; text-shadow: 0 0 5px #00ffff; }
+.CodeMirror.cm-theme-cyberpunk .cm-variable { color: #00ffcc !important; }
+.CodeMirror.cm-theme-cyberpunk .cm-def { color: #bd00ff !important; text-shadow: 0 0 5px #bd00ff; }
+.CodeMirror.cm-theme-cyberpunk .cm-operator { color: #ff007f !important; }
+
+/* Monokai Warm Theme */
+.CodeMirror.cm-theme-monokai {
+  background: #272822 !important;
+  color: #f8f8f2 !important;
+  font-family: 'Courier New', monospace;
+}
+.CodeMirror.cm-theme-monokai .CodeMirror-gutters {
+  background: #1e1f1c !important;
+  border-right: 1px solid #272822 !important;
+}
+.CodeMirror.cm-theme-monokai .CodeMirror-linenumber {
+  color: #75715e !important;
+}
+.CodeMirror.cm-theme-monokai .CodeMirror-cursor {
+  border-left: 2px solid #f8f8f0 !important;
+}
+.CodeMirror.cm-theme-monokai .cm-keyword { color: #f92672 !important; font-weight: bold; }
+.CodeMirror.cm-theme-monokai .cm-comment { color: #75715e !important; font-style: italic; }
+.CodeMirror.cm-theme-monokai .cm-string { color: #e6db74 !important; }
+.CodeMirror.cm-theme-monokai .cm-number { color: #ae81ff !important; }
+.CodeMirror.cm-theme-monokai .cm-variable { color: #a6e22e !important; }
+.CodeMirror.cm-theme-monokai .cm-def { color: #66d9ef !important; }
+
+/* Glass Frost (Glassmorphism) Theme */
+.CodeMirror.cm-theme-glass {
+  background: rgba(30, 41, 59, 0.7) !important;
+  backdrop-filter: blur(10px);
+  color: #e2e8f0 !important;
+  font-family: 'JetBrains Mono', monospace;
+}
+.CodeMirror.cm-theme-glass .CodeMirror-gutters {
+  background: rgba(15, 23, 42, 0.4) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.CodeMirror.cm-theme-glass .CodeMirror-linenumber {
+  color: #94a3b8 !important;
+}
+.CodeMirror.cm-theme-glass .CodeMirror-cursor {
+  border-left: 2px solid #38bdf8 !important;
+}
+.CodeMirror.cm-theme-glass .cm-keyword { color: #818cf8 !important; font-weight: bold; }
+.CodeMirror.cm-theme-glass .cm-comment { color: #64748b !important; font-style: italic; }
+.CodeMirror.cm-theme-glass .cm-string { color: #34d399 !important; }
+.CodeMirror.cm-theme-glass .cm-number { color: #fb7185 !important; }
+.CodeMirror.cm-theme-glass .cm-def { color: #38bdf8 !important; }
+
+/* LeetCode Dark Theme Override for Default */
+.CodeMirror.cm-theme-default {
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+}
+.CodeMirror.cm-theme-default .CodeMirror-gutters {
+  background: #1e1e1e !important;
+  border-right: 1px solid #2d2d2d !important;
+}
+.CodeMirror.cm-theme-default .CodeMirror-linenumber {
+  color: #858585 !important;
+}
+.CodeMirror.cm-theme-default .CodeMirror-cursor {
+  border-left: 2px solid #c6c6c6 !important;
+}
+.CodeMirror.cm-theme-default .CodeMirror-activeline-background {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+.CodeMirror.cm-theme-default .cm-keyword { color: #569cd6 !important; font-weight: bold; }
+.CodeMirror.cm-theme-default .cm-comment { color: #6a9955 !important; font-style: italic; }
+.CodeMirror.cm-theme-default .cm-string { color: #ce9178 !important; }
+.CodeMirror.cm-theme-default .cm-number { color: #b5cea8 !important; }
+.CodeMirror.cm-theme-default .cm-variable { color: #9cdcfe !important; }
+.CodeMirror.cm-theme-default .cm-def { color: #dcdcaa !important; }
+.CodeMirror.cm-theme-default .cm-operator { color: #d4d4d4 !important; }
+.CodeMirror.cm-theme-default .cm-type { color: #4ec9b0 !important; }
+
+/* Student editor customization overrides to allow font-size & family inheritance */
+.exam-editor-wrap .CodeMirror,
+.exam-editor-wrap .CodeMirror pre.CodeMirror-line,
+.exam-editor-wrap .CodeMirror-linenumber,
+.exam-editor-wrap .CodeMirror-code pre,
+.exam-editor-wrap .CodeMirror-line span {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: 1.5 !important;
+}
+
+/* Unified Playground Terminal Custom styling */
+#terminal-view {
+  border-top: 1px solid var(--border);
+}
+#terminal-stdout {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a3a transparent;
+  font-family: 'JetBrains Mono', 'Consolas', monospace !important;
+}
+#terminal-stdout::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+#terminal-stdout::-webkit-scrollbar-thumb {
+  background-color: #3a3a3a;
+  border-radius: 3px;
+}
+#terminal-stdin-val::placeholder {
+  color: #555555;
+  font-style: italic;
+}
+#terminal-stdin-val:focus {
+  color: #38bdf8 !important;
 }
 

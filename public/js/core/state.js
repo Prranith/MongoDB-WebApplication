@@ -2,15 +2,15 @@
 // CONSTANTS & CONFIGS
 // ═══════════════════════════════════════════════════════════════════
 const _TYPE_ICONS = {
-  "object":   "{}",
-  "array":    "[]",
-  "string":   '"a"',
-  "number":   "123",
-  "boolean":  "T/F",
-  "null":     "nil",
-  "date":     "📅",
-  "objectid": "🆔",
-  "unknown":  "?",
+  "object":   "<span style='color:#c084fc;font-weight:700'>{}</span>",
+  "array":    "<span style='color:#c084fc;font-weight:700'>[]</span>",
+  "string":   "<span style='color:#c084fc;font-weight:700'>\"a\"</span>",
+  "number":   "<span style='color:#c084fc;font-weight:700'>123</span>",
+  "boolean":  "<span style='color:#c084fc;font-weight:700'>T/F</span>",
+  "null":     "<span style='color:#a1a1aa;font-weight:700'>nil</span>",
+  "date":     "<span style='background:#6b21a8;color:#ffffff;padding:1px 5px;border-radius:2px;font-size:10px;font-weight:700'>D</span>",
+  "objectid": "<span style='background:#6b21a8;color:#ffffff;padding:1px 5px;border-radius:2px;font-size:10px;font-weight:700'>D</span>",
+  "unknown":  "<span style='color:#a1a1aa'>?</span>",
 };
 
 const _TYPE_COLORS = {
@@ -57,7 +57,7 @@ const RELATIONS = {
 const S = {
   view: 'intro',
   sidePanel: 'explorer',
-  sidebarOpen: true,
+  sidebarOpen: false,
   inspectorOpen: true,
   activeCollection: 'users',
   collections: [],

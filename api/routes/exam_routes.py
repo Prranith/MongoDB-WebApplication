@@ -327,7 +327,11 @@ def api_exam_get_room(room_id: str):
             pass
 
     # Kicked participants
-    kicked = json.loads(kicked_json) if kicked_json else []
+    kicked_raw = json.loads(kicked_json) if kicked_json else {}
+    if isinstance(kicked_raw, list):
+        kicked = {sid: "Removed by Mentor" for sid in kicked_raw}
+    else:
+        kicked = kicked_raw
 
     return jsonify({
         "status": "ok",
@@ -352,7 +356,11 @@ def api_exam_get_room_status(room_id: str):
     started_at = raw[1]
     ended_at = raw[2]
     kicked_json = raw[3]
-    kicked = json.loads(kicked_json) if kicked_json else []
+    kicked_raw = json.loads(kicked_json) if kicked_json else {}
+    if isinstance(kicked_raw, list):
+        kicked = {sid: "Removed by Mentor" for sid in kicked_raw}
+    else:
+        kicked = kicked_raw
 
     return jsonify({
         "status": "ok",
@@ -403,9 +411,12 @@ def api_exam_join_room(room_id: str):
         student_id = existing_student_id
         # Check if they are kicked
         kicked_json = _redis_one(["HGET", f"room:{room_id}", "kicked"])
-        kicked = json.loads(kicked_json) if kicked_json else []
-        if student_id in kicked:
-            return jsonify({"status": "error", "error": "kicked", "message": "You have been removed by the mentor"}), 403
+        kicked_raw = json.loads(kicked_json) if kicked_json else {}
+        if isinstance(kicked_raw, list):
+            kicked_raw = {sid: "Removed by Mentor" for sid in kicked_raw}
+        if student_id in kicked_raw:
+            reason = kicked_raw.get(student_id, "Removed by Mentor")
+            return jsonify({"status": "error", "error": "kicked", "message": reason}), 403
 
         # Prevent rejoin after the student has already finished/submitted the exam.
         p_val = participants_raw.get(student_id)
@@ -746,9 +757,12 @@ def api_exam_submit_answer(room_id: str):
         return jsonify({"status": "error", "error": "Exam is not live"}), 400
 
     # Validate student is not kicked
-    kicked = json.loads(kicked_json) if kicked_json else []
-    if student_id in kicked:
-        return jsonify({"status": "error", "error": "kicked", "message": "You have been removed by the mentor"}), 403
+    kicked_raw = json.loads(kicked_json) if kicked_json else {}
+    if isinstance(kicked_raw, list):
+        kicked_raw = {sid: "Removed by Mentor" for sid in kicked_raw}
+    if student_id in kicked_raw:
+        reason = kicked_raw.get(student_id, "Removed by Mentor")
+        return jsonify({"status": "error", "error": "kicked", "message": reason}), 403
 
     score = 0
     now = int(time.time())

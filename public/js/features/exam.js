@@ -45,6 +45,7 @@ const ExamPortal = (() => {
       pollInterval: null,
       examEditor: null,
       timerInterval: null,
+      ignoreFullscreenChange: false,
     }
   };
 
@@ -62,7 +63,7 @@ const ExamPortal = (() => {
     if (target) target.classList.add('active');
 
     // Prevent accidental page refresh during active exam sessions
-    if (['exam-mentor-dash-panel', 'exam-student-waiting-panel', 'exam-student-exam-panel'].includes(panelId)) {
+    if (['exam-mentor-dash-panel', 'exam-student-wait-panel', 'exam-student-exam-panel'].includes(panelId)) {
       window.onbeforeunload = function(e) {
         const msg = "Do not refresh your screen, Site will auto-refresh, Else Test will be cancelled";
         if (e) e.returnValue = msg;
@@ -71,6 +72,13 @@ const ExamPortal = (() => {
     } else {
       window.onbeforeunload = null;
     }
+  }
+
+  function isStudentKicked(kicked, studentId) {
+    if (!kicked || !studentId) return false;
+    if (Array.isArray(kicked)) return kicked.includes(studentId);
+    if (typeof kicked === 'object') return Object.prototype.hasOwnProperty.call(kicked, studentId);
+    return false;
   }
 
   function showAppWarningModal(title, message, onConfirm) {
@@ -2237,6 +2245,10 @@ const ExamPortal = (() => {
           studentNS.initWaitingRoom(roomId, res.roomTitle);
         }
       } else {
+        if (res.error === 'already_submitted') {
+          showPanel('exam-thankyou-panel');
+          return;
+        }
         el('student-join-err').textContent = res.message || res.error || '// Failed to join room';
         el('student-join-err').style.display = 'block';
       }
@@ -2256,8 +2268,9 @@ const ExamPortal = (() => {
       state.student.pollInterval = setInterval(async () => {
         const res = await apiCall(`/api/exam/room/${roomId}`);
         if (res.status === 'ok') {
-          if (res.kicked && res.kicked.includes(state.student.studentId)) {
-            studentNS.handleKicked();
+          if (isStudentKicked(res.kicked, state.student.studentId)) {
+            const reason = res.kicked[state.student.studentId];
+            studentNS.handleKicked(reason);
             return;
           }
           renderParticipants(res.participants || [], 'wait-participants-body', 'wait-participants-count');
@@ -2266,14 +2279,15 @@ const ExamPortal = (() => {
             await studentNS.initExam(roomId);
           }
         }
-      }, 5000);
+      }, 3000);
     },
 
     async initExam(roomId) {
       const res = await apiCall(`/api/exam/room/${roomId}`);
       if (res.status !== 'ok') return;
-      if (res.kicked && res.kicked.includes(state.student.studentId)) {
-        studentNS.handleKicked();
+      if (isStudentKicked(res.kicked, state.student.studentId)) {
+        const reason = res.kicked[state.student.studentId];
+        studentNS.handleKicked(reason);
         return;
       }
 
@@ -2344,8 +2358,9 @@ const ExamPortal = (() => {
       state.student.pollInterval = setInterval(async () => {
         const statusRes = await apiCall(`/api/exam/room/${roomId}/status`);
         if (statusRes.status === 'ok') {
-          if (statusRes.kicked && statusRes.kicked.includes(state.student.studentId)) {
-            studentNS.handleKicked();
+          if (isStudentKicked(statusRes.kicked, state.student.studentId)) {
+            const reason = statusRes.kicked[state.student.studentId];
+            studentNS.handleKicked(reason);
             return;
           }
           if (statusRes.roomStatus === 'ended') {
@@ -2354,7 +2369,7 @@ const ExamPortal = (() => {
             studentNS._lockExam();
           }
         }
-      }, 6000);
+      }, 3000);
 
       // Init student editor
       setTimeout(() => studentNS._initStudentEditor(), 100);
@@ -3080,7 +3095,7 @@ const ExamPortal = (() => {
         state.student.status[q.id] = 'submitted';
       } else {
         if (res.error === 'kicked' || res.status === 403) {
-          studentNS.handleKicked();
+          studentNS.handleKicked(res.message);
           return;
         }
         // Revert optimistic update on error
@@ -3102,9 +3117,11 @@ const ExamPortal = (() => {
       localStorage.removeItem('exam_student_id');
       localStorage.removeItem('exam_student_room');
       window.onbeforeunload = null;
+      state.student.ignoreFullscreenChange = true;
 
-      // Update screen text dynamically if reason is provided
-      if (reason) {
+      const isSystem = reason && reason !== 'Removed by Mentor';
+      
+      if (isSystem) {
         if (el('kicked-status-chip')) {
           el('kicked-status-chip').textContent = 'BLOCKED BY SYSTEM';
           el('kicked-status-chip').style.background = 'rgba(255, 77, 77, 0.15)';
@@ -3112,31 +3129,30 @@ const ExamPortal = (() => {
           el('kicked-status-chip').style.borderColor = 'rgba(255, 77, 77, 0.4)';
         }
         if (el('kicked-title')) {
-          el('kicked-title').textContent = 'Access Terminated';
+          el('kicked-title').textContent = 'Access Blocked';
           el('kicked-title').style.color = '#ff4d4d';
         }
         if (el('kicked-message')) {
           el('kicked-message').innerHTML = `
-            <strong style="color:#ffffff;font-size:15px;display:block;margin-bottom:8px">Assessment Violations Blocked</strong>
-            ${reason}
+            <strong style="color:#ffffff;font-size:15px;display:block;margin-bottom:8px">Test Blocked by System</strong>
+            Your test has been blocked by the proctoring system due to multiple violations (tab exits or copy-paste attempts). Please contact your mentor for further actions.
           `;
         }
       } else {
-        // Default message for mentor kick
         if (el('kicked-status-chip')) {
-          el('kicked-status-chip').textContent = 'REMOVED BY MENTOR';
+          el('kicked-status-chip').textContent = 'BLOCKED BY MENTOR';
           el('kicked-status-chip').style.background = 'rgba(255, 77, 77, 0.15)';
           el('kicked-status-chip').style.color = '#ff4d4d';
           el('kicked-status-chip').style.borderColor = 'rgba(255, 77, 77, 0.4)';
         }
         if (el('kicked-title')) {
-          el('kicked-title').textContent = 'Not Eligible For Test';
-          el('kicked-title').style.color = '#ff5555';
+          el('kicked-title').textContent = 'Access Blocked';
+          el('kicked-title').style.color = '#ff4d4d';
         }
         if (el('kicked-message')) {
           el('kicked-message').innerHTML = `
-            <strong style="color:#ffffff;font-size:15px;display:block;margin-bottom:8px">Mentor Removed You</strong>
-            Your mentor has removed you from this assessment session. You are no longer eligible to participate or submit answers for this exam room.
+            <strong style="color:#ffffff;font-size:15px;display:block;margin-bottom:8px">Test Blocked by Mentor</strong>
+            Your test has been blocked by the mentor. Please contact your mentor for further actions.
           `;
         }
       }
@@ -3155,11 +3171,15 @@ const ExamPortal = (() => {
       }
 
       showPanel('exam-student-kicked-panel');
+      setTimeout(() => {
+        state.student.ignoreFullscreenChange = false;
+      }, 1000);
     },
 
     async forceSubmitAndBlock(reason) {
       clearInterval(state.student.pollInterval);
       clearInterval(state.student.timerInterval);
+      state.student.ignoreFullscreenChange = true;
 
       // Submit the exam
       try {
@@ -3169,6 +3189,22 @@ const ExamPortal = (() => {
       }
 
       studentNS.handleKicked(reason);
+    },
+      clearInterval(state.student.pollInterval);
+      clearInterval(state.student.timerInterval);
+      state.student.ignoreFullscreenChange = true;
+
+      // Submit the exam
+      try {
+        await apiCall(`/api/exam/room/${state.student.roomId}/student/${state.student.studentId}/self-kick`, 'POST', { reason });
+      } catch (err) {
+        console.error("Self-kick submission failed:", err);
+      }
+
+      studentNS.handleKicked(reason);
+      setTimeout(() => {
+        state.student.ignoreFullscreenChange = false;
+      }, 1000);
     },
 
     requestFullscreen() {
@@ -3205,7 +3241,34 @@ const ExamPortal = (() => {
     },
 
     async finishExam() {
-      if (!confirm('Are you sure you want to submit the final exam? You will not be able to modify your answers after this.')) return;
+      const modal = el('exam-confirm-submit-modal');
+      if (modal) {
+        state.student.ignoreFullscreenChange = true;
+        
+        const okBtn = el('confirm-submit-ok-btn');
+        if (okBtn) {
+          okBtn.onclick = async () => {
+            closeModal('exam-confirm-submit-modal');
+            await studentNS._executeSubmission();
+          };
+        }
+        
+        const closeBtn = modal.querySelector('.modal-close-btn');
+        const cancelBtn = modal.querySelector('.exam-btn-secondary');
+        
+        const onCancel = () => {
+          state.student.ignoreFullscreenChange = false;
+        };
+        
+        if (closeBtn) closeBtn.onclick = () => { closeModal('exam-confirm-submit-modal'); onCancel(); };
+        if (cancelBtn) cancelBtn.onclick = () => { closeModal('exam-confirm-submit-modal'); onCancel(); };
+        
+        modal.classList.add('open');
+      }
+    },
+
+    async _executeSubmission() {
+      state.student.ignoreFullscreenChange = true;
       const btn = el('btn-student-submit-exam');
       if (btn) {
         btn.disabled = true;
@@ -3220,6 +3283,7 @@ const ExamPortal = (() => {
           btn.disabled = false;
           btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:3px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Exam';
         }
+        state.student.ignoreFullscreenChange = false;
       }
     },
 
@@ -3554,6 +3618,7 @@ const ExamPortal = (() => {
     },
 
     _lockExam() {
+      state.student.ignoreFullscreenChange = true;
       // Lock editor
       if (state.student.examEditor) {
         state.student.examEditor.setOption('readOnly', 'nocursor');
@@ -3730,7 +3795,9 @@ const ExamPortal = (() => {
     const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
     if (!isFs) {
       // Exited fullscreen!
-      // If we are currently showing the kicked panel or thank you panel, ignore exit fullscreen
+      if (state.student.ignoreFullscreenChange) {
+        return;
+      }
       const kickedActive = el('exam-student-kicked-panel')?.classList.contains('active');
       const thankYouActive = el('exam-thankyou-panel')?.classList.contains('active');
       if (kickedActive || thankYouActive) {

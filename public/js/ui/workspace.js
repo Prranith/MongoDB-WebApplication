@@ -85,6 +85,89 @@ function openFileInTab(path) {
   }
   
   editor.setValue(file.content);
+  
+  // Dynamically update workspace language and views based on file extension
+  let lang = 'mongodb';
+  let cmMode = 'javascript';
+  let langIndicator = 'Mongo Shell';
+  
+  const lowerPath = file.path.toLowerCase();
+  if (lowerPath.endsWith('.py')) {
+    lang = 'python';
+    cmMode = 'python';
+    langIndicator = 'Python 3';
+  } else if (lowerPath.endsWith('.cpp')) {
+    lang = 'cpp';
+    cmMode = 'text/x-c++src';
+    langIndicator = 'C++';
+  } else if (lowerPath.endsWith('.c')) {
+    lang = 'c';
+    cmMode = 'text/x-c++src';
+    langIndicator = 'C';
+  } else if (lowerPath.endsWith('.java')) {
+    lang = 'java';
+    cmMode = 'text/x-java';
+    langIndicator = 'Java';
+  }
+  
+  const langSelect = document.getElementById('workspace-lang-select');
+  if (langSelect) {
+    langSelect.value = lang;
+  }
+  
+  const langIndicatorEl = document.getElementById('sb-lang-indicator');
+  if (langIndicatorEl) {
+    langIndicatorEl.textContent = langIndicator;
+  }
+
+  // Switch workspace console views: MongoDB tabs/Inspector vs Unified Terminal
+  const isMongo = lang === 'mongodb';
+  const inspectorEl = document.getElementById('inspector');
+  const btnToggleInspector = document.getElementById('btn-toggle-inspector');
+  const btnSchemaEr = document.getElementById('btn-schema-er');
+  
+  if (isMongo) {
+    if (inspectorEl) inspectorEl.style.display = S.inspectorOpen ? 'flex' : 'none';
+    if (btnToggleInspector) btnToggleInspector.style.display = 'flex';
+    if (btnSchemaEr) btnSchemaEr.style.display = 'flex';
+  } else {
+    if (inspectorEl) inspectorEl.style.display = 'none';
+    if (btnToggleInspector) btnToggleInspector.style.display = 'none';
+    if (btnSchemaEr) btnSchemaEr.style.display = 'none';
+  }
+
+  // Toggle console views
+  const conTabs = document.getElementById('console-tabs');
+  const conSubTabs = document.getElementById('console-sub-tabs');
+  const treeView = document.getElementById('tree-view');
+  const rawView = document.getElementById('raw-view');
+  const outputView = document.getElementById('output-view');
+  const terminalView = document.getElementById('terminal-view');
+
+  if (isMongo) {
+    if (conTabs) conTabs.style.display = 'flex';
+    if (conSubTabs) conSubTabs.style.display = 'flex';
+    if (terminalView) terminalView.style.display = 'none';
+    
+    // Restore default selected result view
+    const isOutputActive = S.conTab === 'output';
+    if (treeView) treeView.style.display = (isOutputActive && S.resultView === 'tree') ? 'flex' : 'none';
+    if (rawView) rawView.style.display = (isOutputActive && S.resultView === 'raw') ? 'block' : 'none';
+    if (outputView) outputView.style.display = (!isOutputActive || S.resultView === 'out') ? 'block' : 'none';
+  } else {
+    if (conTabs) conTabs.style.display = 'none';
+    if (conSubTabs) conSubTabs.style.display = 'none';
+    if (treeView) treeView.style.display = 'none';
+    if (rawView) rawView.style.display = 'none';
+    if (outputView) outputView.style.display = 'none';
+    if (terminalView) terminalView.style.display = 'flex';
+  }
+
+  if (editor) {
+    editor.setOption('mode', cmMode);
+    setTimeout(() => editor.refresh(), 50);
+  }
+
   S.activeCollection = inferCollectionFromQuery(file.content) || S.activeCollection;
   document.getElementById('sb-coll').textContent = S.activeCollection;
   loadSchema(S.activeCollection);
@@ -217,7 +300,9 @@ function renderInlineCreateInput(type) {
     if (name) {
       if (type === 'file') {
         let filename = name;
-        if (!filename.endsWith('.mongo') && !filename.endsWith('.json')) {
+        const validExtensions = ['.mongo', '.json', '.cpp', '.java', '.py', '.c'];
+        const hasExt = validExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+        if (!hasExt) {
           filename += '.mongo';
         }
         
@@ -228,10 +313,22 @@ function renderInlineCreateInput(type) {
           return;
         }
         
+        let starter = `// MongoDB Query: ${filename}\n\ndb.users.find({})\n`;
+        if (filename.endsWith('.py')) {
+          starter = `# Python 3 script\nprint("Hello World")\n`;
+        } else if (filename.endsWith('.cpp')) {
+          starter = `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello World" << endl;\n    return 0;\n}\n`;
+        } else if (filename.endsWith('.c')) {
+          starter = `#include <stdio.h>\n\nint main() {\n    printf("Hello World\\n");\n    return 0;\n}\n`;
+        } else if (filename.endsWith('.java')) {
+          const baseName = filename.replace(/\.java$/, '');
+          starter = `public class ${baseName} {\n    public static void main(String[] args) {\n        System.out.println("Hello from ${baseName}!");\n    }\n}\n`;
+        }
+
         const fileObj = {
           name: filename,
           path: filename,
-          content: `// MongoDB Query: ${filename}\n\ndb.users.find({})\n`,
+          content: starter,
           type: 'file'
         };
         S.files.push(fileObj);

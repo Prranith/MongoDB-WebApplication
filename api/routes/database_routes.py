@@ -162,3 +162,27 @@ def api_snippets():
             for s in snips
         ]
     return jsonify({"snippets": result})
+
+
+@database_bp.route("/api/sandbox/run", methods=["POST"])
+def api_sandbox_run():
+    """Execute arbitrary code using Paiza API for playground mode."""
+    from api.routes.exam_routes import run_piston_code
+    body = request.get_json(force=True, silent=True) or {}
+    language = body.get("language", "python")
+    code = body.get("code", "")
+    stdin = body.get("stdin", "")
+    
+    res = run_piston_code(language, code, stdin)
+    try:
+        code_val = int(res.get("code", 0))
+    except (ValueError, TypeError):
+        code_val = 0
+        
+    return jsonify({
+        "status": "ok",
+        "stdout": res.get("stdout", ""),
+        "stderr": res.get("stderr", ""),
+        "code": code_val,
+        "output": res.get("output", "")
+    })
