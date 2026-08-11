@@ -64,8 +64,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Apply visual theme override
-  applyEditorTheme();
   applySettings();
   initResizer();
   initConsoleResizer();
@@ -87,33 +85,3 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', closeMenus);
 });
-
-// Apply VS Code dark theme style tokens directly
-function applyEditorTheme() {
-  const style = document.createElement('style');
-  style.textContent = `
-    .CodeMirror { background:#1e1e1e !important; color:#d4d4d4 !important; }
-    .CodeMirror-gutters { background:#1e1e1e !important; border-right:1px solid #3c3c3c !important; }
-    .CodeMirror-linenumber { color:#858585 !important; }
-    .CodeMirror-activeline-background { background:#282828 !important; }
-    .CodeMirror-selected { background:#264f78 !important; }
-    .CodeMirror-cursor { border-left:2px solid #aeafad !important; }
-    .cm-keyword { color:#569cd6 !important; }
-    .cm-string, .cm-string-2 { color:#ce9178 !important; }
-    .cm-number { color:#b5cea8 !important; }
-    .cm-comment { color:#6a9955 !important; font-style:italic; }
-    .cm-property { color:#9cdcfe !important; }
-    .cm-variable { color:#9cdcfe !important; }
-    .cm-variable-2 { color:#9cdcfe !important; }
-    .cm-def { color:#dcdcaa !important; }
-    .cm-operator { color:#d4d4d4 !important; }
-    .cm-atom { color:#569cd6 !important; }
-    .cm-punctuation { color:#d4d4d4 !important; }
-    .CodeMirror-scroll { background:#1e1e1e !important; }
-    .CodeMirror-hints { background:#252526; border:1px solid #454545; z-index:1000; }
-    .CodeMirror-hint { color:#d4d4d4; }
-    .CodeMirror-hint-active { background:#094771 !important; color:#fff; }
-    .tab.dirty .tab-dot { display: block !important; }
-  `;
-  document.head.appendChild(style);
-}
