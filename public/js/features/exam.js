@@ -2451,11 +2451,23 @@ const ExamPortal = (() => {
       cm.on('change', () => {
         const currentQ = state.student.questions[state.student.currentQIdx];
         if (currentQ) {
-          currentQ._studentDraft = cm.getValue();
+          if (currentQ.type === 'query') {
+            currentQ._studentDraft = cm.getValue();
+          } else if (currentQ.type === 'coding') {
+            currentQ._studentDrafts = currentQ._studentDrafts || {};
+            currentQ._studentDrafts[currentQ.language || 'python'] = cm.getValue();
+            currentQ._studentDraft = cm.getValue();
+          }
           if (state.student.status[currentQ.id] !== 'submitted') {
             state.student.status[currentQ.id] = 'draft';
             studentNS._renderQNav();
           }
+          
+          // Debounce auto-save to Redis
+          clearTimeout(state.student.autoSaveTimeout);
+          state.student.autoSaveTimeout = setTimeout(() => {
+            studentNS.autoSaveSingleQuestion(currentQ);
+          }, 2000);
         }
       });
       state.student.examEditor = cm;
@@ -2768,6 +2780,12 @@ const ExamPortal = (() => {
 
       studentNS._renderMCQOptions(q);
       studentNS._renderQNav();
+
+      // Debounce auto-save to Redis
+      clearTimeout(state.student.autoSaveTimeout);
+      state.student.autoSaveTimeout = setTimeout(() => {
+        studentNS.autoSaveSingleQuestion(q);
+      }, 2000);
     },
 
     setConsoleTab(tab) {
@@ -3203,6 +3221,52 @@ const ExamPortal = (() => {
       
       if (promises.length > 0) {
         await Promise.all(promises);
+      }
+    },
+
+    async autoSaveSingleQuestion(q) {
+      if (!q) return;
+      let body = {
+        studentId: state.student.studentId,
+        questionId: q.id,
+        type: q.type,
+        marks: q.marks,
+        isAutoSave: true
+      };
+      
+      let hasValue = false;
+      if (q.type === 'mcq') {
+        if (q.isMultiSelect) {
+          if (state.student.selectedOptions && state.student.selectedOptions.length > 0) {
+            body.selectedOptions = state.student.selectedOptions;
+            hasValue = true;
+          }
+        } else {
+          if (state.student.selectedOption !== null && state.student.selectedOption !== undefined) {
+            body.selectedOption = state.student.selectedOption;
+            hasValue = true;
+          }
+        }
+      } else if (q.type === 'coding') {
+        const draft = q._studentDrafts ? q._studentDrafts[q.language] : q._studentDraft;
+        if (draft && draft.trim()) {
+          body.code = draft;
+          body.language = q.language;
+          hasValue = true;
+        }
+      } else if (q.type === 'query') {
+        const draft = q._studentDraft;
+        if (draft && draft.trim()) {
+          body.query = draft;
+          body.datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
+          body.studentOutput = (state.student.currentQIdx === state.student.questions.indexOf(q)) ? (state.student.lastRunOutput || []) : [];
+          hasValue = true;
+        }
+      }
+      
+      if (hasValue) {
+        apiCall(`/api/exam/room/${state.student.roomId}/submit`, 'POST', body)
+          .catch(function(err) { console.error("Debounced auto-save failed for question " + q.id, err); });
       }
     },
 

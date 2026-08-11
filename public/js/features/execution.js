@@ -600,7 +600,7 @@ async function runPlaygroundCode(language, code, stdin) {
   }
 }
 
-function changeWorkspaceLanguage(newLang) {
+function updateWorkspaceConsoleLayout(newLang) {
   const isMongo = newLang === 'mongodb';
   const inspectorEl = document.getElementById('inspector');
   const btnToggleInspector = document.getElementById('btn-toggle-inspector');
@@ -615,6 +615,34 @@ function changeWorkspaceLanguage(newLang) {
     if (btnToggleInspector) btnToggleInspector.style.display = 'none';
     if (btnSchemaEr) btnSchemaEr.style.display = 'none';
   }
+
+  // Toggle console views
+  const conTabs = document.getElementById('console-tabs');
+  const conSubTabs = document.getElementById('console-sub-tabs');
+  const ctabStdin = document.getElementById('ctab-stdin');
+
+  if (isMongo) {
+    if (conTabs) conTabs.style.display = 'flex';
+    if (conSubTabs) conSubTabs.style.display = 'flex';
+    if (ctabStdin) ctabStdin.style.display = 'none';
+    if (S.conTab === 'stdin') S.conTab = 'output';
+    setConTab(S.conTab);
+  } else {
+    if (conTabs) conTabs.style.display = 'flex';
+    if (conSubTabs) conSubTabs.style.display = 'none';
+    if (ctabStdin) ctabStdin.style.display = 'block';
+    if (!['output', 'logs', 'stdin'].includes(S.conTab)) {
+      S.conTab = 'output';
+    }
+    setConTab(S.conTab);
+  }
+}
+
+// Make it globally accessible
+window.updateWorkspaceConsoleLayout = updateWorkspaceConsoleLayout;
+
+function changeWorkspaceLanguage(newLang) {
+  updateWorkspaceConsoleLayout(newLang);
 
   let cmMode = 'javascript';
   let placeholder = '// Write your MongoDB query here\ndb.collection.find({})';
@@ -641,27 +669,6 @@ function changeWorkspaceLanguage(newLang) {
   const langIndicatorEl = document.getElementById('sb-lang-indicator');
   if (langIndicatorEl) {
     langIndicatorEl.textContent = langIndicator;
-  }
-
-  // Toggle console views
-  const conTabs = document.getElementById('console-tabs');
-  const conSubTabs = document.getElementById('console-sub-tabs');
-  const ctabStdin = document.getElementById('ctab-stdin');
-
-  if (isMongo) {
-    if (conTabs) conTabs.style.display = 'flex';
-    if (conSubTabs) conSubTabs.style.display = 'flex';
-    if (ctabStdin) ctabStdin.style.display = 'none';
-    if (S.conTab === 'stdin') S.conTab = 'output';
-    setConTab(S.conTab);
-  } else {
-    if (conTabs) conTabs.style.display = 'flex';
-    if (conSubTabs) conSubTabs.style.display = 'none';
-    if (ctabStdin) ctabStdin.style.display = 'block';
-    if (!['output', 'logs', 'stdin'].includes(S.conTab)) {
-      S.conTab = 'output';
-    }
-    setConTab(S.conTab);
   }
 
   if (editor) {

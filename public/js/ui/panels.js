@@ -45,8 +45,17 @@ function toggleSidebar() {
 
 function toggleInspector() {
   S.inspectorOpen = !S.inspectorOpen;
-  document.getElementById('inspector').style.display = S.inspectorOpen ? 'flex' : 'none';
-  setTimeout(() => editor.refresh(), 50);
+  const inspector = document.getElementById('inspector');
+  if (inspector) inspector.style.display = S.inspectorOpen ? 'flex' : 'none';
+  const btn = document.getElementById('btn-toggle-inspector');
+  if (btn) {
+    if (S.inspectorOpen) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  }
+  setTimeout(() => { if (editor) editor.refresh(); }, 50);
 }
 
 function toggleDbRoot() {
@@ -155,6 +164,7 @@ const CMDS = [
   { icon: '▶', label: 'Run MongoDB Query', key: 'Ctrl+Enter', action: runQuery },
   { icon: '🎯', label: 'Open Exam Portal (Mentor & Student)', action: () => window.ExamPortal && window.ExamPortal.showRoleSelection() },
   { icon: '📁', label: 'Toggle Side Explorer Panel', key: 'Ctrl+B', action: toggleSidebar },
+  { icon: '📺', label: 'Toggle Console/Terminal Panel', action: toggleConsole },
   { icon: '📄', label: 'Create New Query File', key: 'Ctrl+N', action: createNewQueryFile },
   { icon: '💾', label: 'Save Current File changes', key: 'Ctrl+S', action: saveQuery },
   { icon: '⛁', label: 'Open Schema ER Details Dialog', key: 'F1', action: () => openModal('schema-modal') },
@@ -247,8 +257,26 @@ function initConsoleResizer() {
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
     const dy = startY - e.clientY; // upwards drag increases height
-    const h = Math.max(100, Math.min(window.innerHeight * 0.8, startH + dy));
+    let h = startH + dy;
+    
+    // Allow dragging down to 0!
+    if (h < 30) {
+      h = 0;
+    } else {
+      h = Math.min(window.innerHeight * 0.8, h);
+    }
+    
     consoleEl.style.height = h + 'px';
+    
+    if (h === 0) {
+      consoleEl.style.display = 'none';
+      const btn = document.getElementById('btn-toggle-console');
+      if (btn) btn.classList.remove('active');
+    } else {
+      consoleEl.style.display = 'flex';
+      const btn = document.getElementById('btn-toggle-console');
+      if (btn) btn.classList.add('active');
+    }
   });
   
   document.addEventListener('mouseup', () => {
@@ -258,4 +286,30 @@ function initConsoleResizer() {
       if (editor) editor.refresh();
     }
   });
+}
+
+function toggleConsole() {
+  const consoleEl = document.getElementById('console');
+  const resizer = document.getElementById('console-resizer');
+  if (!consoleEl) return;
+
+  const isOpen = consoleEl.style.display !== 'none' && consoleEl.offsetHeight > 10;
+  
+  if (isOpen) {
+    // Save current height if it's valid
+    const currentH = consoleEl.offsetHeight;
+    if (currentH > 20) {
+      S.consoleHeight = currentH;
+    }
+    consoleEl.style.display = 'none';
+    const btn = document.getElementById('btn-toggle-console');
+    if (btn) btn.classList.remove('active');
+  } else {
+    consoleEl.style.display = 'flex';
+    const targetH = S.consoleHeight || 220;
+    consoleEl.style.height = targetH + 'px';
+    const btn = document.getElementById('btn-toggle-console');
+    if (btn) btn.classList.add('active');
+    setTimeout(() => { if (editor) editor.refresh(); }, 50);
+  }
 }

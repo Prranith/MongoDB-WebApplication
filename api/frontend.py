@@ -3727,6 +3727,8 @@ li.CodeMirror-hint-active {
     </div>
     <div class="wmenu" onclick="toggleMenu(this)">Terminal
       <div class="wmenu-dropdown">
+        <div class="wmenu-item" onclick="toggleConsole()">Toggle Console Panel</div>
+        <div class="wmenu-sep"></div>
         <div class="wmenu-item" onclick="clearConsole()">Clear Console Output</div>
       </div>
     </div>
@@ -3901,6 +3903,10 @@ li.CodeMirror-hint-active {
         Exam Portal
       </button>
       <div id="tb-right" style="display: flex; align-items: center; gap: 8px;">
+        <button class="tbtn tbtn-secondary active" id="btn-toggle-console" onclick="toggleConsole()" style="display: flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+          Console Panel
+        </button>
         <button class="tbtn tbtn-secondary" id="btn-toggle-inspector" onclick="toggleInspector()" style="display: flex; align-items: center; gap: 6px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
           Inspector Panel
@@ -4652,8 +4658,17 @@ function toggleSidebar() {
 
 function toggleInspector() {
   S.inspectorOpen = !S.inspectorOpen;
-  document.getElementById('inspector').style.display = S.inspectorOpen ? 'flex' : 'none';
-  setTimeout(() => editor.refresh(), 50);
+  const inspector = document.getElementById('inspector');
+  if (inspector) inspector.style.display = S.inspectorOpen ? 'flex' : 'none';
+  const btn = document.getElementById('btn-toggle-inspector');
+  if (btn) {
+    if (S.inspectorOpen) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  }
+  setTimeout(() => { if (editor) editor.refresh(); }, 50);
 }
 
 function toggleDbRoot() {
@@ -4762,6 +4777,7 @@ const CMDS = [
   { icon: '▶', label: 'Run MongoDB Query', key: 'Ctrl+Enter', action: runQuery },
   { icon: '🎯', label: 'Open Exam Portal (Mentor & Student)', action: () => window.ExamPortal && window.ExamPortal.showRoleSelection() },
   { icon: '📁', label: 'Toggle Side Explorer Panel', key: 'Ctrl+B', action: toggleSidebar },
+  { icon: '📺', label: 'Toggle Console/Terminal Panel', action: toggleConsole },
   { icon: '📄', label: 'Create New Query File', key: 'Ctrl+N', action: createNewQueryFile },
   { icon: '💾', label: 'Save Current File changes', key: 'Ctrl+S', action: saveQuery },
   { icon: '⛁', label: 'Open Schema ER Details Dialog', key: 'F1', action: () => openModal('schema-modal') },
@@ -4854,8 +4870,26 @@ function initConsoleResizer() {
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
     const dy = startY - e.clientY; // upwards drag increases height
-    const h = Math.max(100, Math.min(window.innerHeight * 0.8, startH + dy));
+    let h = startH + dy;
+    
+    // Allow dragging down to 0!
+    if (h < 30) {
+      h = 0;
+    } else {
+      h = Math.min(window.innerHeight * 0.8, h);
+    }
+    
     consoleEl.style.height = h + 'px';
+    
+    if (h === 0) {
+      consoleEl.style.display = 'none';
+      const btn = document.getElementById('btn-toggle-console');
+      if (btn) btn.classList.remove('active');
+    } else {
+      consoleEl.style.display = 'flex';
+      const btn = document.getElementById('btn-toggle-console');
+      if (btn) btn.classList.add('active');
+    }
   });
   
   document.addEventListener('mouseup', () => {
@@ -4865,6 +4899,32 @@ function initConsoleResizer() {
       if (editor) editor.refresh();
     }
   });
+}
+
+function toggleConsole() {
+  const consoleEl = document.getElementById('console');
+  const resizer = document.getElementById('console-resizer');
+  if (!consoleEl) return;
+
+  const isOpen = consoleEl.style.display !== 'none' && consoleEl.offsetHeight > 10;
+  
+  if (isOpen) {
+    // Save current height if it's valid
+    const currentH = consoleEl.offsetHeight;
+    if (currentH > 20) {
+      S.consoleHeight = currentH;
+    }
+    consoleEl.style.display = 'none';
+    const btn = document.getElementById('btn-toggle-console');
+    if (btn) btn.classList.remove('active');
+  } else {
+    consoleEl.style.display = 'flex';
+    const targetH = S.consoleHeight || 220;
+    consoleEl.style.height = targetH + 'px';
+    const btn = document.getElementById('btn-toggle-console');
+    if (btn) btn.classList.add('active');
+    setTimeout(() => { if (editor) editor.refresh(); }, 50);
+  }
 }
 
 </script>
@@ -5168,27 +5228,26 @@ function showView(name) {
 // ═══════════════════════════════════════════════════════════════════
 async function loadFiles() {
   try {
-    const d = await fetchAPI('/api/files');
-    const serverFiles = d.files || [];
+    // Read local override from localStorage to ensure 100% private, client-side files
+    let localFiles = JSON.parse(localStorage.getItem('mongosandbox_files') || '[]');
     
-    // Read local override from localStorage
-    const localOverride = JSON.parse(localStorage.getItem('mongosandbox_files') || '[]');
-    
+    // Filter out legacy files
     const legacyPaths = ['01_find_paid.mongo', '02_aggregate_pipeline.mongo', 'kishor.mongo'];
-    // Merge server files with local modifications, ignoring legacy files
-    const cleanLocalOverride = localOverride.filter(lf => !legacyPaths.includes(lf.path));
-    const merged = [...serverFiles].filter(sf => !legacyPaths.includes(sf.path));
-    
-    for (const lf of cleanLocalOverride) {
-      const idx = merged.findIndex(f => f.path === lf.path);
-      if (idx !== -1) {
-        merged[idx] = lf; // update with locally modified version
-      } else {
-        merged.push(lf); // add new custom files
-      }
+    localFiles = localFiles.filter(lf => !legacyPaths.includes(lf.path));
+
+    // If local files are empty, initialize with default templates
+    if (localFiles.length === 0) {
+      localFiles = [
+        {
+          name: 'query.js',
+          path: 'query.js',
+          content: '// MongoDB Query Sandbox\\n// Write queries here (Ctrl+Enter to run)\\ndb.users.find({})\\n',
+          type: 'file'
+        }
+      ];
     }
     
-    S.files = merged.filter(f => !f.is_deleted);
+    S.files = localFiles;
     localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
     
     renderFileTree();
@@ -5286,46 +5345,8 @@ function openFileInTab(path) {
   }
 
   // Switch workspace console views: MongoDB tabs/Inspector vs Unified Terminal
-  const isMongo = lang === 'mongodb';
-  const inspectorEl = document.getElementById('inspector');
-  const btnToggleInspector = document.getElementById('btn-toggle-inspector');
-  const btnSchemaEr = document.getElementById('btn-schema-er');
-  
-  if (isMongo) {
-    if (inspectorEl) inspectorEl.style.display = S.inspectorOpen ? 'flex' : 'none';
-    if (btnToggleInspector) btnToggleInspector.style.display = 'flex';
-    if (btnSchemaEr) btnSchemaEr.style.display = 'flex';
-  } else {
-    if (inspectorEl) inspectorEl.style.display = 'none';
-    if (btnToggleInspector) btnToggleInspector.style.display = 'none';
-    if (btnSchemaEr) btnSchemaEr.style.display = 'none';
-  }
-
-  // Toggle console views
-  const conTabs = document.getElementById('console-tabs');
-  const conSubTabs = document.getElementById('console-sub-tabs');
-  const treeView = document.getElementById('tree-view');
-  const rawView = document.getElementById('raw-view');
-  const outputView = document.getElementById('output-view');
-  const terminalView = document.getElementById('terminal-view');
-
-  if (isMongo) {
-    if (conTabs) conTabs.style.display = 'flex';
-    if (conSubTabs) conSubTabs.style.display = 'flex';
-    if (terminalView) terminalView.style.display = 'none';
-    
-    // Restore default selected result view
-    const isOutputActive = S.conTab === 'output';
-    if (treeView) treeView.style.display = (isOutputActive && S.resultView === 'tree') ? 'flex' : 'none';
-    if (rawView) rawView.style.display = (isOutputActive && S.resultView === 'raw') ? 'block' : 'none';
-    if (outputView) outputView.style.display = (!isOutputActive || S.resultView === 'out') ? 'block' : 'none';
-  } else {
-    if (conTabs) conTabs.style.display = 'none';
-    if (conSubTabs) conSubTabs.style.display = 'none';
-    if (treeView) treeView.style.display = 'none';
-    if (rawView) rawView.style.display = 'none';
-    if (outputView) outputView.style.display = 'none';
-    if (terminalView) terminalView.style.display = 'flex';
+  if (window.updateWorkspaceConsoleLayout) {
+    window.updateWorkspaceConsoleLayout(lang);
   }
 
   if (editor) {
@@ -5403,16 +5424,6 @@ function saveQuery() {
   const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
   if (tabEl) tabEl.classList.remove('dirty');
   logOutput(`[info] Saved ${file.name} to local storage`);
-  
-  // Try saving on server
-  fetchAPI('/api/files/save', {
-    method: 'POST',
-    body: JSON.stringify({ path: file.path, content })
-  }).then(r => {
-    if (r.saved_on_server) {
-      logOutput(`[success] File ${file.name} successfully written to workspace disk.`);
-    }
-  }).catch(() => {});
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -5448,7 +5459,7 @@ function renderInlineCreateInput(type) {
   tempDiv.innerHTML = `
     <span class="file-icon" style="margin-right: 6px; display: flex; align-items: center">${icon}</span>
     <input id="inline-create-input" 
-           placeholder="${type === 'folder' ? 'Folder Name' : 'filename.mongo'}"
+           placeholder="${type === 'folder' ? 'Folder Name' : 'New File (e.g. solution.cpp, query.js)'}"
            style="flex: 1; background: #2d2d2d; border: 1px solid #007acc; border-radius: 2px; color: #fff; font-size: 12px; outline: none; padding: 2px 4px; font-family: inherit; width: 100%" />
   `;
   
@@ -5466,10 +5477,10 @@ function renderInlineCreateInput(type) {
     if (name) {
       if (type === 'file') {
         let filename = name;
-        const validExtensions = ['.mongo', '.json', '.cpp', '.java', '.py', '.c'];
+        const validExtensions = ['.mongo', '.js', '.json', '.cpp', '.java', '.py', '.c'];
         const hasExt = validExtensions.some(ext => filename.toLowerCase().endsWith(ext));
         if (!hasExt) {
-          filename += '.mongo';
+          filename += '.js';
         }
         
         // Check duplicate
@@ -5489,6 +5500,8 @@ function renderInlineCreateInput(type) {
         } else if (filename.endsWith('.java')) {
           const baseName = filename.replace(/\\.java$/, '');
           starter = `public class ${baseName} {\\n    public static void main(String[] args) {\\n        System.out.println("Hello from ${baseName}!");\\n    }\\n}\\n`;
+        } else if (filename.endsWith('.js')) {
+          starter = `// JavaScript/MongoDB query\\ndb.users.find({});\\n`;
         }
 
         const fileObj = {
@@ -5501,11 +5514,6 @@ function renderInlineCreateInput(type) {
         localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
         renderFileTree();
         openFileInTab(fileObj.path);
-        
-        fetchAPI('/api/files/create', {
-          method: 'POST',
-          body: JSON.stringify({ path: fileObj.path, is_folder: false })
-        }).catch(() => {});
       } else {
         // Folder
         if (S.files.some(f => f.path === name)) {
@@ -5523,11 +5531,6 @@ function renderInlineCreateInput(type) {
         S.files.push(folderObj);
         localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
         renderFileTree();
-        
-        fetchAPI('/api/files/create', {
-          method: 'POST',
-          body: JSON.stringify({ path: folderObj.path, is_folder: true })
-        }).catch(() => {});
       }
     } else {
       renderFileTree();
@@ -5679,11 +5682,6 @@ function inlineRenameFile(path) {
       
       localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
       renderFileTree();
-      
-      fetchAPI('/api/files/rename', {
-        method: 'POST',
-        body: JSON.stringify({ old_path: oldPath, new_path: file.path })
-      }).catch(() => {});
     } else {
       renderFileTree();
     }
@@ -5718,11 +5716,6 @@ function deleteActiveQueryFile(path) {
   S.files = S.files.filter(f => f.path !== path);
   localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
   renderFileTree();
-  
-  fetchAPI('/api/files/delete', {
-    method: 'POST',
-    body: JSON.stringify({ path })
-  }).catch(() => {});
 }
 
 </script>
@@ -6329,7 +6322,7 @@ async function runPlaygroundCode(language, code, stdin) {
   }
 }
 
-function changeWorkspaceLanguage(newLang) {
+function updateWorkspaceConsoleLayout(newLang) {
   const isMongo = newLang === 'mongodb';
   const inspectorEl = document.getElementById('inspector');
   const btnToggleInspector = document.getElementById('btn-toggle-inspector');
@@ -6344,6 +6337,34 @@ function changeWorkspaceLanguage(newLang) {
     if (btnToggleInspector) btnToggleInspector.style.display = 'none';
     if (btnSchemaEr) btnSchemaEr.style.display = 'none';
   }
+
+  // Toggle console views
+  const conTabs = document.getElementById('console-tabs');
+  const conSubTabs = document.getElementById('console-sub-tabs');
+  const ctabStdin = document.getElementById('ctab-stdin');
+
+  if (isMongo) {
+    if (conTabs) conTabs.style.display = 'flex';
+    if (conSubTabs) conSubTabs.style.display = 'flex';
+    if (ctabStdin) ctabStdin.style.display = 'none';
+    if (S.conTab === 'stdin') S.conTab = 'output';
+    setConTab(S.conTab);
+  } else {
+    if (conTabs) conTabs.style.display = 'flex';
+    if (conSubTabs) conSubTabs.style.display = 'none';
+    if (ctabStdin) ctabStdin.style.display = 'block';
+    if (!['output', 'logs', 'stdin'].includes(S.conTab)) {
+      S.conTab = 'output';
+    }
+    setConTab(S.conTab);
+  }
+}
+
+// Make it globally accessible
+window.updateWorkspaceConsoleLayout = updateWorkspaceConsoleLayout;
+
+function changeWorkspaceLanguage(newLang) {
+  updateWorkspaceConsoleLayout(newLang);
 
   let cmMode = 'javascript';
   let placeholder = '// Write your MongoDB query here\\ndb.collection.find({})';
@@ -6370,27 +6391,6 @@ function changeWorkspaceLanguage(newLang) {
   const langIndicatorEl = document.getElementById('sb-lang-indicator');
   if (langIndicatorEl) {
     langIndicatorEl.textContent = langIndicator;
-  }
-
-  // Toggle console views
-  const conTabs = document.getElementById('console-tabs');
-  const conSubTabs = document.getElementById('console-sub-tabs');
-  const ctabStdin = document.getElementById('ctab-stdin');
-
-  if (isMongo) {
-    if (conTabs) conTabs.style.display = 'flex';
-    if (conSubTabs) conSubTabs.style.display = 'flex';
-    if (ctabStdin) ctabStdin.style.display = 'none';
-    if (S.conTab === 'stdin') S.conTab = 'output';
-    setConTab(S.conTab);
-  } else {
-    if (conTabs) conTabs.style.display = 'flex';
-    if (conSubTabs) conSubTabs.style.display = 'none';
-    if (ctabStdin) ctabStdin.style.display = 'block';
-    if (!['output', 'logs', 'stdin'].includes(S.conTab)) {
-      S.conTab = 'output';
-    }
-    setConTab(S.conTab);
   }
 
   if (editor) {
@@ -6572,21 +6572,19 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sb-pos').textContent = `Ln ${c.line + 1}, Col ${c.ch + 1}`;
   });
 
-  // Track workspace changes and sync to tab state
+  // Track workspace changes and sync to tab state (with local auto-save to browser cache)
   editor.on('change', () => {
     if (S.activeFile) {
       const file = S.files.find(f => f.path === S.activeFile);
       if (file) {
-        const val = editor.getValue().replace(/\\r\\n/g, '\\n');
-        const fileContent = file.content.replace(/\\r\\n/g, '\\n');
-        const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
-        if (tabEl) {
-          if (fileContent !== val) {
-            tabEl.classList.add('dirty');
-          } else {
-            tabEl.classList.remove('dirty');
-          }
+        const val = editor.getValue();
+        if (file.content !== val) {
+          file.content = val;
+          localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
         }
+        // Remove dirty dot since it is auto-saved
+        const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
+        if (tabEl) tabEl.classList.remove('dirty');
       }
     }
   });
@@ -9977,11 +9975,23 @@ const ExamPortal = (() => {
       cm.on('change', () => {
         const currentQ = state.student.questions[state.student.currentQIdx];
         if (currentQ) {
-          currentQ._studentDraft = cm.getValue();
+          if (currentQ.type === 'query') {
+            currentQ._studentDraft = cm.getValue();
+          } else if (currentQ.type === 'coding') {
+            currentQ._studentDrafts = currentQ._studentDrafts || {};
+            currentQ._studentDrafts[currentQ.language || 'python'] = cm.getValue();
+            currentQ._studentDraft = cm.getValue();
+          }
           if (state.student.status[currentQ.id] !== 'submitted') {
             state.student.status[currentQ.id] = 'draft';
             studentNS._renderQNav();
           }
+          
+          // Debounce auto-save to Redis
+          clearTimeout(state.student.autoSaveTimeout);
+          state.student.autoSaveTimeout = setTimeout(() => {
+            studentNS.autoSaveSingleQuestion(currentQ);
+          }, 2000);
         }
       });
       state.student.examEditor = cm;
@@ -10294,6 +10304,12 @@ const ExamPortal = (() => {
 
       studentNS._renderMCQOptions(q);
       studentNS._renderQNav();
+
+      // Debounce auto-save to Redis
+      clearTimeout(state.student.autoSaveTimeout);
+      state.student.autoSaveTimeout = setTimeout(() => {
+        studentNS.autoSaveSingleQuestion(q);
+      }, 2000);
     },
 
     setConsoleTab(tab) {
@@ -10729,6 +10745,52 @@ const ExamPortal = (() => {
       
       if (promises.length > 0) {
         await Promise.all(promises);
+      }
+    },
+
+    async autoSaveSingleQuestion(q) {
+      if (!q) return;
+      let body = {
+        studentId: state.student.studentId,
+        questionId: q.id,
+        type: q.type,
+        marks: q.marks,
+        isAutoSave: true
+      };
+      
+      let hasValue = false;
+      if (q.type === 'mcq') {
+        if (q.isMultiSelect) {
+          if (state.student.selectedOptions && state.student.selectedOptions.length > 0) {
+            body.selectedOptions = state.student.selectedOptions;
+            hasValue = true;
+          }
+        } else {
+          if (state.student.selectedOption !== null && state.student.selectedOption !== undefined) {
+            body.selectedOption = state.student.selectedOption;
+            hasValue = true;
+          }
+        }
+      } else if (q.type === 'coding') {
+        const draft = q._studentDrafts ? q._studentDrafts[q.language] : q._studentDraft;
+        if (draft && draft.trim()) {
+          body.code = draft;
+          body.language = q.language;
+          hasValue = true;
+        }
+      } else if (q.type === 'query') {
+        const draft = q._studentDraft;
+        if (draft && draft.trim()) {
+          body.query = draft;
+          body.datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
+          body.studentOutput = (state.student.currentQIdx === state.student.questions.indexOf(q)) ? (state.student.lastRunOutput || []) : [];
+          hasValue = true;
+        }
+      }
+      
+      if (hasValue) {
+        apiCall(`/api/exam/room/${state.student.roomId}/submit`, 'POST', body)
+          .catch(function(err) { console.error("Debounced auto-save failed for question " + q.id, err); });
       }
     },
 

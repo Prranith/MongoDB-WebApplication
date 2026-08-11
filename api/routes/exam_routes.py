@@ -770,6 +770,93 @@ def api_exam_submit_answer(room_id: str):
     total_count = 0
     all_passed = False
 
+    # Fetch previous submission early to support auto-save or delta calculations
+    submissions = json.loads(subs_json) if subs_json else {}
+    prev_submission_json = submissions.get(question_id)
+    prev_score = 0
+    prev_sub = {}
+    if prev_submission_json:
+        try:
+            prev_sub = json.loads(prev_submission_json) if isinstance(prev_submission_json, str) else prev_submission_json
+            prev_score = prev_sub.get("score", 0)
+        except Exception:
+            pass
+
+    is_auto_save = body.get("isAutoSave", False) in [True, "true", "True", 1, "1"]
+    if is_auto_save:
+        if q_type == "mcq":
+            is_multi = False
+            if questions_json:
+                try:
+                    questions = json.loads(questions_json)
+                    for q in questions:
+                        if q.get("id") == question_id:
+                            is_multi = q.get("isMultiSelect", False) in [True, "true", "True", 1, "1"]
+                            break
+                except Exception:
+                    pass
+            if is_multi:
+                student_choices = []
+                for x in body.get("selectedOptions", []):
+                    try:
+                        student_choices.append(int(x))
+                    except Exception:
+                        pass
+                submission = json.dumps({
+                    "type": "mcq",
+                    "selectedOptions": student_choices,
+                    "score": prev_score,
+                    "submittedAt": now,
+                })
+            else:
+                student_choice = None
+                if body.get("selectedOption") is not None:
+                    try:
+                        student_choice = int(body.get("selectedOption"))
+                    except Exception:
+                        pass
+                submission = json.dumps({
+                    "type": "mcq",
+                    "selectedOption": student_choice,
+                    "score": prev_score,
+                    "submittedAt": now,
+                })
+        elif q_type == "coding":
+            code = body.get("code", "")
+            language = body.get("language", "python")
+            submission = json.dumps({
+                "type": "coding",
+                "code": code,
+                "language": language,
+                "score": prev_score,
+                "allPassed": prev_sub.get("allPassed", False),
+                "passedCount": prev_sub.get("passedCount", 0),
+                "totalCount": prev_sub.get("totalCount", 0),
+                "submittedAt": now,
+            })
+        else:  # query
+            query = body.get("query", "")
+            submission = json.dumps({
+                "type": "query",
+                "query": query,
+                "score": prev_score,
+                "submittedAt": now,
+            })
+
+        submissions[question_id] = submission
+        pipeline = [
+            ["HSET", f"room:{room_id}", f"submissions:{student_id}", json.dumps(submissions)],
+            ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
+        ]
+        _redis_cmd(pipeline)
+
+        return jsonify({
+            "status": "ok",
+            "score": prev_score,
+            "maxMarks": marks,
+            "autoSaved": True
+        })
+
     if q_type == "mcq":
         is_multi = False
         correct_options = []
@@ -935,15 +1022,7 @@ def api_exam_submit_answer(room_id: str):
             "submittedAt": now,
         })
 
-    # Fetch previous submission score for this question
-    submissions = json.loads(subs_json) if subs_json else {}
-    prev_submission_json = submissions.get(question_id)
-    prev_score = 0
-    if prev_submission_json:
-        try:
-            prev_score = json.loads(prev_submission_json).get("score", 0) if isinstance(prev_submission_json, str) else prev_submission_json.get("score", 0)
-        except Exception:
-            pass
+    # Re-use previous submission score fetched early
 
     score_delta = score - prev_score
 

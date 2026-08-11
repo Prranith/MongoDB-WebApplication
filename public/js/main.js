@@ -47,21 +47,19 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sb-pos').textContent = `Ln ${c.line + 1}, Col ${c.ch + 1}`;
   });
 
-  // Track workspace changes and sync to tab state
+  // Track workspace changes and sync to tab state (with local auto-save to browser cache)
   editor.on('change', () => {
     if (S.activeFile) {
       const file = S.files.find(f => f.path === S.activeFile);
       if (file) {
-        const val = editor.getValue().replace(/\r\n/g, '\n');
-        const fileContent = file.content.replace(/\r\n/g, '\n');
-        const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
-        if (tabEl) {
-          if (fileContent !== val) {
-            tabEl.classList.add('dirty');
-          } else {
-            tabEl.classList.remove('dirty');
-          }
+        const val = editor.getValue();
+        if (file.content !== val) {
+          file.content = val;
+          localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
         }
+        // Remove dirty dot since it is auto-saved
+        const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
+        if (tabEl) tabEl.classList.remove('dirty');
       }
     }
   });

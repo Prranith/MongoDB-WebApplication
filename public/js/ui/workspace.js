@@ -3,27 +3,26 @@
 // ═══════════════════════════════════════════════════════════════════
 async function loadFiles() {
   try {
-    const d = await fetchAPI('/api/files');
-    const serverFiles = d.files || [];
+    // Read local override from localStorage to ensure 100% private, client-side files
+    let localFiles = JSON.parse(localStorage.getItem('mongosandbox_files') || '[]');
     
-    // Read local override from localStorage
-    const localOverride = JSON.parse(localStorage.getItem('mongosandbox_files') || '[]');
-    
+    // Filter out legacy files
     const legacyPaths = ['01_find_paid.mongo', '02_aggregate_pipeline.mongo', 'kishor.mongo'];
-    // Merge server files with local modifications, ignoring legacy files
-    const cleanLocalOverride = localOverride.filter(lf => !legacyPaths.includes(lf.path));
-    const merged = [...serverFiles].filter(sf => !legacyPaths.includes(sf.path));
-    
-    for (const lf of cleanLocalOverride) {
-      const idx = merged.findIndex(f => f.path === lf.path);
-      if (idx !== -1) {
-        merged[idx] = lf; // update with locally modified version
-      } else {
-        merged.push(lf); // add new custom files
-      }
+    localFiles = localFiles.filter(lf => !legacyPaths.includes(lf.path));
+
+    // If local files are empty, initialize with default templates
+    if (localFiles.length === 0) {
+      localFiles = [
+        {
+          name: 'query.js',
+          path: 'query.js',
+          content: '// MongoDB Query Sandbox\n// Write queries here (Ctrl+Enter to run)\ndb.users.find({})\n',
+          type: 'file'
+        }
+      ];
     }
     
-    S.files = merged.filter(f => !f.is_deleted);
+    S.files = localFiles;
     localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
     
     renderFileTree();
@@ -121,46 +120,8 @@ function openFileInTab(path) {
   }
 
   // Switch workspace console views: MongoDB tabs/Inspector vs Unified Terminal
-  const isMongo = lang === 'mongodb';
-  const inspectorEl = document.getElementById('inspector');
-  const btnToggleInspector = document.getElementById('btn-toggle-inspector');
-  const btnSchemaEr = document.getElementById('btn-schema-er');
-  
-  if (isMongo) {
-    if (inspectorEl) inspectorEl.style.display = S.inspectorOpen ? 'flex' : 'none';
-    if (btnToggleInspector) btnToggleInspector.style.display = 'flex';
-    if (btnSchemaEr) btnSchemaEr.style.display = 'flex';
-  } else {
-    if (inspectorEl) inspectorEl.style.display = 'none';
-    if (btnToggleInspector) btnToggleInspector.style.display = 'none';
-    if (btnSchemaEr) btnSchemaEr.style.display = 'none';
-  }
-
-  // Toggle console views
-  const conTabs = document.getElementById('console-tabs');
-  const conSubTabs = document.getElementById('console-sub-tabs');
-  const treeView = document.getElementById('tree-view');
-  const rawView = document.getElementById('raw-view');
-  const outputView = document.getElementById('output-view');
-  const terminalView = document.getElementById('terminal-view');
-
-  if (isMongo) {
-    if (conTabs) conTabs.style.display = 'flex';
-    if (conSubTabs) conSubTabs.style.display = 'flex';
-    if (terminalView) terminalView.style.display = 'none';
-    
-    // Restore default selected result view
-    const isOutputActive = S.conTab === 'output';
-    if (treeView) treeView.style.display = (isOutputActive && S.resultView === 'tree') ? 'flex' : 'none';
-    if (rawView) rawView.style.display = (isOutputActive && S.resultView === 'raw') ? 'block' : 'none';
-    if (outputView) outputView.style.display = (!isOutputActive || S.resultView === 'out') ? 'block' : 'none';
-  } else {
-    if (conTabs) conTabs.style.display = 'none';
-    if (conSubTabs) conSubTabs.style.display = 'none';
-    if (treeView) treeView.style.display = 'none';
-    if (rawView) rawView.style.display = 'none';
-    if (outputView) outputView.style.display = 'none';
-    if (terminalView) terminalView.style.display = 'flex';
+  if (window.updateWorkspaceConsoleLayout) {
+    window.updateWorkspaceConsoleLayout(lang);
   }
 
   if (editor) {
@@ -238,16 +199,6 @@ function saveQuery() {
   const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
   if (tabEl) tabEl.classList.remove('dirty');
   logOutput(`[info] Saved ${file.name} to local storage`);
-  
-  // Try saving on server
-  fetchAPI('/api/files/save', {
-    method: 'POST',
-    body: JSON.stringify({ path: file.path, content })
-  }).then(r => {
-    if (r.saved_on_server) {
-      logOutput(`[success] File ${file.name} successfully written to workspace disk.`);
-    }
-  }).catch(() => {});
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -283,7 +234,7 @@ function renderInlineCreateInput(type) {
   tempDiv.innerHTML = `
     <span class="file-icon" style="margin-right: 6px; display: flex; align-items: center">${icon}</span>
     <input id="inline-create-input" 
-           placeholder="${type === 'folder' ? 'Folder Name' : 'filename.mongo'}"
+           placeholder="${type === 'folder' ? 'Folder Name' : 'New File (e.g. solution.cpp, query.js)'}"
            style="flex: 1; background: #2d2d2d; border: 1px solid #007acc; border-radius: 2px; color: #fff; font-size: 12px; outline: none; padding: 2px 4px; font-family: inherit; width: 100%" />
   `;
   
@@ -301,10 +252,10 @@ function renderInlineCreateInput(type) {
     if (name) {
       if (type === 'file') {
         let filename = name;
-        const validExtensions = ['.mongo', '.json', '.cpp', '.java', '.py', '.c'];
+        const validExtensions = ['.mongo', '.js', '.json', '.cpp', '.java', '.py', '.c'];
         const hasExt = validExtensions.some(ext => filename.toLowerCase().endsWith(ext));
         if (!hasExt) {
-          filename += '.mongo';
+          filename += '.js';
         }
         
         // Check duplicate
@@ -324,6 +275,8 @@ function renderInlineCreateInput(type) {
         } else if (filename.endsWith('.java')) {
           const baseName = filename.replace(/\.java$/, '');
           starter = `public class ${baseName} {\n    public static void main(String[] args) {\n        System.out.println("Hello from ${baseName}!");\n    }\n}\n`;
+        } else if (filename.endsWith('.js')) {
+          starter = `// JavaScript/MongoDB query\ndb.users.find({});\n`;
         }
 
         const fileObj = {
@@ -336,11 +289,6 @@ function renderInlineCreateInput(type) {
         localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
         renderFileTree();
         openFileInTab(fileObj.path);
-        
-        fetchAPI('/api/files/create', {
-          method: 'POST',
-          body: JSON.stringify({ path: fileObj.path, is_folder: false })
-        }).catch(() => {});
       } else {
         // Folder
         if (S.files.some(f => f.path === name)) {
@@ -358,11 +306,6 @@ function renderInlineCreateInput(type) {
         S.files.push(folderObj);
         localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
         renderFileTree();
-        
-        fetchAPI('/api/files/create', {
-          method: 'POST',
-          body: JSON.stringify({ path: folderObj.path, is_folder: true })
-        }).catch(() => {});
       }
     } else {
       renderFileTree();
@@ -514,11 +457,6 @@ function inlineRenameFile(path) {
       
       localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
       renderFileTree();
-      
-      fetchAPI('/api/files/rename', {
-        method: 'POST',
-        body: JSON.stringify({ old_path: oldPath, new_path: file.path })
-      }).catch(() => {});
     } else {
       renderFileTree();
     }
@@ -553,9 +491,4 @@ function deleteActiveQueryFile(path) {
   S.files = S.files.filter(f => f.path !== path);
   localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
   renderFileTree();
-  
-  fetchAPI('/api/files/delete', {
-    method: 'POST',
-    body: JSON.stringify({ path })
-  }).catch(() => {});
 }
