@@ -4,7 +4,7 @@
 
 :root {
   --bg:         #1e1e24; /* Soft dark editor bg */
-  --bg2:        #141418; /* Darker panel bg */
+  --bg2:        #18181f; /* Soft light-black explorer bg */
   --bg3:        #0f0f12; /* Darkest header bg */
   --bg4:        #2a2a35; /* Element bg */
   --bg5:        #323240; /* Hover/active bg */
