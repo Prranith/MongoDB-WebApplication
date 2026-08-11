@@ -82,31 +82,31 @@ INDEX_HTML = """
 */
 
 :root {
-  --bg:         #000000;
-  --bg2:        #0d0d0d;
-  --bg3:        #151515;
-  --bg4:        #222222;
-  --bg5:        #2a2a2a;
-  --actbar:     #080808;
-  --border:     #222222;
-  --border2:    #333333;
-  --text:       #cccccc;
-  --text2:      #9d9d9d;
-  --text3:      #858585;
-  --hl:         #094771;
-  --hl2:        #2a2d2e;
-  --blue:       #007acc;
-  --blue2:      #4fc1ff;
-  --green:      #2a2a2a;
-  --green2:     #cccccc;
-  --green3:     #e0e0e0;
-  --mongo:      #1a1a1a;
+  --bg:         #1e1e24; /* Soft dark editor bg */
+  --bg2:        #141418; /* Darker panel bg */
+  --bg3:        #0f0f12; /* Darkest header bg */
+  --bg4:        #2a2a35; /* Element bg */
+  --bg5:        #323240; /* Hover/active bg */
+  --actbar:     #0f0f12; /* Activity bar */
+  --border:     #282833; /* Elegant borders */
+  --border2:    #353545; /* Active borders */
+  --text:       #e3e3e6; /* Bright crisp text */
+  --text2:      #a5a5b0; /* Secondary text */
+  --text3:      #7c7c8c; /* Muted text */
+  --hl:         #1a5c8a; /* Selection highlight */
+  --hl2:        #2e2e38; /* File item active */
+  --blue:       #007acc; /* Primary blue */
+  --blue2:      #4fc1ff; /* Accent cyan */
+  --green:      #1b4c34; /* Success button bg */
+  --green2:     #4eaf82; /* Success text */
+  --green3:     #7bd0a7; /* Success focus */
+  --mongo:      #1a3c26; /* Mongo theme */
   --orange:     #ce9178;
   --yellow:     #dcdcaa;
   --purple:     #c586c0;
   --red:        #f48771;
   --cyan:       #9cdcfe;
-  --statusbar:  #000000;
+  --statusbar:  #0f0f12;
   --sidebar-w:  240px;
   --act-w:      48px;
   --insp-w:     220px;
@@ -3575,7 +3575,7 @@ li.CodeMirror-hint-active {
 .CodeMirror.cm-theme-monokai {
   background: #272822 !important;
   color: #f8f8f2 !important;
-  font-family: 'Courier New', monospace;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
 }
 .CodeMirror.cm-theme-monokai .CodeMirror-gutters {
   background: #1e1f1c !important;
@@ -3619,15 +3619,15 @@ li.CodeMirror-hint-active {
 
 /* LeetCode Dark Theme Override for Default */
 .CodeMirror.cm-theme-default {
-  background: #1e1e1e !important;
-  color: #d4d4d4 !important;
+  background: var(--bg) !important;
+  color: var(--text) !important;
 }
 .CodeMirror.cm-theme-default .CodeMirror-gutters {
-  background: #1e1e1e !important;
-  border-right: 1px solid #2d2d2d !important;
+  background: var(--bg) !important;
+  border-right: 1px solid var(--border) !important;
 }
 .CodeMirror.cm-theme-default .CodeMirror-linenumber {
-  color: #858585 !important;
+  color: var(--text3) !important;
 }
 .CodeMirror.cm-theme-default .CodeMirror-cursor {
   border-left: 2px solid #c6c6c6 !important;
