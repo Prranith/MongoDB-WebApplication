@@ -111,7 +111,7 @@ INDEX_HTML = """
   --act-w:      48px;
   --insp-w:     220px;
   --console-h:  220px;
-  --toolbar-h:  35px;
+  --toolbar-h:  0px;
   --tabbar-h:   35px;
   --title-h:    30px;
 }
@@ -270,6 +270,20 @@ a {
 .wctrl.close:hover {
   background: #e81123;
   color: #fff;
+}
+
+#win-controls .tbtn-secondary.active {
+  background: #3c3c3c !important;
+  color: #fff !important;
+  border-color: #555 !important;
+}
+
+#win-controls .tbtn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+#win-controls .tbtn-run:hover {
+  background: #4a9b10 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -3742,7 +3756,36 @@ li.CodeMirror-hint-active {
     </div>
   </div>
   <div id="win-title">Codexa Labs — Polyglot IDE & Database Playground</div>
-  <div id="win-controls" style="display:none">
+  <div id="win-controls" style="display: flex; align-items: center; padding-right: 12px; gap: 8px; height: 100%;">
+    <!-- Workspace Language Selector -->
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:11px;color:var(--text3);font-family:sans-serif">Language:</span>
+      <select id="workspace-lang-select" onchange="changeWorkspaceLanguage(this.value)" style="background:#252526;color:#ccc;border:1px solid #3c3c3c;border-radius:3px;padding:2px 6px;font-size:11px;outline:none;cursor:pointer;height:22px">
+        <option value="mongodb">MongoDB / JS</option>
+        <option value="python">Python 3</option>
+        <option value="cpp">C++</option>
+        <option value="c">C</option>
+        <option value="java">Java</option>
+      </select>
+    </div>
+
+    <!-- Run Button -->
+    <button class="tbtn tbtn-run" onclick="runQuery()" style="padding: 2px 8px; font-size: 11px; height: 22px; border-radius: 3px; display: flex; align-items: center; gap: 4px; border: none; cursor: pointer; background: #3a7d0a; color: white; font-weight: 600;">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+      Run
+    </button>
+
+    <!-- Console Toggle Button -->
+    <button class="tbtn tbtn-secondary active" id="btn-toggle-console" onclick="toggleConsole()" style="padding: 2px 8px; font-size: 11px; height: 22px; border-radius: 3px; display: flex; align-items: center; gap: 4px; border: 1px solid #3c3c3c; background: #252526; color: #ccc; cursor: pointer;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+      Console
+    </button>
+
+    <!-- Inspector Toggle Button -->
+    <button class="tbtn tbtn-secondary" id="btn-toggle-inspector" onclick="toggleInspector()" style="padding: 2px 8px; font-size: 11px; height: 22px; border-radius: 3px; display: flex; align-items: center; gap: 4px; border: 1px solid #3c3c3c; background: transparent; color: #ccc; cursor: pointer;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+      Inspector
+    </button>
   </div>
 </div>
 
@@ -3876,43 +3919,6 @@ li.CodeMirror-hint-active {
   <!-- Workspace -->
   <div id="workspace">
 
-    <!-- Toolbar -->
-    <div id="toolbar" style="display: none; align-items: center">
-      <!-- Workspace Language Selector -->
-      <div style="display:flex;align-items:center;gap:6px;margin-right:12px">
-        <span style="font-size:11px;color:var(--text3);font-family:sans-serif">Language:</span>
-        <select id="workspace-lang-select" onchange="changeWorkspaceLanguage(this.value)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;outline:none;cursor:pointer">
-          <option value="mongodb">MongoDB / JS</option>
-          <option value="python">Python 3</option>
-          <option value="cpp">C++</option>
-          <option value="c">C</option>
-          <option value="java">Java</option>
-        </select>
-      </div>
-
-      <button class="tbtn tbtn-run" onclick="runQuery()">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-        Run
-      </button>
-      <button class="tbtn tbtn-secondary" onclick="formatQuery()">Format</button>
-      <button class="tbtn tbtn-secondary" onclick="saveQuery()">Save</button>
-      <div class="tb-sep"></div>
-      <button class="tbtn tbtn-secondary" id="btn-schema-er" onclick="openModal('schema-modal')">⛁ Schema ER Details</button>
-      <button class="tbtn tbtn-secondary" onclick="window.ExamPortal && window.ExamPortal.showRoleSelection()" style="display:flex;align-items:center;gap:6px;background:rgba(22, 130, 93, 0.2);color:var(--green2);border:1px solid rgba(22, 130, 93, 0.4)">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
-        Exam Portal
-      </button>
-      <div id="tb-right" style="display: flex; align-items: center; gap: 8px;">
-        <button class="tbtn tbtn-secondary active" id="btn-toggle-console" onclick="toggleConsole()" style="display: flex; align-items: center; gap: 6px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="15" x2="21" y2="15"></line></svg>
-          Console Panel
-        </button>
-        <button class="tbtn tbtn-secondary" id="btn-toggle-inspector" onclick="toggleInspector()" style="display: flex; align-items: center; gap: 6px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
-          Inspector Panel
-        </button>
-      </div>
-    </div>
 
     <!-- Intro panel (replaces editor when on intro) -->
     <div id="intro-panel" class="active" style="position: relative; overflow: hidden;">
@@ -5185,13 +5191,11 @@ function showView(name) {
   const ide = document.getElementById('ide-panel');
   const intro = document.getElementById('intro-panel');
   const titlebar = document.getElementById('titlebar');
-  const toolbar = document.getElementById('toolbar');
   const statusbar = document.getElementById('statusbar');
   if (name === 'intro') {
     ide.style.display = 'none';
     intro.classList.add('active');
     if (titlebar) titlebar.style.display = 'none';
-    if (toolbar) toolbar.style.display = 'none';
     if (statusbar) statusbar.style.display = 'none';
     
     // Set welcome icon active, others inactive
@@ -5205,7 +5209,6 @@ function showView(name) {
     intro.classList.remove('active');
     ide.style.display = 'flex';
     if (titlebar) titlebar.style.display = 'flex';
-    if (toolbar) toolbar.style.display = 'flex';
     if (statusbar) statusbar.style.display = 'flex';
     
     // Set current side panel button to active

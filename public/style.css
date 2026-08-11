@@ -32,7 +32,7 @@
   --act-w:      48px;
   --insp-w:     220px;
   --console-h:  220px;
-  --toolbar-h:  35px;
+  --toolbar-h:  0px;
   --tabbar-h:   35px;
   --title-h:    30px;
 }
@@ -191,6 +191,20 @@ a {
 .wctrl.close:hover {
   background: #e81123;
   color: #fff;
+}
+
+#win-controls .tbtn-secondary.active {
+  background: #3c3c3c !important;
+  color: #fff !important;
+  border-color: #555 !important;
+}
+
+#win-controls .tbtn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+#win-controls .tbtn-run:hover {
+  background: #4a9b10 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════
