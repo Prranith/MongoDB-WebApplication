@@ -167,7 +167,8 @@ def api_snippets():
 @database_bp.route("/api/sandbox/run", methods=["POST"])
 def api_sandbox_run():
     """Execute arbitrary code using Paiza API for playground mode."""
-    from api.routes.exam_routes import run_piston_code
+    from services.compiler.compiler_service import CompilerService
+    run_piston_code = CompilerService.run_piston_code
     body = request.get_json(force=True, silent=True) or {}
     language = body.get("language", "python")
     code = body.get("code", "")
