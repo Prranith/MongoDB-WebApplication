@@ -2470,6 +2470,23 @@ const ExamPortal = (() => {
           }, 2000);
         }
       });
+      cm.on('beforeChange', (instance, change) => {
+        if (change.origin === 'paste') {
+          if (state.student.roomId && state.student.blockCopyPaste) {
+            const pastedText = change.text.join('\n');
+            const cleanPasted = pastedText.replace(/\r/g, '').trim();
+            const cleanInternal = (state.student.lastInternalCopiedText || '').replace(/\r/g, '').trim();
+
+            if (state.student.copiedFromEditor && cleanPasted && cleanPasted === cleanInternal) {
+              // Allow pasting text that was copied from the code editor itself
+              return;
+            }
+
+            // Otherwise block it!
+            change.cancel();
+          }
+        }
+      });
       state.student.examEditor = cm;
       
       // Initialize styling settings
@@ -4012,10 +4029,8 @@ const ExamPortal = (() => {
         return;
       }
 
-      // Block external or non-editor clipboard paste completely
+      // Block external or non-editor clipboard paste
       e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
       
       // Report violation to backend
       studentNS.reportFlaggedViolation('copy_paste_attempt');
@@ -4035,13 +4050,6 @@ const ExamPortal = (() => {
   document.addEventListener('copy', handleCopy, true);
   document.addEventListener('cut', handleCopy, true);
   document.addEventListener('paste', handlePaste, true);
-
-  window.addEventListener('blur', () => {
-    if (state.student.roomId) {
-      state.student.lastInternalCopiedText = "";
-      state.student.copiedFromEditor = false;
-    }
-  });
 
   // Initialize resizers once DOM is ready
   if (document.readyState === 'loading') {
