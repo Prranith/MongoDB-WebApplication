@@ -4012,8 +4012,10 @@ const ExamPortal = (() => {
         return;
       }
 
-      // Block external or non-editor clipboard paste
+      // Block external or non-editor clipboard paste completely
       e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       
       // Report violation to backend
       studentNS.reportFlaggedViolation('copy_paste_attempt');
@@ -4033,6 +4035,13 @@ const ExamPortal = (() => {
   document.addEventListener('copy', handleCopy, true);
   document.addEventListener('cut', handleCopy, true);
   document.addEventListener('paste', handlePaste, true);
+
+  window.addEventListener('blur', () => {
+    if (state.student.roomId) {
+      state.student.lastInternalCopiedText = "";
+      state.student.copiedFromEditor = false;
+    }
+  });
 
   // Initialize resizers once DOM is ready
   if (document.readyState === 'loading') {
