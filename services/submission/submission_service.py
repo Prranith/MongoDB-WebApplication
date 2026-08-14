@@ -222,6 +222,7 @@ class SubmissionService:
                         "type": "mcq",
                         "selectedOptions": student_choices,
                         "score": prev_score,
+                        "isAutoSave": True,
                         "submittedAt": now,
                     })
                 else:
@@ -235,6 +236,7 @@ class SubmissionService:
                         "type": "mcq",
                         "selectedOption": student_choice,
                         "score": prev_score,
+                        "isAutoSave": True,
                         "submittedAt": now,
                     })
             elif q_type == "coding":
@@ -248,6 +250,7 @@ class SubmissionService:
                     "allPassed": prev_sub.get("allPassed", False),
                     "passedCount": prev_sub.get("passedCount", 0),
                     "totalCount": prev_sub.get("totalCount", 0),
+                    "isAutoSave": True,
                     "submittedAt": now,
                 })
             else:  # query
@@ -256,6 +259,7 @@ class SubmissionService:
                     "type": "query",
                     "query": query,
                     "score": prev_score,
+                    "isAutoSave": True,
                     "submittedAt": now,
                 })
 
@@ -332,6 +336,7 @@ class SubmissionService:
                     "type": "mcq",
                     "selectedOptions": student_choices,
                     "score": score,
+                    "isAutoSave": False,
                     "submittedAt": now,
                 })
             else:
@@ -343,6 +348,7 @@ class SubmissionService:
                     "type": "mcq",
                     "selectedOption": raw_selected,
                     "score": score,
+                    "isAutoSave": False,
                     "submittedAt": now,
                 })
 
@@ -405,6 +411,7 @@ class SubmissionService:
                 "allPassed": all_passed,
                 "passedCount": passed_count,
                 "totalCount": total_count,
+                "isAutoSave": False,
                 "submittedAt": now,
             })
 
@@ -436,6 +443,7 @@ class SubmissionService:
                 "type": "query",
                 "query": query,
                 "score": score,
+                "isAutoSave": False,
                 "submittedAt": now,
             })
 

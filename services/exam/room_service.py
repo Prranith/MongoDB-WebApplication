@@ -218,26 +218,54 @@ class RoomService:
             student_id = str(uuid.uuid4())[:8]
 
         now = int(time.time())
-        student_data = {
-            "name": name,
-            "rollNo": roll_no,
-            "branch": branch,
-            "joinedAt": now
-        }
-
-        # Atomic per-student writes packed inside the single room:{room_id} hash
-        pipeline = [
-            ["HSET", f"room:{room_id}", f"participant:{student_id}", json.dumps(student_data), f"score:{student_id}", "0"],
-            ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)]
-        ]
+        if existing_student_id:
+            # Preserve original joinedAt and existing student details if present
+            p_val = participants_raw.get(existing_student_id)
+            orig_joined = now
+            if p_val:
+                try:
+                    p = json.loads(p_val) if isinstance(p_val, str) else p_val
+                    orig_joined = p.get("joinedAt", now)
+                except Exception:
+                    pass
+            student_data = {
+                "name": name,
+                "rollNo": roll_no,
+                "branch": branch,
+                "joinedAt": orig_joined
+            }
+            # Update participant profile without clobbering existing score
+            pipeline = [
+                ["HSET", f"room:{room_id}", f"participant:{student_id}", json.dumps(student_data)],
+                ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)]
+            ]
+            # Ensure score field exists if not already present
+            existing_score = redis_one(["HGET", f"room:{room_id}", f"score:{student_id}"])
+            if existing_score is None:
+                # Recalculate score from existing submissions if any
+                subs_json = redis_one(["HGET", f"room:{room_id}", f"submissions:{student_id}"])
+                total_score = 0
+                if subs_json:
+                    try:
+                        subs_raw = json.loads(subs_json)
+                        for sv in subs_raw.values():
+                            s_obj = json.loads(sv) if isinstance(sv, str) else sv
+                            total_score += s_obj.get("score", 0)
+                    except Exception:
+                        pass
+                pipeline.insert(1, ["HSET", f"room:{room_id}", f"score:{student_id}", str(total_score)])
+        else:
+            student_data = {
+                "name": name,
+                "rollNo": roll_no,
+                "branch": branch,
+                "joinedAt": now
+            }
+            pipeline = [
+                ["HSET", f"room:{room_id}", f"participant:{student_id}", json.dumps(student_data), f"score:{student_id}", "0"],
+                ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)]
+            ]
         redis_cmd(pipeline)
-
-        return {
-            "studentId": student_id,
-            "roomId": room_id,
-            "roomTitle": meta.get("title", ""),
-            "roomStatus": meta.get("status", "waiting")
-        }
 
         return {
             "studentId": student_id,

@@ -9932,9 +9932,10 @@ const ExamPortal = (() => {
           state.student.questions.forEach(q => {
             const sub = subsRes.submissions[q.id];
             if (sub) {
-              state.student.status[q.id] = 'submitted';
+              const isAutoSave = sub.isAutoSave === true || sub.isAutoSave === 'true' || sub.isAutoSave === 1;
+              state.student.status[q.id] = isAutoSave ? 'draft' : 'submitted';
               if (q.type === 'query') {
-                q._studentDraft = sub.query || `// Question\\ndb.`;
+                q._studentDraft = sub.query !== undefined ? sub.query : `// Question\\ndb.`;
               } else if (q.type === 'mcq') {
                 if (q.isMultiSelect) {
                   q._studentSelectedOptions = (sub.selectedOptions || []).map(x => parseInt(x));
@@ -9942,8 +9943,12 @@ const ExamPortal = (() => {
                   q._studentSelectedOption = sub.selectedOption !== undefined && sub.selectedOption !== null ? parseInt(sub.selectedOption) : null;
                 }
               } else if (q.type === 'coding') {
+                q._studentDrafts = q._studentDrafts || {};
                 q._studentDraft = sub.code || '';
-                if (sub.language) q.language = sub.language;
+                if (sub.language) {
+                  q.language = sub.language;
+                  q._studentDrafts[sub.language] = sub.code || '';
+                }
               }
             }
           });
@@ -9992,10 +9997,8 @@ const ExamPortal = (() => {
         }
       }, 3000);
 
-      // Init student editor
-      setTimeout(() => studentNS._initStudentEditor(), 100);
-
-      // Select first question if available
+      // Init student editor and select first question immediately
+      studentNS._initStudentEditor();
       if (state.student.questions.length > 0) {
         studentNS.selectQuestion(0);
       }
@@ -10085,7 +10088,7 @@ const ExamPortal = (() => {
           clearTimeout(state.student.autoSaveTimeout);
           state.student.autoSaveTimeout = setTimeout(() => {
             studentNS.autoSaveSingleQuestion(currentQ);
-          }, 2000);
+          }, 500);
         }
       });
       cm.on('paste', (instance, e) => {
@@ -10442,7 +10445,36 @@ const ExamPortal = (() => {
       clearTimeout(state.student.autoSaveTimeout);
       state.student.autoSaveTimeout = setTimeout(() => {
         studentNS.autoSaveSingleQuestion(q);
-      }, 2000);
+      }, 500);
+    },
+
+    changeLanguage(newLang) {
+      const q = state.student.questions[state.student.currentQIdx];
+      if (!q || q.type !== 'coding') return;
+      
+      // Save current code to active language draft
+      if (state.student.examEditor) {
+        q._studentDrafts = q._studentDrafts || {};
+        q._studentDrafts[q.language || 'python'] = state.student.examEditor.getValue();
+      }
+      
+      q.language = newLang;
+      let nextCode = q._studentDrafts ? q._studentDrafts[newLang] : undefined;
+      if (nextCode === undefined) {
+        nextCode = ((q.templates && q.templates[newLang]) ? q.templates[newLang].starterCode : null) || q.starterCode || '';
+      }
+      
+      const cm = state.student.examEditor;
+      if (cm) {
+        let cmMode = 'python';
+        if (newLang === 'cpp' || newLang === 'c') cmMode = 'text/x-c++src';
+        if (newLang === 'java') cmMode = 'text/x-java';
+        cm.setOption('mode', cmMode);
+        cm.setValue(nextCode);
+      }
+      
+      // Auto-save the new draft immediately
+      studentNS.autoSaveSingleQuestion(q);
     },
 
     setConsoleTab(tab) {
@@ -10894,13 +10926,15 @@ const ExamPortal = (() => {
       let hasValue = false;
       if (q.type === 'mcq') {
         if (q.isMultiSelect) {
-          if (state.student.selectedOptions && state.student.selectedOptions.length > 0) {
-            body.selectedOptions = state.student.selectedOptions;
+          const opts = (state.student.currentQIdx === state.student.questions.indexOf(q)) ? state.student.selectedOptions : q._studentSelectedOptions;
+          if (opts && opts.length > 0) {
+            body.selectedOptions = opts;
             hasValue = true;
           }
         } else {
-          if (state.student.selectedOption !== null && state.student.selectedOption !== undefined) {
-            body.selectedOption = state.student.selectedOption;
+          const opt = (state.student.currentQIdx === state.student.questions.indexOf(q)) ? state.student.selectedOption : q._studentSelectedOption;
+          if (opt !== null && opt !== undefined) {
+            body.selectedOption = opt;
             hasValue = true;
           }
         }
