@@ -2480,13 +2480,18 @@ const ExamPortal = (() => {
             return;
           }
 
+          // Mark as pasting to block inside beforeChange in case preventDefault is bypassed
+          state.student.isPasting = true;
+          setTimeout(() => { state.student.isPasting = false; }, 100);
+
           // Cancel the paste event inside CodeMirror
           e.preventDefault();
           e.stopPropagation();
+          return true;
         }
       });
       cm.on('beforeChange', (instance, change) => {
-        if (change.origin === 'paste') {
+        if (change.origin === 'paste' || state.student.isPasting) {
           if (state.student.roomId && state.student.blockCopyPaste) {
             const pastedText = change.text.join('\n');
             const cleanPasted = pastedText.replace(/\r/g, '').trim();
@@ -2499,6 +2504,7 @@ const ExamPortal = (() => {
 
             // Otherwise block it!
             change.cancel();
+            state.student.isPasting = false;
           }
         }
       });
@@ -4047,6 +4053,10 @@ const ExamPortal = (() => {
       // Block external or non-editor clipboard paste immediately
       e.preventDefault();
       e.stopPropagation();
+
+      // Mark as pasting to block inside beforeChange in case preventDefault is bypassed
+      state.student.isPasting = true;
+      setTimeout(() => { state.student.isPasting = false; }, 100);
       
       // Report violation and show modal asynchronously to avoid blocking browser's event loop
       setTimeout(() => {
