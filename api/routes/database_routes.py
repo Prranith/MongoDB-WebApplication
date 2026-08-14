@@ -136,6 +136,8 @@ def api_schema_collection(collection):
 def api_sample(collection):
     """Return sample documents from a collection."""
     limit = int(request.args.get("limit", 5))
+    if collection not in db_manager.list_collections():
+        return jsonify({"error": f"Collection '{collection}' not found"}), 404
     coll = db_manager.get_collection(collection)
     if coll is None:
         return jsonify({"error": f"Collection '{collection}' not found"}), 404

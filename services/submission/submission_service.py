@@ -11,7 +11,9 @@ ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from core.web_executor import execute as web_execute
-from services.shared.redis_client import redis_cmd, redis_one
+from services.shared.redis_client import (
+    redis_cmd, redis_one, get_room_kicked_dict, get_room_participants
+)
 from services.compiler.compiler_service import CompilerService
 
 class SubmissionService:
@@ -156,28 +158,24 @@ class SubmissionService:
     @classmethod
     def submit_answer(cls, room_id: str, student_id: str, question_id: str, q_type: str, marks: int, body: dict) -> dict:
         fields = [
-            "status", "kicked", "questions",
-            f"q_answer:{question_id}", f"submissions:{student_id}", "leaderboard"
+            "status", "questions",
+            f"q_answer:{question_id}", f"submissions:{student_id}"
         ]
         raw = redis_one(["HMGET", f"room:{room_id}"] + fields)
         if not raw or all(v is None for v in raw):
             raise KeyError("Room not found")
 
         status = raw[0]
-        kicked_json = raw[1]
-        questions_json = raw[2]
-        frozen_json = raw[3]
-        subs_json = raw[4]
-        leaderboard_json = raw[5]
+        questions_json = raw[1]
+        frozen_json = raw[2]
+        subs_json = raw[3]
 
         # Validate room is live
         if status != "live":
             raise ValueError("Exam is not live")
 
         # Validate student is not kicked
-        kicked_raw = json.loads(kicked_json) if kicked_json else {}
-        if isinstance(kicked_raw, list):
-            kicked_raw = {sid: "Removed by Mentor" for sid in kicked_raw}
+        kicked_raw = get_room_kicked_dict(room_id)
         if student_id in kicked_raw:
             reason = kicked_raw.get(student_id, "Removed by Mentor")
             raise PermissionError(f"kicked:{reason}")
@@ -443,16 +441,22 @@ class SubmissionService:
 
         score_delta = score - prev_score
 
-        # Update leaderboard
-        leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
-        leaderboard_raw[student_id] = leaderboard_raw.get(student_id, 0) + score_delta
-
-        # Store submission and update leaderboard in Hash
+        # Calculate total student score across all their submissions directly
         submissions[question_id] = submission
+        total_student_score = 0
+        for sub_item in submissions.values():
+            try:
+                sub_parsed = json.loads(sub_item) if isinstance(sub_item, str) else sub_item
+                total_student_score += sub_parsed.get("score", 0)
+            except Exception:
+                pass
+
+        score_val_str = str(int(total_student_score) if isinstance(total_student_score, (int, float)) and float(total_student_score).is_integer() else total_student_score)
+
         pipeline = [
-            ["HSET", f"room:{room_id}",
-             f"submissions:{student_id}", json.dumps(submissions),
-             "leaderboard", json.dumps(leaderboard_raw)],
+            ["HSET", f"room:{room_id}", f"submissions:{student_id}", json.dumps(submissions)],
+            ["HSET", f"room:{room_id}:leaderboard", student_id, score_val_str],
+            ["EXPIRE", f"room:{room_id}:leaderboard", str(60 * 60 * 24 * 7)],
             ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ]
         redis_cmd(pipeline)
@@ -511,9 +515,9 @@ class SubmissionService:
 
     @staticmethod
     def finish_exam(room_id: str, student_id: str) -> bool:
-        participants_json = redis_one(["HGET", f"room:{room_id}", "participants"])
-        participants_raw = json.loads(participants_json) if participants_json else {}
-        p_val = participants_raw.get(student_id)
+        p_val = redis_one(["HGET", f"room:{room_id}:participants", student_id])
+        if not p_val:
+            p_val = (get_room_participants(room_id) or {}).get(student_id)
         if not p_val:
             raise KeyError("Student not found")
         try:
@@ -523,10 +527,10 @@ class SubmissionService:
 
         p["finished"] = True
         p["finishedAt"] = int(time.time())
-        participants_raw[student_id] = p
 
         redis_cmd([
-            ["HSET", f"room:{room_id}", "participants", json.dumps(participants_raw)],
+            ["HSET", f"room:{room_id}:participants", student_id, json.dumps(p)],
+            ["EXPIRE", f"room:{room_id}:participants", str(60 * 60 * 24 * 7)],
         ])
         return True
 

@@ -5,7 +5,9 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from services.shared.redis_client import redis_one
+from services.shared.redis_client import (
+    redis_one, get_room_participants, get_room_leaderboard_dict, get_room_kicked_dict
+)
 
 class LeaderboardService:
     @staticmethod
@@ -31,16 +33,9 @@ class LeaderboardService:
 
     @classmethod
     def get_room_leaderboard(cls, room_id: str) -> dict:
-        leaderboard_json = redis_one(["HGET", f"room:{room_id}", "leaderboard"])
-        leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
-
-        participants_json = redis_one(["HGET", f"room:{room_id}", "participants"])
-        participants_raw = json.loads(participants_json) if participants_json else {}
-
-        kicked_json = redis_one(["HGET", f"room:{room_id}", "kicked"])
-        kicked_raw = json.loads(kicked_json) if kicked_json else {}
-        if isinstance(kicked_raw, list):
-            kicked_raw = {sid: "Removed by Mentor" for sid in kicked_raw}
+        leaderboard_raw = get_room_leaderboard_dict(room_id)
+        participants_raw = get_room_participants(room_id)
+        kicked_raw = get_room_kicked_dict(room_id)
 
         ranked = []
         for sid, score in leaderboard_raw.items():
@@ -152,10 +147,10 @@ class LeaderboardService:
                 meta[k] = v
 
         questions = json.loads(raw[8]) if raw[8] else []
-        participants_raw = json.loads(raw[9]) if raw[9] else {}
+        participants_raw = get_room_participants(room_id)
         datasets_raw = json.loads(raw[10]) if raw[10] else {}
-        kicked = json.loads(raw[11]) if raw[11] else []
-        leaderboard = json.loads(raw[12]) if raw[12] else {}
+        kicked = get_room_kicked_dict(room_id)
+        leaderboard = get_room_leaderboard_dict(room_id)
 
         submissions = {}
         for sid in participants_raw.keys():

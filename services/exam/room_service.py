@@ -9,7 +9,10 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from services.shared.redis_client import redis_cmd, redis_one, hgetall, room_key
+from services.shared.redis_client import (
+    redis_cmd, redis_one, hgetall, room_key,
+    get_room_participants, get_room_leaderboard_dict, get_room_kicked_dict
+)
 
 class RoomService:
     @staticmethod
@@ -63,7 +66,7 @@ class RoomService:
     def get_room(room_id: str, client_mentor_id: str = "") -> dict:
         fields = [
             "title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt",
-            "questions", "participants", "datasets", "kicked", "fullscreenMode", "blockCopyPaste", "maxFullscreenExits"
+            "questions", "datasets", "fullscreenMode", "blockCopyPaste", "maxFullscreenExits"
         ]
         raw = redis_one(["HMGET", f"room:{room_id}"] + fields)
         if not raw or all(v is None for v in raw):
@@ -74,7 +77,7 @@ class RoomService:
             "fullscreenMode", "blockCopyPaste", "maxFullscreenExits"
         ]
         meta = {}
-        for k, v in zip(meta_keys, raw[:8] + [raw[12], raw[13], raw[14]]):
+        for k, v in zip(meta_keys, raw[:8] + [raw[10], raw[11], raw[12]]):
             if v is not None:
                 meta[k] = v
             else:
@@ -84,9 +87,7 @@ class RoomService:
                     meta[k] = "5"
 
         questions_json = raw[8]
-        participants_json = raw[9]
-        datasets_json = raw[10]
-        kicked_json = raw[11]
+        datasets_json = raw[9]
 
         questions = []
         if questions_json:
@@ -102,7 +103,7 @@ class RoomService:
                 if q.get("type") == "mcq":
                     q.pop("correctOption", None)
 
-        participants_raw = json.loads(participants_json) if participants_json else {}
+        participants_raw = get_room_participants(room_id)
         participants = []
         for sid, p_val in participants_raw.items():
             try:
@@ -122,11 +123,7 @@ class RoomService:
             except Exception:
                 pass
 
-        kicked_raw = json.loads(kicked_json) if kicked_json else {}
-        if isinstance(kicked_raw, list):
-            kicked = {sid: "Removed by Mentor" for sid in kicked_raw}
-        else:
-            kicked = kicked_raw
+        kicked = get_room_kicked_dict(room_id)
 
         return {
             "roomId": room_id,
@@ -139,7 +136,7 @@ class RoomService:
 
     @staticmethod
     def get_room_status(room_id: str) -> dict:
-        fields = ["status", "startedAt", "endedAt", "kicked"]
+        fields = ["status", "startedAt", "endedAt"]
         raw = redis_one(["HMGET", f"room:{room_id}"] + fields)
         if not raw or all(v is None for v in raw):
             raise KeyError("Room not found")
@@ -159,12 +156,7 @@ class RoomService:
             except Exception:
                 ended_at = None
 
-        kicked_json = raw[3]
-        kicked_raw = json.loads(kicked_json) if kicked_json else {}
-        if isinstance(kicked_raw, list):
-            kicked = {sid: "Removed by Mentor" for sid in kicked_raw}
-        else:
-            kicked = kicked_raw
+        kicked = get_room_kicked_dict(room_id)
 
         return {
             "roomStatus": status,
@@ -189,8 +181,7 @@ class RoomService:
         if status not in ("waiting", "live"):
             raise ValueError(f"Room is {status or 'closed'}")
 
-        participants_json = redis_one(["HGET", f"room:{room_id}", "participants"])
-        participants_raw = json.loads(participants_json) if participants_json else {}
+        participants_raw = get_room_participants(room_id)
         existing_student_id = None
         
         if participants_raw:
@@ -207,12 +198,10 @@ class RoomService:
                 except Exception:
                     pass
 
+        kicked_raw = get_room_kicked_dict(room_id)
+
         if existing_student_id:
             student_id = existing_student_id
-            kicked_json = redis_one(["HGET", f"room:{room_id}", "kicked"])
-            kicked_raw = json.loads(kicked_json) if kicked_json else {}
-            if isinstance(kicked_raw, list):
-                kicked_raw = {sid: "Removed by Mentor" for sid in kicked_raw}
             if student_id in kicked_raw:
                 reason = kicked_raw.get(student_id, "Removed by Mentor")
                 raise PermissionError(f"kicked:{reason}")
@@ -235,19 +224,23 @@ class RoomService:
             "branch": branch,
             "joinedAt": now
         }
-        participants_raw[student_id] = student_data
 
-        leaderboard_json = redis_one(["HGET", f"room:{room_id}", "leaderboard"])
-        leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
-        if student_id not in leaderboard_raw:
-            leaderboard_raw[student_id] = 0
-
+        # Atomic per-student Redis writes (eliminates concurrent join clobbering)
         pipeline = [
-            ["HSET", f"room:{room_id}",
-             "participants", json.dumps(participants_raw),
-             "leaderboard", json.dumps(leaderboard_raw)],
+            ["HSET", f"room:{room_id}:participants", student_id, json.dumps(student_data)],
+            ["HSETNX", f"room:{room_id}:leaderboard", student_id, "0"],
+            ["EXPIRE", f"room:{room_id}:participants", str(60 * 60 * 24 * 7)],
+            ["EXPIRE", f"room:{room_id}:leaderboard", str(60 * 60 * 24 * 7)],
             ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)]
         ]
+        redis_cmd(pipeline)
+
+        return {
+            "studentId": student_id,
+            "roomId": room_id,
+            "roomTitle": meta.get("title", ""),
+            "roomStatus": meta.get("status", "waiting")
+        }
         redis_cmd(pipeline)
 
         return {
