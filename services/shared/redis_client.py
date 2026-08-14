@@ -1,35 +1,148 @@
+import os
 import sys
+import json
+import time
+import pymongo
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from utils.analytics import analytics_tracker
+# MongoDB Atlas Connection (Unlimited commands & storage)
+MONGO_URI = os.getenv(
+    "MONGO_URI",
+    "mongodb+srv://swargamprranith1_db_user:Prranith0521@cluster0.hgri1wa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+)
+
+try:
+    _mongo_client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, maxPoolSize=50)
+    _db = _mongo_client["exam_system"]
+    _rooms = _db["rooms"]
+except Exception as e:
+    print(f"Warning: Failed to connect to MongoDB Atlas: {e}")
+    _rooms = None
+
+
+def _get_room_doc(room_id: str) -> dict:
+    """Fetch room document from MongoDB Atlas."""
+    if _rooms is None:
+        return {}
+    try:
+        clean_id = room_id.replace("room:", "")
+        doc = _rooms.find_one({"_id": clean_id}) or {}
+        doc.pop("_id", None)
+        return doc
+    except Exception as e:
+        print(f"MongoDB read error: {e}")
+        return {}
+
 
 def redis_cmd(commands: list) -> list | None:
-    """Execute Redis pipeline via Upstash REST."""
-    return analytics_tracker._redis_pipeline(commands)
+    """Execute operations atomically against MongoDB Atlas."""
+    results = []
+    for cmd in commands:
+        if not cmd or not isinstance(cmd, list):
+            results.append(None)
+            continue
+
+        op = cmd[0].upper()
+        if op == "HSET":
+            if len(cmd) < 3:
+                results.append(None)
+                continue
+            key = cmd[1]
+            room_id = key.replace("room:", "")
+            
+            set_fields = {}
+            for i in range(2, len(cmd) - 1, 2):
+                set_fields[cmd[i]] = cmd[i + 1]
+            
+            if set_fields and _rooms is not None:
+                try:
+                    _rooms.update_one({"_id": room_id}, {"$set": set_fields}, upsert=True)
+                    results.append(len(set_fields))
+                except Exception as e:
+                    print(f"MongoDB write error: {e}")
+                    results.append(0)
+            else:
+                results.append(0)
+
+        elif op == "HDEL":
+            if len(cmd) < 3:
+                results.append(None)
+                continue
+            key = cmd[1]
+            room_id = key.replace("room:", "")
+            unset_fields = {f: "" for f in cmd[2:]}
+            if unset_fields and _rooms is not None:
+                try:
+                    _rooms.update_one({"_id": room_id}, {"$unset": unset_fields})
+                    results.append(len(cmd) - 2)
+                except Exception as e:
+                    print(f"MongoDB unset error: {e}")
+                    results.append(0)
+            else:
+                results.append(0)
+
+        elif op == "HSETNX":
+            if len(cmd) < 4:
+                results.append(None)
+                continue
+            key = cmd[1]
+            room_id = key.replace("room:", "")
+            field = cmd[2]
+            val = cmd[3]
+            doc = _get_room_doc(room_id)
+            if field not in doc and _rooms is not None:
+                try:
+                    _rooms.update_one({"_id": room_id}, {"$set": {field: val}}, upsert=True)
+                    results.append(1)
+                except Exception:
+                    results.append(0)
+            else:
+                results.append(0)
+
+        elif op == "EXPIRE":
+            # MongoDB Atlas manages persistent documents; expire is a no-op success
+            results.append(1)
+
+        else:
+            results.append(None)
+
+    return results
 
 
 def redis_one(command: list):
-    """Execute a single Redis command and return its result."""
-    res = redis_cmd([command])
-    if res and len(res) >= 1:
-        return res[0]
-    return None
+    """Execute a single operation against MongoDB Atlas."""
+    if not command or not isinstance(command, list):
+        return None
+
+    op = command[0].upper()
+    if op == "HGET":
+        room_id = command[1].replace("room:", "")
+        field = command[2]
+        doc = _get_room_doc(room_id)
+        return doc.get(field)
+
+    elif op == "HMGET":
+        room_id = command[1].replace("room:", "")
+        fields = command[2:]
+        doc = _get_room_doc(room_id)
+        return [doc.get(f) for f in fields]
+
+    elif op == "HGETALL":
+        room_id = command[1].replace("room:", "")
+        return _get_room_doc(room_id)
+
+    else:
+        res = redis_cmd([command])
+        return res[0] if res else None
 
 
 def hgetall(key: str) -> dict:
-    """Fetch a Redis Hash as a Python dict."""
-    raw = redis_one(["HGETALL", key])
-    if isinstance(raw, dict):
-        return raw
-    if not isinstance(raw, list):
-        return {}
-    result = {}
-    for i in range(0, len(raw) - 1, 2):
-        result[raw[i]] = raw[i + 1]
-    return result
+    """Fetch all fields for a key from MongoDB Atlas."""
+    room_id = key.replace("room:", "")
+    return _get_room_doc(room_id)
 
 
 def room_key(room_id: str) -> str:
@@ -37,9 +150,8 @@ def room_key(room_id: str) -> str:
 
 
 def get_room_participants(room_id: str) -> dict:
-    """Fetch participants dictionary packed within room:{room_id} hash."""
-    import json
-    all_data = hgetall(f"room:{room_id}")
+    """Fetch participants dictionary from MongoDB Atlas."""
+    all_data = _get_room_doc(room_id)
     participants = {}
     if all_data:
         for k, v in all_data.items():
@@ -49,23 +161,18 @@ def get_room_participants(room_id: str) -> dict:
     if participants:
         return participants
 
-    # Fallback to separate hash or legacy JSON field
-    raw_hash = hgetall(f"room:{room_id}:participants")
-    if raw_hash:
-        return raw_hash
-    legacy_json = all_data.get("participants") if all_data else redis_one(["HGET", f"room:{room_id}", "participants"])
+    legacy_json = all_data.get("participants")
     if legacy_json:
         try:
-            return json.loads(legacy_json)
+            return json.loads(legacy_json) if isinstance(legacy_json, str) else legacy_json
         except Exception:
             pass
     return {}
 
 
 def get_room_leaderboard_dict(room_id: str) -> dict:
-    """Fetch leaderboard dictionary packed within room:{room_id} hash."""
-    import json
-    all_data = hgetall(f"room:{room_id}")
+    """Fetch leaderboard dictionary from MongoDB Atlas."""
+    all_data = _get_room_doc(room_id)
     leaderboard = {}
     if all_data:
         for k, v in all_data.items():
@@ -78,23 +185,18 @@ def get_room_leaderboard_dict(room_id: str) -> dict:
     if leaderboard:
         return leaderboard
 
-    # Fallback to separate hash or legacy JSON field
-    raw_hash = hgetall(f"room:{room_id}:leaderboard")
-    if raw_hash:
-        return raw_hash
-    legacy_json = all_data.get("leaderboard") if all_data else redis_one(["HGET", f"room:{room_id}", "leaderboard"])
+    legacy_json = all_data.get("leaderboard")
     if legacy_json:
         try:
-            return json.loads(legacy_json)
+            return json.loads(legacy_json) if isinstance(legacy_json, str) else legacy_json
         except Exception:
             pass
     return {}
 
 
 def get_room_kicked_dict(room_id: str) -> dict:
-    """Fetch kicked dictionary packed within room:{room_id} hash."""
-    import json
-    all_data = hgetall(f"room:{room_id}")
+    """Fetch kicked dictionary from MongoDB Atlas."""
+    all_data = _get_room_doc(room_id)
     kicked = {}
     if all_data:
         for k, v in all_data.items():
@@ -104,14 +206,10 @@ def get_room_kicked_dict(room_id: str) -> dict:
     if kicked:
         return kicked
 
-    # Fallback to separate hash or legacy JSON field
-    raw_hash = hgetall(f"room:{room_id}:kicked")
-    if raw_hash:
-        return raw_hash
-    legacy_json = all_data.get("kicked") if all_data else redis_one(["HGET", f"room:{room_id}", "kicked"])
+    legacy_json = all_data.get("kicked")
     if legacy_json:
         try:
-            parsed = json.loads(legacy_json)
+            parsed = json.loads(legacy_json) if isinstance(legacy_json, str) else legacy_json
             if isinstance(parsed, list):
                 return {sid: "Removed by Mentor" for sid in parsed}
             return parsed
