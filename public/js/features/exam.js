@@ -218,6 +218,30 @@ const ExamPortal = (() => {
   }
 
   function resetStudentState() {
+    // 1. Clear intervals & timeouts
+    if (state.student.pollInterval) {
+      clearInterval(state.student.pollInterval);
+    }
+    if (state.student.timerInterval) {
+      clearInterval(state.student.timerInterval);
+    }
+    if (state.student.autoSaveTimeout) {
+      clearTimeout(state.student.autoSaveTimeout);
+    }
+
+    // 2. Destroy CodeMirror instance
+    if (state.student.examEditor) {
+      try {
+        state.student.examEditor.toTextArea();
+      } catch (e) {}
+      state.student.examEditor = null;
+    }
+
+    // 3. Clear localStorage credentials
+    localStorage.removeItem('exam_student_id');
+    localStorage.removeItem('exam_student_room');
+
+    // 4. Reset entire student namespace object properties
     state.student.roomId = null;
     state.student.studentId = null;
     state.student.name = '';
@@ -225,21 +249,57 @@ const ExamPortal = (() => {
     state.student.branch = '';
     state.student.questions = [];
     state.student.datasets = [];
-    state.student.currentQIdx = null;
+    state.student.roomStatus = 'live';
+    state.student.fullscreenMode = false;
+    state.student.blockCopyPaste = false;
+    state.student.maxFullscreenExits = 5;
+    state.student.fullscreenExitCount = 0;
     state.student.status = {};
+    state.student.pollInterval = null;
+    state.student.timerInterval = null;
+    state.student.currentQIdx = null;
+    state.student.autoSaveTimeout = null;
+    state.student.ignoreFullscreenChange = false;
+    state.student.copiedFromEditor = false;
+    state.student.lastInternalCopiedText = '';
+    state.student.isPasting = false;
     state.student.lastRunOutput = null;
     state.student.hasRunOnce = false;
-    state.student.selectedOption = null;
-    if (state.student.examEditor) {
-      try {
-        state.student.examEditor.toTextArea();
-      } catch (e) {}
-      state.student.examEditor = null;
+    state.student.activeTab = 'readme';
+    state.student.sampleCases = [];
+    state.student.runResults = {};
+    state.student.activeConsoleTab = null;
+    state.student.customStdin = '';
+
+    // 5. Clean up Exam Portal DOM elements completely to prevent visual artifacts
+    const yoursPane = el('student-pane-yours');
+    if (yoursPane) yoursPane.innerHTML = '<span style="color:var(--text3)">// Run a query to see output here</span>';
+
+    const expectedPane = el('student-pane-expected');
+    if (expectedPane) expectedPane.innerHTML = '<span style="color:var(--text3)">// Select or run a query to load expected preview</span>';
+
+    const stdinInput = el('student-stdin-input');
+    if (stdinInput) {
+      stdinInput.value = '';
+      stdinInput.readOnly = false;
+      stdinInput.style.opacity = '1';
     }
-    clearInterval(state.student.pollInterval);
-    clearInterval(state.student.timerInterval);
-    localStorage.removeItem('exam_student_id');
-    localStorage.removeItem('exam_student_room');
+
+    const consoleStatus = el('student-console-status');
+    if (consoleStatus) {
+      consoleStatus.textContent = '— Ready';
+      consoleStatus.style.color = 'var(--text3)';
+    }
+
+    const tabsBar = el('student-console-tabs-bar');
+    if (tabsBar) {
+      tabsBar.innerHTML = '';
+    }
+
+    const qProgress = el('student-q-progress');
+    if (qProgress) {
+      qProgress.textContent = 'Q 0/0';
+    }
   }
 
   function exitToHome() {
