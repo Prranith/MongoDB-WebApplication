@@ -7779,7 +7779,7 @@ const ExamPortal = (() => {
     state.student.roomStatus = 'live';
     state.student.fullscreenMode = false;
     state.student.blockCopyPaste = false;
-    state.student.maxFullscreenExits = 5;
+    state.student.maxFullscreenExits = null;
     state.student.fullscreenExitCount = 0;
     state.student.status = {};
     state.student.pollInterval = null;
