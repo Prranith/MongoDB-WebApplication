@@ -9,7 +9,28 @@ from services.shared.redis_client import redis_one
 
 class LeaderboardService:
     @staticmethod
-    def get_room_leaderboard(room_id: str) -> dict:
+    def _extract_sub_metrics(subs_raw: dict):
+        """Safely extract answered count, correct count, and last submission timestamp."""
+        if not subs_raw or not isinstance(subs_raw, dict):
+            return 0, 0, 0
+        answered = len(subs_raw)
+        correct = 0
+        last_sub_time = 0
+        for v in subs_raw.values():
+            try:
+                sub = json.loads(v) if isinstance(v, str) else v
+                if isinstance(sub, dict):
+                    if sub.get("score", 0) > 0:
+                        correct += 1
+                    t = sub.get("submittedAt", 0)
+                    if t and t > last_sub_time:
+                        last_sub_time = t
+            except Exception:
+                pass
+        return answered, correct, last_sub_time
+
+    @classmethod
+    def get_room_leaderboard(cls, room_id: str) -> dict:
         leaderboard_json = redis_one(["HGET", f"room:{room_id}", "leaderboard"])
         leaderboard_raw = json.loads(leaderboard_json) if leaderboard_json else {}
 
@@ -23,7 +44,11 @@ class LeaderboardService:
 
         ranked = []
         for sid, score in leaderboard_raw.items():
-            total_score = float(score)
+            try:
+                total_score = float(score)
+            except Exception:
+                total_score = 0.0
+
             p_val = participants_raw.get(sid)
             student_info = {"name": "Unknown", "rollNo": "-", "branch": "-", "joinedAt": 0}
             if p_val:
@@ -34,21 +59,7 @@ class LeaderboardService:
 
             subs_json = redis_one(["HGET", f"room:{room_id}", f"submissions:{sid}"])
             subs_raw = json.loads(subs_json) if subs_json else {}
-            answered = len(subs_raw)
-            correct = sum(
-                1 for v in subs_raw.values()
-                if (json.loads(v) if isinstance(v, str) else v).get("score", 0) > 0
-            ) if subs_raw else 0
-
-            last_sub_time = 0
-            if subs_raw:
-                for v in subs_raw.values():
-                    try:
-                        t = (json.loads(v) if isinstance(v, str) else v).get("submittedAt", 0)
-                        if t > last_sub_time:
-                            last_sub_time = t
-                    except Exception:
-                        pass
+            answered, correct, last_sub_time = cls._extract_sub_metrics(subs_raw)
 
             ranked.append({
                 "studentId": sid,
@@ -73,20 +84,7 @@ class LeaderboardService:
                         pass
                 subs_json = redis_one(["HGET", f"room:{room_id}", f"submissions:{sid}"])
                 subs_raw = json.loads(subs_json) if subs_json else {}
-                answered = len(subs_raw)
-                correct = sum(
-                    1 for v in subs_raw.values()
-                    if (json.loads(v) if isinstance(v, str) else v).get("score", 0) > 0
-                ) if subs_raw else 0
-                last_sub_time = 0
-                if subs_raw:
-                    for v in subs_raw.values():
-                        try:
-                            t = (json.loads(v) if isinstance(v, str) else v).get("submittedAt", 0)
-                            if t > last_sub_time:
-                                last_sub_time = t
-                        except Exception:
-                            pass
+                answered, correct, last_sub_time = cls._extract_sub_metrics(subs_raw)
                 ranked.append({
                     "studentId": sid,
                     "name": student_info.get("name", "Unknown"),

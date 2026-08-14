@@ -9,7 +9,17 @@ sys.path.insert(0, str(ROOT))
 
 class CompilerService:
     @staticmethod
-    def run_piston_api(language: str, code: str, stdin: str = ""):
+    def _sanitize_java_code(code: str) -> str:
+        class_match = re.search(r"\b(?:public\s+)?class\s+(\w+)", code)
+        if class_match:
+            original_class_name = class_match.group(1)
+            if original_class_name != "Main":
+                code = re.sub(r"\bclass\s+" + re.escape(original_class_name) + r"\b", "class Main", code)
+                code = re.sub(r"\b(public|private|protected)?\s*" + re.escape(original_class_name) + r"\s*\(", r"\1 Main(", code)
+        return code
+
+    @classmethod
+    def run_piston_api(cls, language: str, code: str, stdin: str = ""):
         lang_map = {
             "python": "python",
             "cpp": "cpp",
@@ -21,12 +31,7 @@ class CompilerService:
         filename = "main.py"
         if piston_lang == "java":
             filename = "Main.java"
-            class_match = re.search(r"\bclass\s+(\w+)", code)
-            if class_match:
-                original_class_name = class_match.group(1)
-                if original_class_name != "Main":
-                    code = re.sub(r"\bclass\s+" + re.escape(original_class_name) + r"\b", "class Main", code)
-                    code = re.sub(r"\b" + re.escape(original_class_name) + r"\b", "Main", code)
+            code = cls._sanitize_java_code(code)
         elif piston_lang == "cpp":
             filename = "main.cpp"
         elif piston_lang == "c":
@@ -76,8 +81,8 @@ class CompilerService:
             pass
         return None
 
-    @staticmethod
-    def run_paiza_api(language: str, code: str, stdin: str = ""):
+    @classmethod
+    def run_paiza_api(cls, language: str, code: str, stdin: str = ""):
         lang_map = {
             "python": "python3",
             "cpp": "cpp",
@@ -87,12 +92,7 @@ class CompilerService:
         paiza_lang = lang_map.get(language, "python3")
 
         if paiza_lang == "java":
-            class_match = re.search(r"\bclass\s+(\w+)", code)
-            if class_match:
-                original_class_name = class_match.group(1)
-                if original_class_name != "Main":
-                    code = re.sub(r"\bclass\s+" + re.escape(original_class_name) + r"\b", "class Main", code)
-                    code = re.sub(r"\b" + re.escape(original_class_name) + r"\b", "Main", code)
+            code = cls._sanitize_java_code(code)
 
         payload = {
             "source_code": code,

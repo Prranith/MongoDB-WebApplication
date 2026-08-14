@@ -2477,6 +2477,10 @@ const ExamPortal = (() => {
     _startExamTimer(startedAt, durationMin) {
       const timerEl = el('student-exam-timer');
       if (!timerEl) return;
+      startedAt = parseInt(startedAt);
+      durationMin = parseInt(durationMin);
+      if (isNaN(startedAt) || isNaN(durationMin) || durationMin <= 0) return;
+
       timerEl.style.display = 'flex';
       timerEl.style.fontFamily = "'JetBrains Mono',monospace";
       timerEl.style.fontSize = '12px';
@@ -2865,6 +2869,7 @@ const ExamPortal = (() => {
     },
 
     mcqKeyNav(event, currentIdx, total) {
+      if (!total || total <= 0) return;
       if (event.key === 'ArrowDown') {
         event.preventDefault();
         const next = (currentIdx + 1) % total;

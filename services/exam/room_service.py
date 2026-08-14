@@ -144,9 +144,21 @@ class RoomService:
         if not raw or all(v is None for v in raw):
             raise KeyError("Room not found")
 
-        status = raw[0]
-        started_at = raw[1]
-        ended_at = raw[2]
+        status = raw[0] or "waiting"
+        started_at = None
+        if raw[1]:
+            try:
+                started_at = int(float(raw[1]))
+            except Exception:
+                started_at = None
+
+        ended_at = None
+        if raw[2]:
+            try:
+                ended_at = int(float(raw[2]))
+            except Exception:
+                ended_at = None
+
         kicked_json = raw[3]
         kicked_raw = json.loads(kicked_json) if kicked_json else {}
         if isinstance(kicked_raw, list):

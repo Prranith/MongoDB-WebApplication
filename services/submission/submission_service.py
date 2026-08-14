@@ -15,15 +15,28 @@ from services.shared.redis_client import redis_cmd, redis_one
 from services.compiler.compiler_service import CompilerService
 
 class SubmissionService:
-    @staticmethod
-    def _normalize_doc(doc: dict) -> dict:
-        """Strip _id and ObjectId wrappers for comparison."""
+    @classmethod
+    def _normalize_value(cls, val):
+        """Recursively normalize values, handling floats, ints, dates, and nested containers."""
+        if isinstance(val, dict):
+            return {
+                k: cls._normalize_value(v) for k, v in val.items()
+                if k != "_id" and not (isinstance(k, str) and k.startswith("$"))
+            }
+        elif isinstance(val, list):
+            return [cls._normalize_value(v) for v in val]
+        elif isinstance(val, float):
+            if val.is_integer():
+                return int(val)
+            return round(val, 6)
+        return val
+
+    @classmethod
+    def _normalize_doc(cls, doc: dict) -> dict:
+        """Strip _id and normalize types/numbers for comparison."""
         if not isinstance(doc, dict):
             return doc
-        return {
-            k: v for k, v in doc.items()
-            if k != "_id" and not (isinstance(k, str) and k.startswith("$"))
-        }
+        return cls._normalize_value(doc)
 
     @classmethod
     def _sort_key(cls, doc) -> str:
@@ -324,11 +337,13 @@ class SubmissionService:
                     "submittedAt": now,
                 })
             else:
-                selected_option = str(body.get("selectedOption", ""))
-                score = marks if selected_option == str(correct_option) else 0
+                raw_selected = body.get("selectedOption")
+                student_choice = str(raw_selected).strip() if raw_selected is not None else ""
+                correct_choice = str(correct_option).strip() if correct_option is not None else ""
+                score = marks if student_choice != "" and student_choice == correct_choice else 0
                 submission = json.dumps({
                     "type": "mcq",
-                    "selectedOption": selected_option,
+                    "selectedOption": raw_selected,
                     "score": score,
                     "submittedAt": now,
                 })
