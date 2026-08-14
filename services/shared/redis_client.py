@@ -23,15 +23,29 @@ except Exception as e:
     _rooms = None
 
 
+def _clean_room_id(raw_id: str) -> str:
+    if not raw_id:
+        return ""
+    return str(raw_id).replace("room:", "").strip().upper()
+
+
 def _get_room_doc(room_id: str) -> dict:
     """Fetch room document from MongoDB Atlas."""
     if _rooms is None:
         return {}
     try:
-        clean_id = room_id.replace("room:", "")
-        doc = _rooms.find_one({"_id": clean_id}) or {}
-        doc.pop("_id", None)
-        return doc
+        clean_id = _clean_room_id(room_id)
+        if not clean_id:
+            return {}
+        doc = _rooms.find_one({"_id": clean_id})
+        if not doc:
+            # Case-insensitive fallback
+            import re
+            doc = _rooms.find_one({"_id": {"$regex": f"^{re.escape(clean_id)}$", "$options": "i"}}) or {}
+        if doc:
+            doc.pop("_id", None)
+            return doc
+        return {}
     except Exception as e:
         print(f"MongoDB read error: {e}")
         return {}
@@ -51,13 +65,13 @@ def redis_cmd(commands: list) -> list | None:
                 results.append(None)
                 continue
             key = cmd[1]
-            room_id = key.replace("room:", "")
+            room_id = _clean_room_id(key)
             
             set_fields = {}
             for i in range(2, len(cmd) - 1, 2):
                 set_fields[cmd[i]] = cmd[i + 1]
             
-            if set_fields and _rooms is not None:
+            if set_fields and _rooms is not None and room_id:
                 try:
                     _rooms.update_one({"_id": room_id}, {"$set": set_fields}, upsert=True)
                     results.append(len(set_fields))
@@ -72,9 +86,9 @@ def redis_cmd(commands: list) -> list | None:
                 results.append(None)
                 continue
             key = cmd[1]
-            room_id = key.replace("room:", "")
+            room_id = _clean_room_id(key)
             unset_fields = {f: "" for f in cmd[2:]}
-            if unset_fields and _rooms is not None:
+            if unset_fields and _rooms is not None and room_id:
                 try:
                     _rooms.update_one({"_id": room_id}, {"$unset": unset_fields})
                     results.append(len(cmd) - 2)
@@ -89,11 +103,11 @@ def redis_cmd(commands: list) -> list | None:
                 results.append(None)
                 continue
             key = cmd[1]
-            room_id = key.replace("room:", "")
+            room_id = _clean_room_id(key)
             field = cmd[2]
             val = cmd[3]
             doc = _get_room_doc(room_id)
-            if field not in doc and _rooms is not None:
+            if field not in doc and _rooms is not None and room_id:
                 try:
                     _rooms.update_one({"_id": room_id}, {"$set": {field: val}}, upsert=True)
                     results.append(1)
@@ -105,6 +119,17 @@ def redis_cmd(commands: list) -> list | None:
         elif op == "EXPIRE":
             # MongoDB Atlas manages persistent documents; expire is a no-op success
             results.append(1)
+
+        elif op == "DEL":
+            room_id = _clean_room_id(cmd[1])
+            if _rooms is not None and room_id:
+                try:
+                    _rooms.delete_one({"_id": room_id})
+                    results.append(1)
+                except Exception:
+                    results.append(0)
+            else:
+                results.append(0)
 
         else:
             results.append(None)
@@ -119,20 +144,30 @@ def redis_one(command: list):
 
     op = command[0].upper()
     if op == "HGET":
-        room_id = command[1].replace("room:", "")
+        room_id = command[1]
         field = command[2]
         doc = _get_room_doc(room_id)
         return doc.get(field)
 
     elif op == "HMGET":
-        room_id = command[1].replace("room:", "")
+        room_id = command[1]
         fields = command[2:]
         doc = _get_room_doc(room_id)
         return [doc.get(f) for f in fields]
 
     elif op == "HGETALL":
-        room_id = command[1].replace("room:", "")
+        room_id = command[1]
         return _get_room_doc(room_id)
+
+    elif op == "EXISTS":
+        room_id = command[1]
+        doc = _get_room_doc(room_id)
+        return 1 if doc else 0
+
+    elif op == "DEL":
+        room_id = command[1]
+        res = redis_cmd([["DEL", room_id]])
+        return res[0] if res else 0
 
     else:
         res = redis_cmd([command])
