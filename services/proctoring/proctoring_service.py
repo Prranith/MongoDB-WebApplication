@@ -134,10 +134,23 @@ class ProctoringService:
         else:
             kicked_raw.pop(student_id, None)
 
+        participants_json = redis_one(["HGET", f"room:{room_id}", "participants"])
+        participants_raw = json.loads(participants_json) if participants_json else {}
+        p_val = participants_raw.get(student_id)
+        if p_val:
+            try:
+                p = json.loads(p_val) if isinstance(p_val, str) else p_val
+                p["finished"] = False
+                p.pop("finishedAt", None)
+                participants_raw[student_id] = p
+            except Exception:
+                pass
+
         pipeline = [
             ["HSET", f"room:{room_id}",
              "leaderboard", json.dumps(leaderboard_raw),
-             "kicked", json.dumps(kicked_raw)],
+             "kicked", json.dumps(kicked_raw),
+             "participants", json.dumps(participants_raw)],
             ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ]
         redis_cmd(pipeline)
