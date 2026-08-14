@@ -7744,8 +7744,34 @@ const ExamPortal = (() => {
     showPanel('exam-role-panel');
   }
 
+  function resetStudentState() {
+    state.student.roomId = null;
+    state.student.studentId = null;
+    state.student.name = '';
+    state.student.rollNo = '';
+    state.student.branch = '';
+    state.student.questions = [];
+    state.student.datasets = [];
+    state.student.currentQIdx = null;
+    state.student.status = {};
+    state.student.lastRunOutput = null;
+    state.student.hasRunOnce = false;
+    state.student.selectedOption = null;
+    if (state.student.examEditor) {
+      try {
+        state.student.examEditor.toTextArea();
+      } catch (e) {}
+      state.student.examEditor = null;
+    }
+    clearInterval(state.student.pollInterval);
+    clearInterval(state.student.timerInterval);
+    localStorage.removeItem('exam_student_id');
+    localStorage.removeItem('exam_student_room');
+  }
+
   function exitToHome() {
     hideAllExam();
+    resetStudentState();
     // Ensure intro is shown
     showView('intro');
   }
@@ -7757,6 +7783,7 @@ const ExamPortal = (() => {
       _genPreviewRoomId();
       showPanel('exam-mentor-create-panel');
     } else {
+      resetStudentState();
       showPanel('exam-student-join-panel');
     }
   }
@@ -10836,10 +10863,7 @@ const ExamPortal = (() => {
     },
 
     handleKicked(reason) {
-      clearInterval(state.student.pollInterval);
-      clearInterval(state.student.timerInterval);
-      localStorage.removeItem('exam_student_id');
-      localStorage.removeItem('exam_student_room');
+      resetStudentState();
       window.onbeforeunload = null;
       state.student.ignoreFullscreenChange = true;
 
