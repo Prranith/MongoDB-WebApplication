@@ -23,40 +23,6 @@ exam_bp = Blueprint("exam_bp", __name__)
 run_piston_code = CompilerService.run_piston_code
 
 
-@exam_bp.route("/api/exam/debug_db", methods=["GET"])
-def api_exam_debug_db():
-    """Debug endpoint to diagnose MongoDB Atlas connection status on Vercel."""
-    from services.shared.redis_client import _get_rooms_coll, MONGO_URI
-    import traceback
-    try:
-        coll = _get_rooms_coll()
-        if coll is None:
-            return jsonify({"status": "error", "message": "coll is None", "uri_set": bool(MONGO_URI)})
-        # Test ping
-        client = coll.database.client
-        ping_res = client.admin.command("ping")
-        # Test write
-        test_res = coll.update_one({"_id": "DEBUG_VERCEL_TEST"}, {"$set": {"time": "now"}}, upsert=True)
-        # Test read
-        read_doc = coll.find_one({"_id": "DEBUG_VERCEL_TEST"})
-        read_doc.pop("_id", None)
-        return jsonify({
-            "status": "ok",
-            "ping": ping_res,
-            "read_doc": read_doc,
-            "uri_prefix": MONGO_URI.split("@")[-1] if "@" in MONGO_URI else "invalid"
-        })
-    except Exception as e:
-        return jsonify({
-            "status": "error",
-            "error_type": type(e).__name__,
-            "error": str(e),
-            "traceback": traceback.format_exc(),
-            "uri_prefix": MONGO_URI.split("@")[-1] if "@" in MONGO_URI else "invalid"
-        }), 500
-
-
-
 @exam_bp.route("/api/exam/room/create", methods=["POST"])
 def api_exam_create_room():
     """Create a new exam room."""

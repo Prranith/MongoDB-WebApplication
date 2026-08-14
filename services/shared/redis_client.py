@@ -8,10 +8,10 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-# MongoDB Atlas Connection (Unlimited commands & storage)
+# MongoDB Atlas Direct Connection (Bypasses SRV DNS timeouts on Vercel Serverless)
 MONGO_URI = os.getenv(
     "MONGO_URI",
-    "mongodb+srv://swargamprranith1_db_user:Prranith0521@cluster0.hgri1wa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    "mongodb://swargamprranith1_db_user:Prranith0521@ac-wowbq8f-shard-00-00.hgri1wa.mongodb.net:27017,ac-wowbq8f-shard-00-01.hgri1wa.mongodb.net:27017,ac-wowbq8f-shard-00-02.hgri1wa.mongodb.net:27017/?ssl=true&replicaSet=atlas-193153-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
 )
 
 _mongo_client = None
