@@ -92,15 +92,30 @@ class AnalyticsTracker:
             pass
 
     def _redis_pipeline(self, commands: list[list[Any]]) -> list[Any] | None:
-        """Execute multiple commands against MongoDB Atlas."""
+        """Execute multiple Redis commands in a single HTTP REST pipeline call."""
+        if not UPSTASH_URL or not UPSTASH_TOKEN:
+            return None
+        url = f"{UPSTASH_URL.rstrip('/')}/pipeline"
+        headers = {
+            "Authorization": f"Bearer {UPSTASH_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(commands).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
         try:
-            from services.shared.redis_client import redis_cmd
-            return redis_cmd(commands)
+            with urllib.request.urlopen(req, timeout=3.0) as response:
+                res = json.loads(response.read().decode("utf-8"))
+                # Response format: [{'result': ...}, ...]
+                return [r.get("result") for r in res]
         except Exception:
             return None
 
     def _async_run(self, commands: list[list[Any]]) -> None:
-        """Run commands asynchronously in a background thread."""
+        """Run Redis commands asynchronously in a background thread."""
         def worker():
             self._redis_pipeline(commands)
         t = threading.Thread(target=worker, daemon=True)
