@@ -2470,6 +2470,21 @@ const ExamPortal = (() => {
           }, 2000);
         }
       });
+      cm.on('paste', (instance, e) => {
+        if (state.student.roomId && state.student.blockCopyPaste) {
+          const pastedText = (e.clipboardData || window.clipboardData).getData('text') || "";
+          const cleanPasted = pastedText.replace(/\r/g, '').trim();
+          const cleanInternal = (state.student.lastInternalCopiedText || "").replace(/\r/g, '').trim();
+
+          if (state.student.copiedFromEditor && cleanPasted && cleanPasted === cleanInternal) {
+            return;
+          }
+
+          // Cancel the paste event inside CodeMirror
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
       cm.on('beforeChange', (instance, change) => {
         if (change.origin === 'paste') {
           if (state.student.roomId && state.student.blockCopyPaste) {
@@ -4029,16 +4044,18 @@ const ExamPortal = (() => {
         return;
       }
 
-      // Block external or non-editor clipboard paste
+      // Block external or non-editor clipboard paste immediately
       e.preventDefault();
+      e.stopPropagation();
       
-      // Report violation to backend
-      studentNS.reportFlaggedViolation('copy_paste_attempt');
-
-      showAppWarningModal(
-        "Paste Restricted",
-        "Copying and pasting is only allowed for text copied directly from within the code editor."
-      );
+      // Report violation and show modal asynchronously to avoid blocking browser's event loop
+      setTimeout(() => {
+        studentNS.reportFlaggedViolation('copy_paste_attempt');
+        showAppWarningModal(
+          "Paste Restricted",
+          "Copying and pasting is only allowed for text copied directly from within the code editor."
+        );
+      }, 50);
     }
   }
 
