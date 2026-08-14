@@ -1587,6 +1587,21 @@ const ExamPortal = (() => {
       }
     },
 
+    async deleteRoom() {
+      if (!confirm('Are you sure you want to completely close and delete this exam room?\n\nAll room data and student submissions will be permanently wiped from the database.')) return;
+      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}?mentorId=${state.mentor.mentorId}`, 'DELETE');
+      if (res.status === 'ok') {
+        clearInterval(state.mentor.participantInterval);
+        clearInterval(state.mentor.lbInterval);
+        clearInterval(state.mentor.timerInterval);
+        localStorage.removeItem('exam_room_id');
+        localStorage.removeItem('exam_mentor_id');
+        showPanel('exam-mentor-create-panel');
+      } else {
+        alert(res.error || 'Failed to delete room');
+      }
+    },
+
     // ── Participants Polling ───────────────────────────────────────────────
 
     _startParticipantPoll() {

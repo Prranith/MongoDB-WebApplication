@@ -582,8 +582,6 @@ def api_exam_generate_test_cases(room_id: str):
         code = body.get("editorialCode", "")
         inputs = body.get("inputs", [])
         template_type = body.get("templateType", "scratch")
-        driver_code = body.get("driverCode", "")
-
         outputs = SubmissionService.generate_test_cases(language, code, inputs, template_type, driver_code)
         return jsonify({
             "status": "ok",
@@ -596,3 +594,21 @@ def api_exam_generate_test_cases(room_id: str):
         })
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
+
+
+@exam_bp.route("/api/exam/room/<room_id>", methods=["DELETE"])
+def api_exam_delete_room(room_id: str):
+    """Permanently delete room and all its data from MongoDB Atlas."""
+    body = request.get_json(force=True, silent=True) or {}
+    mentor_id = body.get("mentorId") or request.args.get("mentorId", "")
+    try:
+        RoomService.cleanup_room(room_id, mentor_id)
+        return jsonify({"status": "ok", "message": "Room and all associated data permanently deleted"})
+    except KeyError as e:
+        return jsonify({"status": "error", "error": str(e)}), 404
+    except PermissionError as e:
+        return jsonify({"status": "error", "error": str(e)}), 403
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
