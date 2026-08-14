@@ -454,9 +454,7 @@ class SubmissionService:
         score_val_str = str(int(total_student_score) if isinstance(total_student_score, (int, float)) and float(total_student_score).is_integer() else total_student_score)
 
         pipeline = [
-            ["HSET", f"room:{room_id}", f"submissions:{student_id}", json.dumps(submissions)],
-            ["HSET", f"room:{room_id}:leaderboard", student_id, score_val_str],
-            ["EXPIRE", f"room:{room_id}:leaderboard", str(60 * 60 * 24 * 7)],
+            ["HSET", f"room:{room_id}", f"submissions:{student_id}", json.dumps(submissions), f"score:{student_id}", score_val_str],
             ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ]
         redis_cmd(pipeline)
@@ -515,7 +513,7 @@ class SubmissionService:
 
     @staticmethod
     def finish_exam(room_id: str, student_id: str) -> bool:
-        p_val = redis_one(["HGET", f"room:{room_id}:participants", student_id])
+        p_val = redis_one(["HGET", f"room:{room_id}", f"participant:{student_id}"])
         if not p_val:
             p_val = (get_room_participants(room_id) or {}).get(student_id)
         if not p_val:
@@ -529,8 +527,8 @@ class SubmissionService:
         p["finishedAt"] = int(time.time())
 
         redis_cmd([
-            ["HSET", f"room:{room_id}:participants", student_id, json.dumps(p)],
-            ["EXPIRE", f"room:{room_id}:participants", str(60 * 60 * 24 * 7)],
+            ["HSET", f"room:{room_id}", f"participant:{student_id}", json.dumps(p)],
+            ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ])
         return True
 

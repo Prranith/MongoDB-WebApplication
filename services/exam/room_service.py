@@ -225,12 +225,9 @@ class RoomService:
             "joinedAt": now
         }
 
-        # Atomic per-student Redis writes (eliminates concurrent join clobbering)
+        # Atomic per-student writes packed inside the single room:{room_id} hash
         pipeline = [
-            ["HSET", f"room:{room_id}:participants", student_id, json.dumps(student_data)],
-            ["HSETNX", f"room:{room_id}:leaderboard", student_id, "0"],
-            ["EXPIRE", f"room:{room_id}:participants", str(60 * 60 * 24 * 7)],
-            ["EXPIRE", f"room:{room_id}:leaderboard", str(60 * 60 * 24 * 7)],
+            ["HSET", f"room:{room_id}", f"participant:{student_id}", json.dumps(student_data), f"score:{student_id}", "0"],
             ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)]
         ]
         redis_cmd(pipeline)
@@ -241,7 +238,6 @@ class RoomService:
             "roomTitle": meta.get("title", ""),
             "roomStatus": meta.get("status", "waiting")
         }
-        redis_cmd(pipeline)
 
         return {
             "studentId": student_id,

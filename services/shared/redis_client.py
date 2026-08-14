@@ -37,12 +37,23 @@ def room_key(room_id: str) -> str:
 
 
 def get_room_participants(room_id: str) -> dict:
-    """Fetch participants dictionary, supporting both atomic hash and legacy JSON field."""
+    """Fetch participants dictionary packed within room:{room_id} hash."""
     import json
+    all_data = hgetall(f"room:{room_id}")
+    participants = {}
+    if all_data:
+        for k, v in all_data.items():
+            if k.startswith("participant:"):
+                sid = k[len("participant:"):]
+                participants[sid] = v
+    if participants:
+        return participants
+
+    # Fallback to separate hash or legacy JSON field
     raw_hash = hgetall(f"room:{room_id}:participants")
     if raw_hash:
         return raw_hash
-    legacy_json = redis_one(["HGET", f"room:{room_id}", "participants"])
+    legacy_json = all_data.get("participants") if all_data else redis_one(["HGET", f"room:{room_id}", "participants"])
     if legacy_json:
         try:
             return json.loads(legacy_json)
@@ -52,12 +63,26 @@ def get_room_participants(room_id: str) -> dict:
 
 
 def get_room_leaderboard_dict(room_id: str) -> dict:
-    """Fetch leaderboard dictionary, supporting both atomic hash and legacy JSON field."""
+    """Fetch leaderboard dictionary packed within room:{room_id} hash."""
     import json
+    all_data = hgetall(f"room:{room_id}")
+    leaderboard = {}
+    if all_data:
+        for k, v in all_data.items():
+            if k.startswith("score:"):
+                sid = k[len("score:"):]
+                try:
+                    leaderboard[sid] = float(v) if "." in str(v) else int(v)
+                except Exception:
+                    leaderboard[sid] = 0
+    if leaderboard:
+        return leaderboard
+
+    # Fallback to separate hash or legacy JSON field
     raw_hash = hgetall(f"room:{room_id}:leaderboard")
     if raw_hash:
         return raw_hash
-    legacy_json = redis_one(["HGET", f"room:{room_id}", "leaderboard"])
+    legacy_json = all_data.get("leaderboard") if all_data else redis_one(["HGET", f"room:{room_id}", "leaderboard"])
     if legacy_json:
         try:
             return json.loads(legacy_json)
@@ -67,12 +92,23 @@ def get_room_leaderboard_dict(room_id: str) -> dict:
 
 
 def get_room_kicked_dict(room_id: str) -> dict:
-    """Fetch kicked dictionary, supporting both atomic hash and legacy JSON field."""
+    """Fetch kicked dictionary packed within room:{room_id} hash."""
     import json
+    all_data = hgetall(f"room:{room_id}")
+    kicked = {}
+    if all_data:
+        for k, v in all_data.items():
+            if k.startswith("kicked:"):
+                sid = k[len("kicked:"):]
+                kicked[sid] = v
+    if kicked:
+        return kicked
+
+    # Fallback to separate hash or legacy JSON field
     raw_hash = hgetall(f"room:{room_id}:kicked")
     if raw_hash:
         return raw_hash
-    legacy_json = redis_one(["HGET", f"room:{room_id}", "kicked"])
+    legacy_json = all_data.get("kicked") if all_data else redis_one(["HGET", f"room:{room_id}", "kicked"])
     if legacy_json:
         try:
             parsed = json.loads(legacy_json)

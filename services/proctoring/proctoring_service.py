@@ -13,7 +13,7 @@ from services.shared.redis_client import (
 class ProctoringService:
     @staticmethod
     def record_violation(room_id: str, student_id: str, violation_type: str) -> dict:
-        p_val = redis_one(["HGET", f"room:{room_id}:participants", student_id])
+        p_val = redis_one(["HGET", f"room:{room_id}", f"participant:{student_id}"])
         if not p_val:
             p_val = (get_room_participants(room_id) or {}).get(student_id)
         if not p_val:
@@ -37,8 +37,8 @@ class ProctoringService:
         p["lastFlaggedAt"] = int(time.time())
 
         redis_cmd([
-            ["HSET", f"room:{room_id}:participants", student_id, json.dumps(p)],
-            ["EXPIRE", f"room:{room_id}:participants", str(60 * 60 * 24 * 7)],
+            ["HSET", f"room:{room_id}", f"participant:{student_id}", json.dumps(p)],
+            ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ])
 
         return {
@@ -49,7 +49,7 @@ class ProctoringService:
 
     @staticmethod
     def self_kick(room_id: str, student_id: str, reason: str = "Terminated: Proctoring Rules Violation") -> bool:
-        p_val = redis_one(["HGET", f"room:{room_id}:participants", student_id])
+        p_val = redis_one(["HGET", f"room:{room_id}", f"participant:{student_id}"])
         if not p_val:
             p_val = (get_room_participants(room_id) or {}).get(student_id)
         if p_val:
@@ -59,15 +59,14 @@ class ProctoringService:
                 p = {}
             p["finished"] = True
             p["finishedAt"] = int(time.time())
-            redis_cmd([
-                ["HSET", f"room:{room_id}:participants", student_id, json.dumps(p)],
-                ["EXPIRE", f"room:{room_id}:participants", str(60 * 60 * 24 * 7)],
-            ])
+            p_json = json.dumps(p)
+        else:
+            p_json = json.dumps({"finished": True, "finishedAt": int(time.time())})
 
         pipeline = [
-            ["HSET", f"room:{room_id}:kicked", student_id, reason],
-            ["HDEL", f"room:{room_id}:leaderboard", student_id],
-            ["EXPIRE", f"room:{room_id}:kicked", str(60 * 60 * 24 * 7)],
+            ["HSET", f"room:{room_id}", f"participant:{student_id}", p_json, f"kicked:{student_id}", reason],
+            ["HDEL", f"room:{room_id}", f"score:{student_id}"],
+            ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ]
         redis_cmd(pipeline)
         return True
@@ -79,11 +78,11 @@ class ProctoringService:
             raise PermissionError("Unauthorized")
 
         pipeline = [
-            ["HSET", f"room:{room_id}:kicked", student_id, "Removed by Mentor"],
-            ["EXPIRE", f"room:{room_id}:kicked", str(60 * 60 * 24 * 7)],
+            ["HSET", f"room:{room_id}", f"kicked:{student_id}", "Removed by Mentor"],
+            ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ]
         if not keep_leaderboard:
-            pipeline.append(["HDEL", f"room:{room_id}:leaderboard", student_id])
+            pipeline.append(["HDEL", f"room:{room_id}", f"score:{student_id}"])
 
         redis_cmd(pipeline)
         return True
@@ -105,7 +104,7 @@ class ProctoringService:
                 except Exception:
                     pass
 
-        p_val = redis_one(["HGET", f"room:{room_id}:participants", student_id])
+        p_val = redis_one(["HGET", f"room:{room_id}", f"participant:{student_id}"])
         if not p_val:
             p_val = (get_room_participants(room_id) or {}).get(student_id)
         if p_val:
@@ -113,18 +112,16 @@ class ProctoringService:
                 p = json.loads(p_val) if isinstance(p_val, str) else p_val
                 p["finished"] = False
                 p.pop("finishedAt", None)
-                redis_cmd([
-                    ["HSET", f"room:{room_id}:participants", student_id, json.dumps(p)],
-                    ["EXPIRE", f"room:{room_id}:participants", str(60 * 60 * 24 * 7)],
-                ])
+                p_json = json.dumps(p)
             except Exception:
-                pass
+                p_json = json.dumps({"finished": False})
+        else:
+            p_json = json.dumps({"finished": False})
 
         score_str = str(int(total_score) if isinstance(total_score, (int, float)) and float(total_score).is_integer() else total_score)
         pipeline = [
-            ["HDEL", f"room:{room_id}:kicked", student_id],
-            ["HSET", f"room:{room_id}:leaderboard", student_id, score_str],
-            ["EXPIRE", f"room:{room_id}:leaderboard", str(60 * 60 * 24 * 7)],
+            ["HDEL", f"room:{room_id}", f"kicked:{student_id}"],
+            ["HSET", f"room:{room_id}", f"participant:{student_id}", p_json, f"score:{student_id}", score_str],
             ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ]
         redis_cmd(pipeline)
