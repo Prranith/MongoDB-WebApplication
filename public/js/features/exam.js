@@ -187,7 +187,7 @@ const ExamPortal = (() => {
           <div class="exam-participant-name">${p.name || 'Unknown'}</div>
           <div class="exam-participant-meta">
             <span>${p.rollNo || '-'}</span>
-            <span class="exam-participant-branch">${p.branch || '-'}</span>
+            <span class="exam-participant-branch">${p.branch || '-'}${p.section ? ' (Sec ' + p.section + ')' : ''}</span>
           </div>
         </div>
         <span class="exam-participant-time">${timeAgo(p.joinedAt)}</span>
@@ -2302,27 +2302,88 @@ const ExamPortal = (() => {
 
     async joinRoom() {
       const name = el('student-name').value.trim();
-      const rollNo = el('student-roll').value.trim();
+      const rollNo = el('student-roll').value.trim().toUpperCase();
       const branch = el('student-branch').value;
+      const section = (el('student-section') ? el('student-section').value.trim().toUpperCase() : 'A') || 'A';
       const roomId = el('student-room-id').value.trim().toUpperCase();
 
-      // Validation
+      // Strict Validation
       let valid = true;
-      if (!name) { el('student-name').classList.add('has-err'); el('student-name-err').textContent='// Name is required'; el('student-name-err').style.display='block'; valid=false; }
-      else { el('student-name').classList.remove('has-err'); el('student-name-err').style.display='none'; }
-      if (!rollNo) { el('student-roll').classList.add('has-err'); el('student-roll-err').textContent='// Roll number is required'; el('student-roll-err').style.display='block'; valid=false; }
-      else { el('student-roll').classList.remove('has-err'); el('student-roll-err').style.display='none'; }
-      if (!branch) { el('student-branch').classList.add('has-err'); el('student-branch-err').textContent='// Select a branch'; el('student-branch-err').style.display='block'; valid=false; }
-      else { el('student-branch').classList.remove('has-err'); el('student-branch-err').style.display='none'; }
-      if (!roomId || roomId.length < 7) { el('student-room-id').classList.add('has-err'); el('student-room-err').textContent='// Enter a valid Room ID (e.g. MNG-4X9)'; el('student-room-err').style.display='block'; valid=false; }
-      else { el('student-room-id').classList.remove('has-err'); el('student-room-err').style.display='none'; }
+      
+      // Name: minimum 3 chars, letters/spaces/dots/hyphens only
+      if (!name || name.length < 3) {
+        el('student-name').classList.add('has-err');
+        el('student-name-err').textContent = '// Full Name must be at least 3 characters';
+        el('student-name-err').style.display = 'block';
+        valid = false;
+      } else if (!/^[a-zA-Z\s\.\-']+$/.test(name)) {
+        el('student-name').classList.add('has-err');
+        el('student-name-err').textContent = '// Name can only contain letters, spaces, or dots';
+        el('student-name-err').style.display = 'block';
+        valid = false;
+      } else {
+        el('student-name').classList.remove('has-err');
+        el('student-name-err').style.display = 'none';
+      }
+
+      // Roll Number: alphanumeric, 3-20 chars
+      if (!rollNo || rollNo.length < 3) {
+        el('student-roll').classList.add('has-err');
+        el('student-roll-err').textContent = '// Valid Roll number required (min 3 chars)';
+        el('student-roll-err').style.display = 'block';
+        valid = false;
+      } else if (!/^[A-Z0-9\-]+$/.test(rollNo)) {
+        el('student-roll').classList.add('has-err');
+        el('student-roll-err').textContent = '// Roll number must be alphanumeric (no special symbols)';
+        el('student-roll-err').style.display = 'block';
+        valid = false;
+      } else {
+        el('student-roll').classList.remove('has-err');
+        el('student-roll-err').style.display = 'none';
+      }
+
+      // Branch
+      if (!branch) {
+        el('student-branch').classList.add('has-err');
+        el('student-branch-err').textContent = '// Select a branch';
+        el('student-branch-err').style.display = 'block';
+        valid = false;
+      } else {
+        el('student-branch').classList.remove('has-err');
+        el('student-branch-err').style.display = 'none';
+      }
+
+      // Section
+      if (!section || !/^[A-Z0-9\-]+$/.test(section)) {
+        if (el('student-section')) el('student-section').classList.add('has-err');
+        if (el('student-section-err')) {
+          el('student-section-err').textContent = '// Enter a valid Section';
+          el('student-section-err').style.display = 'block';
+        }
+        valid = false;
+      } else {
+        if (el('student-section')) el('student-section').classList.remove('has-err');
+        if (el('student-section-err')) el('student-section-err').style.display = 'none';
+      }
+
+      // Room ID
+      if (!roomId || roomId.length < 7) {
+        el('student-room-id').classList.add('has-err');
+        el('student-room-err').textContent = '// Enter a valid Room ID (e.g. MNG-4X9)';
+        el('student-room-err').style.display = 'block';
+        valid = false;
+      } else {
+        el('student-room-id').classList.remove('has-err');
+        el('student-room-err').style.display = 'none';
+      }
+
       if (!valid) return;
 
       el('btn-join-room').disabled = true;
-      el('btn-join-room').textContent = 'Joining...';
+      el('btn-join-room').textContent = 'Verifying & Joining...';
 
       const res = await apiCall(`/api/exam/room/${roomId}/join`, 'POST', {
-        name, rollNo, branch,
+        name, rollNo, branch, section
       });
 
       el('btn-join-room').disabled = false;
@@ -2334,6 +2395,7 @@ const ExamPortal = (() => {
         state.student.name = name;
         state.student.rollNo = rollNo;
         state.student.branch = branch;
+        state.student.section = section;
 
         // Persist
         localStorage.setItem('exam_student_id', res.studentId);
@@ -2351,7 +2413,7 @@ const ExamPortal = (() => {
           showPanel('exam-thankyou-panel');
           return;
         }
-        el('student-join-err').textContent = res.message || res.error || '// Failed to join room';
+        el('student-join-err').textContent = res.message || res.error || '// Verification Failed: Unable to join room';
         el('student-join-err').style.display = 'block';
       }
     },

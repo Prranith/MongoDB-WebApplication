@@ -166,8 +166,32 @@ class RoomService:
         }
 
     @staticmethod
-    def join_room(room_id: str, name: str, roll_no: str, branch: str) -> dict:
-        fields = ["title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt"]
+    def join_room(room_id: str, name: str, roll_no: str, branch: str, section: str = "A") -> dict:
+        import re
+        
+        # 1. Strict Sanitization & Validation
+        clean_name = " ".join((name or "").strip().split())
+        clean_roll = (roll_no or "").strip().upper()
+        clean_branch = (branch or "").strip().upper()
+        clean_section = (section or "A").strip().upper()
+
+        if len(clean_name) < 3 or len(clean_name) > 60:
+            raise ValueError("Full name must be between 3 and 60 characters.")
+        
+        if not re.match(r"^[a-zA-Z\s\.\-']+$", clean_name):
+            raise ValueError("Full name can only contain letters, spaces, dots, or hyphens.")
+
+        if not re.match(r"^[A-Z0-9\-]{3,20}$", clean_roll):
+            raise ValueError("Roll number must be valid alphanumeric (3-20 characters, no spaces or special symbols).")
+
+        if not clean_branch:
+            raise ValueError("Branch selection is required.")
+
+        if not re.match(r"^[A-Z0-9\-]{1,10}$", clean_section):
+            raise ValueError("Section must be valid alphanumeric (1-10 characters).")
+
+        # 2. Fetch Room State
+        fields = ["title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt", "isLocked"]
         raw = redis_one(["HMGET", f"room:{room_id}"] + fields)
         if not raw or all(v is None for v in raw):
             raise KeyError("Room not found")
@@ -177,26 +201,38 @@ class RoomService:
             if v is not None:
                 meta[k] = v
 
-        status = meta.get("status", "")
-        if status not in ("waiting", "live"):
-            raise ValueError(f"Room is {status or 'closed'}")
+        status = meta.get("status", "waiting")
+        is_locked = meta.get("isLocked") == "1" or status == "ended"
 
         participants_raw = get_room_participants(room_id)
         existing_student_id = None
         
+        # 3. Strict Identity Integrity Check
         if participants_raw:
             for sid, p_val in participants_raw.items():
                 try:
                     p = json.loads(p_val) if isinstance(p_val, str) else p_val
-                    if p.get("rollNo") == roll_no:
-                        if p.get("name", "").lower() == name.lower():
-                            existing_student_id = sid
-                        else:
-                            raise PermissionError("Roll number already in use by another name")
+                    if p.get("rollNo", "").strip().upper() == clean_roll:
+                        reg_name = p.get("name", "").strip()
+                        reg_branch = p.get("branch", "").strip().upper()
+                        reg_section = p.get("section", "A").strip().upper()
+
+                        if reg_name.lower() != clean_name.lower():
+                            raise PermissionError(
+                                f"Identity Mismatch: Roll Number '{clean_roll}' is already registered to '{reg_name}' ({reg_branch} - Sec {reg_section}). Impersonation is strictly prohibited."
+                            )
+                        existing_student_id = sid
                 except PermissionError:
                     raise
                 except Exception:
                     pass
+
+        # 4. Enforce Room Lock & Admission Rules
+        if is_locked and not existing_student_id:
+            raise ValueError("This exam room has ended and is permanently locked. New student registrations are closed.")
+
+        if not is_locked and status not in ("waiting", "live"):
+            raise ValueError(f"Room is {status or 'closed'}")
 
         kicked_raw = get_room_kicked_dict(room_id)
 
@@ -219,7 +255,6 @@ class RoomService:
 
         now = int(time.time())
         if existing_student_id:
-            # Preserve original joinedAt and existing student details if present
             p_val = participants_raw.get(existing_student_id)
             orig_joined = now
             if p_val:
@@ -229,20 +264,18 @@ class RoomService:
                 except Exception:
                     pass
             student_data = {
-                "name": name,
-                "rollNo": roll_no,
-                "branch": branch,
+                "name": clean_name,
+                "rollNo": clean_roll,
+                "branch": clean_branch,
+                "section": clean_section,
                 "joinedAt": orig_joined
             }
-            # Update participant profile without clobbering existing score
             pipeline = [
                 ["HSET", f"room:{room_id}", f"participant:{student_id}", json.dumps(student_data)],
                 ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)]
             ]
-            # Ensure score field exists if not already present
             existing_score = redis_one(["HGET", f"room:{room_id}", f"score:{student_id}"])
             if existing_score is None:
-                # Recalculate score from existing submissions if any
                 subs_json = redis_one(["HGET", f"room:{room_id}", f"submissions:{student_id}"])
                 total_score = 0
                 if subs_json:
@@ -256,9 +289,10 @@ class RoomService:
                 pipeline.insert(1, ["HSET", f"room:{room_id}", f"score:{student_id}", str(total_score)])
         else:
             student_data = {
-                "name": name,
-                "rollNo": roll_no,
-                "branch": branch,
+                "name": clean_name,
+                "rollNo": clean_roll,
+                "branch": clean_branch,
+                "section": clean_section,
                 "joinedAt": now
             }
             pipeline = [
@@ -271,8 +305,21 @@ class RoomService:
             "studentId": student_id,
             "roomId": room_id,
             "roomTitle": meta.get("title", ""),
-            "roomStatus": meta.get("status", "waiting")
+            "roomStatus": meta.get("status", "waiting"),
+            "isLocked": is_locked
         }
+
+    @staticmethod
+    def toggle_room_lock(room_id: str, mentor_id: str, lock_state: bool) -> bool:
+        meta = hgetall(room_key(room_id))
+        if not meta:
+            raise KeyError("Room not found")
+        if meta.get("mentorId") != mentor_id:
+            raise PermissionError("Unauthorized")
+
+        val = "1" if lock_state else "0"
+        redis_cmd([["HSET", f"room:{room_id}", "isLocked", val]])
+        return lock_state
 
     @staticmethod
     def start_room(room_id: str, mentor_id: str) -> int:

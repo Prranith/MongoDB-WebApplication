@@ -998,19 +998,30 @@
         <input class="exam-input" id="student-roll" type="text" placeholder="e.g. 21R11A0501" autocomplete="off"/>
         <div class="exam-input-err" id="student-roll-err" style="display:none"></div>
       </div>
-      <div class="exam-field">
-        <label class="exam-label" for="student-branch">Branch</label>
-        <select class="exam-select" id="student-branch">
-          <option value="">Select branch...</option>
-          <option>CSE</option>
-          <option>IT</option>
-          <option>ECE</option>
-          <option>EEE</option>
-          <option>MECH</option>
-          <option>CIVIL</option>
-          <option>Other</option>
-        </select>
-        <div class="exam-input-err" id="student-branch-err" style="display:none"></div>
+      <div style="display:flex;gap:12px">
+        <div class="exam-field" style="flex:1">
+          <label class="exam-label" for="student-branch">Branch</label>
+          <select class="exam-select" id="student-branch">
+            <option value="">Select branch...</option>
+            <option value="CSE">CSE</option>
+            <option value="IT">IT</option>
+            <option value="ECE">ECE</option>
+            <option value="EEE">EEE</option>
+            <option value="AIDS">AI & DS</option>
+            <option value="AIML">AI & ML</option>
+            <option value="CSBS">CSBS</option>
+            <option value="MECH">MECH</option>
+            <option value="CIVIL">CIVIL</option>
+            <option value="OTHER">Other</option>
+          </select>
+          <div class="exam-input-err" id="student-branch-err" style="display:none"></div>
+        </div>
+        <div class="exam-field" style="width:110px">
+          <label class="exam-label" for="student-section">Section</label>
+          <input class="exam-input" id="student-section" type="text" placeholder="e.g. A" maxlength="10"
+            style="text-transform:uppercase" autocomplete="off"/>
+          <div class="exam-input-err" id="student-section-err" style="display:none"></div>
+        </div>
       </div>
       <div class="exam-field">
         <label class="exam-label" for="student-room-id">Room ID</label>

@@ -91,23 +91,25 @@ def api_exam_get_room_status(room_id: str):
 
 @exam_bp.route("/api/exam/room/<room_id>/join", methods=["POST"])
 def api_exam_join_room(room_id: str):
-    """Student joins a room."""
+    """Student joins a room with strict credential validation."""
     body = request.get_json(force=True, silent=True) or {}
     name = body.get("name", "").strip()
     roll_no = body.get("rollNo", "").strip()
     branch = body.get("branch", "").strip()
+    section = body.get("section", "A").strip()
 
     if not name or not roll_no or not branch:
         return jsonify({"status": "error", "error": "Name, Roll No, and Branch are required"}), 400
 
     try:
-        res = RoomService.join_room(room_id, name, roll_no, branch)
+        res = RoomService.join_room(room_id, name, roll_no, branch, section)
         return jsonify({
             "status": "ok",
             "studentId": res["studentId"],
             "roomId": res["roomId"],
             "roomTitle": res["roomTitle"],
-            "roomStatus": res["roomStatus"]
+            "roomStatus": res["roomStatus"],
+            "isLocked": res.get("isLocked", False)
         })
     except KeyError as e:
         return jsonify({"status": "error", "error": str(e)}), 404
@@ -124,6 +126,23 @@ def api_exam_join_room(room_id: str):
             "error": "already_submitted",
             "message": "Thanks for writing the test. Your test is already submitted."
         }), 403
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+@exam_bp.route("/api/exam/room/<room_id>/lock", methods=["POST"])
+def api_exam_toggle_lock(room_id: str):
+    """Mentor locks or unlocks the room."""
+    body = request.get_json(force=True, silent=True) or {}
+    mentor_id = body.get("mentorId", "")
+    lock_state = bool(body.get("isLocked", True))
+    try:
+        res = RoomService.toggle_room_lock(room_id, mentor_id, lock_state)
+        return jsonify({"status": "ok", "isLocked": res})
+    except KeyError as e:
+        return jsonify({"status": "error", "error": str(e)}), 404
+    except PermissionError as e:
+        return jsonify({"status": "error", "error": str(e)}), 403
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
 
