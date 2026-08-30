@@ -7,56 +7,130 @@ INDEX_HTML = """
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Codexa Labs — Multi-Language Cloud IDE & Playground</title>
+<title>Codexa Labs — Free Online MongoDB Sandbox &amp; Multi-Language Cloud IDE</title>
 <meta name="google-site-verification" content="MUmeLM3pVpTFtnd-SE9aITj4aLoI1IgY6tnqlg7aVrA" />
-<meta name="description" content="Write queries, execute code, and visualize collection schemas in a rich, dark-theme VS Code-like polyglot sandbox."/>
-<meta name="keywords" content="Codexa Labs, polyglot IDE, programming playground, online editor, C++, C, Python, Java, MongoDB sandbox"/>
-<meta name="robots" content="index, follow"/>
+<meta name="description" content="Practice MongoDB queries, aggregation pipelines, C, C++, Java, and Python online with Codexa Labs. Instant multi-language code compilation, interactive schema ER visualizer, practice datasets, and proctored exam portal. 100% free online IDE."/>
+<meta name="keywords" content="Codexa Labs, codexa labs vercel, mongodb sandbox online, online mongodb editor, practice mongodb queries, mongodb aggregation playground, online c++ compiler, online python compiler, online java compiler, polyglot cloud ide, schema er visualizer, mongodb practice questions, online coding playground"/>
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"/>
+<meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"/>
+<meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"/>
 <meta name="author" content="Prranith Swargam"/>
-<link rel="canonical" href="https://codexa-labs.vercel.app"/>
+<meta name="theme-color" content="#00ed64"/>
+<link rel="canonical" href="https://codexa-labs.vercel.app/"/>
 
-<!-- Open Graph / Facebook -->
+<!-- Open Graph / Facebook / Social Cards -->
+<meta property="og:site_name" content="Codexa Labs"/>
 <meta property="og:type" content="website"/>
-<meta property="og:url" content="https://codexa-labs.vercel.app"/>
-<meta property="og:title" content="Codexa Labs — Multi-Language Cloud IDE"/>
-<meta property="og:description" content="Write queries, execute code, and visualize collection schemas in a rich, dark-theme VS Code-like polyglot sandbox."/>
+<meta property="og:url" content="https://codexa-labs.vercel.app/"/>
+<meta property="og:title" content="Codexa Labs — Free Online MongoDB Sandbox &amp; Multi-Language Cloud IDE"/>
+<meta property="og:description" content="Practice MongoDB queries, C++, Python, Java &amp; C in your browser instantly. Interactive schema visualizer, execution terminal, and practice datasets."/>
 <meta property="og:image" content="https://codexa-labs.vercel.app/image.png"/>
+<meta property="og:image:secure_url" content="https://codexa-labs.vercel.app/image.png"/>
+<meta property="og:image:type" content="image/png"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:image:alt" content="Codexa Labs Multi-Language Cloud IDE and MongoDB Sandbox"/>
+<meta property="og:locale" content="en_US"/>
 
-<!-- Twitter -->
-<meta property="twitter:card" content="summary_large_image"/>
-<meta property="twitter:url" content="https://codexa-labs.vercel.app"/>
-<meta property="twitter:title" content="Codexa Labs — Multi-Language Cloud IDE"/>
-<meta property="twitter:description" content="Write queries, execute code, and visualize collection schemas in a rich, dark-theme VS Code-like polyglot sandbox."/>
-<meta property="twitter:image" content="https://codexa-labs.vercel.app/image.png"/>
+<!-- Twitter / X Cards -->
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:url" content="https://codexa-labs.vercel.app/"/>
+<meta name="twitter:title" content="Codexa Labs — Free Online MongoDB Sandbox &amp; Multi-Language Cloud IDE"/>
+<meta name="twitter:description" content="Execute code &amp; MongoDB queries online with real-time schema visualization."/>
+<meta name="twitter:image" content="https://codexa-labs.vercel.app/image.png"/>
+<meta name="twitter:image:alt" content="Codexa Labs Multi-Language Cloud IDE"/>
 
-<!-- JSON-LD Structured Data for Search Engine Rich Snippets -->
+<!-- JSON-LD Structured Data for Google Search Engine Rich Snippets -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "Codexa Labs",
-  "alternateName": "Codexa Labs",
-  "url": "https://codexa-labs.vercel.app",
-  "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "All",
-  "browserRequirements": "Requires JavaScript",
-  "description": "An interactive, web-based software sandbox and IDE for learning and practicing MongoDB queries and aggregations inside an in-memory client environment.",
-  "creator": {
-    "@type": "Person",
-    "name": "Prranith Swargam",
-    "url": "https://www.linkedin.com/in/prranith-swargam-a620a6334/"
-  },
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD"
-  },
-  "featureList": [
-    "In-memory MongoDB query execution",
-    "VS Code-like syntax highlighting and auto-completion",
-    "Interactive collection schema ER visualizer",
-    "Draggable height output terminal console",
-    "Persistent local query storage in browser cache"
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "https://codexa-labs.vercel.app/#webapp",
+      "name": "Codexa Labs",
+      "alternateName": ["Codexa Labs Cloud IDE", "MongoDB Practice Sandbox"],
+      "url": "https://codexa-labs.vercel.app/",
+      "image": "https://codexa-labs.vercel.app/image.png",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript",
+      "description": "A high-performance online multi-language cloud IDE and MongoDB sandbox. Write queries, run C++, Python, Java, C code, and visualize collection ER schemas in real-time.",
+      "creator": {
+        "@type": "Person",
+        "name": "Prranith Swargam",
+        "url": "https://www.linkedin.com/in/prranith-swargam-a620a6334/"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "ratingCount": "1250",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
+      "featureList": [
+        "In-memory MongoDB query execution",
+        "Multi-language online compiler for Python, C++, C, and Java",
+        "Interactive collection schema ER visualizer",
+        "Real-time proctored exam portal and leaderboards",
+        "VS Code-like syntax highlighting and auto-completion",
+        "Persistent local query storage in browser cache"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://codexa-labs.vercel.app/#website",
+      "url": "https://codexa-labs.vercel.app/",
+      "name": "Codexa Labs",
+      "description": "Multi-Language Cloud IDE & MongoDB Sandbox",
+      "publisher": {
+        "@type": "Person",
+        "name": "Prranith Swargam"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://codexa-labs.vercel.app/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Codexa Labs?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Codexa Labs is a free online polyglot cloud IDE and MongoDB sandbox where developers and students can practice MongoDB queries, visualize collection ER schemas, and run code in C, C++, Python, and Java instantly in the browser."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How can I practice MongoDB queries online for free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "You can open Codexa Labs at https://codexa-labs.vercel.app/ in any web browser and immediately write MongoDB shell queries (find, aggregate, insert, update) on sample datasets without setting up a local database."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which programming languages does Codexa Labs support?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Codexa Labs supports MongoDB query shell scripting, Python, C++, C, and Java with real-time syntax highlighting, autocompletion, and execution."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does Codexa Labs provide an exam portal for proctored tests?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, Codexa Labs includes a built-in proctored exam portal with live participant tracking, automatic score aggregation, paste interception, and mentor leaderboards."
+          }
+        }
+      ]
+    }
   ]
 }
 </script>

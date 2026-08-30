@@ -1,4 +1,13 @@
 User-agent: *
 Allow: /
+Disallow: /api/exam/private/
 
-Sitemap: https://practice-mongodb.vercel.app/sitemap.xml
+# Sitemaps
+Sitemap: https://codexa-labs.vercel.app/sitemap.xml
+
+# Search Crawlers Rules
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /

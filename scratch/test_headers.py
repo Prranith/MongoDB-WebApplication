@@ -1,6 +1,6 @@
 import urllib.request
 
-url = "https://practice-mongodb.vercel.app//sitemap.xml"
+url = "https://codexa-labs.vercel.app/sitemap.xml"
 req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"})
 
 try:
