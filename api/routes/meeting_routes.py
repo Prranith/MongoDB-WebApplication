@@ -61,7 +61,7 @@ def api_meeting_join():
         return _json_response({"status": "error", "error": "roomId is required"}, status=400)
 
     try:
-        res = MeetingService.join_room(room_id, participant_name, peer_id or f"Peer-{uuid_short()}")
+        res = MeetingService.join_room(room_id, participant_name, peer_id)
         return _json_response({
             "status": "ok",
             **res,

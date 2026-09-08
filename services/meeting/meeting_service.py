@@ -71,12 +71,11 @@ class MeetingService:
             room = {
                 "roomId": room_id,
                 "hostName": participant_name,
-                "hostPeerId": peer_id,
+                "hostPeerId": peer_id if peer_id else "",
                 "createdAt": now,
                 "activeAt": now,
                 "participantCount": 0,
                 "isOpen": True,
-                "_activePeers": {peer_id},
             }
             cls._rooms[room_id] = room
             cls._participant_counts[room_id] = 0
@@ -85,8 +84,8 @@ class MeetingService:
         if not room.get("isOpen", True):
             raise ValueError(f"Room '{room_id}' is closed")
 
-        # Track host peer ID on first join
-        if not room.get("hostPeerId") and peer_id:
+        # Track host peer ID on first join with a real peer_id
+        if peer_id and not room.get("hostPeerId"):
             room["hostPeerId"] = peer_id
 
         # Idempotent join: only count the peer once per room. The frontend

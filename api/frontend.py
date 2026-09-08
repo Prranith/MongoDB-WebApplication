@@ -4031,6 +4031,53 @@ li.CodeMirror-hint-active {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
+.meeting-waiting-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: var(--meeting-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--meeting-border);
+  border-radius: 12px;
+  padding: 32px 40px;
+  max-width: 480px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  z-index: 5;
+  animation: fadeIn 0.3s ease;
+}
+
+.meeting-waiting-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 237, 100, 0.12);
+  border: 1px solid rgba(0, 237, 100, 0.3);
+  color: var(--meeting-emerald);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin: 14px 0 10px 0;
+}
+
+.meeting-waiting-desc {
+  font-size: 13px;
+  color: var(--meeting-text2);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.meeting-waiting-actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
 .meeting-local-tile {
   width: 220px;
   height: 160px;
@@ -4039,12 +4086,21 @@ li.CodeMirror-hint-active {
   right: 24px;
   z-index: 10;
   border-color: var(--meeting-emerald);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.meeting-video-area.meeting-solo .meeting-local-tile {
+  width: 280px;
+  height: 200px;
+  bottom: 90px;
+  right: 32px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 237, 100, 0.2);
 }
 
 .meeting-remote-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
   width: 100%;
   height: 100%;
   align-content: center;
@@ -12667,7 +12723,23 @@ window.ExamPortal = ExamPortal;
   </div>
 
   <!-- Video grid area -->
-  <div id="meeting-video-area" class="meeting-video-area">
+  <div id="meeting-video-area" class="meeting-video-area meeting-solo">
+    <!-- Solo Waiting Card -->
+    <div id="meeting-waiting-card" class="meeting-waiting-card">
+      <div style="font-size:32px;margin-bottom:6px">👥</div>
+      <h3 style="font-size:18px;font-weight:600;color:#f8fafc;margin-bottom:4px">You're the only one here</h3>
+      <div class="meeting-waiting-badge" id="meeting-waiting-room-id">MTG-ROOM</div>
+      <p class="meeting-waiting-desc">Share this Room ID with others to invite them to this video call & screen share.</p>
+      <div class="meeting-waiting-actions">
+        <button class="meeting-btn meeting-btn-primary" onclick="MeetingRoom.copyRoomId()" style="display:flex;align-items:center;gap:6px">
+          📋 Copy Room ID
+        </button>
+        <button class="meeting-btn meeting-btn-secondary" onclick="MeetingRoom.copyInviteLink()" style="display:flex;align-items:center;gap:6px">
+          🔗 Copy Invite Link
+        </button>
+      </div>
+    </div>
+
     <div id="meeting-local-video" class="meeting-video-tile meeting-local-tile">
       <video id="local-video-el" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;background:#111827;border-radius:6px"></video>
       <div class="meeting-initials-overlay" id="local-initials" style="display:none">
@@ -12834,6 +12906,42 @@ const MeetingRoom = (() => {
       els.participantCount.textContent =
         total === 1 ? "1 participant" : total + " participants";
     }
+
+    // Toggle waiting screen vs multi-participant grid
+    const waitingCard = document.getElementById("meeting-waiting-card");
+    const waitingBadge = document.getElementById("meeting-waiting-room-id");
+    const videoArea = els.videoArea;
+    if (waitingBadge && state.roomId) {
+      waitingBadge.textContent = state.roomId;
+    }
+    if (waitingCard && videoArea) {
+      if (peers === 0) {
+        waitingCard.style.display = "flex";
+        videoArea.classList.add("meeting-solo");
+      } else {
+        waitingCard.style.display = "none";
+        videoArea.classList.remove("meeting-solo");
+      }
+    }
+  }
+
+  function copyRoomId() {
+    if (!state.roomId) return;
+    navigator.clipboard.writeText(state.roomId).then(() => {
+      toast("Room ID copied to clipboard: " + state.roomId, "success");
+    }).catch(() => {
+      toast("Room ID: " + state.roomId, "success");
+    });
+  }
+
+  function copyInviteLink() {
+    if (!state.roomId) return;
+    const url = window.location.origin + window.location.pathname + "?room=" + encodeURIComponent(state.roomId);
+    navigator.clipboard.writeText(url).then(() => {
+      toast("Invite link copied to clipboard!", "success");
+    }).catch(() => {
+      toast("Invite link copied!", "success");
+    });
   }
 
   function setControlButton(btn, on, label) {
@@ -12880,6 +12988,8 @@ const MeetingRoom = (() => {
   window.MeetingRoom = {
     toggleMeeting,
     closeMeeting,
+    copyRoomId,
+    copyInviteLink,
   };
 
   function generateRoomId() {
@@ -12925,23 +13035,6 @@ const MeetingRoom = (() => {
         showStatus("Network error creating room.", "error");
         return;
       }
-    }
-
-    // Validate room exists / join
-    try {
-      const joinRes = await fetch("/api/meeting/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, participantName: name, peerId: "" }),
-      });
-      const joinData = await joinRes.json();
-      if (joinData.status !== "ok") {
-        showStatus("Cannot join room: " + (joinData.error || "unknown"), "error");
-        return;
-      }
-    } catch (err) {
-      showStatus("Network error joining room.", "error");
-      return;
     }
 
     hideStatus();
@@ -13043,16 +13136,25 @@ const MeetingRoom = (() => {
       handleDataConnection(conn);
     });
 
+    let _pendingHostConnect = false;
+
     state.peer.on("error", (err) => {
       console.warn("[Meeting] PeerJS error:", err.type, err.message);
       if (err.type === "peer-unavailable") {
-        toast("Peer unavailable. Share the Room ID and try again.", "error");
+        // Only surface this error if we were expecting to connect to a host
+        // and haven't already established a call. Transient failures during
+        // connectToPeer are handled inline and should not spam the user.
+        if (_pendingHostConnect && state.participants[err.message || ""]) {
+          toast("Peer unavailable. Share the Room ID and try again.", "error");
+        }
       }
     });
 
-    // Heartbeat: re-join on reconnect
+    // Heartbeat: re-join on reconnect (only while the call is still active
+    // and the peer is alive; disconnectPeer sets callActive=false and nulls
+    // the peer, so this interval becomes a no-op after leave/end).
     setInterval(() => {
-      if (state.callActive && state.roomId) {
+      if (state.callActive && state.roomId && state.peer && !state.peer.destroyed) {
         fetch("/api/meeting/join", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -13066,22 +13168,39 @@ const MeetingRoom = (() => {
     if (!state.peer || !targetPeerId) return;
     if (state.participants[targetPeerId] && state.participants[targetPeerId].call) return;
 
+    // Mark that we are trying to reach this peer so the global error handler
+    // can distinguish a transient connectToPeer failure from a real problem.
+    _pendingHostConnect = true;
+
     const stream = state.localStream || new MediaStream();
     const call = state.peer.call(targetPeerId, stream);
     if (call) {
       call.on("stream", (remoteStream) => {
+        _pendingHostConnect = false;
         handleRemoteStream(targetPeerId, remoteStream, call);
       });
       call.on("close", () => {
+        _pendingHostConnect = false;
         removeParticipant(targetPeerId);
       });
       call.on("error", (err) => {
+        _pendingHostConnect = false;
         console.warn("[Meeting] Call error with peer", targetPeerId, err);
+        // If the call fails, clean up the participant entry so the UI
+        // doesn't show a stale tile and the global handler doesn't
+        // re-surface a peer-unavailable toast.
+        if (state.participants[targetPeerId]) {
+          delete state.participants[targetPeerId];
+        }
       });
     }
 
     const conn = state.peer.connect(targetPeerId);
     if (conn) {
+      conn.on("error", (err) => {
+        _pendingHostConnect = false;
+        console.warn("[Meeting] Data connection error to", targetPeerId, err);
+      });
       handleDataConnection(conn);
     }
   }
@@ -13698,6 +13817,8 @@ const MeetingRoom = (() => {
     closeMeeting,
     joinMeeting,
     generateRoomId,
+    copyRoomId,
+    copyInviteLink,
     toggleMic,
     toggleCamera,
     toggleScreenShare,

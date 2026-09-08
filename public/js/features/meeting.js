@@ -106,6 +106,42 @@ const MeetingRoom = (() => {
       els.participantCount.textContent =
         total === 1 ? "1 participant" : total + " participants";
     }
+
+    // Toggle waiting screen vs multi-participant grid
+    const waitingCard = document.getElementById("meeting-waiting-card");
+    const waitingBadge = document.getElementById("meeting-waiting-room-id");
+    const videoArea = els.videoArea;
+    if (waitingBadge && state.roomId) {
+      waitingBadge.textContent = state.roomId;
+    }
+    if (waitingCard && videoArea) {
+      if (peers === 0) {
+        waitingCard.style.display = "flex";
+        videoArea.classList.add("meeting-solo");
+      } else {
+        waitingCard.style.display = "none";
+        videoArea.classList.remove("meeting-solo");
+      }
+    }
+  }
+
+  function copyRoomId() {
+    if (!state.roomId) return;
+    navigator.clipboard.writeText(state.roomId).then(() => {
+      toast("Room ID copied to clipboard: " + state.roomId, "success");
+    }).catch(() => {
+      toast("Room ID: " + state.roomId, "success");
+    });
+  }
+
+  function copyInviteLink() {
+    if (!state.roomId) return;
+    const url = window.location.origin + window.location.pathname + "?room=" + encodeURIComponent(state.roomId);
+    navigator.clipboard.writeText(url).then(() => {
+      toast("Invite link copied to clipboard!", "success");
+    }).catch(() => {
+      toast("Invite link copied!", "success");
+    });
   }
 
   function setControlButton(btn, on, label) {
@@ -152,6 +188,8 @@ const MeetingRoom = (() => {
   window.MeetingRoom = {
     toggleMeeting,
     closeMeeting,
+    copyRoomId,
+    copyInviteLink,
   };
 
   function generateRoomId() {
@@ -979,6 +1017,8 @@ const MeetingRoom = (() => {
     closeMeeting,
     joinMeeting,
     generateRoomId,
+    copyRoomId,
+    copyInviteLink,
     toggleMic,
     toggleCamera,
     toggleScreenShare,

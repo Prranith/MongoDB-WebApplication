@@ -1634,7 +1634,23 @@ db.collection.find({})</textarea>
   </div>
 
   <!-- Video grid area -->
-  <div id="meeting-video-area" class="meeting-video-area">
+  <div id="meeting-video-area" class="meeting-video-area meeting-solo">
+    <!-- Solo Waiting Card -->
+    <div id="meeting-waiting-card" class="meeting-waiting-card">
+      <div style="font-size:32px;margin-bottom:6px">👥</div>
+      <h3 style="font-size:18px;font-weight:600;color:#f8fafc;margin-bottom:4px">You're the only one here</h3>
+      <div class="meeting-waiting-badge" id="meeting-waiting-room-id">MTG-ROOM</div>
+      <p class="meeting-waiting-desc">Share this Room ID with others to invite them to this video call & screen share.</p>
+      <div class="meeting-waiting-actions">
+        <button class="meeting-btn meeting-btn-primary" onclick="MeetingRoom.copyRoomId()" style="display:flex;align-items:center;gap:6px">
+          📋 Copy Room ID
+        </button>
+        <button class="meeting-btn meeting-btn-secondary" onclick="MeetingRoom.copyInviteLink()" style="display:flex;align-items:center;gap:6px">
+          🔗 Copy Invite Link
+        </button>
+      </div>
+    </div>
+
     <div id="meeting-local-video" class="meeting-video-tile meeting-local-tile">
       <video id="local-video-el" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;background:#111827;border-radius:6px"></video>
       <div class="meeting-initials-overlay" id="local-initials" style="display:none">
