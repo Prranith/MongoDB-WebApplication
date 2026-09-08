@@ -144,6 +144,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <!-- Style Sheet -->
 <link rel="stylesheet" href="style.css"/>
@@ -683,6 +684,7 @@
 <script src="js/features/execution.js"></script>
 <script src="js/features/editor.js"></script>
 <script src="js/main.js"></script>
+<script src="js/features/meeting.js"></script>
 
 <!-- ══ EXAM PORTAL OVERLAYS ══════════════════════════════════════════════ -->
 
@@ -725,8 +727,120 @@
   </div>
 </div>
 
-<!-- Mentor: Create Room -->
-<div class="exam-overlay" id="exam-mentor-create-panel">
+<!-- ══ MEETING / VIDEO CALL OVERLAY ═══════════════════════════════════════════ -->
+<div class="exam-overlay" id="meeting-modal">
+  <div class="meeting-container">
+    <div class="meeting-topbar">
+      <button class="exam-topbar-back" onclick="Meeting.closeMeeting()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        Leave Meeting
+      </button>
+      <span class="exam-topbar-title">Codexa Labs — Live Collaboration</span>
+      <div class="meeting-room-id" id="meeting-room-display">DEV-XXXXXX</div>
+    </div>
+    
+    <!-- Join Screen -->
+    <div id="meeting-join-screen" class="meeting-screen active">
+      <div class="meeting-logo">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="#00ed64"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.07-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      </div>
+      <h2 class="meeting-title">Start or Join a Live Session</h2>
+      <p class="meeting-subtitle">Collaborate in real-time with video, screen sharing, and chat</p>
+
+      <div class="meeting-field">
+        <input type="text" id="meeting-user-name" class="meeting-input" placeholder="Your Name (e.g. Alex Dev)" maxlength="30" autocomplete="off"/>
+      </div>
+      
+      <div class="meeting-field">
+        <input type="text" id="meeting-room-id" class="meeting-input" placeholder="Room ID (e.g. DEV-8932) or leave blank for auto" maxlength="20" autocomplete="off"/>
+      </div>
+
+      <button class="meeting-join-btn" onclick="Meeting.joinRoom()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Join Meeting
+      </button>
+
+      <button class="meeting-random-btn" onclick="Meeting.generateAndJoin()">
+        Create Random Room
+      </button>
+    </div>
+
+    <!-- Active Meeting View -->
+    <div id="meeting-active-screen" class="meeting-screen">
+      <!-- Video Grid -->
+      <div id="meeting-video-container" class="meeting-video-container">
+        <!-- Local user video (mirrors self) -->
+        <div class="video-tile video-local" id="video-local">
+          <video id="local-video" autoplay playsinline muted></video>
+          <div class="video-overlay">
+            <div class="video-avatar" id="local-avatar">?</div>
+            <div class="video-name" id="local-name">You</div>
+            <div class="video-controls-local">
+              <button class="meeting-ctrl-btn" id="btn-mic" onclick="Meeting.toggleMic()" title="Toggle Microphone">
+                <svg class="icon-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                <svg class="icon-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 8.93V4a3 3 0 0 0-5.14-.6"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+              </button>
+              <button class="meeting-ctrl-btn" id="btn-cam" onclick="Meeting.toggleCam()" title="Toggle Camera">
+                <svg class="icon-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                <svg class="icon-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+              <button class="meeting-ctrl-btn meeting-ctrl-primary" id="btn-screen" onclick="Meeting.toggleScreenShare()" title="Share Screen">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Remote participants grid -->
+        <div id="meeting-remote-grid" class="meeting-remote-grid"></div>
+      </div>
+
+      <!-- Chat Drawer -->
+      <div id="meeting-chat-drawer" class="meeting-chat-drawer">
+        <div class="meeting-chat-header">
+          <span>💬 Meeting Chat</span>
+          <button class="meeting-ctrl-btn" onclick="Meeting.toggleChat()" title="Close Chat">×</button>
+        </div>
+        <div class="meeting-chat-messages" id="meeting-chat-messages"></div>
+        <div class="meeting-chat-input-area">
+          <input type="text" id="meeting-chat-input" class="meeting-chat-input" placeholder="Type a message..." maxlength="500" onkeydown="if(event.key==='Enter') Meeting.sendChat()"/>
+          <button class="meeting-send-btn" onclick="Meeting.sendChat()">Send</button>
+        </div>
+      </div>
+
+      <!-- Floating Control Bar -->
+      <div class="meeting-control-bar" id="meeting-control-bar">
+        <div class="meeting-ctrl-group">
+          <span class="meeting-participant-count" id="meeting-participant-count">1 participant</span>
+        </div>
+        <div class="meeting-ctrl-group">
+          <button class="meeting-ctrl-btn" id="btn-mic-bar" onclick="Meeting.toggleMic()" title="Toggle Microphone">
+            <svg class="icon-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+            <svg class="icon-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 8.93V4a3 3 0 0 0-5.14-.6"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+          </button>
+          <button class="meeting-ctrl-btn" id="btn-cam-bar" onclick="Meeting.toggleCam()" title="Toggle Camera">
+            <svg class="icon-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            <svg class="icon-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+          <button class="meeting-ctrl-btn meeting-ctrl-primary" onclick="Meeting.toggleScreenShare()" title="Share Screen">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </button>
+          <button class="meeting-ctrl-btn" onclick="Meeting.toggleChat()" title="Chat">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </button>
+          <button class="meeting-ctrl-btn meeting-ctrl-danger" onclick="Meeting.endMeeting()" title="End Meeting">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EXAM PORTAL OVERLAYS ══════════════════════════════════════════════ -->
+
+<!-- Role Selection -->
+<div class="exam-overlay" id="exam-role-panel">
   <div class="exam-topbar">
     <button class="exam-topbar-back" onclick="ExamPortal.showRoleSelection()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
