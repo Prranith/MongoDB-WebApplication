@@ -12945,13 +12945,13 @@ const MeetingRoom = (() => {
     }
 
     hideStatus();
-    startCall(roomId, name);
+    await startCall(roomId, name);
   }
 
   window.MeetingRoom.joinMeeting = joinMeeting;
 
   // ─── PeerJS / WebRTC ───────────────────────────────────────────────────
-  function startCall(roomId, name) {
+  async function startCall(roomId, name) {
     state.roomId = roomId;
     state.peerId = "peer-" + Math.random().toString(36).substring(2, 10);
 
@@ -13021,7 +13021,14 @@ const MeetingRoom = (() => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roomId: state.roomId, participantName: state.userName, peerId: state.peerId }),
-      }).catch(() => {});
+      })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.hostPeerId && data.hostPeerId !== state.peerId) {
+          connectToPeer(data.hostPeerId);
+        }
+      })
+      .catch(() => {});
 
       toast("Connected to " + state.roomId, "success");
       addSystemMessage("You joined " + state.roomId);
@@ -13053,6 +13060,30 @@ const MeetingRoom = (() => {
         }).catch(() => {});
       }
     }, 15000);
+  }
+
+  function connectToPeer(targetPeerId) {
+    if (!state.peer || !targetPeerId) return;
+    if (state.participants[targetPeerId] && state.participants[targetPeerId].call) return;
+
+    const stream = state.localStream || new MediaStream();
+    const call = state.peer.call(targetPeerId, stream);
+    if (call) {
+      call.on("stream", (remoteStream) => {
+        handleRemoteStream(targetPeerId, remoteStream, call);
+      });
+      call.on("close", () => {
+        removeParticipant(targetPeerId);
+      });
+      call.on("error", (err) => {
+        console.warn("[Meeting] Call error with peer", targetPeerId, err);
+      });
+    }
+
+    const conn = state.peer.connect(targetPeerId);
+    if (conn) {
+      handleDataConnection(conn);
+    }
   }
 
   function handleIncomingCall(call) {

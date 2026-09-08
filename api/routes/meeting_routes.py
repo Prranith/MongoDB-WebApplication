@@ -4,6 +4,7 @@ Meeting room REST API — decoupled from media.
 Handles room lifecycle only; all media is P2P via PeerJS.
 """
 
+import uuid
 import sys
 from pathlib import Path
 from flask import Blueprint, request, jsonify, g
@@ -20,6 +21,10 @@ log = bind_component(get_logger(__name__), "meeting_api")
 
 def _json_response(payload, status=200):
     return jsonify(payload), status
+
+
+def uuid_short() -> str:
+    return uuid.uuid4().hex[:8]
 
 
 @meeting_bp.route("/api/meeting/create", methods=["POST"])
@@ -55,7 +60,7 @@ def api_meeting_join():
         return _json_response({"status": "error", "error": "roomId is required"}, status=400)
 
     try:
-        res = MeetingService.join_room(room_id, participant_name, peer_id or f" Peer-{uuid_short()}")
+        res = MeetingService.join_room(room_id, participant_name, peer_id or f"Peer-{uuid_short()}")
         return _json_response({
             "status": "ok",
             **res,
