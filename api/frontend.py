@@ -413,6 +413,25 @@ body {
   border-left-color: #cccccc;
 }
 
+.act-btn-meeting {
+  color: #00ed64;
+}
+
+.act-btn-meeting:hover {
+  color: #00ff7f;
+  background: rgba(0, 237, 100, 0.08);
+}
+
+.act-btn-meeting.active {
+  color: #00ed64;
+  border-left-color: #00ed64;
+  box-shadow: inset 0 0 8px rgba(0, 237, 100, 0.25);
+}
+
+.act-btn-meeting.active svg {
+  filter: drop-shadow(0 0 4px rgba(0, 237, 100, 0.6));
+}
+
 .act-btn svg {
   width: 24px;
   height: 24px;
@@ -4571,6 +4590,10 @@ li.CodeMirror-hint-active {
     <!-- 7th: Exam Portal -->
     <button class="act-btn" id="act-exam" data-tip="Exam Portal" onclick="window.ExamPortal && window.ExamPortal.showRoleSelection()">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+    </button>
+    <!-- 8th: Join Call (video meeting) — always visible in activity bar -->
+    <button class="act-btn act-btn-meeting" id="btn-join-meeting" data-tip="Join Video Call" onclick="MeetingRoom.toggleMeeting()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
     </button>
     <div class="act-spacer"></div>
     <!-- Bottom: Settings gear -->
@@ -12592,10 +12615,7 @@ window.ExamPortal = ExamPortal;
 
 <!-- ══ MEETING / VIDEO CALL FEATURE ═══════════════════════════════════════ -->
 <!-- Join Meeting Button (in title bar) -->
-<button class="tbtn tbtn-meeting" id="btn-join-meeting" onclick="MeetingRoom.toggleMeeting()" title="Start / Join Video Call" style="padding: 2px 8px; font-size: 11px; height: 22px; border-radius: 3px; display: flex; align-items: center; gap: 4px; border: 1px solid #00ed64; background: rgba(0,237,100,0.12); color: #00ed64; cursor: pointer;">
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-  Join Call
-</button>
+
 
 <!-- ══ MEETING MODAL ═══════════════════════════════════════════════════════ -->
 <div class="modal-bg" id="meeting-modal">
@@ -13152,6 +13172,9 @@ const MeetingRoom = (() => {
     leavePresentationMode();
     updateControlUI();
     updateParticipantCount();
+    // Reset activity bar button
+    if (els.joinBtn) els.joinBtn.classList.remove("active");
+
   }
 
   // ─── Local video / initials ────────────────────────────────────────────
@@ -13272,6 +13295,11 @@ const MeetingRoom = (() => {
 
     els.micBtn.classList.toggle("muted", !state.isMicOn);
     els.camBtn.classList.toggle("muted", !state.isCamOn);
+    // Update activity bar button state
+    const actBtn = els.joinBtn;
+    if (actBtn) {
+      actBtn.classList.toggle("active", state.callActive);
+    }
   }
 
   function toggleMic() {

@@ -444,6 +444,9 @@ const MeetingRoom = (() => {
     leavePresentationMode();
     updateControlUI();
     updateParticipantCount();
+    // Reset activity bar button
+    if (els.joinBtn) els.joinBtn.classList.remove("active");
+
   }
 
   // ─── Local video / initials ────────────────────────────────────────────
@@ -564,6 +567,11 @@ const MeetingRoom = (() => {
 
     els.micBtn.classList.toggle("muted", !state.isMicOn);
     els.camBtn.classList.toggle("muted", !state.isCamOn);
+    // Update activity bar button state
+    const actBtn = els.joinBtn;
+    if (actBtn) {
+      actBtn.classList.toggle("active", state.callActive);
+    }
   }
 
   function toggleMic() {

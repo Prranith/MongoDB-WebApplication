@@ -260,6 +260,25 @@ body {
   border-left-color: #cccccc;
 }
 
+.act-btn-meeting {
+  color: #00ed64;
+}
+
+.act-btn-meeting:hover {
+  color: #00ff7f;
+  background: rgba(0, 237, 100, 0.08);
+}
+
+.act-btn-meeting.active {
+  color: #00ed64;
+  border-left-color: #00ed64;
+  box-shadow: inset 0 0 8px rgba(0, 237, 100, 0.25);
+}
+
+.act-btn-meeting.active svg {
+  filter: drop-shadow(0 0 4px rgba(0, 237, 100, 0.6));
+}
+
 .act-btn svg {
   width: 24px;
   height: 24px;
