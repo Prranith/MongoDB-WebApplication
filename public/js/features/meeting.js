@@ -199,23 +199,6 @@ const MeetingRoom = (() => {
       }
     }
 
-    // Validate room exists / join
-    try {
-      const joinRes = await fetch("/api/meeting/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, participantName: name, peerId: "" }),
-      });
-      const joinData = await joinRes.json();
-      if (joinData.status !== "ok") {
-        showStatus("Cannot join room: " + (joinData.error || "unknown"), "error");
-        return;
-      }
-    } catch (err) {
-      showStatus("Network error joining room.", "error");
-      return;
-    }
-
     hideStatus();
     await startCall(roomId, name);
   }
@@ -315,16 +298,25 @@ const MeetingRoom = (() => {
       handleDataConnection(conn);
     });
 
+    let _pendingHostConnect = false;
+
     state.peer.on("error", (err) => {
       console.warn("[Meeting] PeerJS error:", err.type, err.message);
       if (err.type === "peer-unavailable") {
-        toast("Peer unavailable. Share the Room ID and try again.", "error");
+        // Only surface this error if we were expecting to connect to a host
+        // and haven't already established a call. Transient failures during
+        // connectToPeer are handled inline and should not spam the user.
+        if (_pendingHostConnect && state.participants[err.message || ""]) {
+          toast("Peer unavailable. Share the Room ID and try again.", "error");
+        }
       }
     });
 
-    // Heartbeat: re-join on reconnect
+    // Heartbeat: re-join on reconnect (only while the call is still active
+    // and the peer is alive; disconnectPeer sets callActive=false and nulls
+    // the peer, so this interval becomes a no-op after leave/end).
     setInterval(() => {
-      if (state.callActive && state.roomId) {
+      if (state.callActive && state.roomId && state.peer && !state.peer.destroyed) {
         fetch("/api/meeting/join", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -338,22 +330,39 @@ const MeetingRoom = (() => {
     if (!state.peer || !targetPeerId) return;
     if (state.participants[targetPeerId] && state.participants[targetPeerId].call) return;
 
+    // Mark that we are trying to reach this peer so the global error handler
+    // can distinguish a transient connectToPeer failure from a real problem.
+    _pendingHostConnect = true;
+
     const stream = state.localStream || new MediaStream();
     const call = state.peer.call(targetPeerId, stream);
     if (call) {
       call.on("stream", (remoteStream) => {
+        _pendingHostConnect = false;
         handleRemoteStream(targetPeerId, remoteStream, call);
       });
       call.on("close", () => {
+        _pendingHostConnect = false;
         removeParticipant(targetPeerId);
       });
       call.on("error", (err) => {
+        _pendingHostConnect = false;
         console.warn("[Meeting] Call error with peer", targetPeerId, err);
+        // If the call fails, clean up the participant entry so the UI
+        // doesn't show a stale tile and the global handler doesn't
+        // re-surface a peer-unavailable toast.
+        if (state.participants[targetPeerId]) {
+          delete state.participants[targetPeerId];
+        }
       });
     }
 
     const conn = state.peer.connect(targetPeerId);
     if (conn) {
+      conn.on("error", (err) => {
+        _pendingHostConnect = false;
+        console.warn("[Meeting] Data connection error to", targetPeerId, err);
+      });
       handleDataConnection(conn);
     }
   }

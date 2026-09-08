@@ -44,6 +44,7 @@ class MeetingService:
             "activeAt": now,
             "participantCount": 0,
             "isOpen": True,
+            "_activePeers": set(),
         }
         cls._rooms[room_id] = room
         cls._participant_counts[room_id] = 0
@@ -75,6 +76,7 @@ class MeetingService:
                 "activeAt": now,
                 "participantCount": 0,
                 "isOpen": True,
+                "_activePeers": {peer_id},
             }
             cls._rooms[room_id] = room
             cls._participant_counts[room_id] = 0
@@ -87,7 +89,17 @@ class MeetingService:
         if not room.get("hostPeerId") and peer_id:
             room["hostPeerId"] = peer_id
 
-        count = cls._participant_counts.get(room_id, 0) + 1
+        # Idempotent join: only count the peer once per room. The frontend
+        # re-calls /join on a 15s heartbeat and on reconnect; counting each
+        # as a new participant would inflate the count and make leave cleanup
+        # leave stale rooms behind.
+        active_peers = room.get("_activePeers", set())
+        is_new = peer_id and peer_id not in active_peers
+        if is_new:
+            active_peers.add(peer_id)
+            room["_activePeers"] = active_peers
+
+        count = len(active_peers)
         cls._participant_counts[room_id] = count
         room["participantCount"] = count
         room["activeAt"] = _now_iso()
@@ -97,6 +109,7 @@ class MeetingService:
             room_id=room_id,
             participant_name=participant_name,
             participant_count=count,
+            is_new_participant=is_new,
         )
         return {
             "roomId": room_id,
@@ -108,28 +121,36 @@ class MeetingService:
     @classmethod
     def leave_room(cls, room_id: str, peer_id: str) -> Dict[str, Any]:
         """
-        Decrement participant count on leave.
-        If count reaches 0, destroy the room record entirely.
+        Remove the peer from the room's active set and auto-destroy the room
+        record if no peers remain. Uses the same _activePeers set that
+        join_room maintains so leave is idempotent and count stays accurate.
         """
         room = cls._rooms.get(room_id)
         if not room:
             return {"roomId": room_id, "destroyed": False, "reason": "not_found"}
 
-        count = cls._participant_counts.get(room_id, 0)
-        new_count = max(0, count - 1)
+        active_peers = room.get("_activePeers", set())
+        removed = False
+        if peer_id and peer_id in active_peers:
+            active_peers.discard(peer_id)
+            room["_activePeers"] = active_peers
+            removed = True
+
+        new_count = len(active_peers)
         cls._participant_counts[room_id] = new_count
         room["participantCount"] = new_count
         room["activeAt"] = _now_iso()
+
+        destroyed = False
+        if new_count <= 0:
+            destroyed = cls.destroy_room(room_id)
 
         log.info(
             "meeting_room_left",
             room_id=room_id,
             remaining_count=new_count,
+            peer_removed=removed,
         )
-
-        destroyed = False
-        if new_count <= 0:
-            destroyed = cls.destroy_room(room_id)
 
         return {
             "roomId": room_id,
