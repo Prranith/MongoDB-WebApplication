@@ -1,7 +1,7 @@
 import sys
 import json
 from pathlib import Path
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from bson import json_util
 
 ROOT = Path(__file__).parent.parent.parent
@@ -11,6 +11,13 @@ from core.database import db_manager
 from core.web_executor import execute as web_execute
 from core.snippets import snippet_registry
 from utils.analytics import analytics_tracker
+from utils.logger import get_logger, bind_component
+
+from services.shared.cache import get_cache_manager, cache_key_for_query, sha_signature
+from services.shared.pagination import sanitize_offset_pagination, MAX_OFFSET_PAGE_SIZE
+from services.shared.idempotency import get_idempotency_key_from_request, serialize_idempotency_body, IdempotencyHandler, MemoryIdempotencyStore
+
+log = bind_component(get_logger(__name__), "database_api")
 
 database_bp = Blueprint("database_bp", __name__)
 
@@ -18,11 +25,23 @@ def _bson_safe(obj):
     """Serialize any BSON types to JSON-safe primitives."""
     return json.loads(json_util.dumps(obj))
 
+
+def _json_response(payload, status=200):
+    """Emit a JSON response with correlation context already attached upstream."""
+    return jsonify(payload), status
+
+
+# Idempotency for mutating sandbox runs (additive only)
+_idem_store = MemoryIdempotencyStore()
+_idem_handler = IdempotencyHandler(_idem_store, default_ttl_seconds=120)
+
+
 # ── API: Collections ──────────────────────────────────────────────────────────
 
 @database_bp.route("/api/collections", methods=["GET"])
 def api_collections():
     """List all available collections with document counts."""
+    log.debug("collections_requested", correlation_id=g.get("correlation_id"))
     names = db_manager.list_collections()
     result = []
     for name in names:
@@ -31,7 +50,7 @@ def api_collections():
             "name": name,
             "count": stats.get("count", 0),
         })
-    return jsonify({"collections": result})
+    return _json_response({"collections": result})
 
 
 # ── API: Query Execution ──────────────────────────────────────────────────────
@@ -91,7 +110,7 @@ def api_query():
     custom_collections = body.get("custom_collections", {})
 
     if not raw_query:
-        return jsonify({"status": "error", "error": "Empty query"}), 400
+        return _json_response({"status": "error", "error": "Empty query"}, status=400)
 
     # Track analytics
     analytics_tracker.record_query_executed()
@@ -103,7 +122,7 @@ def api_query():
         result = web_execute(raw_query, max_results=limit)
 
     payload = result.to_dict()
-    return jsonify(payload)
+    return _json_response(payload)
 
 
 # ── API: Schema ───────────────────────────────────────────────────────────────
@@ -114,7 +133,7 @@ def api_schema():
     schemas = {}
     for name in db_manager.list_collections():
         schemas[name] = db_manager.get_schema_for_collection(name, sample_size=50)
-    return jsonify({"schemas": schemas})
+    return _json_response({"schemas": schemas})
 
 
 @database_bp.route("/api/schema/<collection>", methods=["GET"])
@@ -123,7 +142,7 @@ def api_schema_collection(collection):
     schema = db_manager.get_schema_for_collection(collection, sample_size=100)
     stats = db_manager.get_collection_stats(collection)
     analytics_tracker.record_profile_visit(collection)
-    return jsonify({
+    return _json_response({
         "collection": collection,
         "count": stats.get("count", 0),
         "schema": schema,
@@ -136,13 +155,14 @@ def api_schema_collection(collection):
 def api_sample(collection):
     """Return sample documents from a collection."""
     limit = int(request.args.get("limit", 5))
+    limit = max(1, min(limit, MAX_OFFSET_PAGE_SIZE))
     if collection not in db_manager.list_collections():
-        return jsonify({"error": f"Collection '{collection}' not found"}), 404
+        return _json_response({"error": f"Collection '{collection}' not found"}, status=404)
     coll = db_manager.get_collection(collection)
     if coll is None:
-        return jsonify({"error": f"Collection '{collection}' not found"}), 404
+        return _json_response({"error": f"Collection '{collection}' not found"}, status=404)
     docs = list(coll.find().limit(limit))
-    return jsonify({"collection": collection, "documents": _bson_safe(docs)})
+    return _json_response({"collection": collection, "documents": _bson_safe(docs)})
 
 
 # ── API: Snippets ─────────────────────────────────────────────────────────────
@@ -163,7 +183,7 @@ def api_snippets():
             }
             for s in snips
         ]
-    return jsonify({"snippets": result})
+    return _json_response({"snippets": result})
 
 
 @database_bp.route("/api/sandbox/run", methods=["POST"])
@@ -182,7 +202,7 @@ def api_sandbox_run():
     except (ValueError, TypeError):
         code_val = 0
         
-    return jsonify({
+    return _json_response({
         "status": "ok",
         "stdout": res.get("stdout", ""),
         "stderr": res.get("stderr", ""),

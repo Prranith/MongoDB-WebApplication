@@ -6,7 +6,7 @@ Decomposed controller layer delegating to domain services.
 
 import sys
 from pathlib import Path
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
@@ -16,16 +16,23 @@ from services.submission.submission_service import SubmissionService
 from services.proctoring.proctoring_service import ProctoringService
 from services.leaderboard.leaderboard_service import LeaderboardService
 from services.compiler.compiler_service import CompilerService
+from utils.logger import get_logger, bind_component
 
 exam_bp = Blueprint("exam_bp", __name__)
+log = bind_component(get_logger(__name__), "exam_api")
 
 # Expose run_piston_code helper for backwards compatibility
 run_piston_code = CompilerService.run_piston_code
 
 
+def _json_response(payload, status=200):
+    return jsonify(payload), status
+
+
 @exam_bp.route("/api/exam/room/create", methods=["POST"])
 def api_exam_create_room():
     """Create a new exam room."""
+    log.info("room_create_requested", correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     title = body.get("title", "Untitled Assessment").strip()
     mentor_id = body.get("mentorId", "")
@@ -36,27 +43,29 @@ def api_exam_create_room():
     max_exits = int(body.get("maxFullscreenExits", 5))
 
     if not title:
-        return jsonify({"status": "error", "error": "Title is required"}), 400
+        return _json_response({"status": "error", "error": "Title is required"}, status=400)
 
     try:
         res = RoomService.create_room(title, mentor_id, timed, duration, fullscreen_mode, block_copypaste, max_exits)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "roomId": res["roomId"],
             "mentorId": res["mentorId"],
             "title": res["title"]
         })
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 503
+        log.error("room_create_failed", error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=503)
 
 
 @exam_bp.route("/api/exam/room/<room_id>", methods=["GET"])
 def api_exam_get_room(room_id: str):
     """Fetch room metadata + questions + participants."""
     mentor_id = request.args.get("mentorId", "")
+    log.debug("room_get_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
         res = RoomService.get_room(room_id, mentor_id)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "roomId": res["roomId"],
             "meta": res["meta"],
@@ -66,17 +75,19 @@ def api_exam_get_room(room_id: str):
             "kicked": res["kicked"]
         })
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("room_get_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/status", methods=["GET"])
 def api_exam_get_room_status(room_id: str):
     """Lightweight status check for room metadata and kicked list."""
+    log.debug("room_status_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
         res = RoomService.get_room_status(room_id)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "roomStatus": res["roomStatus"],
             "startedAt": res["startedAt"],
@@ -84,14 +95,16 @@ def api_exam_get_room_status(room_id: str):
             "kicked": res["kicked"]
         })
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("room_status_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/join", methods=["POST"])
 def api_exam_join_room(room_id: str):
     """Student joins a room with strict credential validation."""
+    log.info("room_join_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     name = body.get("name", "").strip()
     roll_no = body.get("rollNo", "").strip()
@@ -99,11 +112,11 @@ def api_exam_join_room(room_id: str):
     section = body.get("section", "A").strip()
 
     if not name or not roll_no or not branch:
-        return jsonify({"status": "error", "error": "Name, Roll No, and Branch are required"}), 400
+        return _json_response({"status": "error", "error": "Name, Roll No, and Branch are required"}, status=400)
 
     try:
         res = RoomService.join_room(room_id, name, roll_no, branch, section)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "studentId": res["studentId"],
             "roomId": res["roomId"],
@@ -112,104 +125,114 @@ def api_exam_join_room(room_id: str):
             "isLocked": res.get("isLocked", False)
         })
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except ValueError as e:
-        return jsonify({"status": "error", "error": str(e)}), 400
+        return _json_response({"status": "error", "error": str(e)}, status=400)
     except PermissionError as e:
         err_msg = str(e)
         if err_msg.startswith("kicked:"):
-            return jsonify({"status": "error", "error": "kicked", "message": err_msg[7:]}), 403
-        return jsonify({"status": "error", "error": err_msg}), 403
+            return _json_response({"status": "error", "error": "kicked", "message": err_msg[7:]}, status=403)
+        return _json_response({"status": "error", "error": err_msg}, status=403)
     except FileExistsError as e:
-        return jsonify({
+        return _json_response({
             "status": "error",
             "error": "already_submitted",
             "message": "Thanks for writing the test. Your test is already submitted."
-        }), 403
+        }, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("room_join_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/lock", methods=["POST"])
 def api_exam_toggle_lock(room_id: str):
     """Mentor locks or unlocks the room."""
+    log.info("room_lock_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     lock_state = bool(body.get("isLocked", True))
     try:
         res = RoomService.toggle_room_lock(room_id, mentor_id, lock_state)
-        return jsonify({"status": "ok", "isLocked": res})
+        return _json_response({"status": "ok", "isLocked": res})
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("room_lock_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/start", methods=["POST"])
 def api_exam_start_room(room_id: str):
     """Mentor starts the exam."""
+    log.info("room_start_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     try:
         started_at = RoomService.start_room(room_id, mentor_id)
-        return jsonify({"status": "ok", "startedAt": started_at})
+        return _json_response({"status": "ok", "startedAt": started_at})
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("room_start_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/end", methods=["POST"])
 def api_exam_end_room(room_id: str):
     """Mentor ends the exam."""
+    log.info("room_end_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     try:
         ended_at = RoomService.end_room(room_id, mentor_id)
-        return jsonify({"status": "ok", "endedAt": ended_at})
+        return _json_response({"status": "ok", "endedAt": ended_at})
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("room_end_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/questions", methods=["POST"])
 def api_exam_save_questions(room_id: str):
     """Save questions array for a room."""
+    log.info("room_questions_save_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     questions = body.get("questions", [])
     try:
         count = RoomService.save_questions(room_id, mentor_id, questions)
-        return jsonify({"status": "ok", "count": count})
+        return _json_response({"status": "ok", "count": count})
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("room_questions_save_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/dataset", methods=["POST"])
 def api_exam_upload_dataset(room_id: str):
     """Upload a dataset for a room."""
+    log.info("dataset_upload_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     name = body.get("name", "dataset").strip()
     docs = body.get("docs", [])
 
     if not isinstance(docs, list):
-        return jsonify({"status": "error", "error": "docs must be a JSON array"}), 400
+        return _json_response({"status": "error", "error": "docs must be a JSON array"}, status=400)
 
     try:
         res = SubmissionService.upload_dataset(room_id, mentor_id, name, docs)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "datasetId": res["datasetId"],
             "name": res["name"],
@@ -217,33 +240,37 @@ def api_exam_upload_dataset(room_id: str):
             "docCount": res["docCount"]
         })
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("dataset_upload_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/dataset/<dataset_id>", methods=["DELETE"])
 def api_exam_delete_dataset(room_id: str, dataset_id: str):
     """Delete a dataset from a room."""
+    log.info("dataset_delete_requested", room_id=room_id, dataset_id=dataset_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     try:
         SubmissionService.delete_dataset(room_id, mentor_id, dataset_id)
-        return jsonify({"status": "ok"})
+        return _json_response({"status": "ok"})
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("dataset_delete_failed", room_id=room_id, dataset_id=dataset_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/dataset/<dataset_id>/schema", methods=["GET"])
 def api_exam_dataset_schema(room_id: str, dataset_id: str):
     """Get schema for a room dataset."""
+    log.debug("dataset_schema_requested", room_id=room_id, dataset_id=dataset_id, correlation_id=g.get("correlation_id"))
     try:
         res = SubmissionService.get_dataset_schema(room_id, dataset_id)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "schema": res["schema"],
             "collection": res["collection"],
@@ -251,33 +278,37 @@ def api_exam_dataset_schema(room_id: str, dataset_id: str):
             "sampleDocs": res["sampleDocs"]
         })
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except ValueError as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        return _json_response({"status": "error", "error": str(e)}, status=500)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("dataset_schema_failed", room_id=room_id, dataset_id=dataset_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/query", methods=["POST"])
 def api_exam_run_query(room_id: str):
     """Execute a query against a room dataset."""
+    log.info("room_query_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     dataset_ids = body.get("datasetIds", [])
     if not dataset_ids and body.get("datasetId"):
         dataset_ids = [body.get("datasetId")]
     query = body.get("query", "").strip()
     limit = int(body.get("limit", 100))
+    limit = max(1, min(limit, 100000))
 
     if not dataset_ids or not query:
-        return jsonify({"status": "error", "error": "datasetIds and query are required"}), 400
+        return _json_response({"status": "error", "error": "datasetIds and query are required"}, status=400)
 
     result = SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=limit)
-    return jsonify(result)
+    return _json_response(result)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/freeze", methods=["POST"])
 def api_exam_freeze_answer(room_id: str):
     """Mentor: run query and freeze the answer for a question."""
+    log.info("freeze_answer_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     question_id = body.get("questionId", "")
@@ -287,27 +318,29 @@ def api_exam_freeze_answer(room_id: str):
     query = body.get("query", "").strip()
 
     if not question_id or not dataset_ids or not query:
-        return jsonify({"status": "error", "error": "questionId, datasetIds, and query are required"}), 400
+        return _json_response({"status": "error", "error": "questionId, datasetIds, and query are required"}, status=400)
 
     try:
         res = SubmissionService.freeze_answer(room_id, mentor_id, question_id, dataset_ids, query)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "questionId": res["questionId"],
             "docCount": res["docCount"],
             "preview": res["preview"]
         })
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except ValueError as e:
-        return jsonify({"status": "error", "error": str(e)}), 400
+        return _json_response({"status": "error", "error": str(e)}, status=400)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("freeze_answer_failed", room_id=room_id, question_id=question_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/submit", methods=["POST"])
 def api_exam_submit_answer(room_id: str):
     """Student submits an answer."""
+    log.info("submission_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     student_id = body.get("studentId", "")
     question_id = body.get("questionId", "")
@@ -315,14 +348,14 @@ def api_exam_submit_answer(room_id: str):
     marks = int(body.get("marks", 0))
 
     if not student_id or not question_id:
-        return jsonify({"status": "error", "error": "studentId and questionId are required"}), 400
+        return _json_response({"status": "error", "error": "studentId and questionId are required"}, status=400)
 
     try:
         res = SubmissionService.submit_answer(room_id, student_id, question_id, q_type, marks, body)
         
         # Check if it was an auto-save operation
         if res.get("autoSaved"):
-            return jsonify({
+            return _json_response({
                 "status": "ok",
                 "score": res["score"],
                 "maxMarks": res["maxMarks"],
@@ -339,53 +372,59 @@ def api_exam_submit_answer(room_id: str):
             ret_data["passedCount"] = res["passedCount"]
             ret_data["totalCount"] = res["totalCount"]
 
-        return jsonify(ret_data)
+        return _json_response(ret_data)
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except ValueError as e:
-        return jsonify({"status": "error", "error": str(e)}), 400
+        return _json_response({"status": "error", "error": str(e)}, status=400)
     except PermissionError as e:
         err_msg = str(e)
         if err_msg.startswith("kicked:"):
-            return jsonify({"status": "error", "error": "kicked", "message": err_msg[7:]}), 403
-        return jsonify({"status": "error", "error": err_msg}), 403
+            return _json_response({"status": "error", "error": "kicked", "message": err_msg[7:]}, status=403)
+        return _json_response({"status": "error", "error": err_msg}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("submission_failed", room_id=room_id, student_id=student_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/expected-preview", methods=["GET"])
 def api_exam_expected_preview(room_id: str, question_id: str):
     """Retrieve frozen expected answer preview."""
+    log.debug("expected_preview_requested", room_id=room_id, question_id=question_id, correlation_id=g.get("correlation_id"))
     try:
         res = SubmissionService.get_expected_preview(room_id, question_id)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "docCount": res["docCount"],
             "preview": res["preview"]
         })
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except ValueError as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        return _json_response({"status": "error", "error": str(e)}, status=500)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("expected_preview_failed", room_id=room_id, question_id=question_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/finish", methods=["POST"])
 def api_exam_student_finish(room_id: str, student_id: str):
     """Submit the final exam for a student."""
+    log.info("student_finish_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
     try:
         SubmissionService.finish_exam(room_id, student_id)
-        return jsonify({"status": "ok"})
+        return _json_response({"status": "ok"})
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("student_finish_failed", room_id=room_id, student_id=student_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/self-kick", methods=["POST"])
 def api_exam_student_self_kick(room_id: str, student_id: str):
     """Student is self-kicked due to proctoring violation."""
+    log.info("student_self_kick_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
     try:
         req_data = request.get_json(silent=True) or {}
         reason = req_data.get("reason", "Terminated: Proctoring Rules Violation")
@@ -394,125 +433,141 @@ def api_exam_student_self_kick(room_id: str, student_id: str):
 
     try:
         ProctoringService.self_kick(room_id, student_id, reason)
-        return jsonify({"status": "ok"})
+        return _json_response({"status": "ok"})
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("student_self_kick_failed", room_id=room_id, student_id=student_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/leaderboard", methods=["GET"])
 def api_exam_leaderboard(room_id: str):
     """Fetch leaderboard from room."""
+    log.debug("leaderboard_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
         res = LeaderboardService.get_room_leaderboard(room_id)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "leaderboard": res["leaderboard"],
             "maxScore": res["maxScore"],
             "totalQuestions": res["totalQuestions"]
         })
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("leaderboard_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/cleanup", methods=["DELETE", "POST"])
 def api_exam_cleanup_room(room_id: str):
     """Delete room from Redis."""
+    log.info("room_cleanup_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     try:
         RoomService.cleanup_room(room_id, mentor_id)
-        return jsonify({"status": "ok", "deletedKeys": 1})
+        return _json_response({"status": "ok", "deletedKeys": 1})
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("room_cleanup_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/violation", methods=["POST"])
 def api_exam_student_violation(room_id: str, student_id: str):
     """Student reports a proctoring violation."""
+    log.info("violation_record_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     violation_type = body.get("violationType", "")
     try:
         res = ProctoringService.record_violation(room_id, student_id, violation_type)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "fullscreenExits": res["fullscreenExits"],
             "copyPasteAttempts": res["copyPasteAttempts"],
             "lastFlaggedAt": res["lastFlaggedAt"]
         })
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("violation_record_failed", room_id=room_id, student_id=student_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/student/<student_id>", methods=["DELETE"])
 def api_exam_remove_student(room_id: str, student_id: str):
     """Mentor removes/kicks a student from the exam room."""
+    log.info("student_remove_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
     mentor_id = request.args.get("mentorId", "")
     keep_leaderboard = request.args.get("keepInLeaderboard", "0") == "1"
     try:
         ProctoringService.kick_student(room_id, student_id, mentor_id, keep_leaderboard)
-        return jsonify({"status": "ok", "studentId": student_id})
+        return _json_response({"status": "ok", "studentId": student_id})
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("student_remove_failed", room_id=room_id, student_id=student_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/reallow", methods=["POST"])
 def api_exam_reallow_student(room_id: str, student_id: str):
     """Mentor re-allows a kicked student."""
+    log.info("student_reallow_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId", "")
     try:
         ProctoringService.reallow_student(room_id, student_id, mentor_id)
-        return jsonify({"status": "ok"})
+        return _json_response({"status": "ok"})
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("student_reallow_failed", room_id=room_id, student_id=student_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/kicked", methods=["GET"])
 def api_exam_kicked_list(room_id: str):
     """Mentor fetches the list of kicked students."""
+    log.debug("kicked_list_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     mentor_id = request.args.get("mentorId", "")
     try:
         kicked = ProctoringService.get_kicked_students(room_id, mentor_id)
-        return jsonify({"status": "ok", "kicked": kicked})
+        return _json_response({"status": "ok", "kicked": kicked})
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("kicked_list_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/student/<student_id>/submissions", methods=["GET"])
 def api_exam_student_submissions(room_id: str, student_id: str):
     """Mentor fetches submissions for a student or student restores state."""
+    log.debug("student_submissions_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
     mentor_id = request.args.get("mentorId", "")
     is_student_themselves = request.args.get("isStudent", "") == "1"
     try:
         submissions = LeaderboardService.get_student_submissions(room_id, student_id, mentor_id, is_student_themselves)
-        return jsonify({"status": "ok", "submissions": submissions})
+        return _json_response({"status": "ok", "submissions": submissions})
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("student_submissions_failed", room_id=room_id, student_id=student_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/archive", methods=["GET"])
 def api_exam_room_archive(room_id: str):
     """Fetch all room data as a single JSON file."""
+    log.debug("room_archive_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     mentor_id = request.args.get("mentorId", "")
     try:
         archive = LeaderboardService.get_room_archive(room_id, mentor_id)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "roomId": archive["roomId"],
             "meta": archive["meta"],
@@ -524,20 +579,22 @@ def api_exam_room_archive(room_id: str):
             "submissions": archive["submissions"]
         })
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("room_archive_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/paper", methods=["GET"])
 def api_exam_get_paper(room_id: str):
     """Retrieve full question paper for export."""
+    log.debug("paper_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     mentor_id = request.args.get("mentorId", "")
     try:
         paper = RoomService.get_paper(room_id, mentor_id)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "title": paper["title"],
             "timed": paper["timed"],
@@ -549,16 +606,18 @@ def api_exam_get_paper(room_id: str):
             "datasets": paper["datasets"]
         })
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("paper_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/run", methods=["POST"])
 def api_exam_run_code(room_id: str):
     """Run code using Piston sandbox."""
+    log.info("run_code_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
         body = request.get_json(force=True, silent=True) or {}
         question_id = body.get("questionId")
@@ -568,7 +627,7 @@ def api_exam_run_code(room_id: str):
 
         if isinstance(stdins, list):
             results = SubmissionService.run_piston_code(room_id, question_id, language, code, stdins)
-            return jsonify({
+            return _json_response({
                 "status": "ok",
                 "results": results
             })
@@ -576,7 +635,7 @@ def api_exam_run_code(room_id: str):
             stdin = body.get("stdin", "")
             results = SubmissionService.run_piston_code(room_id, question_id, language, code, stdin)
             res = results[0]
-            return jsonify({
+            return _json_response({
                 "status": "ok",
                 "stdout": res["stdout"],
                 "stderr": res["stderr"],
@@ -584,17 +643,19 @@ def api_exam_run_code(room_id: str):
                 "output": res["output"]
             })
     except Exception as e:
-        return jsonify({
+        log.error("run_code_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({
             "status": "error",
             "stdout": "",
             "stderr": f"Server error: {e}",
             "code": 1,
             "output": ""
-        }), 500
+        }, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/generate_test_cases", methods=["POST"])
 def api_exam_generate_test_cases(room_id: str):
+    log.info("generate_test_cases_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
         body = request.get_json(force=True, silent=True) or {}
         language = body.get("language", "python")
@@ -602,32 +663,35 @@ def api_exam_generate_test_cases(room_id: str):
         inputs = body.get("inputs", [])
         template_type = body.get("templateType", "scratch")
         outputs = SubmissionService.generate_test_cases(language, code, inputs, template_type, driver_code)
-        return jsonify({
+        return _json_response({
             "status": "ok",
             "outputs": outputs
         })
     except ValueError as e:
-        return jsonify({
+        return _json_response({
             "status": "error",
             "error": str(e)
-        })
+        }, status=400)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("generate_test_cases_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>", methods=["DELETE"])
 def api_exam_delete_room(room_id: str):
     """Permanently delete room and all its data from MongoDB Atlas."""
+    log.info("room_delete_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     mentor_id = body.get("mentorId") or request.args.get("mentorId", "")
     try:
         RoomService.cleanup_room(room_id, mentor_id)
-        return jsonify({"status": "ok", "message": "Room and all associated data permanently deleted"})
+        return _json_response({"status": "ok", "message": "Room and all associated data permanently deleted"})
     except KeyError as e:
-        return jsonify({"status": "error", "error": str(e)}), 404
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
-        return jsonify({"status": "error", "error": str(e)}), 403
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        log.error("room_delete_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
