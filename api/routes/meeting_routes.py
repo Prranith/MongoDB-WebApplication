@@ -33,9 +33,10 @@ def api_meeting_create():
     log.info("meeting_create_requested", correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     host_name = (body.get("hostName") or "Anonymous").strip() or "Anonymous"
+    room_id = (body.get("roomId") or "").strip().upper()
 
     try:
-        room = MeetingService.create_room(host_name=host_name)
+        room = MeetingService.create_room(host_name=host_name, room_id=room_id if room_id else None)
         return _json_response({
             "status": "ok",
             "roomId": room["roomId"],

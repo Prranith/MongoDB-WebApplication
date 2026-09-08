@@ -31,9 +31,10 @@ class MeetingService:
     _participant_counts: Dict[str, int] = {}
 
     @classmethod
-    def create_room(cls, host_name: str = "Anonymous") -> Dict[str, Any]:
+    def create_room(cls, host_name: str = "Anonymous", room_id: Optional[str] = None) -> Dict[str, Any]:
         """Create a new meeting room and return its metadata."""
-        room_id = f"MTG-{uuid.uuid4().hex[:8].upper()}"
+        if not room_id:
+            room_id = f"MTG-{uuid.uuid4().hex[:8].upper()}"
         now = _now_iso()
         room = {
             "roomId": room_id,
@@ -61,15 +62,29 @@ class MeetingService:
         participant_name: str,
         peer_id: str,
     ) -> Dict[str, Any]:
-        """Register a participant joining a room."""
+        """Register a participant joining a room. Auto-creates room if not found."""
         room = cls._rooms.get(room_id)
         if not room:
-            raise KeyError(f"Room '{room_id}' not found")
+            # Auto-create room on the fly so custom or generated room IDs always work seamlessly!
+            now = _now_iso()
+            room = {
+                "roomId": room_id,
+                "hostName": participant_name,
+                "hostPeerId": peer_id,
+                "createdAt": now,
+                "activeAt": now,
+                "participantCount": 0,
+                "isOpen": True,
+            }
+            cls._rooms[room_id] = room
+            cls._participant_counts[room_id] = 0
+            log.info("meeting_room_auto_created", room_id=room_id, host_name=participant_name)
+
         if not room.get("isOpen", True):
             raise ValueError(f"Room '{room_id}' is closed")
 
         # Track host peer ID on first join
-        if not room.get("hostPeerId"):
+        if not room.get("hostPeerId") and peer_id:
             room["hostPeerId"] = peer_id
 
         count = cls._participant_counts.get(room_id, 0) + 1
