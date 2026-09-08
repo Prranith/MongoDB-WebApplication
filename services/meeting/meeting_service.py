@@ -1,149 +1,179 @@
 """
 services/meeting/meeting_service.py
-Room management and DB cleanup for real-time video/screen-share meetings.
+Room management for real-time video collaboration.
+Lightweight room lifecycle: create, join, leave, auto-cleanup.
 """
 
 import uuid
 import time
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from datetime import datetime, timezone
+from typing import Dict, Any, Optional
 
-from pymongo import MongoClient
+from utils.logger import get_logger, bind_component
 
-from services.shared.cache import cache
+log = bind_component(get_logger(__name__), "meeting_service")
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 class MeetingService:
     """
-    Lightweight room management for PeerJS WebRTC meetings.
-    - Creates room metadata in MongoDB
-    - Tracks active participants count
-    - Auto-cleans up rooms when participant count reaches 0
-    - Purges orphaned rooms older than 2 hours
+    In-memory room store with automatic cleanup.
+
+    NOTE: This is intentionally lightweight and uses an in-memory dict.
+    Swap the store methods for MongoDB/Redis if persistence is needed.
     """
 
-    ROOM_TTL_HOURS = 2
-    COLLECTION_NAME = "meeting_rooms"
+    # Class-level store so all instances share state in a single process
+    _rooms: Dict[str, Dict[str, Any]] = {}
+    _participant_counts: Dict[str, int] = {}
 
-    def __init__(self, mongo_client: Optional[MongoClient] = None):
-        self.client = mongo_client
-        self.db = None
-        self.collection = None
-        if self.client:
-            self.db = self.client.get_database("codexa_labs")
-            self.collection = self.db[self.COLLECTION_NAME]
-
-    def _ensure_collection(self):
-        if self.collection is None:
-            raise RuntimeError("MongoDB client not initialized")
-
-    def create_room(self, room_id: Optional[str] = None, host_peer_id: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Create a new meeting room.
-        Returns room data including generated room_id.
-        """
-        self._ensure_collection()
-        room_id = room_id or f"DEV-{uuid.uuid4().hex[:6].upper()}"
-        
-        now = datetime.utcnow()
-        room_data = {
-            "room_id": room_id,
-            "host_peer_id": host_peer_id,
-            "created_at": now,
-            "updated_at": now,
-            "active_participants": 1,
-            "is_active": True,
+    @classmethod
+    def create_room(cls, host_name: str = "Anonymous") -> Dict[str, Any]:
+        """Create a new meeting room and return its metadata."""
+        room_id = f"MTG-{uuid.uuid4().hex[:8].upper()}"
+        now = _now_iso()
+        room = {
+            "roomId": room_id,
+            "hostName": host_name,
+            "hostPeerId": "",  # set on join
+            "createdAt": now,
+            "activeAt": now,
+            "participantCount": 0,
+            "isOpen": True,
         }
-        
-        self.collection.insert_one(room_data)
-        cache.set(f"meeting_room:{room_id}", room_data, ttl=3600)
-        
-        return room_data
-
-    def join_room(self, room_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Validate room exists and increment participant count.
-        Returns room data if found, None otherwise.
-        """
-        self._ensure_collection()
-        room = self.collection.find_one({"room_id": room_id, "is_active": True})
-        
-        if room:
-            self.collection.update_one(
-                {"room_id": room_id},
-                {
-                    "$inc": {"active_participants": 1},
-                    "$set": {"updated_at": datetime.utcnow()}
-                }
-            )
-            room["active_participants"] += 1
-            cache.set(f"meeting_room:{room_id}", room, ttl=3600)
-        
+        cls._rooms[room_id] = room
+        cls._participant_counts[room_id] = 0
+        log.info("meeting_room_created", room_id=room_id, host_name=host_name)
         return room
 
-    def leave_room(self, room_id: str, peer_id: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Decrement participant count. If count reaches 0, delete the room.
-        Returns status dict with action taken.
-        """
-        self._ensure_collection()
-        room = self.collection.find_one({"room_id": room_id, "is_active": True})
-        
+    @classmethod
+    def get_room(cls, room_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch room metadata by ID."""
+        return cls._rooms.get(room_id)
+
+    @classmethod
+    def join_room(
+        cls,
+        room_id: str,
+        participant_name: str,
+        peer_id: str,
+    ) -> Dict[str, Any]:
+        """Register a participant joining a room."""
+        room = cls._rooms.get(room_id)
         if not room:
-            return {"status": "not_found", "room_id": room_id}
-        
-        new_count = max(0, room["active_participants"] - 1)
-        
-        if new_count == 0:
-            self.collection.delete_one({"room_id": room_id})
-            cache.delete(f"meeting_room:{room_id}")
-            return {"status": "deleted", "room_id": room_id, "reason": "no_participants"}
-        
-        self.collection.update_one(
-            {"room_id": room_id},
-            {
-                "$set": {
-                    "active_participants": new_count,
-                    "updated_at": datetime.utcnow()
-                }
-            }
+            raise KeyError(f"Room '{room_id}' not found")
+        if not room.get("isOpen", True):
+            raise ValueError(f"Room '{room_id}' is closed")
+
+        # Track host peer ID on first join
+        if not room.get("hostPeerId"):
+            room["hostPeerId"] = peer_id
+
+        count = cls._participant_counts.get(room_id, 0) + 1
+        cls._participant_counts[room_id] = count
+        room["participantCount"] = count
+        room["activeAt"] = _now_iso()
+
+        log.info(
+            "meeting_room_joined",
+            room_id=room_id,
+            participant_name=participant_name,
+            participant_count=count,
         )
-        cache.set(f"meeting_room:{room_id}", {"room_id": room_id, "active_participants": new_count}, ttl=3600)
-        
-        return {"status": "updated", "room_id": room_id, "active_participants": new_count}
+        return {
+            "roomId": room_id,
+            "participantName": participant_name,
+            "participantCount": count,
+            "hostPeerId": room.get("hostPeerId", ""),
+        }
 
-    def get_room_status(self, room_id: str) -> Optional[Dict[str, Any]]:
+    @classmethod
+    def leave_room(cls, room_id: str, peer_id: str) -> Dict[str, Any]:
         """
-        Fetch active room metadata.
+        Decrement participant count on leave.
+        If count reaches 0, destroy the room record entirely.
         """
-        cached = cache.get(f"meeting_room:{room_id}")
-        if cached:
-            return cached
-        
-        self._ensure_collection()
-        room = self.collection.find_one({"room_id": room_id, "is_active": True})
-        
-        if room:
-            room["_id"] = str(room.get("_id", ""))
-            cache.set(f"meeting_room:{room_id}", room, ttl=3600)
-        
-        return room
+        room = cls._rooms.get(room_id)
+        if not room:
+            return {"roomId": room_id, "destroyed": False, "reason": "not_found"}
 
-    def cleanup_orphaned_rooms(self) -> int:
-        """
-        Delete rooms that have been inactive for longer than ROOM_TTL_HOURS.
-        Returns count of deleted rooms.
-        """
-        self._ensure_collection()
-        cutoff = datetime.utcnow() - timedelta(hours=self.ROOM_TTL_HOURS)
-        
-        result = self.collection.delete_many({
-            "is_active": True,
-            "updated_at": {"$lt": cutoff}
-        })
-        
-        return result.deleted_count
+        count = cls._participant_counts.get(room_id, 0)
+        new_count = max(0, count - 1)
+        cls._participant_counts[room_id] = new_count
+        room["participantCount"] = new_count
+        room["activeAt"] = _now_iso()
 
+        log.info(
+            "meeting_room_left",
+            room_id=room_id,
+            remaining_count=new_count,
+        )
 
-# Singleton instance
-meeting_service = MeetingService()
+        destroyed = False
+        if new_count <= 0:
+            destroyed = cls.destroy_room(room_id)
+
+        return {
+            "roomId": room_id,
+            "remainingParticipants": new_count,
+            "destroyed": destroyed,
+        }
+
+    @classmethod
+    def destroy_room(cls, room_id: str) -> bool:
+        """Hard-delete a room and all transient meeting data."""
+        existed = room_id in cls._rooms
+        cls._rooms.pop(room_id, None)
+        cls._participant_counts.pop(room_id, None)
+        if existed:
+            log.info("meeting_room_destroyed", room_id=room_id)
+        return existed
+
+    @classmethod
+    def cleanup_stale_rooms(cls, max_age_seconds: int = 7200) -> int:
+        """
+        Garbage-collect orphaned rooms older than `max_age_seconds`.
+        Returns count of purged rooms.
+        """
+        now_ts = time.time()
+        cutoff = now_ts - max_age_seconds
+        purged = 0
+        stale_ids = []
+
+        for room_id, room in list(cls._rooms.items()):
+            created_str = room.get("createdAt", "")
+            try:
+                created_dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+                created_ts = created_dt.timestamp()
+            except (ValueError, TypeError):
+                # If we can't parse, keep the room — be conservative.
+                continue
+
+            if created_ts < cutoff and room.get("participantCount", 0) == 0:
+                stale_ids.append(room_id)
+
+        for room_id in stale_ids:
+            cls.destroy_room(room_id)
+            purged += 1
+
+        if purged:
+            log.info("meeting_stale_cleanup", purged=purged)
+        return purged
+
+    @classmethod
+    def room_status(cls, room_id: str) -> Dict[str, Any]:
+        """Lightweight status payload for a room."""
+        room = cls._rooms.get(room_id)
+        if not room:
+            raise KeyError(f"Room '{room_id}' not found")
+        return {
+            "roomId": room_id,
+            "participantCount": room.get("participantCount", 0),
+            "isOpen": room.get("isOpen", True),
+            "createdAt": room.get("createdAt", ""),
+            "activeAt": room.get("activeAt", ""),
+            "hostPeerId": room.get("hostPeerId", ""),
+        }

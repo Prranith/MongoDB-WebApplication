@@ -1,149 +1,142 @@
 """
 api/routes/meeting_routes.py
-REST endpoints for meeting room lifecycle management.
+Meeting room REST API — decoupled from media.
+Handles room lifecycle only; all media is P2P via PeerJS.
 """
 
 import sys
 from pathlib import Path
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from services.meeting.meeting_service import meeting_service
-from utils.logger import get_logger
-
-log = get_logger(__name__)
+from services.meeting.meeting_service import MeetingService
+from utils.logger import get_logger, bind_component
 
 meeting_bp = Blueprint("meeting_bp", __name__)
+log = bind_component(get_logger(__name__), "meeting_api")
+
+
+def _json_response(payload, status=200):
+    return jsonify(payload), status
 
 
 @meeting_bp.route("/api/meeting/create", methods=["POST"])
-def create_meeting():
-    """
-    Create a new meeting room.
-    Body: { "room_id": "optional_custom_id", "host_peer_id": "optional_peer_id" }
-    Returns: room data with room_id, active_participants, etc.
-    """
+def api_meeting_create():
+    """Create a new meeting room."""
+    log.info("meeting_create_requested", correlation_id=g.get("correlation_id"))
+    body = request.get_json(force=True, silent=True) or {}
+    host_name = (body.get("hostName") or "Anonymous").strip() or "Anonymous"
+
     try:
-        data = request.get_json(silent=True) or {}
-        room_id = data.get("room_id")
-        host_peer_id = data.get("host_peer_id")
-        
-        room = meeting_service.create_room(room_id=room_id, host_peer_id=host_peer_id)
-        
-        return jsonify({
-            "success": True,
-            "room": {
-                "room_id": room["room_id"],
-                "host_peer_id": room.get("host_peer_id"),
-                "active_participants": room["active_participants"],
-                "created_at": room["created_at"].isoformat() if room.get("created_at") else None,
-            }
-        }), 201
-        
+        room = MeetingService.create_room(host_name=host_name)
+        return _json_response({
+            "status": "ok",
+            "roomId": room["roomId"],
+            "hostName": room["hostName"],
+            "createdAt": room["createdAt"],
+        })
     except Exception as e:
-        log.error("meeting_create_failed", error=str(e))
-        return jsonify({"success": False, "error": "Failed to create room"}), 500
+        log.error("meeting_create_failed", error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=503)
 
 
 @meeting_bp.route("/api/meeting/join", methods=["POST"])
-def join_meeting():
-    """
-    Join an existing meeting room.
-    Body: { "room_id": "DEV-XXXXXX" }
-    Returns: room data if found, error if not.
-    """
+def api_meeting_join():
+    """Join an existing meeting room."""
+    log.info("meeting_join_requested", correlation_id=g.get("correlation_id"))
+    body = request.get_json(force=True, silent=True) or {}
+    room_id = (body.get("roomId") or "").strip().upper()
+    participant_name = (body.get("participantName") or "Anonymous").strip() or "Anonymous"
+    peer_id = (body.get("peerId") or "").strip()
+
+    if not room_id:
+        return _json_response({"status": "error", "error": "roomId is required"}, status=400)
+
     try:
-        data = request.get_json(silent=True) or {}
-        room_id = data.get("room_id", "").strip().upper()
-        
-        if not room_id:
-            return jsonify({"success": False, "error": "room_id is required"}), 400
-        
-        room = meeting_service.join_room(room_id)
-        
-        if not room:
-            return jsonify({"success": False, "error": f"Room '{room_id}' not found or inactive"}), 404
-        
-        return jsonify({
-            "success": True,
-            "room": {
-                "room_id": room["room_id"],
-                "active_participants": room["active_participants"],
-            }
-        }), 200
-        
+        res = MeetingService.join_room(room_id, participant_name, peer_id or f" Peer-{uuid_short()}")
+        return _json_response({
+            "status": "ok",
+            **res,
+        })
+    except KeyError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=404)
+    except ValueError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=400)
     except Exception as e:
-        log.error("meeting_join_failed", error=str(e), room_id=data.get("room_id"))
-        return jsonify({"success": False, "error": "Failed to join room"}), 500
+        log.error("meeting_join_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @meeting_bp.route("/api/meeting/leave", methods=["POST"])
-def leave_meeting():
+def api_meeting_leave():
     """
-    Leave a meeting room (decrement count, delete if empty).
-    Body: { "room_id": "DEV-XXXXXX" }
-    Returns: status of cleanup action.
+    Decrement participant count and auto-destroy the room if empty.
+    Clients should call this on 'End Meeting' and beforeunload.
     """
+    log.info("meeting_leave_requested", correlation_id=g.get("correlation_id"))
+    body = request.get_json(force=True, silent=True) or {}
+    room_id = (body.get("roomId") or "").strip().upper()
+    peer_id = (body.get("peerId") or "").strip()
+
+    if not room_id:
+        return _json_response({"status": "error", "error": "roomId is required"}, status=400)
+
     try:
-        data = request.get_json(silent=True) or {}
-        room_id = data.get("room_id", "").strip().upper()
-        
-        if not room_id:
-            return jsonify({"success": False, "error": "room_id is required"}), 400
-        
-        result = meeting_service.leave_room(room_id)
-        
-        return jsonify({
-            "success": True,
-            "status": result["status"],
-            "room_id": result["room_id"],
-            "active_participants": result.get("active_participants"),
-        }), 200
-        
+        res = MeetingService.leave_room(room_id, peer_id or "unknown")
+        status_code = 200
+        if res.get("destroyed"):
+            status_code = 200  # still OK — room was intentionally torn down
+        return _json_response({
+            "status": "ok",
+            **res,
+        }, status=status_code)
     except Exception as e:
-        log.error("meeting_leave_failed", error=str(e), room_id=data.get("room_id"))
-        return jsonify({"success": False, "error": "Failed to leave room"}), 500
+        log.error("meeting_leave_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @meeting_bp.route("/api/meeting/status/<room_id>", methods=["GET"])
-def meeting_status(room_id: str):
-    """
-    Get active room metadata.
-    Returns: room data or 404 if not found.
-    """
+def api_meeting_status(room_id):
+    """Fetch lightweight room status metadata."""
+    room_id = room_id.strip().upper()
+    log.debug("meeting_status_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
-        room_id = room_id.strip().upper()
-        room = meeting_service.get_room_status(room_id)
-        
-        if not room:
-            return jsonify({"success": False, "error": "Room not found"}), 404
-        
-        return jsonify({
-            "success": True,
-            "room": {
-                "room_id": room["room_id"],
-                "active_participants": room["active_participants"],
-                "host_peer_id": room.get("host_peer_id"),
-                "created_at": room.get("created_at"),
-            }
-        }), 200
-        
+        status = MeetingService.room_status(room_id)
+        return _json_response({
+            "status": "ok",
+            **status,
+        })
+    except KeyError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=404)
     except Exception as e:
-        log.error("meeting_status_failed", error=str(e), room_id=room_id)
-        return jsonify({"success": False, "error": "Failed to fetch room status"}), 500
+        log.error("meeting_status_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
 @meeting_bp.route("/api/meeting/cleanup", methods=["POST"])
-def cleanup_orphaned():
+def api_meeting_cleanup():
     """
-    Admin endpoint to purge orphaned rooms older than 2 hours.
-    Returns: count of deleted rooms.
+    Trigger stale-room garbage collection.
+    Purges rooms older than 2 hours with 0 participants.
     """
+    log.info("meeting_cleanup_requested", correlation_id=g.get("correlation_id"))
+    body = request.get_json(force=True, silent=True) or {}
+    max_age = int(body.get("maxAgeSeconds", 7200))
     try:
-        deleted = meeting_service.cleanup_orphaned_rooms()
-        return jsonify({"success": True, "deleted_count": deleted}), 200
+        purged = MeetingService.cleanup_stale_rooms(max_age_seconds=max_age)
+        return _json_response({
+            "status": "ok",
+            "purged": purged,
+        })
     except Exception as e:
-        log.error("meeting_cleanup_failed", error=str(e))
-        return jsonify({"success": False, "error": "Cleanup failed"}), 500
+        log.error("meeting_cleanup_failed", error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
+
+
+# Lightweight UUID fallback so join works without an external library
+def uuid_short() -> str:
+    import random
+    import string
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
