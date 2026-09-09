@@ -4497,6 +4497,28 @@ li.CodeMirror-hint-active {
   font-size: 14px;
 }
 
+.meeting-participant-kick {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--meeting-text-muted, #9ca3af);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+.meeting-participant-row:hover .meeting-participant-kick {
+  display: inline-flex;
+}
+.meeting-participant-kick:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
 /* ── Control buttons (Teams-style icon buttons) ─────── */
 .meeting-ctrl-btn {
   position: relative;
@@ -5094,22 +5116,38 @@ li.CodeMirror-hint-active {
   border-radius: 10px !important;
 }
 
-/* Focus mode: screen share takes the full area, hides the filmstrip */
+/* Focus mode: screen share fills the entire area — hides filmstrip, self-view,
+   topbar, and all controls so the shared content is front-and-center. */
 .meeting-container.focus-mode .meeting-remote-grid {
   display: none !important;
 }
 .meeting-container.focus-mode .meeting-local-tile {
   display: none !important;
 }
+.meeting-container.focus-mode .meeting-topbar {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s;
+}
+.meeting-container.focus-mode:hover .meeting-topbar {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
 .meeting-container.focus-mode .meeting-screen-stage {
   z-index: 8;
+  inset: 0;
+}
+.meeting-container.focus-mode .meeting-screen-stage video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* Focus button on the screen stage */
 .meeting-focus-btn {
   position: absolute;
   top: 14px;
-  right: 16px;
+  right: 50px;
   z-index: 10;
   width: 32px;
   height: 32px;
@@ -14379,10 +14417,6 @@ const MeetingRoom = (() => {
       call.on("error", (err) => {
         _pendingHostConnect = false;
         pendingCalls.delete(targetPeerId);
-        console.warn("[Meeting] Call error with peer", targetPeerId, err);
-        // If the call fails, clean up the participant entry so the UI
-        // doesn't show a stale tile and the global handler doesn't
-        // re-surface a peer-unavailable toast.
         if (state.participants[targetPeerId]) {
           delete state.participants[targetPeerId];
         }
@@ -14393,9 +14427,18 @@ const MeetingRoom = (() => {
     if (conn) {
       conn.on("error", (err) => {
         _pendingHostConnect = false;
-        console.warn("[Meeting] Data connection error to", targetPeerId, err);
       });
       handleDataConnection(conn);
+      // If we're sharing a screen, tell the new peer about it once the data
+      // connection opens — otherwise they receive the screen media but never
+      // get the screen-toggle signal that shows it in the stage.
+      conn.on("open", () => {
+        if (state.isScreenSharing && conn.open) {
+          try {
+            conn.send({ type: "screen-toggle", sharing: true, name: state.userName });
+          } catch (_) {}
+        }
+      });
     }
   }
 
@@ -14531,6 +14574,10 @@ const MeetingRoom = (() => {
             updateMicIndicators();
             renderParticipants();
           }
+        } else if (data.type === "force-leave") {
+          // Host kicked you from the meeting
+          toast("You were removed from the meeting by the host", "error");
+          endMeeting();
         }
       });
 
@@ -14939,21 +14986,23 @@ const MeetingRoom = (() => {
   function removeParticipant(peerId) {
     stopVolumeMeter(state.participants[peerId]);
     delete state.participants[peerId];
+    // Forcefully remove any lingering tile from the DOM
     const tile = document.querySelector(`.meeting-remote-tile[data-peer="${peerId}"]`);
     if (tile) {
-      // Stop tracks before removing
       const video = tile.querySelector("video");
       if (video && video.srcObject) {
         video.srcObject.getTracks().forEach((t) => t.stop());
       }
+      tile.remove();
     }
     if (othersOpen) closeOthers();
-    updateParticipantCount();
-
     // Clear the screen stage if the presenter left
     if (state.screenPeerId === peerId) {
       clearScreenStage();
     }
+    // Full re-render so the grid reflows correctly after a participant leaves
+    renderGrid();
+    updateParticipantCount();
   }
 
 
@@ -15437,16 +15486,16 @@ const MeetingRoom = (() => {
     const total = peers.length + 1;
     if (els.panelSectionTitle) els.panelSectionTitle.textContent = "In this meeting (" + total + ")";
     els.participantList.innerHTML = "";
-    els.participantList.appendChild(makeParticipantRow(state.userName, "Organizer", state.isMicOn, state.handRaised, true));
+    els.participantList.appendChild(makeParticipantRow(state.userName, "Organizer", state.isMicOn, state.handRaised, true, null));
     peers.forEach((pid) => {
       const p = state.participants[pid];
       const audioTrack = p.stream && p.stream.getAudioTracks()[0];
       const micOn = p.micOn !== undefined ? p.micOn : (audioTrack ? audioTrack.enabled !== false : true);
-      els.participantList.appendChild(makeParticipantRow(p.name || "Peer", "Guest", micOn, !!p.handUp, false));
+      els.participantList.appendChild(makeParticipantRow(p.name || "Peer", "Guest", micOn, !!p.handUp, false, pid));
     });
   }
 
-  function makeParticipantRow(name, role, micOn, handUp, isSelf) {
+  function makeParticipantRow(name, role, micOn, handUp, isSelf, peerId) {
     const row = document.createElement("div");
     row.className = "meeting-participant-row";
 
@@ -15475,6 +15524,15 @@ const MeetingRoom = (() => {
     }
     if (!micOn) {
       status.appendChild(makeMicOffIcon("meeting-participant-mic"));
+    }
+    // Host can remove any participant (except themselves)
+    if (!isSelf && peerId) {
+      const kickBtn = document.createElement("button");
+      kickBtn.className = "meeting-participant-kick";
+      kickBtn.title = "Remove from meeting";
+      kickBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+      kickBtn.addEventListener("click", () => kickParticipant(peerId, name));
+      status.appendChild(kickBtn);
     }
 
     row.appendChild(avatar);
@@ -15649,6 +15707,23 @@ const MeetingRoom = (() => {
     const active = !!document.fullscreenElement;
     if (els.fullscreenBtn) els.fullscreenBtn.classList.toggle("active", active);
   });
+
+  // ─── Host: remove participant ─────────────────────────────────────────
+  function kickParticipant(peerId, name) {
+    if (!peerId) return;
+    // Send a force-leave message via the data channel
+    const p = state.participants[peerId];
+    if (p && p.dataConnection && p.dataConnection.open) {
+      try {
+        p.dataConnection.send({ type: "force-leave" });
+      } catch (_) {}
+    }
+    // Clean up locally
+    removeParticipant(peerId);
+    addSystemMessage((name || "Participant") + " was removed from the meeting");
+    toast((name || "Participant") + " removed", "success");
+  }
+  window.MeetingRoom.kickParticipant = kickParticipant;
 
   // ─── End meeting ───────────────────────────────────────────────────────
   function endMeeting() {
