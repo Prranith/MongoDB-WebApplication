@@ -425,6 +425,12 @@ const MeetingRoom = (() => {
     height: { ideal: 4320, max: 4320 },
     frameRate: { ideal: 60, max: 60 },
     facingMode: "user",
+    advanced: [
+      { width: 7680, height: 4320, frameRate: 60 },
+      { width: 3840, height: 2160, frameRate: 60 },
+      { width: 1920, height: 1080, frameRate: 60 },
+      { width: 1280, height: 720, frameRate: 60 },
+    ],
   };
   const AUDIO_CONSTRAINTS = {
     echoCancellation: true,
@@ -521,7 +527,9 @@ const MeetingRoom = (() => {
         params.encodings = params.encodings.map((e) =>
           Object.assign({}, e, {
             maxBitrate: s.track.kind === "video" ? (videoBitrate || 20000000) : 128000,
+            minBitrate: s.track.kind === "video" ? 5000000 : 64000,
             maxFramerate: s.track.kind === "video" ? 60 : undefined,
+            scalabilityMode: s.track.kind === "video" ? "L1T3" : undefined,
           })
         );
         s.setParameters(params).catch(() => {});
@@ -767,6 +775,22 @@ const MeetingRoom = (() => {
         }
       });
     }
+
+    // During active screen sharing, also notify the remote peer via the data
+    // channel that a screen share is in progress so they can show it immediately
+    // without waiting for the stream event.
+    if (state.isScreenSharing && state.peer && state.screenStream) {
+      try {
+        const existingConn = state.peer._connections.get(targetPeerId);
+        if (existingConn && existingConn.length) {
+          existingConn.forEach((c) => {
+            if (c.type === "data" && c.open) {
+              try { c.send({ type: "screen-toggle", sharing: true, name: state.userName }); } catch (_) {}
+            }
+          });
+        }
+      } catch (_) {}
+    }
   }
 
   function handleIncomingCall(call) {
@@ -798,6 +822,39 @@ const MeetingRoom = (() => {
       if (incomingIsScreen && state.screenPeerId !== call.peer) {
         showScreenInStage(call.peer, remoteStream, "Someone");
       }
+    });
+
+    // Listen for track replacements: when the sender switches between camera
+    // and screen share mid-call, the media connection stays open but the video
+    // track is replaced via replaceTrack(). This fires for each new track.
+    call.on("track", (event) => {
+      event.streams.forEach((stream) => {
+        const vTrack = stream.getVideoTracks()[0];
+        const isScreen = !!vTrack && (
+          vTrack.label.toLowerCase().includes("screen") ||
+          vTrack.label.toLowerCase().includes("displayshare") ||
+          vTrack.label.toLowerCase().includes("share")
+        );
+        if (isScreen && state.screenPeerId !== call.peer) {
+          if (!state.participants[call.peer]) state.participants[call.peer] = {};
+          state.participants[call.peer].stream = stream;
+          state.participants[call.peer].isScreen = true;
+          showScreenInStage(call.peer, stream, state.participants[call.peer].name || "Someone");
+        } else if (!isScreen && vTrack && !stream.getVideoTracks().some((t) => t.label.toLowerCase().includes("screen"))) {
+          // Camera came back — update the participant tile with camera video
+          if (state.participants[call.peer]) {
+            state.participants[call.peer].stream = stream;
+            state.participants[call.peer].isScreen = false;
+          }
+          const tile = document.querySelector(`.meeting-remote-tile[data-peer="${call.peer}"]`);
+          if (tile) {
+            const vid = tile.querySelector("video");
+            if (vid) { vid.srcObject = stream; vid.style.display = "block"; }
+            const ov = tile.querySelector("[data-peer-initials]");
+            if (ov) ov.style.display = "none";
+          }
+        }
+      });
     });
 
     call.on("close", () => {

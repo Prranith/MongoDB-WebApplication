@@ -4016,6 +4016,22 @@ li.CodeMirror-hint-active {
   min-height: 0;
 }
 
+/* When screen sharing: the screen stage gets the area, filmstrip goes to the side */
+.meeting-video-area.presentation-mode {
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.meeting-video-area.presentation-mode .meeting-screen-stage {
+  flex: 1;
+  height: 100%;
+}
+.meeting-video-area.presentation-mode .meeting-remote-grid {
+  width: 280px;
+  max-width: 30vw;
+  height: 100%;
+}
+
 .meeting-video-tile {
   position: relative;
   border-radius: 8px;
@@ -4106,7 +4122,60 @@ li.CodeMirror-hint-active {
   padding: 24px;
   box-sizing: border-box;
   align-content: center;
+  justify-content: center;
 }
+
+/* Grid fills dynamically: tiles stretch to fill available space */
+.meeting-remote-grid.gallery {
+  align-items: stretch;
+  align-content: center;
+}
+.meeting-remote-grid.gallery .meeting-remote-tile {
+  aspect-ratio: auto;
+  height: 100%;
+}
+.meeting-remote-grid.gallery .meeting-remote-tile video {
+  aspect-ratio: auto;
+  height: 100%;
+}
+
+/* 2-person grid: each tile fills half the area */
+.meeting-remote-grid.gallery:not(.many):not(.g3) {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+}
+
+/* 3-person grid: two on top, one below */
+.meeting-remote-grid.g3 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  grid-auto-rows: 1fr;
+}
+.meeting-remote-grid.g3 .meeting-remote-tile:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+/* Many participants (>4): compact tiles */
+.meeting-remote-grid.many {
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+/* Strip (spotlight filmstrip on the right) */
+.meeting-remote-grid.strip {
+  flex-direction: column;
+  width: 260px;
+  max-width: 25vw;
+  height: 100%;
+  padding: 12px;
+  gap: 10px;
+}
+.meeting-remote-grid.strip .meeting-remote-tile {
+  width: 100%;
+  height: 100%;
+}
+
+/* Empty grid: hide since screen stage or self-view owns the area */
 .meeting-remote-grid:empty {
   display: none;
 }
@@ -4135,17 +4204,31 @@ li.CodeMirror-hint-active {
 .meeting-remote-tile {
   position: relative;
   min-height: 0;
+  min-width: 0;
   border-radius: 8px;
   overflow: hidden;
   background: var(--meeting-bg2);
   border: 1px solid var(--meeting-border);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   transition: border-color 0.25s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .meeting-remote-tile.talking {
   border-color: var(--meeting-emerald);
   box-shadow: 0 0 16px rgba(78, 201, 176, 0.3);
+}
+
+/* Video fills its tile container */
+.meeting-remote-tile video {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #111827;
+  border-radius: 7px;
 }
 
 /* "Others" tile (large meetings: 3 named tiles + others) */
@@ -5186,6 +5269,44 @@ li.CodeMirror-hint-active {
 }
 #meeting-focus-btn { right: 50px; }
 #meeting-screen-fullscreen-btn { right: 16px; }
+
+/* Screen stage controls (fullscreen + focus buttons on the stage) */
+.meeting-stage-controls {
+  position: absolute;
+  top: 14px;
+  right: 108px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+.meeting-screen-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--meeting-border);
+  border-radius: 8px;
+  background: rgba(13, 13, 13, 0.75);
+  color: var(--meeting-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.meeting-screen-btn:hover {
+  background: rgba(16, 185, 129, 0.25);
+  color: #10b981;
+}
+
+/* Focus mode: hide topbar, keep screen stage controls */
+.meeting-container.focus-mode .meeting-screen-stage .meeting-stage-controls {
+  opacity: 1 !important;
+}
+.meeting-container.focus-mode .meeting-screen-stage .meeting-focus-btn {
+  opacity: 1 !important;
+}
+.meeting-container.focus-mode .meeting-screen-stage .meeting-spotlight-exit {
+  opacity: 1 !important;
+}
 
 /* ── Toast Notifications ────────────────────────────── */
 .toast-container {
@@ -13617,12 +13738,17 @@ window.ExamPortal = ExamPortal;
     <div id="meeting-screen-stage" class="meeting-screen-stage" style="display:none" ondblclick="MeetingRoom.exitSpotlight(event)">
       <video id="meeting-screen-video" autoplay playsinline muted></video>
       <div class="meeting-screen-label" id="meeting-screen-label">You're presenting</div>
+      <div class="meeting-stage-controls">
+        <button class="meeting-screen-btn" id="meeting-screen-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+        </button>
+        <button class="meeting-screen-btn" id="meeting-focus-btn" onclick="MeetingRoom.toggleFocusMode()" title="Focus">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+        </button>
+      </div>
       <button class="meeting-spotlight-exit" onclick="MeetingRoom.exitSpotlight(event)" title="Back to gallery">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         Gallery
-      </button>
-      <button class="meeting-focus-btn" id="meeting-focus-btn" onclick="MeetingRoom.toggleFocusMode()" title="Focus Screen Share">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
       </button>
       <button class="meeting-focus-btn" id="meeting-screen-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
@@ -14118,6 +14244,12 @@ const MeetingRoom = (() => {
     height: { ideal: 4320, max: 4320 },
     frameRate: { ideal: 60, max: 60 },
     facingMode: "user",
+    advanced: [
+      { width: 7680, height: 4320, frameRate: 60 },
+      { width: 3840, height: 2160, frameRate: 60 },
+      { width: 1920, height: 1080, frameRate: 60 },
+      { width: 1280, height: 720, frameRate: 60 },
+    ],
   };
   const AUDIO_CONSTRAINTS = {
     echoCancellation: true,
@@ -14214,7 +14346,9 @@ const MeetingRoom = (() => {
         params.encodings = params.encodings.map((e) =>
           Object.assign({}, e, {
             maxBitrate: s.track.kind === "video" ? (videoBitrate || 20000000) : 128000,
+            minBitrate: s.track.kind === "video" ? 5000000 : 64000,
             maxFramerate: s.track.kind === "video" ? 60 : undefined,
+            scalabilityMode: s.track.kind === "video" ? "L1T3" : undefined,
           })
         );
         s.setParameters(params).catch(() => {});
@@ -14460,6 +14594,22 @@ const MeetingRoom = (() => {
         }
       });
     }
+
+    // During active screen sharing, also notify the remote peer via the data
+    // channel that a screen share is in progress so they can show it immediately
+    // without waiting for the stream event.
+    if (state.isScreenSharing && state.peer && state.screenStream) {
+      try {
+        const existingConn = state.peer._connections.get(targetPeerId);
+        if (existingConn && existingConn.length) {
+          existingConn.forEach((c) => {
+            if (c.type === "data" && c.open) {
+              try { c.send({ type: "screen-toggle", sharing: true, name: state.userName }); } catch (_) {}
+            }
+          });
+        }
+      } catch (_) {}
+    }
   }
 
   function handleIncomingCall(call) {
@@ -14491,6 +14641,39 @@ const MeetingRoom = (() => {
       if (incomingIsScreen && state.screenPeerId !== call.peer) {
         showScreenInStage(call.peer, remoteStream, "Someone");
       }
+    });
+
+    // Listen for track replacements: when the sender switches between camera
+    // and screen share mid-call, the media connection stays open but the video
+    // track is replaced via replaceTrack(). This fires for each new track.
+    call.on("track", (event) => {
+      event.streams.forEach((stream) => {
+        const vTrack = stream.getVideoTracks()[0];
+        const isScreen = !!vTrack && (
+          vTrack.label.toLowerCase().includes("screen") ||
+          vTrack.label.toLowerCase().includes("displayshare") ||
+          vTrack.label.toLowerCase().includes("share")
+        );
+        if (isScreen && state.screenPeerId !== call.peer) {
+          if (!state.participants[call.peer]) state.participants[call.peer] = {};
+          state.participants[call.peer].stream = stream;
+          state.participants[call.peer].isScreen = true;
+          showScreenInStage(call.peer, stream, state.participants[call.peer].name || "Someone");
+        } else if (!isScreen && vTrack && !stream.getVideoTracks().some((t) => t.label.toLowerCase().includes("screen"))) {
+          // Camera came back — update the participant tile with camera video
+          if (state.participants[call.peer]) {
+            state.participants[call.peer].stream = stream;
+            state.participants[call.peer].isScreen = false;
+          }
+          const tile = document.querySelector(`.meeting-remote-tile[data-peer="${call.peer}"]`);
+          if (tile) {
+            const vid = tile.querySelector("video");
+            if (vid) { vid.srcObject = stream; vid.style.display = "block"; }
+            const ov = tile.querySelector("[data-peer-initials]");
+            if (ov) ov.style.display = "none";
+          }
+        }
+      });
     });
 
     call.on("close", () => {
