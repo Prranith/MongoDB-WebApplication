@@ -15,7 +15,7 @@ const MeetingRoom = (() => {
     roomId: "",
     peerId: "",
     peer: null,
-    userName: "Developer",
+    userName: "Codexa User",
     localStream: null,       // camera+audio
     screenStream: null,      // screen share
     screenCalls: {},         // peerId -> dedicated screen-share MediaConnection (no-camera fallback)
@@ -35,6 +35,7 @@ const MeetingRoom = (() => {
     meetingMinimized: false,
     localViewHidden: false,
     joining: false,        // true while a join/create call is starting
+    isHost: false,
     _prevPeers: 0,
   };
 
@@ -86,6 +87,10 @@ const MeetingRoom = (() => {
     screenVideo: $("meeting-screen-video"),
     screenLabel: $("meeting-screen-label"),
     fullscreenBtn: $("meeting-fullscreen-btn"),
+    endHostItem: $("meeting-end-host-item"),
+    exitScreen: $("meeting-exit-screen"),
+    exitTitle: $("meeting-exit-title"),
+    exitMessage: $("meeting-exit-message"),
     othersOverlay: $("meeting-others-overlay"),
     othersGrid: $("meeting-others-grid"),
     othersTitle: $("meeting-others-title"),
@@ -232,6 +237,7 @@ const MeetingRoom = (() => {
     if (els.chatBtn) els.chatBtn.classList.toggle("active", state.chatOpen);
     if (els.participantsBtn) els.participantsBtn.classList.toggle("active", state.participantsOpen);
     if (els.handBtn) els.handBtn.classList.toggle("hand-up", state.handRaised);
+    if (els.endHostItem) els.endHostItem.style.display = state.isHost ? "flex" : "none";
     // Update activity bar button state
     const actBtn = els.joinBtn;
     if (actBtn) actBtn.classList.toggle("active", state.callActive);
@@ -669,13 +675,28 @@ const MeetingRoom = (() => {
       })
       .then((r) => r.json())
       .then((data) => {
+        if (!data || data.status !== "ok") {
+          disconnectPeer();
+          if (els.modal) els.modal.classList.add("active");
+          showJoinScreen();
+          showStatus(data && data.error ? data.error : "Meeting room not found.", "error");
+          return;
+        }
+        state.isHost = !!data.isHost;
         if (data && data.hostPeerId && data.hostPeerId !== state.peerId) {
           connectToPeer(data.hostPeerId);
         }
         // Start peer discovery polling to find all other participants in the room
         startPeerDiscovery(state.roomId);
+        startMeetingStatusPolling(state.roomId);
+        updateControlUI();
       })
-      .catch(() => {});
+      .catch(() => {
+        disconnectPeer();
+        if (els.modal) els.modal.classList.add("active");
+        showJoinScreen();
+        showStatus("Unable to join this meeting right now.", "error");
+      });
 
       toast("Connected to " + state.roomId, "success");
       addSystemMessage("You joined " + state.roomId);
@@ -727,9 +748,27 @@ const MeetingRoom = (() => {
 
   // ─── Peer Discovery ────────────────────────────────────────────────────
   let peerDiscoveryTimer = null;
+  let meetingStatusTimer = null;
   let dragState = null; // active PiP drag session
   const pendingCalls = new Set(); // track peer IDs we're currently connecting to
   let _pendingHostConnect = false; // true while we expect an outgoing call to complete
+
+  function startMeetingStatusPolling(roomId) {
+    if (meetingStatusTimer) clearInterval(meetingStatusTimer);
+    meetingStatusTimer = setInterval(() => {
+      if (!state.callActive) return;
+      fetch("/api/meeting/status/" + encodeURIComponent(roomId))
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && data.status === "ok" && data.isOpen === false) {
+            handleMeetingEnded(data.endedBy || "the host");
+          } else if (data && data.status === "error" && /not found/i.test(data.error || "")) {
+            handleMeetingEnded("the host");
+          }
+        })
+        .catch(() => {});
+    }, 4000);
+  }
 
   function startPeerDiscovery(roomId) {
     if (peerDiscoveryTimer) {
@@ -814,7 +853,6 @@ const MeetingRoom = (() => {
         }
       });
     }
-
     if (state.isScreenSharing) openScreenCall(targetPeerId);
 
     // During active screen sharing, also notify the remote peer via the data
@@ -1021,6 +1059,8 @@ const MeetingRoom = (() => {
             updateMicIndicators();
             renderParticipants();
           }
+        } else if (data.type === "meeting-ended") {
+          handleMeetingEnded(data.endedBy || "the host");
         } else if (data.type === "force-leave") {
           // Host kicked you from the meeting
           toast("You were removed from the meeting by the host", "error");
@@ -1128,6 +1168,10 @@ const MeetingRoom = (() => {
       clearInterval(peerDiscoveryTimer);
       peerDiscoveryTimer = null;
     }
+    if (meetingStatusTimer) {
+      clearInterval(meetingStatusTimer);
+      meetingStatusTimer = null;
+    }
     pendingCalls.clear();
     if (state.peer) {
       try {
@@ -1165,6 +1209,7 @@ const MeetingRoom = (() => {
     state.isMicOn = true;
     state.isCamOn = true;
     state.isScreenSharing = false;
+    state.isHost = false;
     state.callActive = false;
     state.isConnected = false;
     state.participants = {};
@@ -1174,7 +1219,7 @@ const MeetingRoom = (() => {
     stopMeetingTimer();
     // Reset UI
     els.container.style.display = "none";
-    els.container.classList.remove("self-main", "spotlight", "focus-mode");
+    els.container.classList.remove("self-main", "spotlight", "focus-mode", "screen-share-clean", "chat-open", "meeting-minimized");
     _focusMode = false;
     if (els.localTile) els.localTile.classList.remove("minimized");
     const minBtn = document.getElementById("meeting-local-minimize");
@@ -1207,6 +1252,7 @@ const MeetingRoom = (() => {
     updateParticipantCount();
     // Reset activity bar button
     if (els.joinBtn) els.joinBtn.classList.remove("active");
+    state.meetingMinimized = false;
 
   }
 
@@ -1295,8 +1341,17 @@ const MeetingRoom = (() => {
     // Attach stream / initials
     if (p.stream && p.stream.getVideoTracks().length > 0) {
       video.srcObject = p.stream;
+      video.muted = false;
+      video.volume = 1;
       video.style.display = "block";
       initialsOverlay.style.display = "none";
+      const playPromise = video.play();
+      if (playPromise && playPromise.catch) {
+        playPromise.catch(() => {
+          // A browser may defer autoplay until the next user gesture. The
+          // element remains connected; the global audio unlock below retries.
+        });
+      }
     } else {
       video.srcObject = null;
       video.style.display = "none";
@@ -1611,7 +1666,7 @@ const MeetingRoom = (() => {
     }
     if (els.screenStage) els.screenStage.style.display = "flex";
     document.body.classList.add("presentation-mode");
-    els.container.classList.add("presentation-mode");
+    els.container.classList.add("presentation-mode", "screen-share-clean");
     renderGrid();
   }
 
@@ -1626,7 +1681,7 @@ const MeetingRoom = (() => {
     if (els.screenVideo) els.screenVideo.srcObject = null;
     if (els.screenStage) els.screenStage.style.display = "none";
     document.body.classList.remove("presentation-mode");
-    els.container.classList.remove("presentation-mode");
+    els.container.classList.remove("presentation-mode", "screen-share-clean");
     renderGrid();
   }
 
@@ -1930,6 +1985,7 @@ const MeetingRoom = (() => {
     if (btn) {
       btn.title = state.meetingMinimized ? "Restore meeting" : "Minimize meeting";
       btn.setAttribute("aria-label", btn.title);
+      btn.setAttribute("aria-pressed", state.meetingMinimized ? "true" : "false");
     }
   }
   window.MeetingRoom.toggleMeetingMinimize = toggleMeetingMinimize;
@@ -2229,7 +2285,69 @@ const MeetingRoom = (() => {
   window.MeetingRoom.kickParticipant = kickParticipant;
 
   // ─── End meeting ───────────────────────────────────────────────────────
-  function endMeeting() {
+  function showExitScreen(title, message) {
+    if (!els.exitScreen) return;
+    if (els.exitTitle) els.exitTitle.textContent = title;
+    if (els.exitMessage) els.exitMessage.textContent = message;
+    els.exitScreen.style.display = "flex";
+  }
+
+  function dismissExitScreen() {
+    if (els.exitScreen) els.exitScreen.style.display = "none";
+  }
+
+  function completeMeetingExit(title, message) {
+    disconnectPeer();
+    if (els.modal) els.modal.classList.remove("active");
+    if (els.chatDrawer) els.chatDrawer.style.display = "none";
+    state.chatOpen = false;
+    hideStatus();
+    showExitScreen(title, message);
+  }
+
+  function handleMeetingEnded(endedBy) {
+    if (!state.callActive) return;
+    completeMeetingExit(
+      "Meeting ended by the host",
+      "The host ended this meeting for everyone. Thanks for joining Codexa Meeting."
+    );
+    toast("Meeting ended by " + (endedBy || "the host"), "success");
+  }
+
+  async function endMeeting(endForEveryone) {
+    if (!state.callActive && !state.peer) return;
+    closeMeetingMenus();
+
+    if (endForEveryone) {
+      if (!state.isHost) {
+        toast("Only the meeting host can end the meeting for everyone", "error");
+        return;
+      }
+      try {
+        const response = await fetch("/api/meeting/end", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomId: state.roomId, peerId: state.peerId }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.status !== "ok") {
+          toast(data.error || "Unable to end the meeting", "error");
+          return;
+        }
+        // Notify connected clients only after the server has committed the
+        // closed state. Clients that miss this message still discover the
+        // same state through the status poll.
+        broadcastChatMessage(null, { type: "meeting-ended", endedBy: state.userName });
+        completeMeetingExit(
+          "Meeting ended by the host",
+          "Thanks for joining Codexa Meeting. The meeting has ended for everyone."
+        );
+      } catch (_) {
+        toast("Unable to end the meeting. Please try again.", "error");
+      }
+      return;
+    }
+
     if (state.roomId) {
       fetch("/api/meeting/leave", {
         method: "POST",
@@ -2237,16 +2355,14 @@ const MeetingRoom = (() => {
         body: JSON.stringify({ roomId: state.roomId, peerId: state.peerId }),
       }).catch(() => {});
     }
-
-    addSystemMessage("You left the meeting");
-    disconnectPeer();
-    if (els.modal) els.modal.classList.remove("active");
-    els.container.style.display = "none";
-    els.chatDrawer.style.display = "none";
-    state.chatOpen = false;
-    hideStatus();
-    toast("Meeting ended", "success");
+    completeMeetingExit(
+      "Thanks for joining Codexa Meeting",
+      "You have left the meeting. We hope to see you again soon."
+    );
+    toast("You left the meeting", "success");
   }
+
+  window.MeetingRoom.dismissExitScreen = dismissExitScreen;
 
   window.MeetingRoom.endMeeting = endMeeting;
 

@@ -5454,3 +5454,171 @@ li.CodeMirror-hint-active {
   .meeting-container.presentation-mode .meeting-remote-tile { min-height: 100px; }
 }
 
+/* ── Final Teams-like interaction fixes ─────────────────────────────────
+   These rules intentionally come last: older meeting styles were written for
+   the original overlay layout and otherwise win at a few breakpoints. */
+
+/* A solo camera/avatar is a stage, not an active participant tile. */
+.meeting-video-area.meeting-solo .meeting-local-tile {
+  border-color: var(--meeting-border) !important;
+  box-shadow: none;
+}
+.meeting-video-area.meeting-solo .meeting-local-tile.talking {
+  border-color: var(--meeting-emerald) !important;
+  box-shadow: 0 0 0 1px rgba(78, 201, 176, .18);
+}
+
+/* Dock menus open upward and stay inside the viewport. */
+.meeting-more-menu,
+.meeting-leave-menu {
+  top: auto !important;
+  bottom: calc(100% + 8px);
+  max-height: min(320px, calc(100vh - 120px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.meeting-more-menu { right: 0; }
+.meeting-leave-menu { right: 0; }
+
+/* Reactions float above the fixed control dock, never below the viewport. */
+.meeting-reaction-stage {
+  bottom: 108px;
+  max-width: calc(100% - 24px);
+  overflow: visible;
+}
+
+/* The opened chat is a real side pane: the stage/grid gets less width instead
+   of being painted underneath the drawer. */
+.meeting-container.chat-open .meeting-video-area {
+  padding-right: 336px !important;
+  box-sizing: border-box;
+}
+.meeting-container.chat-open .meeting-chat-drawer {
+  top: 48px;
+  bottom: 0;
+  height: auto;
+  width: min(320px, 34vw);
+  max-width: 320px;
+}
+.meeting-container.chat-open.presentation-mode .meeting-video-area {
+  grid-template-columns: minmax(0, 1fr) 0;
+}
+.meeting-container.chat-open.presentation-mode .meeting-remote-grid {
+  display: none;
+}
+
+/* While presenting, the shared screen is the only media surface. The meeting
+   chrome remains available so the presenter can stop sharing, chat, or leave. */
+.meeting-container.screen-share-clean .meeting-video-area {
+  display: block;
+  padding: 60px 16px 92px !important;
+  background: #050505;
+}
+.meeting-container.screen-share-clean .meeting-screen-stage {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+}
+.meeting-container.screen-share-clean .meeting-remote-grid,
+.meeting-container.screen-share-clean .meeting-local-tile,
+.meeting-container.screen-share-clean .meeting-stage-controls,
+.meeting-container.screen-share-clean .meeting-spotlight-exit {
+  display: none !important;
+}
+
+/* Stable gallery geometry: cells share the available width/height and never
+   retain the old fixed tile dimensions when a participant joins or leaves. */
+.meeting-remote-grid.gallery {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-auto-rows: minmax(0, 1fr);
+  align-items: stretch;
+  justify-items: stretch;
+  overflow: hidden;
+}
+.meeting-remote-grid.gallery .meeting-video-tile,
+.meeting-remote-grid.gallery .meeting-remote-tile {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+/* A narrow viewport uses a compact bottom sheet for chat and reserves its
+   height in the media area, keeping the controls and reactions reachable. */
+@media (max-width: 760px) {
+  .meeting-container.chat-open .meeting-video-area {
+    padding-right: 0 !important;
+    padding-bottom: min(48vh, 330px) !important;
+  }
+  .meeting-container.chat-open .meeting-chat-drawer {
+    top: auto;
+    right: 0;
+    bottom: 82px;
+    width: 100%;
+    max-width: none;
+    height: min(48vh, 330px);
+    border-left: 0;
+    border-top: 1px solid var(--meeting-border);
+  }
+  .meeting-more-menu,
+  .meeting-leave-menu {
+    right: 0;
+    max-width: calc(100vw - 24px);
+  }
+  .meeting-reaction-stage { bottom: 94px; }
+  .meeting-container.screen-share-clean .meeting-video-area {
+    padding: 54px 8px 84px !important;
+  }
+}
+
+/* Exit screen used after a clean leave/end transition. */
+.meeting-exit-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 25%, #182a2b 0, #080b0d 48%, #030405 100%);
+}
+.meeting-exit-card {
+  width: min(460px, 100%);
+  padding: 42px 34px 34px;
+  text-align: center;
+  background: rgba(22, 27, 29, .96);
+  border: 1px solid rgba(78, 201, 176, .3);
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .55);
+}
+.meeting-exit-mark {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(78, 201, 176, .15);
+  color: var(--meeting-emerald);
+  font-size: 30px;
+}
+.meeting-exit-title {
+  color: #f4f8f7;
+  font-size: 21px;
+  font-weight: 650;
+}
+.meeting-exit-message {
+  margin: 10px 0 24px;
+  color: var(--meeting-text2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+

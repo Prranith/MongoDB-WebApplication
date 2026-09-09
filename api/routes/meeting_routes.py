@@ -39,6 +39,8 @@ def api_meeting_create():
             "createdAt": room["createdAt"],
         })
     except Exception as e:
+        if "already exists" in str(e):
+            return _json_response({"status": "error", "error": str(e)}, status=409)
         log.error("meeting_create_failed", error=str(e), correlation_id=g.get("correlation_id"))
         return _json_response({"status": "error", "error": str(e)}, status=503)
 
@@ -67,6 +69,25 @@ def api_meeting_join():
         return _json_response({"status": "error", "error": str(e)}, status=400)
     except Exception as e:
         log.error("meeting_join_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
+
+
+@meeting_bp.route("/api/meeting/end", methods=["POST"])
+def api_meeting_end():
+    """End a room for everybody; only the persisted host may do this."""
+    body = request.get_json(force=True, silent=True) or {}
+    room_id = (body.get("roomId") or "").strip().upper()
+    peer_id = (body.get("peerId") or "").strip()
+    if not room_id or not peer_id:
+        return _json_response({"status": "error", "error": "roomId and peerId are required"}, status=400)
+    try:
+        return _json_response({"status": "ok", **MeetingService.end_room(room_id, peer_id)})
+    except KeyError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=404)
+    except PermissionError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=403)
+    except Exception as e:
+        log.error("meeting_end_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
         return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
@@ -164,4 +185,3 @@ def api_meeting_peers():
     except Exception as e:
         log.error("meeting_peers_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
         return _json_response({"status": "error", "error": str(e)}, status=500)
-

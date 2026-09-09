@@ -5607,6 +5607,174 @@ li.CodeMirror-hint-active {
   .meeting-container.presentation-mode .meeting-remote-tile { min-height: 100px; }
 }
 
+/* ── Final Teams-like interaction fixes ─────────────────────────────────
+   These rules intentionally come last: older meeting styles were written for
+   the original overlay layout and otherwise win at a few breakpoints. */
+
+/* A solo camera/avatar is a stage, not an active participant tile. */
+.meeting-video-area.meeting-solo .meeting-local-tile {
+  border-color: var(--meeting-border) !important;
+  box-shadow: none;
+}
+.meeting-video-area.meeting-solo .meeting-local-tile.talking {
+  border-color: var(--meeting-emerald) !important;
+  box-shadow: 0 0 0 1px rgba(78, 201, 176, .18);
+}
+
+/* Dock menus open upward and stay inside the viewport. */
+.meeting-more-menu,
+.meeting-leave-menu {
+  top: auto !important;
+  bottom: calc(100% + 8px);
+  max-height: min(320px, calc(100vh - 120px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.meeting-more-menu { right: 0; }
+.meeting-leave-menu { right: 0; }
+
+/* Reactions float above the fixed control dock, never below the viewport. */
+.meeting-reaction-stage {
+  bottom: 108px;
+  max-width: calc(100% - 24px);
+  overflow: visible;
+}
+
+/* The opened chat is a real side pane: the stage/grid gets less width instead
+   of being painted underneath the drawer. */
+.meeting-container.chat-open .meeting-video-area {
+  padding-right: 336px !important;
+  box-sizing: border-box;
+}
+.meeting-container.chat-open .meeting-chat-drawer {
+  top: 48px;
+  bottom: 0;
+  height: auto;
+  width: min(320px, 34vw);
+  max-width: 320px;
+}
+.meeting-container.chat-open.presentation-mode .meeting-video-area {
+  grid-template-columns: minmax(0, 1fr) 0;
+}
+.meeting-container.chat-open.presentation-mode .meeting-remote-grid {
+  display: none;
+}
+
+/* While presenting, the shared screen is the only media surface. The meeting
+   chrome remains available so the presenter can stop sharing, chat, or leave. */
+.meeting-container.screen-share-clean .meeting-video-area {
+  display: block;
+  padding: 60px 16px 92px !important;
+  background: #050505;
+}
+.meeting-container.screen-share-clean .meeting-screen-stage {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+}
+.meeting-container.screen-share-clean .meeting-remote-grid,
+.meeting-container.screen-share-clean .meeting-local-tile,
+.meeting-container.screen-share-clean .meeting-stage-controls,
+.meeting-container.screen-share-clean .meeting-spotlight-exit {
+  display: none !important;
+}
+
+/* Stable gallery geometry: cells share the available width/height and never
+   retain the old fixed tile dimensions when a participant joins or leaves. */
+.meeting-remote-grid.gallery {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-auto-rows: minmax(0, 1fr);
+  align-items: stretch;
+  justify-items: stretch;
+  overflow: hidden;
+}
+.meeting-remote-grid.gallery .meeting-video-tile,
+.meeting-remote-grid.gallery .meeting-remote-tile {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+/* A narrow viewport uses a compact bottom sheet for chat and reserves its
+   height in the media area, keeping the controls and reactions reachable. */
+@media (max-width: 760px) {
+  .meeting-container.chat-open .meeting-video-area {
+    padding-right: 0 !important;
+    padding-bottom: min(48vh, 330px) !important;
+  }
+  .meeting-container.chat-open .meeting-chat-drawer {
+    top: auto;
+    right: 0;
+    bottom: 82px;
+    width: 100%;
+    max-width: none;
+    height: min(48vh, 330px);
+    border-left: 0;
+    border-top: 1px solid var(--meeting-border);
+  }
+  .meeting-more-menu,
+  .meeting-leave-menu {
+    right: 0;
+    max-width: calc(100vw - 24px);
+  }
+  .meeting-reaction-stage { bottom: 94px; }
+  .meeting-container.screen-share-clean .meeting-video-area {
+    padding: 54px 8px 84px !important;
+  }
+}
+
+/* Exit screen used after a clean leave/end transition. */
+.meeting-exit-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 25%, #182a2b 0, #080b0d 48%, #030405 100%);
+}
+.meeting-exit-card {
+  width: min(460px, 100%);
+  padding: 42px 34px 34px;
+  text-align: center;
+  background: rgba(22, 27, 29, .96);
+  border: 1px solid rgba(78, 201, 176, .3);
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .55);
+}
+.meeting-exit-mark {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(78, 201, 176, .15);
+  color: var(--meeting-emerald);
+  font-size: 30px;
+}
+.meeting-exit-title {
+  color: #f4f8f7;
+  font-size: 21px;
+  font-weight: 650;
+}
+.meeting-exit-message {
+  margin: 10px 0 24px;
+  color: var(--meeting-text2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 
 </style>
 </head>
@@ -13933,8 +14101,8 @@ window.ExamPortal = ExamPortal;
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
         </button>
         <div class="meeting-leave-menu" id="meeting-leave-menu">
-          <button class="meeting-more-item" onclick="MeetingRoom.endMeeting()">Leave</button>
-          <button class="meeting-more-item" onclick="MeetingRoom.endMeeting()">End meeting</button>
+          <button class="meeting-more-item" onclick="MeetingRoom.endMeeting(false)">Leave meeting</button>
+          <button class="meeting-more-item meeting-host-only" id="meeting-end-host-item" onclick="MeetingRoom.endMeeting(true)">End meeting for everyone</button>
         </div>
       </div>
     </div>
@@ -13968,12 +14136,9 @@ window.ExamPortal = ExamPortal;
     <!-- Stage: fills the area while someone presents or when a user is
          spotlighted (double-click the stage to exit the spotlight) -->
     <div id="meeting-screen-stage" class="meeting-screen-stage" style="display:none" ondblclick="MeetingRoom.exitSpotlight(event)">
-      <video id="meeting-screen-video" autoplay playsinline muted></video>
+      <video id="meeting-screen-video" autoplay playsinline></video>
       <div class="meeting-screen-label" id="meeting-screen-label">You're presenting</div>
       <div class="meeting-stage-controls" id="meeting-stage-controls">
-        <button class="meeting-screen-btn" id="meeting-stage-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-        </button>
         <button class="meeting-screen-btn" id="meeting-focus-btn" onclick="MeetingRoom.toggleFocusMode()" title="Focus">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
         </button>
@@ -13981,9 +14146,6 @@ window.ExamPortal = ExamPortal;
       <button class="meeting-spotlight-exit" onclick="MeetingRoom.exitSpotlight(event)" title="Back to gallery">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         Gallery
-      </button>
-      <button class="meeting-screen-btn" id="meeting-stage-fullscreen-btn-alt" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
       </button>
     </div>
     <div id="meeting-remote-grid" class="meeting-remote-grid"></div>
@@ -14045,6 +14207,16 @@ window.ExamPortal = ExamPortal;
   </div>
 </div>
 
+<!-- Meeting exit state shown after a participant leaves or the host ends it. -->
+<div id="meeting-exit-screen" class="meeting-exit-screen" style="display:none">
+  <div class="meeting-exit-card">
+    <div class="meeting-exit-mark">✓</div>
+    <div class="meeting-exit-title" id="meeting-exit-title">Thanks for joining Codexa Meeting</div>
+    <div class="meeting-exit-message" id="meeting-exit-message">You have left the meeting.</div>
+    <button class="exam-btn exam-btn-green" onclick="MeetingRoom.dismissExitScreen()">Return to Codexa</button>
+  </div>
+</div>
+
 <!-- ══ TOAST CONTAINER ═══════════════════════════════════════════════════ -->
 <div id="toast-container" class="toast-container"></div>
 
@@ -14066,7 +14238,7 @@ const MeetingRoom = (() => {
     roomId: "",
     peerId: "",
     peer: null,
-    userName: "Developer",
+    userName: "Codexa User",
     localStream: null,       // camera+audio
     screenStream: null,      // screen share
     screenCalls: {},         // peerId -> dedicated screen-share MediaConnection (no-camera fallback)
@@ -14086,6 +14258,7 @@ const MeetingRoom = (() => {
     meetingMinimized: false,
     localViewHidden: false,
     joining: false,        // true while a join/create call is starting
+    isHost: false,
     _prevPeers: 0,
   };
 
@@ -14137,6 +14310,10 @@ const MeetingRoom = (() => {
     screenVideo: $("meeting-screen-video"),
     screenLabel: $("meeting-screen-label"),
     fullscreenBtn: $("meeting-fullscreen-btn"),
+    endHostItem: $("meeting-end-host-item"),
+    exitScreen: $("meeting-exit-screen"),
+    exitTitle: $("meeting-exit-title"),
+    exitMessage: $("meeting-exit-message"),
     othersOverlay: $("meeting-others-overlay"),
     othersGrid: $("meeting-others-grid"),
     othersTitle: $("meeting-others-title"),
@@ -14283,6 +14460,7 @@ const MeetingRoom = (() => {
     if (els.chatBtn) els.chatBtn.classList.toggle("active", state.chatOpen);
     if (els.participantsBtn) els.participantsBtn.classList.toggle("active", state.participantsOpen);
     if (els.handBtn) els.handBtn.classList.toggle("hand-up", state.handRaised);
+    if (els.endHostItem) els.endHostItem.style.display = state.isHost ? "flex" : "none";
     // Update activity bar button state
     const actBtn = els.joinBtn;
     if (actBtn) actBtn.classList.toggle("active", state.callActive);
@@ -14720,13 +14898,28 @@ const MeetingRoom = (() => {
       })
       .then((r) => r.json())
       .then((data) => {
+        if (!data || data.status !== "ok") {
+          disconnectPeer();
+          if (els.modal) els.modal.classList.add("active");
+          showJoinScreen();
+          showStatus(data && data.error ? data.error : "Meeting room not found.", "error");
+          return;
+        }
+        state.isHost = !!data.isHost;
         if (data && data.hostPeerId && data.hostPeerId !== state.peerId) {
           connectToPeer(data.hostPeerId);
         }
         // Start peer discovery polling to find all other participants in the room
         startPeerDiscovery(state.roomId);
+        startMeetingStatusPolling(state.roomId);
+        updateControlUI();
       })
-      .catch(() => {});
+      .catch(() => {
+        disconnectPeer();
+        if (els.modal) els.modal.classList.add("active");
+        showJoinScreen();
+        showStatus("Unable to join this meeting right now.", "error");
+      });
 
       toast("Connected to " + state.roomId, "success");
       addSystemMessage("You joined " + state.roomId);
@@ -14778,9 +14971,27 @@ const MeetingRoom = (() => {
 
   // ─── Peer Discovery ────────────────────────────────────────────────────
   let peerDiscoveryTimer = null;
+  let meetingStatusTimer = null;
   let dragState = null; // active PiP drag session
   const pendingCalls = new Set(); // track peer IDs we're currently connecting to
   let _pendingHostConnect = false; // true while we expect an outgoing call to complete
+
+  function startMeetingStatusPolling(roomId) {
+    if (meetingStatusTimer) clearInterval(meetingStatusTimer);
+    meetingStatusTimer = setInterval(() => {
+      if (!state.callActive) return;
+      fetch("/api/meeting/status/" + encodeURIComponent(roomId))
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && data.status === "ok" && data.isOpen === false) {
+            handleMeetingEnded(data.endedBy || "the host");
+          } else if (data && data.status === "error" && /not found/i.test(data.error || "")) {
+            handleMeetingEnded("the host");
+          }
+        })
+        .catch(() => {});
+    }, 4000);
+  }
 
   function startPeerDiscovery(roomId) {
     if (peerDiscoveryTimer) {
@@ -14865,7 +15076,6 @@ const MeetingRoom = (() => {
         }
       });
     }
-
     if (state.isScreenSharing) openScreenCall(targetPeerId);
 
     // During active screen sharing, also notify the remote peer via the data
@@ -15072,6 +15282,8 @@ const MeetingRoom = (() => {
             updateMicIndicators();
             renderParticipants();
           }
+        } else if (data.type === "meeting-ended") {
+          handleMeetingEnded(data.endedBy || "the host");
         } else if (data.type === "force-leave") {
           // Host kicked you from the meeting
           toast("You were removed from the meeting by the host", "error");
@@ -15179,6 +15391,10 @@ const MeetingRoom = (() => {
       clearInterval(peerDiscoveryTimer);
       peerDiscoveryTimer = null;
     }
+    if (meetingStatusTimer) {
+      clearInterval(meetingStatusTimer);
+      meetingStatusTimer = null;
+    }
     pendingCalls.clear();
     if (state.peer) {
       try {
@@ -15216,6 +15432,7 @@ const MeetingRoom = (() => {
     state.isMicOn = true;
     state.isCamOn = true;
     state.isScreenSharing = false;
+    state.isHost = false;
     state.callActive = false;
     state.isConnected = false;
     state.participants = {};
@@ -15225,7 +15442,7 @@ const MeetingRoom = (() => {
     stopMeetingTimer();
     // Reset UI
     els.container.style.display = "none";
-    els.container.classList.remove("self-main", "spotlight", "focus-mode");
+    els.container.classList.remove("self-main", "spotlight", "focus-mode", "screen-share-clean", "chat-open", "meeting-minimized");
     _focusMode = false;
     if (els.localTile) els.localTile.classList.remove("minimized");
     const minBtn = document.getElementById("meeting-local-minimize");
@@ -15258,6 +15475,7 @@ const MeetingRoom = (() => {
     updateParticipantCount();
     // Reset activity bar button
     if (els.joinBtn) els.joinBtn.classList.remove("active");
+    state.meetingMinimized = false;
 
   }
 
@@ -15346,8 +15564,17 @@ const MeetingRoom = (() => {
     // Attach stream / initials
     if (p.stream && p.stream.getVideoTracks().length > 0) {
       video.srcObject = p.stream;
+      video.muted = false;
+      video.volume = 1;
       video.style.display = "block";
       initialsOverlay.style.display = "none";
+      const playPromise = video.play();
+      if (playPromise && playPromise.catch) {
+        playPromise.catch(() => {
+          // A browser may defer autoplay until the next user gesture. The
+          // element remains connected; the global audio unlock below retries.
+        });
+      }
     } else {
       video.srcObject = null;
       video.style.display = "none";
@@ -15662,7 +15889,7 @@ const MeetingRoom = (() => {
     }
     if (els.screenStage) els.screenStage.style.display = "flex";
     document.body.classList.add("presentation-mode");
-    els.container.classList.add("presentation-mode");
+    els.container.classList.add("presentation-mode", "screen-share-clean");
     renderGrid();
   }
 
@@ -15677,7 +15904,7 @@ const MeetingRoom = (() => {
     if (els.screenVideo) els.screenVideo.srcObject = null;
     if (els.screenStage) els.screenStage.style.display = "none";
     document.body.classList.remove("presentation-mode");
-    els.container.classList.remove("presentation-mode");
+    els.container.classList.remove("presentation-mode", "screen-share-clean");
     renderGrid();
   }
 
@@ -15981,6 +16208,7 @@ const MeetingRoom = (() => {
     if (btn) {
       btn.title = state.meetingMinimized ? "Restore meeting" : "Minimize meeting";
       btn.setAttribute("aria-label", btn.title);
+      btn.setAttribute("aria-pressed", state.meetingMinimized ? "true" : "false");
     }
   }
   window.MeetingRoom.toggleMeetingMinimize = toggleMeetingMinimize;
@@ -16280,7 +16508,66 @@ const MeetingRoom = (() => {
   window.MeetingRoom.kickParticipant = kickParticipant;
 
   // ─── End meeting ───────────────────────────────────────────────────────
-  function endMeeting() {
+  function showExitScreen(title, message) {
+    if (!els.exitScreen) return;
+    if (els.exitTitle) els.exitTitle.textContent = title;
+    if (els.exitMessage) els.exitMessage.textContent = message;
+    els.exitScreen.style.display = "flex";
+  }
+
+  function dismissExitScreen() {
+    if (els.exitScreen) els.exitScreen.style.display = "none";
+  }
+
+  function completeMeetingExit(title, message) {
+    disconnectPeer();
+    if (els.modal) els.modal.classList.remove("active");
+    if (els.chatDrawer) els.chatDrawer.style.display = "none";
+    state.chatOpen = false;
+    hideStatus();
+    showExitScreen(title, message);
+  }
+
+  function handleMeetingEnded(endedBy) {
+    if (!state.callActive) return;
+    completeMeetingExit(
+      "Meeting ended by the host",
+      "The host ended this meeting for everyone. Thanks for joining Codexa Meeting."
+    );
+    toast("Meeting ended by " + (endedBy || "the host"), "success");
+  }
+
+  async function endMeeting(endForEveryone) {
+    if (!state.callActive && !state.peer) return;
+    closeMeetingMenus();
+
+    if (endForEveryone) {
+      if (!state.isHost) {
+        toast("Only the meeting host can end the meeting for everyone", "error");
+        return;
+      }
+      try {
+        broadcastChatMessage(null, { type: "meeting-ended", endedBy: state.userName });
+        const response = await fetch("/api/meeting/end", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomId: state.roomId, peerId: state.peerId }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.status !== "ok") {
+          toast(data.error || "Unable to end the meeting", "error");
+          return;
+        }
+        completeMeetingExit(
+          "Meeting ended by the host",
+          "Thanks for joining Codexa Meeting. The meeting has ended for everyone."
+        );
+      } catch (_) {
+        toast("Unable to end the meeting. Please try again.", "error");
+      }
+      return;
+    }
+
     if (state.roomId) {
       fetch("/api/meeting/leave", {
         method: "POST",
@@ -16288,16 +16575,14 @@ const MeetingRoom = (() => {
         body: JSON.stringify({ roomId: state.roomId, peerId: state.peerId }),
       }).catch(() => {});
     }
-
-    addSystemMessage("You left the meeting");
-    disconnectPeer();
-    if (els.modal) els.modal.classList.remove("active");
-    els.container.style.display = "none";
-    els.chatDrawer.style.display = "none";
-    state.chatOpen = false;
-    hideStatus();
-    toast("Meeting ended", "success");
+    completeMeetingExit(
+      "Thanks for joining Codexa Meeting",
+      "You have left the meeting. We hope to see you again soon."
+    );
+    toast("You left the meeting", "success");
   }
+
+  window.MeetingRoom.dismissExitScreen = dismissExitScreen;
 
   window.MeetingRoom.endMeeting = endMeeting;
 
