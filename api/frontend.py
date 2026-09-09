@@ -5704,6 +5704,55 @@ li.CodeMirror-hint-active {
   aspect-ratio: auto;
 }
 
+/* Deterministic Teams-style gallery breakpoints. The class is derived from
+   the total participant count, so the existing tiles and the new tile always
+   receive the same rows, columns, gaps, and available height. */
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery {
+  display: grid;
+  gap: 10px;
+  padding: 10px 16px;
+  align-content: stretch;
+  justify-content: stretch;
+  grid-auto-flow: row;
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery .meeting-local-tile {
+  transition: none !important;
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g3,
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g3 > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g5,
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g6 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g7,
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g8,
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g9 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g10plus {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+
+/* Dismissal is a real navigation action, not just a hidden overlay. */
+.meeting-exit-card .exam-btn {
+  min-width: 180px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 /* A narrow viewport uses a compact bottom sheet for chat and reserves its
    height in the media area, keeping the controls and reactions reachable. */
 @media (max-width: 760px) {
@@ -14213,7 +14262,7 @@ window.ExamPortal = ExamPortal;
     <div class="meeting-exit-mark">✓</div>
     <div class="meeting-exit-title" id="meeting-exit-title">Thanks for joining Codexa Meeting</div>
     <div class="meeting-exit-message" id="meeting-exit-message">You have left the meeting.</div>
-    <button class="exam-btn exam-btn-green" onclick="MeetingRoom.dismissExitScreen()">Return to Codexa</button>
+    <button class="exam-btn exam-btn-green" id="meeting-exit-return-btn" type="button">Return to Codexa</button>
   </div>
 </div>
 
@@ -14314,6 +14363,7 @@ const MeetingRoom = (() => {
     exitScreen: $("meeting-exit-screen"),
     exitTitle: $("meeting-exit-title"),
     exitMessage: $("meeting-exit-message"),
+    exitReturnBtn: $("meeting-exit-return-btn"),
     othersOverlay: $("meeting-others-overlay"),
     othersGrid: $("meeting-others-grid"),
     othersTitle: $("meeting-others-title"),
@@ -14649,22 +14699,22 @@ const MeetingRoom = (() => {
 
   // ─── PeerJS / WebRTC ───────────────────────────────────────────────────
 
-  // Capture settings tuned for maximum clarity: ask for 1080p@30 (the browser
-  // falls back to whatever the camera actually supports) and enable the full
-  // audio processing suite so speech stays crisp.
+  // Capture settings tuned for low-latency 720p/1080p conferencing. Asking for
+  // 8K/60 caused needless camera negotiation and encoder back-pressure on
+  // ordinary devices, which increased delay without improving the tile view.
   const VIDEO_CONSTRAINTS = {
-    width: { ideal: 7680, max: 7680 },
-    height: { ideal: 4320, max: 4320 },
-    frameRate: { ideal: 60, max: 60 },
+    width: { ideal: 1280, max: 1920 },
+    height: { ideal: 720, max: 1080 },
+    frameRate: { ideal: 30, max: 30 },
     facingMode: "user",
     advanced: [
-      { width: 7680, height: 4320, frameRate: 60 },
-      { width: 3840, height: 2160, frameRate: 60 },
-      { width: 1920, height: 1080, frameRate: 60 },
-      { width: 1280, height: 720, frameRate: 60 },
+      { width: 1920, height: 1080, frameRate: 30 },
+      { width: 1280, height: 720, frameRate: 30 },
     ],
   };
   const AUDIO_CONSTRAINTS = {
+    channelCount: 1,
+    sampleRate: 48000,
     echoCancellation: true,
     noiseSuppression: true,
     autoGainControl: true,
@@ -14758,12 +14808,13 @@ const MeetingRoom = (() => {
         if (!params || !params.encodings || !params.encodings.length) return;
         params.encodings = params.encodings.map((e) =>
           Object.assign({}, e, {
-            maxBitrate: s.track.kind === "video" ? (videoBitrate || 20000000) : 128000,
-            minBitrate: s.track.kind === "video" ? 5000000 : 64000,
-            maxFramerate: s.track.kind === "video" ? 60 : undefined,
-            scalabilityMode: s.track.kind === "video" ? "L1T3" : undefined,
+            maxBitrate: s.track.kind === "video" ? (videoBitrate || 2800000) : 96000,
+            minBitrate: s.track.kind === "video" ? 300000 : 32000,
+            maxFramerate: s.track.kind === "video" ? 30 : undefined,
+            scalabilityMode: s.track.kind === "video" ? "L1T2" : undefined,
           })
         );
+        if (s.track.kind === "video") params.degradationPreference = "maintain-framerate";
         s.setParameters(params).catch(() => {});
       });
     } catch (_) {}
@@ -14792,7 +14843,7 @@ const MeetingRoom = (() => {
       });
       if (!call) return;
       state.screenCalls[targetPeerId] = call;
-      boostCallBitrates(call, 6000000);
+      boostCallBitrates(call, 4500000);
       call.on("close", () => {
         if (state.screenCalls[targetPeerId] === call) delete state.screenCalls[targetPeerId];
       });
@@ -15513,7 +15564,8 @@ const MeetingRoom = (() => {
       els.videoArea.appendChild(els.localTile);
     }
     els.remoteGrid.innerHTML = "";
-    els.remoteGrid.classList.remove("gallery", "many", "g3", "strip");
+    els.remoteGrid.classList.remove("gallery", "many", "strip", "g10plus");
+    for (let n = 1; n <= 9; n += 1) els.remoteGrid.classList.remove("g" + n);
     els.localVideo.srcObject = null;
     els.localInitials.style.display = "none";
     if (els.localHandBadge) els.localHandBadge.style.display = "none";
@@ -15690,11 +15742,21 @@ const MeetingRoom = (() => {
         : "Drag to move · Double-click to spotlight";
     }
 
+    if (gallery) {
+      // A dragged/minimized self-view carries inline positioning. Clear it
+      // before moving it into the grid or it distorts the next participant's
+      // layout while the other tiles are being rebuilt.
+      resetLocalTilePosition();
+      els.localTile.classList.remove("minimized");
+    }
     els.remoteGrid.classList.toggle("gallery", gallery);
     els.remoteGrid.classList.toggle("strip", spotlight);
-    const many = gallery && total > 4;
+    const many = gallery && total > 9;
     els.remoteGrid.classList.toggle("many", many);
-    els.remoteGrid.classList.toggle("g3", gallery && total === 3);
+    for (let n = 1; n <= 9; n += 1) {
+      els.remoteGrid.classList.toggle("g" + n, gallery && total === n);
+    }
+    els.remoteGrid.classList.toggle("g10plus", gallery && total >= 10);
     els.container.classList.toggle("presentation-no-remote", !!state.screenPeerId && peers.length === 0);
 
     // Rebuild remote tiles + others tile (filmstrip excludes the spotlighted
@@ -15705,13 +15767,13 @@ const MeetingRoom = (() => {
       : state.screenPeerId
         ? peers.filter((pid) => pid !== state.screenPeerId)
         : peers;
-    const shown = many ? strip.slice(0, 2) : strip;
+    const shown = many ? strip.slice(0, 8) : strip;
     shown.forEach((pid) => {
       const p = state.participants[pid];
       if (!p) return;
       els.remoteGrid.appendChild(makeRemoteTile(pid, p));
     });
-    if (many) els.remoteGrid.appendChild(makeOthersTile(total - 3));
+    if (many) els.remoteGrid.appendChild(makeOthersTile(strip.length - shown.length));
   }
 
   function renderRemoteVideo(peerId) {
@@ -16579,6 +16641,17 @@ const MeetingRoom = (() => {
 
   function dismissExitScreen() {
     if (els.exitScreen) els.exitScreen.style.display = "none";
+    if (els.modal) els.modal.classList.remove("active");
+    if (els.container) {
+      els.container.classList.remove("meeting-minimized", "chat-open", "presentation-mode", "screen-share-clean", "focus-mode");
+      els.container.style.display = "none";
+    }
+    // Return to the actual Codexa welcome view instead of leaving the user
+    // behind an empty meeting layer after the overlay is dismissed.
+    if (typeof window.showView === "function") window.showView("intro");
+    const welcomeButton = document.getElementById("act-welcome");
+    if (welcomeButton) welcomeButton.classList.add("active");
+    window.scrollTo(0, 0);
   }
 
   function completeMeetingExit(title, message) {
@@ -16648,6 +16721,7 @@ const MeetingRoom = (() => {
   }
 
   window.MeetingRoom.dismissExitScreen = dismissExitScreen;
+  if (els.exitReturnBtn) els.exitReturnBtn.addEventListener("click", dismissExitScreen);
 
   window.MeetingRoom.endMeeting = endMeeting;
 

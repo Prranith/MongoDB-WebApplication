@@ -5551,6 +5551,55 @@ li.CodeMirror-hint-active {
   aspect-ratio: auto;
 }
 
+/* Deterministic Teams-style gallery breakpoints. The class is derived from
+   the total participant count, so the existing tiles and the new tile always
+   receive the same rows, columns, gaps, and available height. */
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery {
+  display: grid;
+  gap: 10px;
+  padding: 10px 16px;
+  align-content: stretch;
+  justify-content: stretch;
+  grid-auto-flow: row;
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery .meeting-local-tile {
+  transition: none !important;
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g3,
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g3 > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g5,
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g6 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g7,
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g8,
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g9 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+.meeting-container:not(.presentation-mode) .meeting-remote-grid.gallery.g10plus {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+
+/* Dismissal is a real navigation action, not just a hidden overlay. */
+.meeting-exit-card .exam-btn {
+  min-width: 180px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 /* A narrow viewport uses a compact bottom sheet for chat and reserves its
    height in the media area, keeping the controls and reactions reachable. */
 @media (max-width: 760px) {
