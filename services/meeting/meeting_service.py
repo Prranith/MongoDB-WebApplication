@@ -131,23 +131,39 @@ class MeetingService:
     @classmethod
     def join_room(cls, room_id: str, participant_name: str, peer_id: str) -> Dict[str, Any]:
         room_id = room_id.strip().upper()
+        participant_name = " ".join((participant_name or "Anonymous").split()) or "Anonymous"
         peer_id = peer_id.strip()
         if not peer_id:
             raise ValueError("peerId is required")
-        room = cls._load(room_id)
-        if not room:
-            raise KeyError(f"Meeting room '{room_id}' not found")
-        if not room.get("isOpen", True):
-            raise ValueError("Meeting ended by the host")
-        participants = dict(room.get("participants") or {})
-        if not room.get("hostPeerId"):
-            room["hostPeerId"] = peer_id
-        participants[peer_id] = {"name": participant_name, "lastSeen": _now_iso()}
-        room["participants"] = participants
-        room["activeAt"] = _now_iso()
-        room["_activePeers"] = set(participants.keys())
-        room["participantCount"] = len(participants)
-        cls._save(room)
+        # Keep the read/check/write sequence together so two join requests
+        # handled by the same server instance cannot claim the same display
+        # name. Names are compared case-insensitively with collapsed spaces.
+        with _rooms_lock:
+            room = cls._load(room_id)
+            if not room:
+                raise KeyError(f"Meeting room '{room_id}' not found")
+            if not room.get("isOpen", True):
+                raise ValueError("Meeting ended by the host")
+            participants = dict(room.get("participants") or {})
+            name_key = participant_name.casefold()
+            for existing_peer, existing in participants.items():
+                if existing_peer == peer_id:
+                    continue
+                existing_name = " ".join(str((existing or {}).get("name") or "").split()).casefold()
+                if existing_name and existing_name == name_key:
+                    raise ValueError("A participant with that name is already in the meeting")
+            if not room.get("hostPeerId"):
+                room["hostPeerId"] = peer_id
+            participants[peer_id] = {
+                "name": participant_name,
+                "nameKey": name_key,
+                "lastSeen": _now_iso(),
+            }
+            room["participants"] = participants
+            room["activeAt"] = _now_iso()
+            room["_activePeers"] = set(participants.keys())
+            room["participantCount"] = len(participants)
+            cls._save(room)
         return {
             "roomId": room_id,
             "participantName": participant_name,

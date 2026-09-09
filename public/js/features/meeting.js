@@ -928,6 +928,7 @@ const MeetingRoom = (() => {
           if (state.participants[call.peer]) {
             state.participants[call.peer].stream = stream;
             state.participants[call.peer].isScreen = false;
+            attachRemoteAudio(call.peer, stream);
           }
           const tile = document.querySelector(`.meeting-remote-tile[data-peer="${call.peer}"]`);
           if (tile) {
@@ -965,6 +966,44 @@ const MeetingRoom = (() => {
     });
   }
 
+  // Keep microphone playback independent from the camera tile. A camera tile
+  // is hidden while another participant presents, and some browsers suspend
+  // audio from a display:none video element. A dedicated audio element keeps
+  // normal participant audio alive alongside shared-system audio.
+  function attachRemoteAudio(peerId, stream) {
+    const participant = state.participants[peerId];
+    if (!participant || !stream || !stream.getAudioTracks || !stream.getAudioTracks().length) return;
+    let audio = participant.audioEl;
+    if (!audio) {
+      audio = document.createElement("audio");
+      audio.autoplay = true;
+      audio.playsInline = true;
+      audio.muted = false;
+      audio.volume = 1;
+      audio.dataset.meetingRemoteAudio = peerId;
+      audio.style.position = "fixed";
+      audio.style.width = "1px";
+      audio.style.height = "1px";
+      audio.style.opacity = "0";
+      audio.style.pointerEvents = "none";
+      document.body.appendChild(audio);
+      participant.audioEl = audio;
+    }
+    if (audio.srcObject !== stream) audio.srcObject = stream;
+    const playPromise = audio.play();
+    if (playPromise && playPromise.catch) playPromise.catch(() => {});
+  }
+
+  function unlockRemoteAudio() {
+    document.querySelectorAll("audio[data-meeting-remote-audio]").forEach((audio) => {
+      const playPromise = audio.play();
+      if (playPromise && playPromise.catch) playPromise.catch(() => {});
+    });
+  }
+
+  document.addEventListener("pointerdown", unlockRemoteAudio, { passive: true });
+  document.addEventListener("keydown", unlockRemoteAudio, { passive: true });
+
   function handleRemoteStream(peerId, stream, call) {
     // Detect screen shares reliably: Chrome exposes displaySurface on
     // getDisplayMedia captures; fall back to resolution/label heuristics.
@@ -979,6 +1018,7 @@ const MeetingRoom = (() => {
     state.participants[peerId].name = state.participants[peerId].name || "Peer";
 
     boostCallBitrates(call);
+    if (!isScreen) attachRemoteAudio(peerId, stream);
     renderRemoteVideo(peerId);
     attachVolumeMeter(peerId, stream);
 
@@ -1003,6 +1043,16 @@ const MeetingRoom = (() => {
       try {
         conn.send({ type: "hello", name: state.userName });
       } catch (_) {}
+
+      // A participant can arrive after a presentation has started. Re-send
+      // the active presentation signal from the host's incoming data path and
+      // establish the dedicated screen call for that late joiner.
+      if (state.isScreenSharing && state.screenStream && conn.open) {
+        try {
+          conn.send({ type: "screen-toggle", sharing: true, name: state.userName });
+        } catch (_) {}
+        openScreenCall(peerId);
+      }
 
       conn.on("data", (data) => {
         if (!data || typeof data !== "object") return;
@@ -1205,7 +1255,13 @@ const MeetingRoom = (() => {
     });
     state.screenCalls = {};
 
-    Object.values(state.participants).forEach((p) => stopVolumeMeter(p));
+    Object.values(state.participants).forEach((p) => {
+      stopVolumeMeter(p);
+      if (p && p.audioEl) {
+        try { p.audioEl.srcObject = null; } catch (_) {}
+        try { p.audioEl.remove(); } catch (_) {}
+      }
+    });
     state.isMicOn = true;
     state.isCamOn = true;
     state.isScreenSharing = false;
@@ -1341,8 +1397,9 @@ const MeetingRoom = (() => {
     // Attach stream / initials
     if (p.stream && p.stream.getVideoTracks().length > 0) {
       video.srcObject = p.stream;
-      video.muted = false;
-      video.volume = 1;
+      // Audio is played through the dedicated remote audio element so the
+      // camera tile can safely be hidden during screen sharing.
+      video.muted = true;
       video.style.display = "block";
       initialsOverlay.style.display = "none";
       const playPromise = video.play();
@@ -1487,7 +1544,12 @@ const MeetingRoom = (() => {
   }
 
   function removeParticipant(peerId) {
-    stopVolumeMeter(state.participants[peerId]);
+    const participant = state.participants[peerId];
+    stopVolumeMeter(participant);
+    if (participant && participant.audioEl) {
+      try { participant.audioEl.srcObject = null; } catch (_) {}
+      try { participant.audioEl.remove(); } catch (_) {}
+    }
     delete state.participants[peerId];
     // Forcefully remove any lingering tile from the DOM
     const tile = document.querySelector(`.meeting-remote-tile[data-peer="${peerId}"]`);
