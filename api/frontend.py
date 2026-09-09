@@ -5508,6 +5508,105 @@ li.CodeMirror-hint-active {
   .meeting-ctrl-btn { width: 34px; height: 34px; }
 }
 
+/* ── Final meeting stage geometry ────────────────────────────────────────
+   Keep the presentation stage and participant filmstrip in normal layout
+   flow.  The previous absolute layers caused the filmstrip to overlap the
+   presentation and made the available space change unpredictably. */
+.meeting-container:not(.meeting-minimized) .meeting-video-area {
+  padding-top: 48px;
+  padding-bottom: 82px;
+  box-sizing: border-box;
+}
+.meeting-container.presentation-mode .meeting-video-area {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 236px;
+  gap: 12px;
+  padding: 60px 16px 92px;
+  background: #050505;
+}
+.meeting-container.presentation-mode.presentation-no-remote .meeting-video-area {
+  grid-template-columns: minmax(0, 1fr);
+}
+.meeting-container.presentation-mode .meeting-screen-stage {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-column: 1;
+  grid-row: 1;
+  z-index: 1;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.meeting-container.presentation-mode .meeting-remote-grid {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-auto-rows: minmax(120px, 1fr);
+  align-content: start;
+  gap: 10px;
+  padding: 0;
+  overflow-y: auto;
+  z-index: 2;
+}
+.meeting-container.presentation-mode.presentation-no-remote .meeting-remote-grid { display: none; }
+.meeting-container.presentation-mode .meeting-remote-tile {
+  width: 100%;
+  height: auto;
+  min-height: 120px;
+  aspect-ratio: 16 / 9;
+}
+.meeting-container.presentation-mode .meeting-local-tile {
+  z-index: 8;
+  left: 28px;
+  right: auto;
+  top: auto;
+  bottom: 108px;
+}
+.meeting-container.presentation-mode .meeting-local-tile.minimized,
+.meeting-container.presentation-mode .meeting-local-tile[style*="display: none"] {
+  display: none !important;
+}
+.meeting-container.presentation-mode .meeting-screen-stage video { object-fit: contain; }
+
+@media (max-width: 900px) {
+  .meeting-container.presentation-mode .meeting-video-area {
+    grid-template-columns: minmax(0, 1fr) 190px;
+    gap: 8px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+@media (max-width: 640px) {
+  .meeting-container.presentation-mode .meeting-video-area {
+    display: flex;
+    flex-direction: column;
+    padding: 54px 8px 84px;
+  }
+  .meeting-container.presentation-mode .meeting-screen-stage { flex: 1 1 auto; min-height: 0; }
+  .meeting-container.presentation-mode .meeting-remote-grid {
+    width: 100%;
+    height: 108px;
+    flex: 0 0 108px;
+    grid-template-columns: repeat(3, minmax(100px, 1fr));
+    grid-auto-rows: 100px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .meeting-container.presentation-mode .meeting-remote-tile { min-height: 100px; }
+}
+
 
 </style>
 </head>
@@ -13985,6 +14084,7 @@ const MeetingRoom = (() => {
     localTileMoved: false, // true if the last PiP gesture was a drag
     layoutMode: "gallery",
     meetingMinimized: false,
+    localViewHidden: false,
     joining: false,        // true while a join/create call is starting
     _prevPeers: 0,
   };
@@ -15300,7 +15400,7 @@ const MeetingRoom = (() => {
       els.videoArea.appendChild(els.localTile);
     }
     if (els.localTile) {
-      els.localTile.style.display = spotlight && state.spotlightId === "self" ? "none" : "";
+      els.localTile.style.display = state.localViewHidden || (spotlight && state.spotlightId === "self") ? "none" : "";
       els.localTile.title = gallery
         ? "Double-click to spotlight your video"
         : "Drag to move · Double-click to spotlight";
@@ -15311,6 +15411,7 @@ const MeetingRoom = (() => {
     const many = gallery && total > 4;
     els.remoteGrid.classList.toggle("many", many);
     els.remoteGrid.classList.toggle("g3", gallery && total === 3);
+    els.container.classList.toggle("presentation-no-remote", !!state.screenPeerId && peers.length === 0);
 
     // Rebuild remote tiles + others tile (filmstrip excludes the spotlighted
     // user — they own the stage).
@@ -15485,9 +15586,6 @@ const MeetingRoom = (() => {
       // Open a dedicated one-way presentation call for every current peer.
       Object.keys(state.participants).forEach(openScreenCall);
 
-      // Mix shared system audio with the mic for remote peers
-      startAudioMix(stream);
-
       // Notify others so they can switch to presentation mode
       broadcastChatMessage(null, {
         type: "screen-toggle",
@@ -15524,9 +15622,6 @@ const MeetingRoom = (() => {
     state.screenCalls = {};
     state.isScreenSharing = false;
 
-    // Restore the plain microphone to peers
-    stopAudioMix();
-
     // Back to normal camera bitrate
     getActiveMediaCalls().forEach((c) => boostCallBitrates(c, 2500000));
 
@@ -15548,6 +15643,10 @@ const MeetingRoom = (() => {
     resetLocalTilePosition();
     if (els.screenVideo) {
       els.screenVideo.srcObject = stream || null;
+      // The presenter must not hear their own shared tab/system audio, but
+      // viewers must receive it.  The old implementation muted this element
+      // for everyone, making “share audio” appear broken.
+      els.screenVideo.muted = peerId === state.peerId;
       const playPromise = els.screenVideo.play();
       if (playPromise.catch) {
         playPromise.catch((err) => {
@@ -15569,6 +15668,12 @@ const MeetingRoom = (() => {
 
   function clearScreenStage() {
     state.screenPeerId = "";
+    state.localViewHidden = false;
+    if (els.localTile) els.localTile.classList.remove("minimized");
+    const minBtn = document.getElementById("meeting-local-minimize");
+    const maxBtn = document.getElementById("meeting-local-maximize");
+    if (minBtn) minBtn.style.display = "flex";
+    if (maxBtn) maxBtn.style.display = "none";
     if (els.screenVideo) els.screenVideo.srcObject = null;
     if (els.screenStage) els.screenStage.style.display = "none";
     document.body.classList.remove("presentation-mode");
@@ -15807,6 +15912,10 @@ const MeetingRoom = (() => {
   function toggleLocalMinimize() {
     if (!els.localTile) return;
     const isMinimized = els.localTile.classList.toggle("minimized");
+    // In presentation mode the minus control means “hide my self-view” so
+    // the shared content can occupy the complete stage.  Restore is handled
+    // by the same control and the grid is recalculated in both directions.
+    state.localViewHidden = !!state.screenPeerId && isMinimized;
     const minBtn = document.getElementById("meeting-local-minimize");
     const maxBtn = document.getElementById("meeting-local-maximize");
     if (minBtn) minBtn.style.display = isMinimized ? "none" : "flex";
@@ -15814,6 +15923,7 @@ const MeetingRoom = (() => {
     if (isMinimized) {
       toast("Self-view minimized — click the tile to restore", "success");
     }
+    renderGrid();
   }
   window.MeetingRoom.toggleLocalMinimize = toggleLocalMinimize;
 

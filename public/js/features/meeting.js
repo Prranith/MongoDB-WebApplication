@@ -33,6 +33,7 @@ const MeetingRoom = (() => {
     localTileMoved: false, // true if the last PiP gesture was a drag
     layoutMode: "gallery",
     meetingMinimized: false,
+    localViewHidden: false,
     joining: false,        // true while a join/create call is starting
     _prevPeers: 0,
   };
@@ -1348,7 +1349,7 @@ const MeetingRoom = (() => {
       els.videoArea.appendChild(els.localTile);
     }
     if (els.localTile) {
-      els.localTile.style.display = spotlight && state.spotlightId === "self" ? "none" : "";
+      els.localTile.style.display = state.localViewHidden || (spotlight && state.spotlightId === "self") ? "none" : "";
       els.localTile.title = gallery
         ? "Double-click to spotlight your video"
         : "Drag to move · Double-click to spotlight";
@@ -1359,6 +1360,7 @@ const MeetingRoom = (() => {
     const many = gallery && total > 4;
     els.remoteGrid.classList.toggle("many", many);
     els.remoteGrid.classList.toggle("g3", gallery && total === 3);
+    els.container.classList.toggle("presentation-no-remote", !!state.screenPeerId && peers.length === 0);
 
     // Rebuild remote tiles + others tile (filmstrip excludes the spotlighted
     // user — they own the stage).
@@ -1533,9 +1535,6 @@ const MeetingRoom = (() => {
       // Open a dedicated one-way presentation call for every current peer.
       Object.keys(state.participants).forEach(openScreenCall);
 
-      // Mix shared system audio with the mic for remote peers
-      startAudioMix(stream);
-
       // Notify others so they can switch to presentation mode
       broadcastChatMessage(null, {
         type: "screen-toggle",
@@ -1572,9 +1571,6 @@ const MeetingRoom = (() => {
     state.screenCalls = {};
     state.isScreenSharing = false;
 
-    // Restore the plain microphone to peers
-    stopAudioMix();
-
     // Back to normal camera bitrate
     getActiveMediaCalls().forEach((c) => boostCallBitrates(c, 2500000));
 
@@ -1596,6 +1592,10 @@ const MeetingRoom = (() => {
     resetLocalTilePosition();
     if (els.screenVideo) {
       els.screenVideo.srcObject = stream || null;
+      // The presenter must not hear their own shared tab/system audio, but
+      // viewers must receive it.  The old implementation muted this element
+      // for everyone, making “share audio” appear broken.
+      els.screenVideo.muted = peerId === state.peerId;
       const playPromise = els.screenVideo.play();
       if (playPromise.catch) {
         playPromise.catch((err) => {
@@ -1617,6 +1617,12 @@ const MeetingRoom = (() => {
 
   function clearScreenStage() {
     state.screenPeerId = "";
+    state.localViewHidden = false;
+    if (els.localTile) els.localTile.classList.remove("minimized");
+    const minBtn = document.getElementById("meeting-local-minimize");
+    const maxBtn = document.getElementById("meeting-local-maximize");
+    if (minBtn) minBtn.style.display = "flex";
+    if (maxBtn) maxBtn.style.display = "none";
     if (els.screenVideo) els.screenVideo.srcObject = null;
     if (els.screenStage) els.screenStage.style.display = "none";
     document.body.classList.remove("presentation-mode");
@@ -1855,6 +1861,10 @@ const MeetingRoom = (() => {
   function toggleLocalMinimize() {
     if (!els.localTile) return;
     const isMinimized = els.localTile.classList.toggle("minimized");
+    // In presentation mode the minus control means “hide my self-view” so
+    // the shared content can occupy the complete stage.  Restore is handled
+    // by the same control and the grid is recalculated in both directions.
+    state.localViewHidden = !!state.screenPeerId && isMinimized;
     const minBtn = document.getElementById("meeting-local-minimize");
     const maxBtn = document.getElementById("meeting-local-maximize");
     if (minBtn) minBtn.style.display = isMinimized ? "none" : "flex";
@@ -1862,6 +1872,7 @@ const MeetingRoom = (() => {
     if (isMinimized) {
       toast("Self-view minimized — click the tile to restore", "success");
     }
+    renderGrid();
   }
   window.MeetingRoom.toggleLocalMinimize = toggleLocalMinimize;
 
