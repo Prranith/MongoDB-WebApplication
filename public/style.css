@@ -5671,3 +5671,32 @@ li.CodeMirror-hint-active {
   line-height: 1.6;
 }
 
+/* Full-bleed presentation: the shared display owns the entire meeting
+   viewport. Meeting chrome stays layered above it, while contain preserves
+   the complete shared resolution without cropping application content. */
+.meeting-container.screen-share-clean .meeting-video-area {
+  position: absolute;
+  inset: 0;
+  display: block;
+  padding: 0 !important;
+  background: #000;
+}
+.meeting-container.screen-share-clean .meeting-screen-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.meeting-container.screen-share-clean .meeting-screen-stage video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+.meeting-container.screen-share-clean .meeting-screen-label {
+  top: 72px;
+  left: 20px;
+}
+
