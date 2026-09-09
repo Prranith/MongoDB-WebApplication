@@ -272,11 +272,11 @@ body {
 .act-btn-meeting.active {
   color: #00ed64;
   border-left-color: #00ed64;
-  box-shadow: inset 0 0 8px rgba(0, 237, 100, 0.25);
+  box-shadow: inset 0 0 8px rgba(78, 201, 176, 0.25);
 }
 
 .act-btn-meeting.active svg {
-  filter: drop-shadow(0 0 4px rgba(0, 237, 100, 0.6));
+  filter: drop-shadow(0 0 4px rgba(78, 201, 176, 0.6));
 }
 
 .act-btn svg {
@@ -1351,13 +1351,13 @@ body {
   object-fit: contain;
   margin: 12px 0;
   cursor: pointer;
-  filter: drop-shadow(0 0 20px rgba(0, 237, 100, 0.15));
+  filter: drop-shadow(0 0 20px rgba(78, 201, 176, 0.15));
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .intro-logo:hover {
   transform: scale(1.08) rotate(5deg);
-  filter: drop-shadow(0 0 30px rgba(0, 237, 100, 0.35));
+  filter: drop-shadow(0 0 30px rgba(78, 201, 176, 0.35));
 }
 
 /* Glassmorphism Grid */
@@ -1386,7 +1386,7 @@ body {
 .intro-stat-card:hover {
   transform: translateY(-4px);
   background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(0, 237, 100, 0.3);
+  border-color: rgba(78, 201, 176, 0.3);
   box-shadow: 0 8px 30px rgba(0, 237, 100, 0.08);
 }
 
@@ -1888,9 +1888,9 @@ li.CodeMirror-hint-active {
 }
 
 .custom-badge {
-  background: rgba(0, 237, 100, 0.15);
+  background: rgba(78, 201, 176, 0.15);
   color: #00ed64;
-  border: 1px solid rgba(0, 237, 100, 0.3);
+  border: 1px solid rgba(78, 201, 176, 0.3);
   border-radius: 3px;
   font-size: 9px;
   padding: 1px 4px;
@@ -3239,7 +3239,7 @@ li.CodeMirror-hint-active {
 .exam-resizer-v:hover,
 .exam-resizer-v.dragging {
   background: var(--green2);
-  box-shadow: 0 0 8px rgba(0, 237, 100, 0.4);
+  box-shadow: 0 0 8px rgba(78, 201, 176, 0.4);
 }
 
 .exam-resizer-h {
@@ -3254,7 +3254,7 @@ li.CodeMirror-hint-active {
 .exam-resizer-h:hover,
 .exam-resizer-h.dragging {
   background: var(--green2);
-  box-shadow: 0 0 8px rgba(0, 237, 100, 0.4);
+  box-shadow: 0 0 8px rgba(78, 201, 176, 0.4);
 }
 
 .exam-resizer-v-sub {
@@ -3640,87 +3640,101 @@ li.CodeMirror-hint-active {
 ════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --meeting-bg:       #0b0f19;
-  --meeting-bg2:      #111827;
-  --meeting-bg3:      #1e293b;
-  --meeting-border:   #334155;
-  --meeting-emerald:  #00ed64;
-  --meeting-emerald2: #00c853;
-  --meeting-red:      #ef4444;
-  --meeting-text:     #f8fafc;
-  --meeting-text2:    #94a3b8;
-  --meeting-glass:    rgba(17, 24, 39, 0.72);
+  /* Matches the Exam Portal / IDE palette (see :root at top of file) */
+  --meeting-bg:       #000000;
+  --meeting-bg2:      #0d0d0d;
+  --meeting-bg3:      #151515;
+  --meeting-bg4:      #222222;
+  --meeting-border:   #222222;
+  --meeting-border2:  #333333;
+  --meeting-emerald:  #4ec9b0;
+  --meeting-emerald2: #3dab96;
+  --meeting-red:      #f48771;
+  --meeting-text:     #cccccc;
+  --meeting-text2:    #9d9d9d;
+  --meeting-text3:    #858585;
+  --meeting-glass:    rgba(13, 13, 13, 0.85);
 }
 
 /* ── Join Call Button (title bar) ─────────────────── */
 .tbtn-meeting {
-  background: rgba(0, 237, 100, 0.12) !important;
-  border-color: #00ed64 !important;
-  color: #00ed64 !important;
+  background: rgba(78, 201, 176, 0.1) !important;
+  border-color: var(--meeting-emerald) !important;
+  color: var(--meeting-emerald) !important;
   font-weight: 600;
 }
 
 .tbtn-meeting:hover {
-  background: rgba(0, 237, 100, 0.25) !important;
-  box-shadow: 0 0 12px rgba(0, 237, 100, 0.35);
+  background: rgba(78, 201, 176, 0.2) !important;
+  box-shadow: 0 0 12px rgba(78, 201, 176, 0.35);
 }
 
 .tbtn-meeting.active {
-  background: #00ed64 !important;
-  color: #0b0f19 !important;
+  background: var(--meeting-emerald) !important;
+  color: #000000 !important;
 }
 
-/* ── Meeting Modal ──────────────────────────────────── */
-#meeting-modal .modal-win {
-  width: 480px;
-  background: var(--meeting-bg2);
-  border: 1px solid var(--meeting-border);
-  border-radius: 10px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+/* ── Meeting screens (Exam-Portal style) ────────────── */
+.meeting-screen {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
-#meeting-modal .modal-titlebar {
+/* Meeting role cards mirror exam-role-card; icons get IDE-gray strokes
+   that shift to emerald on hover, just like the exam portal accent. */
+.meeting-screen .exam-role-icon svg {
+  fill: none;
+  stroke: var(--meeting-text2);
+}
+.meeting-screen .exam-role-card:hover .exam-role-icon svg {
+  stroke: var(--meeting-emerald);
+}
+
+.meeting-room-id-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.meeting-room-id-row .exam-input {
+  flex: 1;
+}
+
+.meeting-gen-btn {
+  height: 34px;
+  padding: 0 14px;
+  background: var(--meeting-bg4);
+  border: 1px solid var(--meeting-border2);
+  border-radius: 4px;
+  color: var(--meeting-text2);
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.meeting-gen-btn:hover {
   background: var(--meeting-bg3);
-  border-bottom: 1px solid var(--meeting-border);
-}
-
-#meeting-modal .modal-icon {
-  color: #00ed64;
-}
-
-.meeting-join-form {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.meeting-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.meeting-input {
-  padding: 10px 14px;
-  background: var(--meeting-bg);
-  border: 1px solid var(--meeting-border);
-  border-radius: 6px;
-  color: var(--meeting-text);
-  font-size: 13px;
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  width: 100%;
-}
-
-.meeting-input:focus {
   border-color: var(--meeting-emerald);
-  box-shadow: 0 0 0 3px rgba(0, 237, 100, 0.18);
+  color: var(--meeting-emerald);
 }
 
-.meeting-input::placeholder {
-  color: #475569;
+.meeting-form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
 }
+
+.meeting-status-msg {
+  display: none;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.meeting-status-msg.error   { color: var(--meeting-red); }
+.meeting-status-msg.success { color: var(--meeting-emerald); }
 
 .meeting-gen-btn {
   padding: 10px 14px;
@@ -3741,57 +3755,7 @@ li.CodeMirror-hint-active {
   color: var(--meeting-emerald);
 }
 
-.meeting-btn {
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s;
-}
 
-.meeting-btn-secondary {
-  background: var(--meeting-bg3);
-  color: var(--meeting-text2);
-  border-color: var(--meeting-border);
-}
-
-.meeting-btn-secondary:hover {
-  background: var(--meeting-border);
-  color: var(--meeting-text);
-}
-
-.meeting-btn-primary {
-  background: var(--meeting-emerald);
-  color: #0b0f19;
-  border-color: var(--meeting-emerald);
-}
-
-.meeting-btn-primary:hover {
-  background: var(--meeting-emerald2);
-  box-shadow: 0 0 16px rgba(0, 237, 100, 0.4);
-}
-
-.meeting-status-msg {
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-family: 'JetBrains Mono', monospace;
-  line-height: 1.5;
-}
-
-.meeting-status-msg.error {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
-}
-
-.meeting-status-msg.success {
-  background: rgba(0, 237, 100, 0.12);
-  border: 1px solid rgba(0, 237, 100, 0.3);
-  color: #4ade80;
-}
 
 /* ── Meeting Container (fullscreen overlay) ────────── */
 .meeting-container {
@@ -3802,18 +3766,47 @@ li.CodeMirror-hint-active {
   font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
-/* ── Top Bar ─────────────────────────────────────────── */
+/* ── Top Bar (Teams-style control bar) ──────────────── */
 .meeting-topbar {
   height: 48px;
-  background: var(--meeting-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--meeting-bg2);
   border-bottom: 1px solid var(--meeting-border);
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 14px;
   gap: 12px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 30;
+}
+
+.meeting-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.meeting-topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+
+.meeting-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.meeting-topbar-divider {
+  width: 1px;
+  height: 26px;
+  background: var(--meeting-border2);
+  margin: 0 6px;
 }
 
 .meeting-room-info {
@@ -3831,8 +3824,8 @@ li.CodeMirror-hint-active {
 
 .meeting-participant-count {
   padding: 2px 8px;
-  background: rgba(0, 237, 100, 0.12);
-  border: 1px solid rgba(0, 237, 100, 0.25);
+  background: rgba(78, 201, 176, 0.1);
+  border: 1px solid rgba(78, 201, 176, 0.25);
   border-radius: 10px;
   color: var(--meeting-emerald);
   font-size: 11px;
@@ -3878,86 +3871,111 @@ li.CodeMirror-hint-active {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-.meeting-waiting-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  background: var(--meeting-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--meeting-border);
-  border-radius: 12px;
-  padding: 32px 40px;
-  max-width: 480px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-  z-index: 5;
-  animation: fadeIn 0.3s ease;
-}
-
-.meeting-waiting-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0, 237, 100, 0.12);
-  border: 1px solid rgba(0, 237, 100, 0.3);
-  color: var(--meeting-emerald);
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  margin: 14px 0 10px 0;
-}
-
-.meeting-waiting-desc {
-  font-size: 13px;
-  color: var(--meeting-text2);
-  margin-bottom: 20px;
-  line-height: 1.5;
-}
-
-.meeting-waiting-actions {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-  justify-content: center;
-}
-
 .meeting-local-tile {
   width: 220px;
   height: 160px;
   position: absolute;
-  bottom: 80px;
+  bottom: 24px;
   right: 24px;
   z-index: 10;
   border-color: var(--meeting-emerald);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    inset 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s, box-shadow 0.3s;
 }
 
-.meeting-video-area.meeting-solo .meeting-local-tile {
-  width: 280px;
-  height: 200px;
-  bottom: 90px;
-  right: 32px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 237, 100, 0.2);
+.meeting-local-tile.dragging {
+  transition: none;
+  cursor: grabbing;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
 }
 
+/* Solo mode: the self-view is the main stage (full video) — handled by the
+   .self-main rules below. When minimized it becomes the draggable PiP. */
+
+/* Self-view hand badge (top-right of the tile) */
+.meeting-hand-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 176, 65, 0.95);
+  border-radius: 50%;
+  font-size: 14px;
+  z-index: 8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Spotlight exit button — visible only while a user is pinned to the stage */
+.meeting-spotlight-exit {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  background: rgba(13, 13, 13, 0.75);
+  border: 1px solid var(--meeting-border);
+  border-radius: 12px;
+  color: var(--meeting-text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 3;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.meeting-spotlight-exit:hover {
+  background: rgba(78, 201, 176, 0.2);
+  border-color: var(--meeting-emerald);
+  color: var(--meeting-emerald);
+}
+
+/* Gallery grid: uniform cells that fill the area. 2 or 4+ users → 2 columns,
+   3 users → 3 columns (class .g3). Grid is %-based, so it reflows when the
+   window resizes or the app enters fullscreen. */
 .meeting-remote-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
   gap: 16px;
   width: 100%;
   height: 100%;
-  align-content: center;
   padding: 24px;
+}
+
+.meeting-remote-grid.g3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Self-view becomes a uniform cell in gallery mode and in the spotlight
+   filmstrip (when someone else is pinned) */
+.meeting-remote-grid.gallery .meeting-local-tile,
+.meeting-remote-grid.strip .meeting-local-tile {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  left: auto;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  transform: none;
+  cursor: default;
+  z-index: auto;
+  transition: width 0.3s, height 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 .meeting-remote-tile {
   position: relative;
-  aspect-ratio: 16 / 10;
-  min-height: 180px;
+  min-height: 0;
   border-radius: 8px;
   overflow: hidden;
   background: var(--meeting-bg2);
@@ -3968,14 +3986,150 @@ li.CodeMirror-hint-active {
 
 .meeting-remote-tile.talking {
   border-color: var(--meeting-emerald);
-  box-shadow: 0 0 16px rgba(0, 237, 100, 0.3);
+  box-shadow: 0 0 16px rgba(78, 201, 176, 0.3);
+}
+
+/* "Others" tile (large meetings: 3 named tiles + others) */
+.meeting-others-tile {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: var(--meeting-bg2);
+  border: 1px dashed var(--meeting-border2);
+  color: var(--meeting-text2);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.meeting-others-tile:hover,
+.meeting-others-tile:focus-visible {
+  border-color: var(--meeting-emerald);
+  color: var(--meeting-text);
+  background: rgba(78, 201, 176, 0.08);
+  outline: none;
+}
+
+.meeting-others-count {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--meeting-emerald);
+}
+
+.meeting-others-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+/* Paged 4x4 "Others" viewer */
+.meeting-others-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: rgba(8, 10, 12, 0.97);
+}
+
+.meeting-others-header {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--meeting-border);
+  flex-shrink: 0;
+}
+
+.meeting-others-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--meeting-text);
+}
+
+.meeting-others-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.meeting-others-nav-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--meeting-border);
+  border-radius: 6px;
+  color: var(--meeting-text2);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.meeting-others-nav-btn:hover:not(:disabled) {
+  background: rgba(78, 201, 176, 0.12);
+  color: var(--meeting-emerald);
+  border-color: var(--meeting-emerald);
+}
+
+.meeting-others-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.meeting-others-page {
+  font-size: 12px;
+  color: var(--meeting-text2);
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 52px;
+  text-align: center;
+}
+
+.meeting-others-close {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--meeting-text2);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.meeting-others-close:hover {
+  background: rgba(244, 135, 113, 0.15);
+  color: var(--meeting-red);
+}
+
+.meeting-others-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 12px;
+  padding: 18px;
+  overflow: hidden auto;
 }
 
 .meeting-remote-tile video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #111827;
+  background: #151515;
   border-radius: 7px;
 }
 
@@ -3985,7 +4139,7 @@ li.CodeMirror-hint-active {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  background: linear-gradient(135deg, #151515 0%, #0d0d0d 100%);
   border-radius: 7px;
 }
 
@@ -4005,9 +4159,7 @@ li.CodeMirror-hint-active {
   align-items: center;
   gap: 6px;
   padding: 3px 8px;
-  background: var(--meeting-glass);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(13, 13, 13, 0.85);
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
@@ -4033,103 +4185,500 @@ li.CodeMirror-hint-active {
 }
 
 .meeting-status-off {
-  background: #475569;
+  background: #555555;
 }
 
-/* ── Floating Control Bar ───────────────────────────── */
-.meeting-control-bar {
-  height: 72px;
-  background: var(--meeting-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--meeting-border);
-  display: flex;
+/* Mic-off icon inside tile labels */
+.meeting-tile-mic {
+  display: inline-flex;
   align-items: center;
-  padding: 0 16px;
-  gap: 8px;
-  flex-shrink: 0;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  color: var(--meeting-red);
+  margin-left: 4px;
 }
 
-.meeting-ctrl-btn {
+.meeting-tile-mic .meeting-slash {
+  opacity: 1;
+}
+
+/* ── Participants panel (Teams-style sidebar) ───────── */
+.meeting-participants-panel {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  background: var(--meeting-bg2);
+  border-left: 1px solid var(--meeting-border);
   display: flex;
   flex-direction: column;
+  z-index: 22;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.meeting-panel-header {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 16px;
+  border-bottom: 1px solid var(--meeting-border);
+  flex-shrink: 0;
+}
+
+.meeting-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--meeting-text);
+}
+
+.meeting-panel-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.meeting-panel-invite {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px;
+  flex-shrink: 0;
+}
+
+.meeting-invite-input {
+  flex: 1;
+  height: 34px;
+  padding: 0 12px;
+  background: var(--meeting-bg);
+  border: 1px solid var(--meeting-border);
+  border-radius: 6px;
+  color: var(--meeting-text2);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-invite-input:focus {
+  border-color: var(--meeting-emerald);
+}
+
+.meeting-panel-section-title {
+  padding: 10px 16px 6px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--meeting-text);
+  border-bottom: 1px solid var(--meeting-border);
+  flex-shrink: 0;
+}
+
+.meeting-participant-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.meeting-participant-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.meeting-participant-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.meeting-participant-avatar {
+  width: 36px;
+  height: 36px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  width: 52px;
-  height: 52px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--meeting-border);
+  border-radius: 50%;
+  background: rgba(78, 201, 176, 0.18);
+  border: 1px solid rgba(78, 201, 176, 0.35);
+  color: var(--meeting-emerald);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+
+.meeting-participant-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.meeting-participant-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--meeting-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meeting-participant-role {
+  font-size: 11px;
+  color: var(--meeting-text3);
+}
+
+.meeting-participant-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.meeting-participant-mic {
+  display: inline-flex;
+  color: var(--meeting-red);
+}
+
+.meeting-participant-hand {
+  font-size: 14px;
+}
+
+/* ── Control buttons (Teams-style icon buttons) ─────── */
+.meeting-ctrl-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 50%;
   color: var(--meeting-text);
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 
 .meeting-ctrl-btn:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: #475569;
-  transform: scale(1.04);
+  border-color: var(--meeting-border);
 }
 
 .meeting-ctrl-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.94);
 }
 
 .meeting-ctrl-icon {
   fill: none;
-  stroke: var(--meeting-text2);
-  transition: stroke 0.2s;
+  stroke: var(--meeting-text);
+  transition: stroke 0.2s, fill 0.2s;
+}
+
+/* Raise-hand control uses a clear emoji instead of a thin line icon */
+.meeting-hand-emoji {
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
 }
 
 .meeting-ctrl-btn:hover .meeting-ctrl-icon {
-  stroke: var(--meeting-text);
+  stroke: #ffffff;
 }
 
-.meeting-ctrl-label {
-  font-size: 9px;
-  color: var(--meeting-text3);
-  font-weight: 500;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-}
-
-.meeting-ctrl-spacer {
-  flex: 1;
-}
-
-.meeting-end-btn {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: var(--meeting-red);
-}
-
-.meeting-end-btn:hover {
-  background: rgba(239, 68, 68, 0.25);
-  border-color: var(--meeting-red);
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
-}
-
-.meeting-ctrl-btn.muted {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: var(--meeting-red);
-  color: var(--meeting-red);
-}
-
-.meeting-ctrl-btn.muted .meeting-ctrl-icon {
+/* Strike-through slash shown when mic/camera is off */
+.meeting-slash {
+  opacity: 0;
+  transition: opacity 0.2s;
   stroke: var(--meeting-red);
 }
 
-.meeting-ctrl-btn.active {
-  background: rgba(0, 237, 100, 0.15);
-  border-color: var(--meeting-emerald);
-  color: var(--meeting-emerald);
-  box-shadow: 0 0 12px rgba(0, 237, 100, 0.25);
+.meeting-ctrl-btn.off .meeting-slash {
+  opacity: 1;
+}
+
+.meeting-ctrl-btn.off .meeting-ctrl-icon {
+  stroke: var(--meeting-text2);
+}
+
+/* Active button: emerald underline indicator (Teams-style) */
+.meeting-ctrl-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--meeting-emerald);
 }
 
 .meeting-ctrl-btn.active .meeting-ctrl-icon {
   stroke: var(--meeting-emerald);
+}
+
+/* Amber "hand up" state */
+.meeting-ctrl-btn.hand-up .meeting-ctrl-icon {
+  stroke: #f5b041;
+}
+
+.meeting-ctrl-btn.hand-up::after {
+  background: #f5b041;
+}
+
+/* ── More actions / Leave dropdown menus ─────────────── */
+.meeting-more-wrap {
+  position: relative;
+  display: flex;
+}
+
+.meeting-more-menu,
+.meeting-leave-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 190px;
+  display: none;
+  flex-direction: column;
+  padding: 6px;
+  background: var(--meeting-bg3);
+  border: 1px solid var(--meeting-border2);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  z-index: 50;
+}
+
+.meeting-more-menu.open,
+.meeting-leave-menu.open {
+  display: flex;
+}
+
+.meeting-more-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--meeting-text3);
+  padding: 4px 10px 2px 10px;
+}
+
+.meeting-more-emojis {
+  display: flex;
+  gap: 2px;
+  padding: 2px 6px 6px 6px;
+}
+
+.meeting-react-emoji {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  font-size: 19px;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.meeting-react-emoji:hover {
+  transform: scale(1.25);
+  background: rgba(78, 201, 176, 0.15);
+}
+
+.meeting-more-sep {
+  height: 1px;
+  background: var(--meeting-border2);
+  margin: 4px 2px;
+}
+
+.meeting-more-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--meeting-text);
+  font-size: 12px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.meeting-more-item:hover {
+  background: rgba(78, 201, 176, 0.12);
+  color: var(--meeting-emerald);
+}
+
+/* Leave button (red pill, Teams-style) */
+.meeting-leave-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.meeting-leave-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 16px;
+  background: #c4314b;
+  border: none;
+  border-radius: 18px 0 0 18px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.meeting-leave-btn:hover {
+  background: #d8455f;
+}
+
+.meeting-leave-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 36px;
+  background: #c4314b;
+  border: none;
+  border-radius: 0 18px 18px 0;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.meeting-leave-chevron:hover {
+  background: #d8455f;
+}
+
+/* ── Floating reaction emoji burst (center-bottom, Teams-style) ── */
+.meeting-reaction-stage {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.meeting-reaction-burst {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+  animation: meeting-reaction-float 2.2s ease-out forwards;
+}
+
+.meeting-reaction-emoji {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.meeting-reaction-name {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(13, 13, 13, 0.7);
+  border: 1px solid var(--meeting-border2);
+  border-radius: 10px;
+  padding: 2px 8px;
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes meeting-reaction-float {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.15);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-60px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120px) scale(0.9);
+  }
+}
+
+/* ── Meeting timer (top bar) ─────────────────────────── */
+.meeting-timer {
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--meeting-border);
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--meeting-text2);
+}
+
+/* ── Solo mode: the self-view fills the whole video area (the one screen) */
+.meeting-video-area.meeting-solo .meeting-local-tile {
+  width: calc(100% - 48px);
+  height: calc(100% - 48px);
+  left: 24px;
+  top: 24px;
+  right: auto;
+  bottom: auto;
+  transform: none;
+  cursor: default;
+  z-index: 6;
+}
+
+/* ── Spotlight: a user (or yourself) is pinned as MY main stage ─────── */
+/* Everyone else becomes a right-side filmstrip (Teams-style). */
+.meeting-container.spotlight .meeting-remote-grid {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  bottom: 16px;
+  width: 260px;
+  grid-template-columns: 1fr;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 10px;
+  padding: 0;
+  z-index: 12;
+  align-content: start;
+  overflow: hidden auto;
+}
+
+.meeting-container.spotlight .meeting-remote-tile {
+  aspect-ratio: auto;
+  min-height: 0;
+  border-radius: 8px;
+}
+
+.meeting-container.spotlight .meeting-remote-grid:empty {
+  display: none;
+}
+
+/* Spotlighted user's camera fills the stage (cover, not letterboxed) */
+.meeting-screen-stage.spotlight video {
+  object-fit: cover;
+}
+
+.meeting-screen-stage.spotlight .meeting-spotlight-exit {
+  display: flex;
 }
 
 /* ── Chat Drawer ─────────────────────────────────────── */
@@ -4138,10 +4687,8 @@ li.CodeMirror-hint-active {
   top: 48px;
   right: 0;
   width: 320px;
-  height: calc(100% - 48px - 72px);
-  background: var(--meeting-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  height: calc(100% - 48px);
+  background: var(--meeting-bg2);
   border-left: 1px solid var(--meeting-border);
   display: flex;
   flex-direction: column;
@@ -4177,9 +4724,9 @@ li.CodeMirror-hint-active {
 
 .meeting-chat-msg {
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--meeting-border);
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 12px;
   line-height: 1.5;
   max-width: 90%;
@@ -4187,9 +4734,9 @@ li.CodeMirror-hint-active {
 
 .meeting-chat-msg.from-me {
   align-self: flex-end;
-  background: rgba(0, 237, 100, 0.12);
-  border-color: rgba(0, 237, 100, 0.2);
-  color: #4ade80;
+  background: rgba(78, 201, 176, 0.1);
+  border-color: rgba(78, 201, 176, 0.2);
+  color: var(--meeting-emerald);
 }
 
 .meeting-chat-msg.from-other {
@@ -4255,93 +4802,135 @@ li.CodeMirror-hint-active {
 }
 
 .meeting-send-btn:hover {
-  box-shadow: 0 0 12px rgba(0, 237, 100, 0.3);
+  box-shadow: 0 0 12px rgba(78, 201, 176, 0.3);
 }
 
-/* ── Presentation Mode (screen share active) ──────── */
-.meeting-container.presentation-mode .meeting-video-area {
-  flex-direction: row;
+/* Frozen submit buttons while a call is starting */
+.exam-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
-.meeting-container.presentation-mode .meeting-local-tile {
-  display: none;
+/* ── Screen share stage (Teams-style presentation) ─────── */
+.meeting-screen-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
 }
 
-.meeting-container.presentation-mode .meeting-remote-grid {
-  grid-template-columns: 1fr;
-  width: 80%;
+.meeting-screen-stage video {
+  width: 100%;
   height: 100%;
-  padding: 16px 24px;
-}
-
-.meeting-container.presentation-mode .meeting-remote-tile {
-  aspect-ratio: auto;
-  height: 100%;
-  min-height: 0;
-  border-radius: 4px;
-}
-
-.meeting-container.presentation-mode .meeting-remote-tile video {
   object-fit: contain;
   background: #000;
 }
 
-.meeting-container.presentation-mode .meeting-control-bar {
+.meeting-screen-label {
   position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 14px;
+  left: 16px;
+  padding: 4px 12px;
+  background: rgba(13, 13, 13, 0.75);
+  border: 1px solid var(--meeting-border);
   border-radius: 12px;
-  padding: 0 8px;
-  gap: 4px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--meeting-text);
+  z-index: 2;
+  pointer-events: none;
 }
 
-.meeting-container.presentation-mode .meeting-ctrl-btn {
-  width: 44px;
-  height: 44px;
+.meeting-container.presentation-mode .meeting-video-area {
+  flex-direction: row;
+}
+
+/* Presenter's camera stays visible as a small PiP (bottom-left) */
+.meeting-container.presentation-mode .meeting-local-tile {
+  left: 24px;
+  right: auto;
+  top: auto;
+  bottom: 24px;
+}
+
+/* Remote cameras become a filmstrip on the right */
+.meeting-container.presentation-mode .meeting-remote-grid {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  bottom: 16px;
+  width: 260px;
+  grid-template-columns: 1fr;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 10px;
+  padding: 0;
+  z-index: 12;
+  align-content: start;
+  overflow: hidden auto;
+}
+
+.meeting-container.presentation-mode .meeting-remote-grid:empty {
+  display: none;
+}
+
+.meeting-container.presentation-mode .meeting-remote-tile {
+  aspect-ratio: auto;
+  min-height: 0;
+  border-radius: 8px;
 }
 
 /* ── Toast Notifications ────────────────────────────── */
 .toast-container {
   position: fixed;
-  bottom: 90px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9500;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
   pointer-events: none;
+  max-width: min(460px, calc(100vw - 32px));
 }
 
 .toast {
-  padding: 10px 18px;
-  background: var(--meeting-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--meeting-border);
-  border-radius: 8px;
-  color: var(--meeting-text);
-  font-size: 12px;
-  font-weight: 500;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  pointer-events: auto;
-  animation: toast-in 0.25s ease-out;
   display: flex;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
+  padding: 7px 16px;
+  background: var(--meeting-bg3);
+  border: 1px solid var(--meeting-border2);
+  border-radius: 20px;
+  color: var(--meeting-text);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  transition: opacity 0.22s ease;
+}
+
+.toast.toast-in {
+  animation: toast-in 0.25s ease-out;
+}
+
+.toast.toast-out {
+  opacity: 0;
 }
 
 .toast.error {
-  border-color: rgba(239, 68, 68, 0.5);
-  color: #fca5a5;
+  border-color: rgba(244, 135, 113, 0.5);
+  color: var(--meeting-red);
 }
 
 .toast.success {
-  border-color: rgba(0, 237, 100, 0.4);
-  color: #4ade80;
+  border-color: rgba(78, 201, 176, 0.4);
+  color: var(--meeting-emerald);
 }
 
 @keyframes toast-in {
@@ -4357,9 +4946,9 @@ li.CodeMirror-hint-active {
 
 /* ── Pulse animation for connected dot ─────────────── */
 @keyframes meeting-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(0, 237, 100, 0.6); }
-  70% { box-shadow: 0 0 0 8px rgba(0, 237, 100, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 237, 100, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(78, 201, 176, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(78, 201, 176, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(78, 201, 176, 0); }
 }
 
 .meeting-status-connected {

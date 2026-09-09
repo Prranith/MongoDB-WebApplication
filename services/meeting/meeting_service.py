@@ -6,12 +6,19 @@ Lightweight room lifecycle: create, join, leave, auto-cleanup.
 
 import uuid
 import time
+import threading
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
 from utils.logger import get_logger, bind_component
 
 log = bind_component(get_logger(__name__), "meeting_service")
+
+# Guards all mutations of the in-memory room store. Flask's dev server is
+# threaded, so concurrent /join, /leave and /create calls would otherwise
+# race on the shared dicts/sets below. RLock so leave_room -> destroy_room
+# can nest without deadlocking.
+_rooms_lock = threading.RLock()
 
 
 def _now_iso() -> str:
@@ -46,8 +53,9 @@ class MeetingService:
             "isOpen": True,
             "_activePeers": set(),
         }
-        cls._rooms[room_id] = room
-        cls._participant_counts[room_id] = 0
+        with _rooms_lock:
+            cls._rooms[room_id] = room
+            cls._participant_counts[room_id] = 0
         log.info("meeting_room_created", room_id=room_id, host_name=host_name)
         return room
 
@@ -57,6 +65,14 @@ class MeetingService:
         return cls._rooms.get(room_id)
 
     @classmethod
+    def get_active_peers(cls, room_id: str) -> list:
+        """Return a list of active peer IDs in a room."""
+        room = cls._rooms.get(room_id)
+        if not room:
+            return []
+        return list(room.get("_activePeers", set()))
+
+    @classmethod
     def join_room(
         cls,
         room_id: str,
@@ -64,44 +80,46 @@ class MeetingService:
         peer_id: str,
     ) -> Dict[str, Any]:
         """Register a participant joining a room. Auto-creates room if not found."""
-        room = cls._rooms.get(room_id)
-        if not room:
-            # Auto-create room on the fly so custom or generated room IDs always work seamlessly!
-            now = _now_iso()
-            room = {
-                "roomId": room_id,
-                "hostName": participant_name,
-                "hostPeerId": peer_id if peer_id else "",
-                "createdAt": now,
-                "activeAt": now,
-                "participantCount": 0,
-                "isOpen": True,
-            }
-            cls._rooms[room_id] = room
-            cls._participant_counts[room_id] = 0
-            log.info("meeting_room_auto_created", room_id=room_id, host_name=participant_name)
+        with _rooms_lock:
+            room = cls._rooms.get(room_id)
+            if not room:
+                # Auto-create room on the fly so custom or generated room IDs always work seamlessly!
+                now = _now_iso()
+                room = {
+                    "roomId": room_id,
+                    "hostName": participant_name,
+                    "hostPeerId": peer_id if peer_id else "",
+                    "createdAt": now,
+                    "activeAt": now,
+                    "participantCount": 0,
+                    "isOpen": True,
+                    "_activePeers": set(),
+                }
+                cls._rooms[room_id] = room
+                cls._participant_counts[room_id] = 0
+                log.info("meeting_room_auto_created", room_id=room_id, host_name=participant_name)
 
-        if not room.get("isOpen", True):
-            raise ValueError(f"Room '{room_id}' is closed")
+            if not room.get("isOpen", True):
+                raise ValueError(f"Room '{room_id}' is closed")
 
-        # Track host peer ID on first join with a real peer_id
-        if peer_id and not room.get("hostPeerId"):
-            room["hostPeerId"] = peer_id
+            # Track host peer ID on first join with a real peer_id
+            if peer_id and not room.get("hostPeerId"):
+                room["hostPeerId"] = peer_id
 
-        # Idempotent join: only count the peer once per room. The frontend
-        # re-calls /join on a 15s heartbeat and on reconnect; counting each
-        # as a new participant would inflate the count and make leave cleanup
-        # leave stale rooms behind.
-        active_peers = room.get("_activePeers", set())
-        is_new = peer_id and peer_id not in active_peers
-        if is_new:
-            active_peers.add(peer_id)
-            room["_activePeers"] = active_peers
+            # Idempotent join: only count the peer once per room. The frontend
+            # re-calls /join on a 15s heartbeat and on reconnect; counting each
+            # as a new participant would inflate the count and make leave cleanup
+            # leave stale rooms behind.
+            active_peers = room.get("_activePeers", set())
+            is_new = peer_id and peer_id not in active_peers
+            if is_new:
+                active_peers.add(peer_id)
+                room["_activePeers"] = active_peers
 
-        count = len(active_peers)
-        cls._participant_counts[room_id] = count
-        room["participantCount"] = count
-        room["activeAt"] = _now_iso()
+            count = len(active_peers)
+            cls._participant_counts[room_id] = count
+            room["participantCount"] = count
+            room["activeAt"] = _now_iso()
 
         log.info(
             "meeting_room_joined",
@@ -124,25 +142,26 @@ class MeetingService:
         record if no peers remain. Uses the same _activePeers set that
         join_room maintains so leave is idempotent and count stays accurate.
         """
-        room = cls._rooms.get(room_id)
-        if not room:
-            return {"roomId": room_id, "destroyed": False, "reason": "not_found"}
+        with _rooms_lock:
+            room = cls._rooms.get(room_id)
+            if not room:
+                return {"roomId": room_id, "destroyed": False, "reason": "not_found"}
 
-        active_peers = room.get("_activePeers", set())
-        removed = False
-        if peer_id and peer_id in active_peers:
-            active_peers.discard(peer_id)
-            room["_activePeers"] = active_peers
-            removed = True
+            active_peers = room.get("_activePeers", set())
+            removed = False
+            if peer_id and peer_id in active_peers:
+                active_peers.discard(peer_id)
+                room["_activePeers"] = active_peers
+                removed = True
 
-        new_count = len(active_peers)
-        cls._participant_counts[room_id] = new_count
-        room["participantCount"] = new_count
-        room["activeAt"] = _now_iso()
+            new_count = len(active_peers)
+            cls._participant_counts[room_id] = new_count
+            room["participantCount"] = new_count
+            room["activeAt"] = _now_iso()
 
-        destroyed = False
-        if new_count <= 0:
-            destroyed = cls.destroy_room(room_id)
+            destroyed = False
+            if new_count <= 0:
+                destroyed = cls.destroy_room(room_id)
 
         log.info(
             "meeting_room_left",
@@ -160,9 +179,10 @@ class MeetingService:
     @classmethod
     def destroy_room(cls, room_id: str) -> bool:
         """Hard-delete a room and all transient meeting data."""
-        existed = room_id in cls._rooms
-        cls._rooms.pop(room_id, None)
-        cls._participant_counts.pop(room_id, None)
+        with _rooms_lock:
+            existed = room_id in cls._rooms
+            cls._rooms.pop(room_id, None)
+            cls._participant_counts.pop(room_id, None)
         if existed:
             log.info("meeting_room_destroyed", room_id=room_id)
         return existed

@@ -42,4 +42,9 @@ htmlcov/
 analytics.json
 client_id
 
+# Local logs
+server.out.log
+server.err.log
+scratch/devserver.log
+
 .vercel

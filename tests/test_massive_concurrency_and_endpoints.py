@@ -302,7 +302,8 @@ class TestMassiveConcurrencyAndEndpoints(unittest.TestCase):
         def student_join_worker(i):
             client = app.test_client()
             roll_no = f"21B91A{1000 + i}"
-            name = f"Student_{i}"
+            # Name validation only allows letters/spaces/dots/hyphens (no digits)
+            name = f"Student {chr(65 + i % 26)}{chr(65 + (i // 26) % 26)}"
             branch = "CSE" if i % 2 == 0 else "ECE"
             res = client.post(f"/api/exam/room/{room_id}/join", json={
                 "name": name,

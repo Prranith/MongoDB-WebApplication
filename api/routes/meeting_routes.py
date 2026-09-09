@@ -4,7 +4,6 @@ Meeting room REST API — decoupled from media.
 Handles room lifecycle only; all media is P2P via PeerJS.
 """
 
-import uuid
 import sys
 from pathlib import Path
 from flask import Blueprint, request, jsonify, g
@@ -21,10 +20,6 @@ log = bind_component(get_logger(__name__), "meeting_api")
 
 def _json_response(payload, status=200):
     return jsonify(payload), status
-
-
-def uuid_short() -> str:
-    return uuid.uuid4().hex[:8]
 
 
 @meeting_bp.route("/api/meeting/create", methods=["POST"])
@@ -141,8 +136,32 @@ def api_meeting_cleanup():
         return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
-# Lightweight UUID fallback so join works without an external library
-def uuid_short() -> str:
-    import random
-    import string
-    return "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
+@meeting_bp.route("/api/meeting/peers", methods=["GET"])
+def api_meeting_peers():
+    """Return all active peer IDs in a room for mesh connectivity."""
+    room_id = (request.args.get("roomId") or "").strip().upper()
+    caller_peer_id = (request.args.get("peerId") or "").strip()
+
+    if not room_id:
+        return _json_response({"status": "error", "error": "roomId is required"}, status=400)
+
+    try:
+        room = MeetingService.get_room(room_id)
+        if not room:
+            return _json_response({"status": "error", "error": "Room not found"}, status=404)
+
+        active_peers = list(room.get("_activePeers", set()))
+        # Exclude the caller from the list so they don't try to connect to themselves
+        if caller_peer_id and caller_peer_id in active_peers:
+            active_peers.remove(caller_peer_id)
+
+        return _json_response({
+            "status": "ok",
+            "roomId": room_id,
+            "peerIds": active_peers,
+            "count": len(active_peers),
+        })
+    except Exception as e:
+        log.error("meeting_peers_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
+
