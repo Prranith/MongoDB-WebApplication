@@ -1723,6 +1723,8 @@ db.collection.find({})</textarea>
             <button class="meeting-react-emoji" onclick="MeetingRoom.sendReaction('🚀')" title="Rocket">🚀</button>
           </div>
           <div class="meeting-more-sep"></div>
+          <button class="meeting-more-item" onclick="MeetingRoom.toggleLayoutMode()">Switch layout</button>
+          <button class="meeting-more-item" onclick="MeetingRoom.toggleMeetingMinimize()">Minimize meeting</button>
           <button class="meeting-more-item" onclick="MeetingRoom.toggleFullscreen()">Fullscreen (F)</button>
           <button class="meeting-more-item" onclick="MeetingRoom.copyRoomId()">Copy Room ID</button>
         </div>
@@ -1739,6 +1741,9 @@ db.collection.find({})</textarea>
       </button>
       <button class="meeting-ctrl-btn" id="meeting-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen (F) — hides the OS taskbar">
         <svg class="meeting-ctrl-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
+      </button>
+      <button class="meeting-ctrl-btn meeting-window-btn" id="meeting-minimize-btn" onclick="MeetingRoom.toggleMeetingMinimize()" title="Minimize meeting" aria-label="Minimize meeting">
+        <svg class="meeting-ctrl-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="19"></line></svg>
       </button>
     </div>
     <div class="meeting-topbar-right">
@@ -1788,8 +1793,8 @@ db.collection.find({})</textarea>
     <div id="meeting-screen-stage" class="meeting-screen-stage" style="display:none" ondblclick="MeetingRoom.exitSpotlight(event)">
       <video id="meeting-screen-video" autoplay playsinline muted></video>
       <div class="meeting-screen-label" id="meeting-screen-label">You're presenting</div>
-      <div class="meeting-stage-controls">
-        <button class="meeting-screen-btn" id="meeting-screen-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
+      <div class="meeting-stage-controls" id="meeting-stage-controls">
+        <button class="meeting-screen-btn" id="meeting-stage-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
         </button>
         <button class="meeting-screen-btn" id="meeting-focus-btn" onclick="MeetingRoom.toggleFocusMode()" title="Focus">
@@ -1800,7 +1805,7 @@ db.collection.find({})</textarea>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         Gallery
       </button>
-      <button class="meeting-focus-btn" id="meeting-screen-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
+      <button class="meeting-screen-btn" id="meeting-stage-fullscreen-btn-alt" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
       </button>
     </div>

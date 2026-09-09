@@ -5297,6 +5297,39 @@ li.CodeMirror-hint-active {
   color: #10b981;
 }
 
+/* ── Chat + media dynamic layout ────────────────────────────────────────── */
+/* When the chat drawer is open it takes the right slice of the meeting UI;
+   the video area (and the screen stage inside it) must shrink so the two
+   panels sit side by side without overlapping each other. */
+.meeting-container.chat-open .meeting-video-area {
+  flex: 1;
+  min-width: 0;
+}
+
+/* When chat is open, presentation mode lays out as a 3-pane stack:
+   screen stage (flex-1) + remote filmstrip + chat drawer. */
+.meeting-container.chat-open.presentation-mode .meeting-video-area.presentation-mode {
+  flex-direction: column;
+}
+.meeting-container.chat-open.presentation-mode .meeting-screen-stage {
+  flex: 1;
+}
+.meeting-container.chat-open.presentation-mode .meeting-remote-grid {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  height: 120px;
+  flex-direction: row;
+  align-content: stretch;
+  overflow: auto;
+  flex-shrink: 0;
+}
+
+/* Focus mode hides the chat drawer the same way it hides everything else. */
+.meeting-container.focus-mode .meeting-chat-drawer {
+  display: none !important;
+}
+
 /* Focus mode: hide topbar, keep screen stage controls */
 .meeting-container.focus-mode .meeting-screen-stage .meeting-stage-controls {
   opacity: 1 !important;
@@ -5378,6 +5411,101 @@ li.CodeMirror-hint-active {
 
 .meeting-status-connected {
   animation: meeting-pulse 2s infinite;
+}
+
+/* ── Meeting control dock / window behavior ───────────────────────────────
+   Teams keeps meeting controls at the bottom while meeting identity stays
+   above the stage.  The existing DOM is reused, so keyboard shortcuts and
+   inline actions keep working. */
+.meeting-container > .meeting-topbar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100%;
+  background: linear-gradient(180deg, rgba(10, 10, 10, .92), rgba(10, 10, 10, .42), transparent);
+  border-bottom: 0;
+  pointer-events: none;
+  z-index: 40;
+}
+.meeting-container > .meeting-topbar > * { pointer-events: auto; }
+.meeting-container > .meeting-topbar .meeting-topbar-center {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 260px);
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 14px;
+  background: rgba(31, 31, 31, .94);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .45);
+  backdrop-filter: blur(18px);
+}
+.meeting-container > .meeting-topbar .meeting-topbar-right {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(31, 31, 31, .94);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .45);
+  backdrop-filter: blur(18px);
+}
+.meeting-container.meeting-minimized {
+  inset: auto 22px 22px auto !important;
+  width: min(440px, calc(100vw - 32px));
+  height: 260px;
+  border: 1px solid var(--meeting-border2);
+  border-radius: 12px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .62);
+  overflow: hidden;
+}
+.meeting-container.meeting-minimized > .meeting-topbar {
+  position: relative;
+  inset: auto;
+  height: 42px;
+  background: var(--meeting-bg2);
+  pointer-events: auto;
+}
+.meeting-container.meeting-minimized > .meeting-topbar .meeting-topbar-center,
+.meeting-container.meeting-minimized > .meeting-topbar .meeting-topbar-right {
+  position: static;
+  transform: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.meeting-container.meeting-minimized .meeting-video-area { min-height: 0; }
+.meeting-container.meeting-minimized .meeting-remote-grid { padding: 8px; gap: 6px; }
+.meeting-container.meeting-minimized .meeting-local-tile { width: 120px; height: 86px; right: 10px; bottom: 10px; }
+.meeting-container.meeting-minimized .meeting-chat-drawer,
+.meeting-container.meeting-minimized .meeting-participants-panel { display: none !important; }
+
+@media (max-width: 760px) {
+  .meeting-container > .meeting-topbar .meeting-topbar-center {
+    left: 8px;
+    right: 8px;
+    bottom: 10px;
+    transform: none;
+    width: auto;
+    max-width: none;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px;
+  }
+  .meeting-container > .meeting-topbar .meeting-topbar-right {
+    right: 8px;
+    bottom: 74px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .meeting-container > .meeting-topbar .meeting-topbar-left { max-width: 46%; }
+  .meeting-room-label { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meeting-ctrl-btn { width: 34px; height: 34px; }
 }
 
 
@@ -13673,6 +13801,8 @@ window.ExamPortal = ExamPortal;
             <button class="meeting-react-emoji" onclick="MeetingRoom.sendReaction('🚀')" title="Rocket">🚀</button>
           </div>
           <div class="meeting-more-sep"></div>
+          <button class="meeting-more-item" onclick="MeetingRoom.toggleLayoutMode()">Switch layout</button>
+          <button class="meeting-more-item" onclick="MeetingRoom.toggleMeetingMinimize()">Minimize meeting</button>
           <button class="meeting-more-item" onclick="MeetingRoom.toggleFullscreen()">Fullscreen (F)</button>
           <button class="meeting-more-item" onclick="MeetingRoom.copyRoomId()">Copy Room ID</button>
         </div>
@@ -13689,6 +13819,9 @@ window.ExamPortal = ExamPortal;
       </button>
       <button class="meeting-ctrl-btn" id="meeting-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen (F) — hides the OS taskbar">
         <svg class="meeting-ctrl-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
+      </button>
+      <button class="meeting-ctrl-btn meeting-window-btn" id="meeting-minimize-btn" onclick="MeetingRoom.toggleMeetingMinimize()" title="Minimize meeting" aria-label="Minimize meeting">
+        <svg class="meeting-ctrl-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="19"></line></svg>
       </button>
     </div>
     <div class="meeting-topbar-right">
@@ -13738,8 +13871,8 @@ window.ExamPortal = ExamPortal;
     <div id="meeting-screen-stage" class="meeting-screen-stage" style="display:none" ondblclick="MeetingRoom.exitSpotlight(event)">
       <video id="meeting-screen-video" autoplay playsinline muted></video>
       <div class="meeting-screen-label" id="meeting-screen-label">You're presenting</div>
-      <div class="meeting-stage-controls">
-        <button class="meeting-screen-btn" id="meeting-screen-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
+      <div class="meeting-stage-controls" id="meeting-stage-controls">
+        <button class="meeting-screen-btn" id="meeting-stage-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
         </button>
         <button class="meeting-screen-btn" id="meeting-focus-btn" onclick="MeetingRoom.toggleFocusMode()" title="Focus">
@@ -13750,7 +13883,7 @@ window.ExamPortal = ExamPortal;
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         Gallery
       </button>
-      <button class="meeting-focus-btn" id="meeting-screen-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
+      <button class="meeting-screen-btn" id="meeting-stage-fullscreen-btn-alt" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
       </button>
     </div>
@@ -13850,6 +13983,8 @@ const MeetingRoom = (() => {
     handRaised: false,
     spotlightId: null,     // "self" | peerId | null — user pinned as MY main stage
     localTileMoved: false, // true if the last PiP gesture was a drag
+    layoutMode: "gallery",
+    meetingMinimized: false,
     joining: false,        // true while a join/create call is starting
     _prevPeers: 0,
   };
@@ -14356,6 +14491,42 @@ const MeetingRoom = (() => {
     } catch (_) {}
   }
 
+  // Presentation media is intentionally kept on a separate one-way call.
+  // This prevents replaceTrack() on the camera call from leaving remote
+  // clients attached to a stale/black video element.
+  function isScreenStream(stream) {
+    const track = stream && stream.getVideoTracks && stream.getVideoTracks()[0];
+    if (!track) return false;
+    const settings = track.getSettings ? (track.getSettings() || {}) : {};
+    const label = String(track.label || "").toLowerCase();
+    return settings.displaySurface === "monitor" ||
+      settings.displaySurface === "window" ||
+      settings.displaySurface === "browser" ||
+      label.includes("screen") || label.includes("display") || label.includes("window");
+  }
+
+  function openScreenCall(targetPeerId) {
+    if (!state.peer || !targetPeerId || !state.screenStream) return;
+    if (state.screenCalls[targetPeerId]) return;
+    try {
+      const call = state.peer.call(targetPeerId, state.screenStream, {
+        metadata: { kind: "screen", name: state.userName },
+      });
+      if (!call) return;
+      state.screenCalls[targetPeerId] = call;
+      boostCallBitrates(call, 6000000);
+      call.on("close", () => {
+        if (state.screenCalls[targetPeerId] === call) delete state.screenCalls[targetPeerId];
+      });
+      call.on("error", (err) => {
+        console.warn("[Meeting] Screen call error from", targetPeerId, err);
+        if (state.screenCalls[targetPeerId] === call) delete state.screenCalls[targetPeerId];
+      });
+    } catch (err) {
+      console.warn("[Meeting] Could not open screen call", targetPeerId, err);
+    }
+  }
+
   async function startCall(roomId, name) {
     state.roomId = roomId;
     state.peerId = "peer-" + Math.random().toString(36).substring(2, 10);
@@ -14551,11 +14722,10 @@ const MeetingRoom = (() => {
     _pendingHostConnect = true;
     pendingCalls.add(targetPeerId);
 
-    // While screen sharing, new peers get the screen stream right away.
-    const stream = state.isScreenSharing && state.screenStream
-      ? state.screenStream
-      : (state.localStream || new MediaStream());
-    const call = state.peer.call(targetPeerId, stream);
+    const stream = state.localStream || new MediaStream();
+    const call = state.peer.call(targetPeerId, stream, {
+      metadata: { kind: "camera", name: state.userName },
+    });
     if (call) {
       boostCallBitrates(call, state.isScreenSharing ? 4000000 : 2500000);
       call.on("stream", (remoteStream) => {
@@ -14591,9 +14761,12 @@ const MeetingRoom = (() => {
           try {
             conn.send({ type: "screen-toggle", sharing: true, name: state.userName });
           } catch (_) {}
+          openScreenCall(targetPeerId);
         }
       });
     }
+
+    if (state.isScreenSharing) openScreenCall(targetPeerId);
 
     // During active screen sharing, also notify the remote peer via the data
     // channel that a screen share is in progress so they can show it immediately
@@ -14613,8 +14786,11 @@ const MeetingRoom = (() => {
   }
 
   function handleIncomingCall(call) {
+    const isScreenCall = call.metadata && call.metadata.kind === "screen";
     // Answer with local stream if available
-    if (state.localStream) {
+    if (isScreenCall) {
+      call.answer(new MediaStream());
+    } else if (state.localStream) {
       call.answer(state.localStream);
     } else {
       // Create a dummy stream with no tracks so the call can be established
@@ -14624,6 +14800,14 @@ const MeetingRoom = (() => {
     boostCallBitrates(call);
 
     call.on("stream", (remoteStream) => {
+      if (isScreenCall) {
+        const p = state.participants[call.peer] || (state.participants[call.peer] = { name: "Peer" });
+        p.screenStream = remoteStream;
+        p.screenCall = call;
+        p.isScreen = true;
+        showScreenInStage(call.peer, remoteStream, (call.metadata && call.metadata.name) || p.name || "Someone");
+        return;
+      }
       handleRemoteStream(call.peer, remoteStream, call);
       // If an incoming call delivers a screen stream (the host is sharing)
       // we may not have received the screen-toggle data message yet.
@@ -14631,13 +14815,7 @@ const MeetingRoom = (() => {
       // immediately without waiting for the data channel.
       const vTrack = remoteStream.getVideoTracks()[0];
       const settings = vTrack && vTrack.getSettings ? (vTrack.getSettings() || {}) : {};
-      const incomingIsScreen = !!vTrack && (
-        settings.displaySurface === "monitor" ||
-        settings.displaySurface === "window" ||
-        settings.displaySurface === "browser" ||
-        (settings.width || 0) > 1280 ||
-        !!(vTrack.label && vTrack.label.toLowerCase().includes("screen"))
-      );
+      const incomingIsScreen = isScreenStream(remoteStream);
       if (incomingIsScreen && state.screenPeerId !== call.peer) {
         showScreenInStage(call.peer, remoteStream, "Someone");
       }
@@ -14647,13 +14825,12 @@ const MeetingRoom = (() => {
     // and screen share mid-call, the media connection stays open but the video
     // track is replaced via replaceTrack(). This fires for each new track.
     call.on("track", (event) => {
+      if (isScreenCall) return;
       event.streams.forEach((stream) => {
         const vTrack = stream.getVideoTracks()[0];
-        const isScreen = !!vTrack && (
-          vTrack.label.toLowerCase().includes("screen") ||
-          vTrack.label.toLowerCase().includes("displayshare") ||
-          vTrack.label.toLowerCase().includes("share")
-        );
+        // Use the same robust detection as handleRemoteStream: check displaySurface,
+        // resolution, and label. This catches screen shares that the label-only check misses.
+        const isScreen = isScreenStream(stream);
         if (isScreen && state.screenPeerId !== call.peer) {
           if (!state.participants[call.peer]) state.participants[call.peer] = {};
           state.participants[call.peer].stream = stream;
@@ -14677,12 +14854,26 @@ const MeetingRoom = (() => {
     });
 
     call.on("close", () => {
+      if (isScreenCall) {
+        const p = state.participants[call.peer];
+        if (p && p.screenCall === call) {
+          p.screenCall = null;
+          p.screenStream = null;
+          p.isScreen = false;
+        }
+        if (state.screenPeerId === call.peer) clearScreenStage();
+        return;
+      }
       // Remove the participant entirely — peer discovery will reconnect them
       // within a few seconds if they are still in the room.
       removeParticipant(call.peer);
     });
 
     call.on("error", (err) => {
+      if (isScreenCall) {
+        if (state.screenPeerId === call.peer) clearScreenStage();
+        return;
+      }
       console.warn("[Meeting] Call error from", call.peer, err);
     });
   }
@@ -14692,13 +14883,7 @@ const MeetingRoom = (() => {
     // getDisplayMedia captures; fall back to resolution/label heuristics.
     const vTrack = stream.getVideoTracks()[0];
     const settings = vTrack && vTrack.getSettings ? (vTrack.getSettings() || {}) : {};
-    const isScreen = !!vTrack && (
-      settings.displaySurface === "monitor" ||
-      settings.displaySurface === "window" ||
-      settings.displaySurface === "browser" ||
-      (settings.width || 0) > 1280 ||
-      !!(vTrack.label && vTrack.label.toLowerCase().includes("screen"))
-    );
+    const isScreen = isScreenStream(stream);
 
     state.participants[peerId] = state.participants[peerId] || {};
     state.participants[peerId].stream = stream;
@@ -14747,9 +14932,11 @@ const MeetingRoom = (() => {
           const p = state.participants[peerId];
           if (p) {
             p.isScreen = !!data.sharing;
-            if (data.sharing && p.stream) {
-              showScreenInStage(peerId, p.stream, data.name || p.name);
+            if (data.sharing && p.screenStream) {
+              showScreenInStage(peerId, p.screenStream, data.name || p.name);
             } else if (!data.sharing) {
+              p.screenStream = null;
+              p.screenCall = null;
               renderRemoteVideo(peerId);
               if (!Object.values(state.participants).some((x) => x.isScreen)) {
                 clearScreenStage();
@@ -15287,32 +15474,16 @@ const MeetingRoom = (() => {
 
       // Detect if user clicked "Stop sharing" in the browser dialog
       const track = stream.getVideoTracks()[0];
-      track.addEventListener("ended", () => {
-        stopScreenShare();
-        toast("Screen share stopped by user", "success");
-      });
+      if (track) {
+        track.addEventListener("ended", onScreenTrackEnded);
+      }
 
       state.screenStream = stream;
       state.isScreenSharing = true;
 
-      // Send the screen track to all connected peers via sender.replaceTrack.
-      // Peers whose call has no video sender (e.g. they joined with no camera)
-      // get a dedicated screen call instead so sharing always reaches them.
-      const missingPeers = replaceTrackForPeers("video", stream.getVideoTracks()[0] || null);
       state.screenCalls = {};
-      missingPeers.forEach((pid) => {
-        if (pid === state.peerId || state.screenCalls[pid]) return;
-        try {
-          const sc = state.peer.call(pid, stream);
-          if (sc) {
-            state.screenCalls[pid] = sc;
-            boostCallBitrates(sc, 4000000);
-          }
-        } catch (_) {}
-      });
-
-      // High bitrate for the screen track on every established call
-      getActiveMediaCalls().forEach((c) => boostCallBitrates(c, 4000000));
+      // Open a dedicated one-way presentation call for every current peer.
+      Object.keys(state.participants).forEach(openScreenCall);
 
       // Mix shared system audio with the mic for remote peers
       startAudioMix(stream);
@@ -15353,10 +15524,6 @@ const MeetingRoom = (() => {
     state.screenCalls = {};
     state.isScreenSharing = false;
 
-    // Restore the camera track to peers
-    const cameraTrack = state.localStream && state.localStream.getVideoTracks()[0];
-    replaceTrackForPeers("video", cameraTrack || null);
-
     // Restore the plain microphone to peers
     stopAudioMix();
 
@@ -15381,7 +15548,12 @@ const MeetingRoom = (() => {
     resetLocalTilePosition();
     if (els.screenVideo) {
       els.screenVideo.srcObject = stream || null;
-      els.screenVideo.play().catch(() => {});
+      const playPromise = els.screenVideo.play();
+      if (playPromise.catch) {
+        playPromise.catch((err) => {
+          console.warn("[Meeting] Screen video play failed:", err.message);
+        });
+      }
     }
     if (els.screenLabel) {
       els.screenLabel.textContent =
@@ -15408,7 +15580,14 @@ const MeetingRoom = (() => {
   function toggleChat() {
     state.chatOpen = !state.chatOpen;
     els.chatDrawer.style.display = state.chatOpen ? "flex" : "none";
+    els.container.classList.toggle("chat-open", state.chatOpen);
     updateControlUI();
+    // When chat opens, shrink the video area so the two panels sit side by
+    // side instead of the drawer painting over the video grid.
+    if (els.videoArea) {
+      els.videoArea.style.flex = state.chatOpen ? "1 1 auto" : "";
+      els.videoArea.style.minWidth = state.chatOpen ? "0" : "";
+    }
     if (state.chatOpen) {
       els.chatInput.focus();
     }
@@ -15555,6 +15734,7 @@ const MeetingRoom = (() => {
   // ─── Spotlight: pin any user (incl. self) as MY main stage ────────────
   function setSpotlight(id) {
     if (!id || state.screenPeerId || state.spotlightId === id) return;
+    state.layoutMode = "speaker";
     state.spotlightId = id;
     resetLocalTilePosition();
     els.container.classList.add("spotlight");
@@ -15572,7 +15752,12 @@ const MeetingRoom = (() => {
     if (els.screenVideo) {
       els.screenVideo.srcObject = stream || null;
       els.screenVideo.muted = true;
-      els.screenVideo.play().catch(() => {});
+      const playPromise = els.screenVideo.play();
+      if (playPromise.catch) {
+        playPromise.catch((err) => {
+          console.warn("[Meeting] Spotlight video play failed:", err.message);
+        });
+      }
     }
     if (els.screenLabel) {
       els.screenLabel.textContent = isSelf
@@ -15586,6 +15771,7 @@ const MeetingRoom = (() => {
 
   function clearSpotlight() {
     if (!state.spotlightId) return;
+    state.layoutMode = "gallery";
     state.spotlightId = null;
     els.container.classList.remove("spotlight");
     if (els.screenStage) {
@@ -15640,7 +15826,54 @@ const MeetingRoom = (() => {
     if (btn) btn.classList.toggle("active", _focusMode);
     toast(_focusMode ? "Focus mode — only shared screen is visible" : "Focus mode off", "success");
   }
+
+  // Called when the user clicks the browser "Stop sharing" pill in the
+  // getDisplayMedia picker. Without this, stopping from the browser UI leaves
+  // us with a stale (blank) screen stage and a stuck sharing state.
+  function onScreenTrackEnded() {
+    if (!state.screenPeerId) return;
+    stopScreenShare();
+  }
   window.MeetingRoom.toggleFocusMode = toggleFocusMode;
+
+  function toggleLayoutMode() {
+    if (state.screenPeerId) {
+      toast("Gallery and speaker layout are unavailable while someone is presenting", "error");
+      return;
+    }
+    const peers = Object.keys(state.participants);
+    if (!peers.length && !state.spotlightId) {
+      toast("Speaker layout needs another participant", "error");
+      return;
+    }
+    if (state.layoutMode === "gallery") {
+      state.layoutMode = "speaker";
+      setSpotlight(peers[0] || "self");
+      toast("Speaker view", "success");
+    } else {
+      state.layoutMode = "gallery";
+      clearSpotlight();
+      toast("Gallery view", "success");
+    }
+    updateLayoutButton();
+  }
+
+  function updateLayoutButton() {
+    const btn = document.getElementById("meeting-layout-btn");
+    if (btn) btn.title = state.layoutMode === "gallery" ? "Switch to speaker view" : "Switch to gallery view";
+  }
+  window.MeetingRoom.toggleLayoutMode = toggleLayoutMode;
+
+  function toggleMeetingMinimize() {
+    state.meetingMinimized = !state.meetingMinimized;
+    if (els.container) els.container.classList.toggle("meeting-minimized", state.meetingMinimized);
+    const btn = document.getElementById("meeting-minimize-btn");
+    if (btn) {
+      btn.title = state.meetingMinimized ? "Restore meeting" : "Minimize meeting";
+      btn.setAttribute("aria-label", btn.title);
+    }
+  }
+  window.MeetingRoom.toggleMeetingMinimize = toggleMeetingMinimize;
 
   // ─── Raise hand ────────────────────────────────────────────────────────
   function toggleHand() {

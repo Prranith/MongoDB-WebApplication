@@ -5144,6 +5144,39 @@ li.CodeMirror-hint-active {
   color: #10b981;
 }
 
+/* ── Chat + media dynamic layout ────────────────────────────────────────── */
+/* When the chat drawer is open it takes the right slice of the meeting UI;
+   the video area (and the screen stage inside it) must shrink so the two
+   panels sit side by side without overlapping each other. */
+.meeting-container.chat-open .meeting-video-area {
+  flex: 1;
+  min-width: 0;
+}
+
+/* When chat is open, presentation mode lays out as a 3-pane stack:
+   screen stage (flex-1) + remote filmstrip + chat drawer. */
+.meeting-container.chat-open.presentation-mode .meeting-video-area.presentation-mode {
+  flex-direction: column;
+}
+.meeting-container.chat-open.presentation-mode .meeting-screen-stage {
+  flex: 1;
+}
+.meeting-container.chat-open.presentation-mode .meeting-remote-grid {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  height: 120px;
+  flex-direction: row;
+  align-content: stretch;
+  overflow: auto;
+  flex-shrink: 0;
+}
+
+/* Focus mode hides the chat drawer the same way it hides everything else. */
+.meeting-container.focus-mode .meeting-chat-drawer {
+  display: none !important;
+}
+
 /* Focus mode: hide topbar, keep screen stage controls */
 .meeting-container.focus-mode .meeting-screen-stage .meeting-stage-controls {
   opacity: 1 !important;
@@ -5225,5 +5258,100 @@ li.CodeMirror-hint-active {
 
 .meeting-status-connected {
   animation: meeting-pulse 2s infinite;
+}
+
+/* ── Meeting control dock / window behavior ───────────────────────────────
+   Teams keeps meeting controls at the bottom while meeting identity stays
+   above the stage.  The existing DOM is reused, so keyboard shortcuts and
+   inline actions keep working. */
+.meeting-container > .meeting-topbar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100%;
+  background: linear-gradient(180deg, rgba(10, 10, 10, .92), rgba(10, 10, 10, .42), transparent);
+  border-bottom: 0;
+  pointer-events: none;
+  z-index: 40;
+}
+.meeting-container > .meeting-topbar > * { pointer-events: auto; }
+.meeting-container > .meeting-topbar .meeting-topbar-center {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 260px);
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 14px;
+  background: rgba(31, 31, 31, .94);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .45);
+  backdrop-filter: blur(18px);
+}
+.meeting-container > .meeting-topbar .meeting-topbar-right {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(31, 31, 31, .94);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .45);
+  backdrop-filter: blur(18px);
+}
+.meeting-container.meeting-minimized {
+  inset: auto 22px 22px auto !important;
+  width: min(440px, calc(100vw - 32px));
+  height: 260px;
+  border: 1px solid var(--meeting-border2);
+  border-radius: 12px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .62);
+  overflow: hidden;
+}
+.meeting-container.meeting-minimized > .meeting-topbar {
+  position: relative;
+  inset: auto;
+  height: 42px;
+  background: var(--meeting-bg2);
+  pointer-events: auto;
+}
+.meeting-container.meeting-minimized > .meeting-topbar .meeting-topbar-center,
+.meeting-container.meeting-minimized > .meeting-topbar .meeting-topbar-right {
+  position: static;
+  transform: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.meeting-container.meeting-minimized .meeting-video-area { min-height: 0; }
+.meeting-container.meeting-minimized .meeting-remote-grid { padding: 8px; gap: 6px; }
+.meeting-container.meeting-minimized .meeting-local-tile { width: 120px; height: 86px; right: 10px; bottom: 10px; }
+.meeting-container.meeting-minimized .meeting-chat-drawer,
+.meeting-container.meeting-minimized .meeting-participants-panel { display: none !important; }
+
+@media (max-width: 760px) {
+  .meeting-container > .meeting-topbar .meeting-topbar-center {
+    left: 8px;
+    right: 8px;
+    bottom: 10px;
+    transform: none;
+    width: auto;
+    max-width: none;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px;
+  }
+  .meeting-container > .meeting-topbar .meeting-topbar-right {
+    right: 8px;
+    bottom: 74px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .meeting-container > .meeting-topbar .meeting-topbar-left { max-width: 46%; }
+  .meeting-room-label { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meeting-ctrl-btn { width: 34px; height: 34px; }
 }
 
