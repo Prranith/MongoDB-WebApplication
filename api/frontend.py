@@ -4011,8 +4011,9 @@ li.CodeMirror-hint-active {
   position: relative;
   overflow: hidden;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
+  min-height: 0;
 }
 
 .meeting-video-tile {
@@ -4103,6 +4104,11 @@ li.CodeMirror-hint-active {
   width: 100%;
   height: 100%;
   padding: 24px;
+  box-sizing: border-box;
+  align-content: center;
+}
+.meeting-remote-grid:empty {
+  display: none;
 }
 
 .meeting-remote-grid.g3 {
@@ -5117,7 +5123,8 @@ li.CodeMirror-hint-active {
 }
 
 /* Focus mode: screen share fills the entire area — hides filmstrip, self-view,
-   topbar, and all controls so the shared content is front-and-center. */
+   topbar, and all controls so the shared content is front-and-center.
+   Hover anywhere to reveal the topbar + stage controls temporarily. */
 .meeting-container.focus-mode .meeting-remote-grid {
   display: none !important;
 }
@@ -5142,12 +5149,20 @@ li.CodeMirror-hint-active {
   height: 100%;
   object-fit: contain;
 }
+.meeting-container.focus-mode .meeting-screen-stage .meeting-focus-btn,
+.meeting-container.focus-mode .meeting-screen-stage .meeting-spotlight-exit {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.meeting-container.focus-mode .meeting-screen-stage:hover .meeting-focus-btn,
+.meeting-container.focus-mode .meeting-screen-stage:hover .meeting-spotlight-exit {
+  opacity: 1;
+}
 
 /* Focus button on the screen stage */
 .meeting-focus-btn {
   position: absolute;
   top: 14px;
-  right: 50px;
   z-index: 10;
   width: 32px;
   height: 32px;
@@ -5169,6 +5184,8 @@ li.CodeMirror-hint-active {
   background: #10b981;
   color: #000;
 }
+#meeting-focus-btn { right: 50px; }
+#meeting-screen-fullscreen-btn { right: 16px; }
 
 /* ── Toast Notifications ────────────────────────────── */
 .toast-container {
@@ -13607,6 +13624,9 @@ window.ExamPortal = ExamPortal;
       <button class="meeting-focus-btn" id="meeting-focus-btn" onclick="MeetingRoom.toggleFocusMode()" title="Focus Screen Share">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
       </button>
+      <button class="meeting-focus-btn" id="meeting-screen-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+      </button>
     </div>
     <div id="meeting-remote-grid" class="meeting-remote-grid"></div>
   </div>
@@ -14094,8 +14114,8 @@ const MeetingRoom = (() => {
   // falls back to whatever the camera actually supports) and enable the full
   // audio processing suite so speech stays crisp.
   const VIDEO_CONSTRAINTS = {
-    width: { ideal: 3840, max: 3840 },
-    height: { ideal: 2160, max: 2160 },
+    width: { ideal: 7680, max: 7680 },
+    height: { ideal: 4320, max: 4320 },
     frameRate: { ideal: 60, max: 60 },
     facingMode: "user",
   };
@@ -14193,7 +14213,7 @@ const MeetingRoom = (() => {
         if (!params || !params.encodings || !params.encodings.length) return;
         params.encodings = params.encodings.map((e) =>
           Object.assign({}, e, {
-            maxBitrate: s.track.kind === "video" ? (videoBitrate || 10000000) : 128000,
+            maxBitrate: s.track.kind === "video" ? (videoBitrate || 20000000) : 128000,
             maxFramerate: s.track.kind === "video" ? 60 : undefined,
           })
         );
@@ -14455,20 +14475,28 @@ const MeetingRoom = (() => {
 
     call.on("stream", (remoteStream) => {
       handleRemoteStream(call.peer, remoteStream, call);
+      // If an incoming call delivers a screen stream (the host is sharing)
+      // we may not have received the screen-toggle data message yet.
+      // Detect it here and stage it so the remote sees the shared content
+      // immediately without waiting for the data channel.
+      const vTrack = remoteStream.getVideoTracks()[0];
+      const settings = vTrack && vTrack.getSettings ? (vTrack.getSettings() || {}) : {};
+      const incomingIsScreen = !!vTrack && (
+        settings.displaySurface === "monitor" ||
+        settings.displaySurface === "window" ||
+        settings.displaySurface === "browser" ||
+        (settings.width || 0) > 1280 ||
+        !!(vTrack.label && vTrack.label.toLowerCase().includes("screen"))
+      );
+      if (incomingIsScreen && state.screenPeerId !== call.peer) {
+        showScreenInStage(call.peer, remoteStream, "Someone");
+      }
     });
 
     call.on("close", () => {
-      // A dedicated screen-share call may close while the peer's camera call
-      // is still alive — only drop the participant when no media call remains.
-      const otherCall = getActiveMediaCalls().some((c) => c !== call && c.peer === call.peer);
-      if (!otherCall) {
-        removeParticipant(call.peer);
-      } else {
-        const p = state.participants[call.peer];
-        if (p) p.stream = null; // screen ended; tile falls back to initials
-        if (state.screenPeerId === call.peer) clearScreenStage();
-        updateParticipantCount();
-      }
+      // Remove the participant entirely — peer discovery will reconnect them
+      // within a few seconds if they are still in the room.
+      removeParticipant(call.peer);
     });
 
     call.on("error", (err) => {

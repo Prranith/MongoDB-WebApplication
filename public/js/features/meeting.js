@@ -421,8 +421,8 @@ const MeetingRoom = (() => {
   // falls back to whatever the camera actually supports) and enable the full
   // audio processing suite so speech stays crisp.
   const VIDEO_CONSTRAINTS = {
-    width: { ideal: 3840, max: 3840 },
-    height: { ideal: 2160, max: 2160 },
+    width: { ideal: 7680, max: 7680 },
+    height: { ideal: 4320, max: 4320 },
     frameRate: { ideal: 60, max: 60 },
     facingMode: "user",
   };
@@ -520,7 +520,7 @@ const MeetingRoom = (() => {
         if (!params || !params.encodings || !params.encodings.length) return;
         params.encodings = params.encodings.map((e) =>
           Object.assign({}, e, {
-            maxBitrate: s.track.kind === "video" ? (videoBitrate || 10000000) : 128000,
+            maxBitrate: s.track.kind === "video" ? (videoBitrate || 20000000) : 128000,
             maxFramerate: s.track.kind === "video" ? 60 : undefined,
           })
         );
@@ -782,20 +782,28 @@ const MeetingRoom = (() => {
 
     call.on("stream", (remoteStream) => {
       handleRemoteStream(call.peer, remoteStream, call);
+      // If an incoming call delivers a screen stream (the host is sharing)
+      // we may not have received the screen-toggle data message yet.
+      // Detect it here and stage it so the remote sees the shared content
+      // immediately without waiting for the data channel.
+      const vTrack = remoteStream.getVideoTracks()[0];
+      const settings = vTrack && vTrack.getSettings ? (vTrack.getSettings() || {}) : {};
+      const incomingIsScreen = !!vTrack && (
+        settings.displaySurface === "monitor" ||
+        settings.displaySurface === "window" ||
+        settings.displaySurface === "browser" ||
+        (settings.width || 0) > 1280 ||
+        !!(vTrack.label && vTrack.label.toLowerCase().includes("screen"))
+      );
+      if (incomingIsScreen && state.screenPeerId !== call.peer) {
+        showScreenInStage(call.peer, remoteStream, "Someone");
+      }
     });
 
     call.on("close", () => {
-      // A dedicated screen-share call may close while the peer's camera call
-      // is still alive — only drop the participant when no media call remains.
-      const otherCall = getActiveMediaCalls().some((c) => c !== call && c.peer === call.peer);
-      if (!otherCall) {
-        removeParticipant(call.peer);
-      } else {
-        const p = state.participants[call.peer];
-        if (p) p.stream = null; // screen ended; tile falls back to initials
-        if (state.screenPeerId === call.peer) clearScreenStage();
-        updateParticipantCount();
-      }
+      // Remove the participant entirely — peer discovery will reconnect them
+      // within a few seconds if they are still in the room.
+      removeParticipant(call.peer);
     });
 
     call.on("error", (err) => {
