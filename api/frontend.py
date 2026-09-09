@@ -13546,6 +13546,7 @@ const MeetingRoom = (() => {
     userName: "Developer",
     localStream: null,       // camera+audio
     screenStream: null,      // screen share
+    screenCalls: {},         // peerId -> dedicated screen-share MediaConnection (no-camera fallback)
     isMicOn: true,
     isCamOn: true,
     isScreenSharing: false,
@@ -13943,6 +13944,119 @@ const MeetingRoom = (() => {
   window.MeetingRoom.joinMeeting = joinMeeting;
 
   // ─── PeerJS / WebRTC ───────────────────────────────────────────────────
+
+  // Capture settings tuned for maximum clarity: ask for 1080p@30 (the browser
+  // falls back to whatever the camera actually supports) and enable the full
+  // audio processing suite so speech stays crisp.
+  const VIDEO_CONSTRAINTS = {
+    width: { ideal: 1920, max: 1920 },
+    height: { ideal: 1080, max: 1080 },
+    frameRate: { ideal: 30, max: 60 },
+    facingMode: "user",
+  };
+  const AUDIO_CONSTRAINTS = {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+  };
+
+  function mediaErrorMessage(err, kindLabel) {
+    const name = err && err.name;
+    if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
+      return "Access to " + kindLabel + " was blocked. Click the camera/mic icon in the browser address bar, choose Allow, then try again.";
+    }
+    if (name === "NotFoundError") {
+      return "No " + kindLabel + " was detected on this device. Connect one or check your system privacy settings.";
+    }
+    if (name === "NotReadableError" || name === "AbortError") {
+      return "The " + kindLabel + " is in use by another app. Close apps using it (Zoom, Teams, Camera) and try again.";
+    }
+    if (name === "OverconstrainedError") {
+      return "The " + kindLabel + " doesn't support the requested settings. Try a different device.";
+    }
+    return "Could not access " + kindLabel + (err && err.message ? ": " + err.message : ".");
+  }
+
+  function requestMediaStream(needVideo, needAudio) {
+    const constraints = {};
+    if (needVideo) constraints.video = VIDEO_CONSTRAINTS;
+    if (needAudio) constraints.audio = AUDIO_CONSTRAINTS;
+    return navigator.mediaDevices.getUserMedia(constraints);
+  }
+
+  // Request media the user is missing and wire it into the live call.
+  // Called from the mic/camera buttons, so the browser shows its permission
+  // prompt exactly when the user asks for the device (fresh user gesture).
+  async function requestMissingMedia(needVideo, needAudio) {
+    try {
+      const stream = await requestMediaStream(needVideo, needAudio);
+      if (!state.localStream) {
+        state.localStream = stream;
+      } else {
+        const wanted = stream.getTracks().filter((t) =>
+          (needVideo && t.kind === "video") || (needAudio && t.kind === "audio")
+        );
+        wanted.forEach((t) => state.localStream.addTrack(t));
+        stream.getTracks().forEach((t) => { if (!wanted.includes(t)) t.stop(); });
+      }
+      // Calls that were set up without this track kind (e.g. joined mic-only)
+      // have no sender to replace — reach those peers with a dedicated call
+      // carrying the full stream instead.
+      const openedCalls = new Set();
+      const openDedicatedCall = (pid) => {
+        if (pid === state.peerId || openedCalls.has(pid)) return;
+        openedCalls.add(pid);
+        try {
+          const dc = state.peer.call(pid, state.localStream);
+          if (dc) boostCallBitrates(dc);
+        } catch (_) {}
+      };
+      if (needVideo) {
+        state.isCamOn = true;
+        const vTrack = state.localStream.getVideoTracks()[0] || null;
+        replaceTrackForPeers("video", vTrack).forEach(openDedicatedCall);
+        renderLocalVideo();
+      }
+      if (needAudio) {
+        state.isMicOn = true;
+        const aTrack = state.localStream.getAudioTracks()[0] || null;
+        replaceTrackForPeers("audio", aTrack).forEach(openDedicatedCall);
+      }
+      updateControlUI();
+      updateMicIndicators();
+      renderParticipants();
+      return true;
+    } catch (err) {
+      const label = needVideo && needAudio
+        ? "camera and microphone"
+        : needVideo ? "camera" : "microphone";
+      toast(mediaErrorMessage(err, label), "error");
+      return false;
+    }
+  }
+
+  // Bump encoder bitrate on every sender of a call so remote peers receive
+  // high-clarity video (2.5 Mbps) and audio (96 kbps) instead of the WebRTC
+  // default, which throttles aggressively on variable networks.
+  function boostCallBitrates(call, videoBitrate) {
+    try {
+      const pc = call.peerConnection;
+      if (!pc) return;
+      pc.getSenders().forEach((s) => {
+        if (!s.track) return;
+        const params = s.getParameters();
+        if (!params || !params.encodings || !params.encodings.length) return;
+        params.encodings = params.encodings.map((e) =>
+          Object.assign({}, e, {
+            maxBitrate: s.track.kind === "video" ? (videoBitrate || 2500000) : 96000,
+            maxFramerate: s.track.kind === "video" ? 30 : undefined,
+          })
+        );
+        s.setParameters(params).catch(() => {});
+      });
+    } catch (_) {}
+  }
+
   async function startCall(roomId, name) {
     state.roomId = roomId;
     state.peerId = "peer-" + Math.random().toString(36).substring(2, 10);
@@ -13950,26 +14064,38 @@ const MeetingRoom = (() => {
     // Close any previous call
     disconnectPeer();
 
-    // Get local media
+    // Get local media. Request camera+mic together first (one permission
+    // prompt); if that fails — e.g. the machine has a mic but no camera —
+    // retry mic-only, then camera-only, so a single missing/busy device
+    // never blocks the whole call.
+    let mediaError = null;
     try {
-      state.localStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
+      state.localStream = await requestMediaStream(true, true);
     } catch (err) {
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        toast("Camera/microphone access was blocked. Check browser permissions.", "error");
-        showStatus("Media permission denied. Please allow camera & microphone.", "error");
-      } else if (err.name === "NotFoundError") {
-        toast("No camera or microphone found on this device.", "error");
-        showStatus("No media devices found.", "error");
-      } else {
-        toast("Could not access media: " + err.message, "error");
-        showStatus("Media error: " + err.message, "error");
+      mediaError = err;
+      try {
+        state.localStream = await requestMediaStream(false, true);
+        state.isCamOn = false;
+      } catch (_) {
+        try {
+          state.localStream = await requestMediaStream(true, false);
+          state.isMicOn = false;
+        } catch (err3) {
+          state.localStream = null;
+          state.isCamOn = false;
+          state.isMicOn = false;
+          mediaError = err3;
+        }
       }
-      // Still allow call without media — show initials avatar
-      state.isCamOn = false;
-      state.isMicOn = false;
+    }
+    if (state.localStream) {
+      if (!state.localStream.getVideoTracks().length) state.isCamOn = false;
+      if (!state.localStream.getAudioTracks().length) state.isMicOn = false;
+    } else if (mediaError) {
+      // Still allow call without media — show initials avatar. The mic /
+      // camera buttons re-request permission on click.
+      toast(mediaErrorMessage(mediaError, "camera and microphone") + " You can retry from the mic/camera buttons.", "error");
+      showStatus("Could not access camera/microphone. You can still join and retry from the controls.", "error");
     }
 
     // Render local video / initials
@@ -14126,9 +14252,13 @@ const MeetingRoom = (() => {
     _pendingHostConnect = true;
     pendingCalls.add(targetPeerId);
 
-    const stream = state.localStream || new MediaStream();
+    // While screen sharing, new peers get the screen stream right away.
+    const stream = state.isScreenSharing && state.screenStream
+      ? state.screenStream
+      : (state.localStream || new MediaStream());
     const call = state.peer.call(targetPeerId, stream);
     if (call) {
+      boostCallBitrates(call, state.isScreenSharing ? 4000000 : 2500000);
       call.on("stream", (remoteStream) => {
         _pendingHostConnect = false;
         pendingCalls.delete(targetPeerId);
@@ -14171,13 +14301,24 @@ const MeetingRoom = (() => {
       const dest = new MediaStream();
       call.answer(dest);
     }
+    boostCallBitrates(call);
 
     call.on("stream", (remoteStream) => {
       handleRemoteStream(call.peer, remoteStream, call);
     });
 
     call.on("close", () => {
-      removeParticipant(call.peer);
+      // A dedicated screen-share call may close while the peer's camera call
+      // is still alive — only drop the participant when no media call remains.
+      const otherCall = getActiveMediaCalls().some((c) => c !== call && c.peer === call.peer);
+      if (!otherCall) {
+        removeParticipant(call.peer);
+      } else {
+        const p = state.participants[call.peer];
+        if (p) p.stream = null; // screen ended; tile falls back to initials
+        if (state.screenPeerId === call.peer) clearScreenStage();
+        updateParticipantCount();
+      }
     });
 
     call.on("error", (err) => {
@@ -14186,12 +14327,17 @@ const MeetingRoom = (() => {
   }
 
   function handleRemoteStream(peerId, stream, call) {
-    // Detect if this is a screen share (larger, or from getDisplayMedia)
-    const isScreen = stream.getVideoTracks().length > 0 &&
-      stream.getVideoTracks()[0].getSettings && (
-        stream.getVideoTracks()[0].getSettings().width > 1280 ||
-        stream.getVideoTracks()[0].label && stream.getVideoTracks()[0].label.includes("screenshare")
-      );
+    // Detect screen shares reliably: Chrome exposes displaySurface on
+    // getDisplayMedia captures; fall back to resolution/label heuristics.
+    const vTrack = stream.getVideoTracks()[0];
+    const settings = vTrack && vTrack.getSettings ? (vTrack.getSettings() || {}) : {};
+    const isScreen = !!vTrack && (
+      settings.displaySurface === "monitor" ||
+      settings.displaySurface === "window" ||
+      settings.displaySurface === "browser" ||
+      (settings.width || 0) > 1280 ||
+      !!(vTrack.label && vTrack.label.toLowerCase().includes("screen"))
+    );
 
     state.participants[peerId] = state.participants[peerId] || {};
     state.participants[peerId].stream = stream;
@@ -14199,6 +14345,7 @@ const MeetingRoom = (() => {
     state.participants[peerId].isScreen = isScreen;
     state.participants[peerId].name = state.participants[peerId].name || "Peer";
 
+    boostCallBitrates(call);
     renderRemoteVideo(peerId);
     attachVolumeMeter(peerId, stream);
 
@@ -14292,16 +14439,37 @@ const MeetingRoom = (() => {
     return calls;
   }
 
+  // Find the RTCRtpSender for a track kind on a call. Uses transceivers so
+  // senders whose track was previously replaced with null (camera off) are
+  // still found — getSenders() + s.track.kind silently misses those.
+  function findSenderForKind(call, kind) {
+    try {
+      const pc = call.peerConnection;
+      if (!pc) return null;
+      const trx = pc.getTransceivers().find(
+        (t) => t.receiver && t.receiver.track && t.receiver.track.kind === kind
+      );
+      return trx ? trx.sender : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // Replace the local track (camera or screen) on every active call so remote
   // peers see the new track. sender.replaceTrack() is the correct mechanism.
+  // Returns the list of peer IDs whose calls had NO video sender (e.g. a peer
+  // joined without a camera), so callers can fall back to a dedicated call.
   function replaceTrackForPeers(kind, track) {
+    const missing = [];
     getActiveMediaCalls().forEach((call) => {
-      try {
-        const senders = call.peerConnection.getSenders();
-        const sender = senders.find((s) => s.track && s.track.kind === kind);
-        if (sender) sender.replaceTrack(track || null);
-      } catch (_) {}
+      const sender = findSenderForKind(call, kind);
+      if (sender) {
+        try { sender.replaceTrack(track || null); } catch (_) {}
+      } else if (track && kind === "video") {
+        missing.push(call.peer);
+      }
     });
+    return missing;
   }
 
   // Mix the microphone with shared system/tab audio so remote peers hear
@@ -14369,6 +14537,10 @@ const MeetingRoom = (() => {
       state.screenStream.getTracks().forEach((t) => t.stop());
       state.screenStream = null;
     }
+    Object.values(state.screenCalls || {}).forEach((c) => {
+      try { c.close(); } catch (_) {}
+    });
+    state.screenCalls = {};
 
     Object.values(state.participants).forEach((p) => stopVolumeMeter(p));
     state.isMicOn = true;
@@ -14651,11 +14823,15 @@ const MeetingRoom = (() => {
 
 
 
-  function toggleMic() {
-    if (!state.localStream) return;
-    const audioTracks = state.localStream.getAudioTracks();
-    if (!audioTracks.length) return;
+  async function toggleMic() {
+    // No mic track yet (join failed or device was missing): clicking the mic
+    // button now is a fresh user gesture, so the browser asks for permission.
+    if (!state.localStream || !state.localStream.getAudioTracks().length) {
+      await requestMissingMedia(false, true);
+      return;
+    }
 
+    const audioTracks = state.localStream.getAudioTracks();
     state.isMicOn = !state.isMicOn;
     audioTracks.forEach((t) => t.enabled = state.isMicOn);
 
@@ -14671,11 +14847,17 @@ const MeetingRoom = (() => {
     toast(state.isMicOn ? "Microphone unmuted" : "Microphone muted", state.isMicOn ? "success" : "error");
   }
 
-  function toggleCamera() {
-    if (!state.localStream) return;
-    const videoTracks = state.localStream.getVideoTracks();
-    if (!videoTracks.length) return;
+  async function toggleCamera() {
+    // No camera track yet (join failed or no camera at join time): clicking
+    // the camera button is a fresh user gesture, so the browser asks for
+    // permission (or explains the device is missing) instead of silently
+    // doing nothing.
+    if (!state.localStream || !state.localStream.getVideoTracks().length) {
+      await requestMissingMedia(true, false);
+      return;
+    }
 
+    const videoTracks = state.localStream.getVideoTracks();
     state.isCamOn = !state.isCamOn;
     videoTracks.forEach((t) => t.enabled = state.isCamOn);
 
@@ -14711,8 +14893,24 @@ const MeetingRoom = (() => {
       state.screenStream = stream;
       state.isScreenSharing = true;
 
-      // Send the screen track to all connected peers via sender.replaceTrack
-      replaceTrackForPeers("video", stream.getVideoTracks()[0] || null);
+      // Send the screen track to all connected peers via sender.replaceTrack.
+      // Peers whose call has no video sender (e.g. they joined with no camera)
+      // get a dedicated screen call instead so sharing always reaches them.
+      const missingPeers = replaceTrackForPeers("video", stream.getVideoTracks()[0] || null);
+      state.screenCalls = {};
+      missingPeers.forEach((pid) => {
+        if (pid === state.peerId || state.screenCalls[pid]) return;
+        try {
+          const sc = state.peer.call(pid, stream);
+          if (sc) {
+            state.screenCalls[pid] = sc;
+            boostCallBitrates(sc, 4000000);
+          }
+        } catch (_) {}
+      });
+
+      // High bitrate for the screen track on every established call
+      getActiveMediaCalls().forEach((c) => boostCallBitrates(c, 4000000));
 
       // Mix shared system audio with the mic for remote peers
       startAudioMix(stream);
@@ -14746,6 +14944,11 @@ const MeetingRoom = (() => {
       state.screenStream.getTracks().forEach((t) => t.stop());
       state.screenStream = null;
     }
+    // Close any dedicated screen calls (no-camera fallback)
+    Object.values(state.screenCalls || {}).forEach((c) => {
+      try { c.close(); } catch (_) {}
+    });
+    state.screenCalls = {};
     state.isScreenSharing = false;
 
     // Restore the camera track to peers
@@ -14754,6 +14957,9 @@ const MeetingRoom = (() => {
 
     // Restore the plain microphone to peers
     stopAudioMix();
+
+    // Back to normal camera bitrate
+    getActiveMediaCalls().forEach((c) => boostCallBitrates(c, 2500000));
 
     broadcastChatMessage(null, { type: "screen-toggle", sharing: false });
     addSystemMessage(state.userName + " stopped screen sharing");

@@ -48,3 +48,4 @@ server.err.log
 scratch/devserver.log
 
 .vercel
+.env*
