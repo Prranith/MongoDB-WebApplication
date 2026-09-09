@@ -421,9 +421,9 @@ const MeetingRoom = (() => {
   // falls back to whatever the camera actually supports) and enable the full
   // audio processing suite so speech stays crisp.
   const VIDEO_CONSTRAINTS = {
-    width: { ideal: 1920, max: 1920 },
-    height: { ideal: 1080, max: 1080 },
-    frameRate: { ideal: 30, max: 60 },
+    width: { ideal: 3840, max: 3840 },
+    height: { ideal: 2160, max: 2160 },
+    frameRate: { ideal: 60, max: 60 },
     facingMode: "user",
   };
   const AUDIO_CONSTRAINTS = {
@@ -520,8 +520,8 @@ const MeetingRoom = (() => {
         if (!params || !params.encodings || !params.encodings.length) return;
         params.encodings = params.encodings.map((e) =>
           Object.assign({}, e, {
-            maxBitrate: s.track.kind === "video" ? (videoBitrate || 2500000) : 96000,
-            maxFramerate: s.track.kind === "video" ? 30 : undefined,
+            maxBitrate: s.track.kind === "video" ? (videoBitrate || 10000000) : 128000,
+            maxFramerate: s.track.kind === "video" ? 60 : undefined,
           })
         );
         s.setParameters(params).catch(() => {});
@@ -867,6 +867,24 @@ const MeetingRoom = (() => {
               }
             }
           }
+        } else if (data.type === "video-toggle") {
+          // Peer toggled their camera — swap between video and initials
+          const p = state.participants[peerId];
+          if (p) {
+            p.videoOn = !!data.videoOn;
+            const tile = document.querySelector(`.meeting-remote-tile[data-peer="${peerId}"]`);
+            if (tile) {
+              const vid = tile.querySelector("video");
+              const ov = tile.querySelector("[data-peer-initials]");
+              if (data.videoOn && p.stream && p.stream.getVideoTracks().length > 0) {
+                if (vid) { vid.srcObject = p.stream; vid.style.display = "block"; }
+                if (ov) { ov.style.display = "none"; }
+              } else {
+                if (vid) { vid.srcObject = null; vid.style.display = "none"; }
+                if (ov) { ov.style.display = "flex"; }
+              }
+            }
+          }
         } else if (data.type === "hand") {
           handlePeerHand(peerId, !!data.handUp, data.name);
         } else if (data.type === "reaction") {
@@ -1027,7 +1045,13 @@ const MeetingRoom = (() => {
     stopMeetingTimer();
     // Reset UI
     els.container.style.display = "none";
-    els.container.classList.remove("self-main", "spotlight");
+    els.container.classList.remove("self-main", "spotlight", "focus-mode");
+    _focusMode = false;
+    if (els.localTile) els.localTile.classList.remove("minimized");
+    const minBtn = document.getElementById("meeting-local-minimize");
+    const maxBtn = document.getElementById("meeting-local-maximize");
+    if (minBtn) minBtn.style.display = "flex";
+    if (maxBtn) maxBtn.style.display = "none";
     if (els.localTile) els.localTile.style.display = "";
     if (els.screenStage) els.screenStage.classList.remove("spotlight");
     // The self-view may live inside the grid (gallery mode) — move it back
@@ -1211,7 +1235,11 @@ const MeetingRoom = (() => {
     // Rebuild remote tiles + others tile (filmstrip excludes the spotlighted
     // user — they own the stage).
     els.remoteGrid.querySelectorAll(".meeting-remote-tile, .meeting-others-tile").forEach((t) => t.remove());
-    const strip = spotlight ? peers.filter((pid) => pid !== state.spotlightId) : peers;
+    const strip = spotlight
+      ? peers.filter((pid) => pid !== state.spotlightId)
+      : state.screenPeerId
+        ? peers.filter((pid) => pid !== state.screenPeerId)
+        : peers;
     const shown = many ? strip.slice(0, 2) : strip;
     shown.forEach((pid) => {
       const p = state.participants[pid];
@@ -1336,6 +1364,13 @@ const MeetingRoom = (() => {
     // Send peers the camera track (or null to black out) via sender.replaceTrack
     const camTrack = state.isCamOn ? state.localStream.getVideoTracks()[0] : null;
     replaceTrackForPeers("video", camTrack || null);
+
+    // Notify peers so they can swap between video and initials avatar
+    broadcastChatMessage(null, {
+      type: "video-toggle",
+      videoOn: state.isCamOn,
+      name: state.userName,
+    });
 
     renderLocalVideo();
     updateControlUI();
@@ -1686,6 +1721,31 @@ const MeetingRoom = (() => {
     els.localTile.style.bottom = "";
     els.localTile.style.transform = "";
   }
+
+  // ─── Minimize / restore self-view PiP ─────────────────────────────────
+  function toggleLocalMinimize() {
+    if (!els.localTile) return;
+    const isMinimized = els.localTile.classList.toggle("minimized");
+    const minBtn = document.getElementById("meeting-local-minimize");
+    const maxBtn = document.getElementById("meeting-local-maximize");
+    if (minBtn) minBtn.style.display = isMinimized ? "none" : "flex";
+    if (maxBtn) maxBtn.style.display = isMinimized ? "flex" : "none";
+    if (isMinimized) {
+      toast("Self-view minimized — click the tile to restore", "success");
+    }
+  }
+  window.MeetingRoom.toggleLocalMinimize = toggleLocalMinimize;
+
+  // ─── Focus mode: hide all chrome, make screen share fill the area ─────
+  let _focusMode = false;
+  function toggleFocusMode() {
+    _focusMode = !_focusMode;
+    if (els.container) els.container.classList.toggle("focus-mode", _focusMode);
+    const btn = document.getElementById("meeting-focus-btn");
+    if (btn) btn.classList.toggle("active", _focusMode);
+    toast(_focusMode ? "Focus mode — only shared screen is visible" : "Focus mode off", "success");
+  }
+  window.MeetingRoom.toggleFocusMode = toggleFocusMode;
 
   // ─── Raise hand ────────────────────────────────────────────────────────
   function toggleHand() {

@@ -4883,6 +4883,102 @@ li.CodeMirror-hint-active {
   border-radius: 8px;
 }
 
+/* ── Local tile controls (minimize / restore) ───────── */
+.meeting-tile-controls {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.meeting-local-tile:hover .meeting-tile-controls,
+.meeting-local-tile.minimized .meeting-tile-controls {
+  opacity: 1;
+}
+.meeting-tile-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(10, 10, 10, 0.7);
+  color: var(--meeting-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.meeting-tile-btn:hover {
+  background: rgba(50, 50, 50, 0.9);
+}
+
+/* Minimized self-view: small fixed PiP in the bottom-left corner */
+.meeting-local-tile.minimized {
+  width: 160px !important;
+  height: 110px !important;
+  min-width: 160px !important;
+  min-height: 110px !important;
+  position: fixed !important;
+  left: 16px !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 80px !important;
+  z-index: 500;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  cursor: move;
+  border: 1px solid var(--meeting-border);
+}
+.meeting-local-tile.minimized .meeting-user-label,
+.meeting-local-tile.minimized .meeting-hand-badge,
+.meeting-local-tile.minimized .meeting-tile-mic {
+  display: none !important;
+}
+.meeting-local-tile.minimized video {
+  border-radius: 10px !important;
+}
+
+/* Focus mode: screen share takes the full area, hides the filmstrip */
+.meeting-container.focus-mode .meeting-remote-grid {
+  display: none !important;
+}
+.meeting-container.focus-mode .meeting-local-tile {
+  display: none !important;
+}
+.meeting-container.focus-mode .meeting-screen-stage {
+  z-index: 8;
+}
+
+/* Focus button on the screen stage */
+.meeting-focus-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--meeting-border);
+  border-radius: 8px;
+  background: rgba(13, 13, 13, 0.75);
+  color: var(--meeting-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.meeting-focus-btn:hover {
+  background: rgba(16, 185, 129, 0.25);
+  color: #10b981;
+}
+.meeting-focus-btn.active {
+  background: #10b981;
+  color: #000;
+}
+
 /* ── Toast Notifications ────────────────────────────── */
 .toast-container {
   position: fixed;
