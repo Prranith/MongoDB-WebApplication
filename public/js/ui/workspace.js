@@ -783,6 +783,11 @@ function openFileInTab(path) {
     window.updateWorkspaceConsoleLayout(lang);
   }
 
+  if (typeof setSqlNotebookMode === 'function') {
+    setSqlNotebookMode(lang === 'sql');
+    if (lang === 'sql' && typeof initializeSqlNotebook === 'function') initializeSqlNotebook(file.content);
+  }
+
   if (editor) {
     editor.setOption('mode', cmMode);
     setTimeout(() => editor.refresh(), 50);
@@ -838,6 +843,7 @@ function closeTab(path, event) {
     } else {
       S.activeFile = null;
       editor.setValue('');
+      if (typeof setSqlNotebookMode === 'function') setSqlNotebookMode(false);
     }
   }
   renderFileTree();

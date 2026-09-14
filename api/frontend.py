@@ -1039,6 +1039,28 @@ body {
   line-height: 1.6;
 }
 
+/* SQL files use a notebook-style cell runner instead of the shared console. */
+#sql-notebook { display:none; flex:1; min-height:0; overflow:auto; background:var(--bg); padding:18px 20px 36px; }
+#ide-panel.sql-notebook-mode #sql-notebook { display:block; }
+#ide-panel.sql-notebook-mode #cm-wrap > .CodeMirror { display:none; }
+#ide-panel.sql-notebook-mode #console,
+#ide-panel.sql-notebook-mode #console-resizer,
+#ide-panel.sql-notebook-mode #inspector { display:none !important; }
+.sql-notebook-header { display:flex; align-items:center; gap:8px; max-width:980px; margin:0 auto 14px; color:var(--text2); font-size:12px; }
+.sql-notebook-header strong { color:var(--text); font-size:13px; }
+.sql-notebook-header span { color:var(--text3); }
+.sql-notebook-action { margin-left:auto; padding:5px 9px; border:1px solid var(--border2); border-radius:4px; background:var(--bg3); color:var(--text2); cursor:pointer; font-size:11px; }
+.sql-notebook-action:hover { background:var(--hl2); color:var(--text); }
+.sql-notebook-cell { max-width:980px; margin:0 auto 14px; border:1px solid var(--border); border-left:3px solid #3a7d0a; border-radius:5px; background:var(--bg2); overflow:hidden; }
+.sql-notebook-cell-header { display:flex; align-items:center; gap:8px; height:30px; padding:0 9px; border-bottom:1px solid var(--border); color:var(--text3); font-size:11px; }
+.sql-notebook-cell-header strong { color:var(--text2); }
+.sql-notebook-run { margin-left:auto; padding:3px 8px; border:1px solid rgba(78,201,176,.35); border-radius:3px; background:rgba(78,201,176,.08); color:var(--green2); cursor:pointer; font-size:11px; }
+.sql-notebook-run:hover { background:rgba(78,201,176,.18); }
+.sql-cell-input { display:block; width:100%; min-height:92px; padding:11px 13px; border:0; outline:0; resize:vertical; box-sizing:border-box; background:#1e1e1e; color:#d4d4d4; font:13px/1.55 'JetBrains Mono',Consolas,monospace; }
+.sql-cell-output { display:none; border-top:1px solid var(--border); padding:10px 13px; background:#181818; color:var(--text2); font:12px/1.55 'JetBrains Mono',Consolas,monospace; white-space:pre-wrap; overflow:auto; }
+.sql-cell-output.has-result { display:block; }
+.sql-cell-output.error { color:#f48771; }
+
 /* ── Inspector pane ──────────────────────────────────── */
 #inspector {
   width: var(--insp-w);
@@ -6599,6 +6621,7 @@ body.meeting-active > .toast-container {
       <div id="editor-inspector">
         <div id="cm-wrap">
           <textarea id="raw-editor">// Open a workspace file to write queries</textarea>
+          <div id="sql-notebook" aria-label="SQL notebook"></div>
           <div id="workspace-file-preview" aria-live="polite"></div>
         </div>
 
@@ -8637,6 +8660,11 @@ function openFileInTab(path) {
     window.updateWorkspaceConsoleLayout(lang);
   }
 
+  if (typeof setSqlNotebookMode === 'function') {
+    setSqlNotebookMode(lang === 'sql');
+    if (lang === 'sql' && typeof initializeSqlNotebook === 'function') initializeSqlNotebook(file.content);
+  }
+
   if (editor) {
     editor.setOption('mode', cmMode);
     setTimeout(() => editor.refresh(), 50);
@@ -8692,6 +8720,7 @@ function closeTab(path, event) {
     } else {
       S.activeFile = null;
       editor.setValue('');
+      if (typeof setSqlNotebookMode === 'function') setSqlNotebookMode(false);
     }
   }
   renderFileTree();
@@ -9077,6 +9106,7 @@ function deleteActiveQueryFile(path) {
 // in-memory SQLite copy and returns the new snapshot after mutations; nothing
 // is written to server databases or shared JSON files.
 const SQL_SANDBOXES = new Map();
+const SQL_NOTEBOOK_OUTPUTS = new Map();
 
 function sqlSandboxKey() {
   return S.activeFile || '__workspace_editor__';
@@ -9087,6 +9117,172 @@ function isSqlMutation(query) {
   return /^(?:(?:with\\b[\\s\\S]*?\\b(?:insert|update|delete|replace)\\b)|(?:insert|update|delete|replace|create|alter|drop)\\b)/i.test(statement);
 }
 
+function isSqlNotebookFile() {
+  return String(S.activeFile || '').toLowerCase().endsWith('.sql');
+}
+
+function setSqlNotebookMode(active) {
+  const panel = document.getElementById('ide-panel');
+  if (panel) panel.classList.toggle('sql-notebook-mode', !!active);
+}
+
+function splitSqlNotebookCells(source) {
+  const lines = String(source || '').split(/\\r?\\n/);
+  const marker = /^\\s*--\\s*(?:#?%%|cell\\b.*)$/i;
+  if (!lines.some(line => marker.test(line))) {
+    const cells = [];
+    let current = '';
+    let quote = null;
+    for (let index = 0; index < String(source || '').length; index++) {
+      const char = String(source || '')[index];
+      const next = String(source || '')[index + 1] || '';
+      current += char;
+      if (quote) {
+        if (char === quote && next === quote) { current += next; index++; }
+        else if (char === quote) quote = null;
+      } else if (char === "'" || char === '"' || char === '`') quote = char;
+      else if (char === ';') { if (current.trim()) cells.push(current.trim()); current = ''; }
+    }
+    if (current.trim()) cells.push(current.trim());
+    return cells.length ? cells : [''];
+  }
+  const cells = [];
+  let current = [];
+  lines.forEach(line => {
+    if (marker.test(line)) {
+      if (current.join('\\n').trim()) cells.push(current.join('\\n').trim());
+      current = [];
+    } else current.push(line);
+  });
+  if (current.join('\\n').trim() || !cells.length) cells.push(current.join('\\n').trim());
+  return cells;
+}
+
+function sqlNotebookSourceFromInputs() {
+  const inputs = [...document.querySelectorAll('.sql-cell-input')];
+  return inputs.map((input, index) => `${index ? '-- %%\\n' : ''}${input.value}`.trim()).join('\\n\\n');
+}
+
+function syncSqlNotebookToFile() {
+  if (!editor || !S.activeFile) return;
+  const source = sqlNotebookSourceFromInputs();
+  if (editor.getValue() !== source) editor.setValue(source);
+  const file = S.files.find(item => item.path === S.activeFile);
+  if (file) file.content = source;
+  if (typeof persistBrowserWorkspace === 'function') persistBrowserWorkspace();
+  if (typeof scheduleWorkspaceFileWrite === 'function' && file) scheduleWorkspaceFileWrite(file);
+}
+
+function formatSqlCellResult(result) {
+  if (!result || !Array.isArray(result.columns) || !result.columns.length) {
+    return `${result?.operation || 'Statement'} completed · ${result?.affectedRows || 0} row(s) affected`;
+  }
+  const columns = result.columns;
+  const rows = result.rows || [];
+  const widths = columns.map(column => Math.max(String(column).length, ...rows.map(row => String(row[column] ?? '').length), 3));
+  const line = '+' + widths.map(width => '-'.repeat(width + 2)).join('+') + '+';
+  const format = values => '| ' + values.map((value, index) => String(value ?? '').padEnd(widths[index])).join(' | ') + ' |';
+  return [line, format(columns), line, ...rows.map(row => format(columns.map(column => row[column]))), line, `${result.rowCount} row(s) returned`].join('\\n');
+}
+
+function renderSqlNotebook(source) {
+  const notebook = document.getElementById('sql-notebook');
+  if (!notebook) return;
+  const cells = splitSqlNotebookCells(source);
+  const runtimeKey = S.activeFile || '__workspace_editor__';
+  const saved = SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {};
+  notebook.innerHTML = '';
+  const header = document.createElement('div');
+  header.className = 'sql-notebook-header';
+  header.innerHTML = `<strong>SQL Notebook</strong><span>${cells.length} cell${cells.length === 1 ? '' : 's'}</span>`;
+  const reset = document.createElement('button');
+  reset.className = 'sql-notebook-action';
+  reset.textContent = 'Restart runtime';
+  reset.onclick = () => {
+    SQL_SANDBOXES.delete(runtimeKey);
+    SQL_NOTEBOOK_OUTPUTS.delete(runtimeKey);
+    renderSqlNotebook(editor ? editor.getValue() : source);
+  };
+  const runAll = document.createElement('button');
+  runAll.className = 'sql-notebook-action';
+  runAll.textContent = 'Run all';
+  runAll.onclick = async () => { for (let index = 0; index < document.querySelectorAll('.sql-notebook-cell').length; index++) await runSqlNotebookCell(index); };
+  const addCell = document.createElement('button');
+  addCell.className = 'sql-notebook-action';
+  addCell.textContent = '+ Cell';
+  addCell.onclick = () => {
+    syncSqlNotebookToFile();
+    const nextSource = `${editor ? editor.getValue().trimEnd() : source.trimEnd()}\\n-- %%\\n`;
+    if (editor) editor.setValue(nextSource);
+    initializeSqlNotebook(nextSource);
+  };
+  header.append(runAll, addCell, reset);
+  notebook.appendChild(header);
+  cells.forEach((cellSource, index) => {
+    const cell = document.createElement('section');
+    cell.className = 'sql-notebook-cell';
+    cell.dataset.cellIndex = String(index);
+    const cellHeader = document.createElement('div');
+    cellHeader.className = 'sql-notebook-cell-header';
+    cellHeader.innerHTML = `<strong>Cell ${index + 1}</strong><span>SQL</span>`;
+    const run = document.createElement('button');
+    run.className = 'sql-notebook-run';
+    run.textContent = 'Run cell';
+    run.onclick = () => runSqlNotebookCell(index);
+    cellHeader.appendChild(run);
+    const input = document.createElement('textarea');
+    input.className = 'sql-cell-input';
+    input.value = cellSource;
+    input.spellcheck = false;
+    input.oninput = syncSqlNotebookToFile;
+    input.onkeydown = event => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        runSqlNotebookCell(index);
+      }
+    };
+    const output = document.createElement('pre');
+    output.className = 'sql-cell-output';
+    if (saved[index]) { output.textContent = saved[index].text; output.classList.add('has-result'); if (saved[index].error) output.classList.add('error'); }
+    cellHeader.appendChild(run);
+    cell.append(cellHeader, input, output);
+    notebook.appendChild(cell);
+  });
+}
+
+function initializeSqlNotebook(source) {
+  setSqlNotebookMode(true);
+  renderSqlNotebook(source);
+}
+
+async function runSqlNotebookCell(index) {
+  syncSqlNotebookToFile();
+  const cell = document.querySelector(`.sql-notebook-cell[data-cell-index="${index}"]`);
+  if (!cell) return;
+  const input = cell.querySelector('.sql-cell-input');
+  const output = cell.querySelector('.sql-cell-output');
+  const query = input.value.trim();
+  if (!query) return;
+  output.classList.add('has-result');
+  output.classList.remove('error');
+  output.textContent = 'Running…';
+  const runtimeKey = S.activeFile || '__workspace_editor__';
+  try {
+    const requestBody = { query, limit: S.settings ? S.settings.maxResults : 500 };
+    if (SQL_SANDBOXES.has(runtimeKey)) requestBody.tables = SQL_SANDBOXES.get(runtimeKey);
+    const result = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody) });
+    if (result.status !== 'ok') throw new Error(result.error || 'SQL execution failed');
+    if (result.tables) SQL_SANDBOXES.set(runtimeKey, result.tables);
+    const text = formatSqlCellResult(result);
+    output.textContent = text;
+    SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, { ...(SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {}), [index]: { text } });
+  } catch (error) {
+    output.classList.add('error');
+    output.textContent = `[error] ${error.message}`;
+    SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, { ...(SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {}), [index]: { text: output.textContent, error: true } });
+  }
+}
+
 async function runQuery() {
   const langSelect = document.getElementById('workspace-lang-select');
   const lang = langSelect ? langSelect.value : 'mongodb';
@@ -9095,6 +9291,12 @@ async function runQuery() {
   // Treat an obvious SQL statement as SQL even if an older saved workspace
   // language value left the selector on MongoDB mode.
   if (lang === 'sql' || looksLikeSql) {
+    if (lang === 'sql' && isSqlNotebookFile()) {
+      const activeCell = document.querySelector('.sql-notebook-cell:focus-within');
+      const index = activeCell ? Number(activeCell.dataset.cellIndex) : 0;
+      await runSqlNotebookCell(index);
+      return;
+    }
     const q = source.trim();
     if (!q) return;
     const statEl = document.getElementById('console-status');
