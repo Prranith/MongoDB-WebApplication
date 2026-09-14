@@ -80,6 +80,28 @@ class SqlService:
         conn.commit()
         return conn
 
+    @staticmethod
+    def _strip_leading_comments(query):
+        """Return the SQL statement after whitespace and leading comments.
+
+        Editors commonly place a description such as ``-- SQL query`` above
+        the statement.  That is valid SQL, but validating the raw first
+        character would incorrectly reject it as non-SELECT input.
+        """
+        text = str(query or "").lstrip()
+        while text:
+            if text.startswith("--"):
+                newline = text.find("\n")
+                text = text[newline + 1:] if newline >= 0 else ""
+            elif text.startswith("/*"):
+                end = text.find("*/", 2)
+                if end < 0:
+                    raise ValueError("Unterminated SQL comment")
+                text = text[end + 2:].lstrip()
+            else:
+                break
+        return text.lstrip()
+
     @classmethod
     def _validate(cls, query):
         query = str(query or "").lstrip("\ufeff").strip()
@@ -87,12 +109,15 @@ class SqlService:
             raise ValueError("SQL query is required")
         if len(query) > 100000:
             raise ValueError("SQL query is too large")
+        statement = cls._strip_leading_comments(query)
+        if not statement:
+            raise ValueError("SQL query is required")
         # Permit one trailing semicolon, but never execute a script.
-        if ";" in query.rstrip(";"):
+        if ";" in statement.rstrip(";"):
             raise ValueError("Only one SQL statement is allowed")
-        if cls._blocked.search(query):
+        if cls._blocked.search(statement):
             raise ValueError("Only read-only SELECT queries are allowed")
-        if not re.match(r"^(select|with)\b", query, re.I):
+        if not re.match(r"^(select|with)\b", statement, re.I):
             raise ValueError("Only SELECT queries are allowed")
         return query
 

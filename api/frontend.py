@@ -8339,10 +8339,12 @@ function deleteActiveQueryFile(path) {
 async function runQuery() {
   const langSelect = document.getElementById('workspace-lang-select');
   const lang = langSelect ? langSelect.value : 'mongodb';
+  const source = editor.getValue();
+  const looksLikeSql = /^\\s*(?:(?:--[^\\r\\n]*(?:\\r?\\n|$))|(?:\\/\\*[\\s\\S]*?\\*\\/\\s*))*\\s*(?:select|with)\\b/i.test(source);
   // Treat an obvious SQL statement as SQL even if an older saved workspace
   // language value left the selector on MongoDB mode.
-  if (lang === 'sql' || /^\\s*(select|with)\\b/i.test(editor.getValue())) {
-    const q = editor.getValue().trim();
+  if (lang === 'sql' || looksLikeSql) {
+    const q = source.trim();
     if (!q) return;
     const statEl = document.getElementById('console-status');
     if (statEl) statEl.textContent = '⟳ Running SQL...';
