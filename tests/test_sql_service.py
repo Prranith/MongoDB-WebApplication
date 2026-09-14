@@ -60,3 +60,55 @@ def test_sql_snapshot_preserves_primary_key_constraints():
     )
     assert rejected["status"] == "error"
     assert "UNIQUE constraint failed" in rejected["error"]
+
+
+def test_sql_supports_composite_keys_foreign_keys_joins_and_aggregates():
+    schema = SqlService.execute_query(
+        "CREATE TABLE departments (id INTEGER PRIMARY KEY, name VARCHAR(50));"
+        "CREATE TABLE employees (id INTEGER PRIMARY KEY, department_id INTEGER, salary DECIMAL(10,2), "
+        "PRIMARY KEY (id), FOREIGN KEY (department_id) REFERENCES departments(id));",
+        custom_tables={},
+    )
+    assert schema["status"] == "error"  # duplicate inline/table primary key is rejected by SQLite
+    schema = SqlService.execute_query(
+        "CREATE TABLE departments (id INTEGER PRIMARY KEY, name VARCHAR(50));"
+        "CREATE TABLE employees (id INTEGER, department_id INTEGER, salary DECIMAL(10,2), "
+        "PRIMARY KEY (id), FOREIGN KEY (department_id) REFERENCES departments(id));",
+        custom_tables={},
+    )
+    assert schema["status"] == "ok"
+    data = SqlService.execute_query(
+        "INSERT INTO departments VALUES (1, 'Engineering');"
+        "INSERT INTO employees VALUES (10, 1, 100);"
+        "INSERT INTO employees VALUES (11, 1, 150);"
+        "SELECT d.name, COUNT(e.id) AS headcount, AVG(e.salary) AS average_salary "
+        "FROM departments d LEFT JOIN employees e ON e.department_id = d.id "
+        "GROUP BY d.id, d.name HAVING COUNT(e.id) > 0;",
+        custom_tables=schema["tables"],
+    )
+    assert data["status"] == "ok"
+    assert data["rows"][0]["headcount"] == 2
+    assert data["rows"][0]["average_salary"] == 125.0
+    invalid_fk = SqlService.execute_query(
+        "INSERT INTO employees VALUES (12, 999, 200);",
+        custom_tables=data["tables"],
+    )
+    assert invalid_fk["status"] == "error"
+
+
+def test_sql_supports_composite_primary_key():
+    schema = SqlService.execute_query(
+        "CREATE TABLE enrollment (student_id INTEGER, course_id INTEGER, "
+        "PRIMARY KEY (student_id, course_id));",
+        custom_tables={},
+    )
+    first = SqlService.execute_query(
+        "INSERT INTO enrollment VALUES (1, 101);",
+        custom_tables=schema["tables"],
+    )
+    duplicate = SqlService.execute_query(
+        "INSERT INTO enrollment VALUES (1, 101);",
+        custom_tables=first["tables"],
+    )
+    assert duplicate["status"] == "error"
+    assert "UNIQUE constraint failed" in duplicate["error"]

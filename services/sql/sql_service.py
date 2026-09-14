@@ -37,6 +37,10 @@ class SqlService:
     def _normalize_mysql(cls, statement):
         """Translate common MySQL syntax to the isolated SQLite dialect."""
         text = statement.strip()
+        if re.match(r"^(?:create|drop)\s+database\b|^use\s+", text, re.I):
+            return "SELECT 'practice_db' AS Database"
+        if re.match(r"^truncate\s+table\b", text, re.I):
+            text = re.sub(r"^truncate\s+table\s+", "DELETE FROM ", text, flags=re.I)
         if re.match(r"^show\s+tables\s*$", text, re.I):
             return "SELECT name AS Tables_in_database FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
         describe = re.match(r"^(?:describe|desc)\s+([`\w]+)\s*$", text, re.I)
@@ -48,17 +52,49 @@ class SqlService:
                 f"FROM pragma_table_info({cls._quote(table)})"
             )
         text = re.sub(r"\bINSERT\s+IGNORE\b", "INSERT OR IGNORE", text, flags=re.I)
+        text = re.sub(r"\s+ON\s+DUPLICATE\s+KEY\s+UPDATE\b[\s\S]*$", "", text, flags=re.I)
+        text = re.sub(r"\bINSERT\s+INTO\b", "INSERT OR REPLACE INTO", text, count=1, flags=re.I) if re.search(r"\bON\s+DUPLICATE\s+KEY", statement, re.I) else text
         text = re.sub(r"\bAUTO_INCREMENT\b", "", text, flags=re.I)
         text = re.sub(r"\bUNSIGNED\b|\bZEROFILL\b", "", text, flags=re.I)
         text = re.sub(r"\b(TINYINT|SMALLINT|MEDIUMINT|INT|BIGINT)(?:\s*\(\s*\d+\s*\))?(?![A-Z0-9_])", "INTEGER", text, flags=re.I)
         text = re.sub(r"\b(?:VARCHAR|CHAR|NVARCHAR)\s*\(\s*\d+\s*\)", "TEXT", text, flags=re.I)
         text = re.sub(r"\b(?:DATETIME|TIMESTAMP|DATE|TIME)\b", "TEXT", text, flags=re.I)
         text = re.sub(r"\bDECIMAL\s*\([^)]*\)", "REAL", text, flags=re.I)
+        text = re.sub(r"\bENUM\s*\([^)]*\)", "TEXT", text, flags=re.I)
+        text = re.sub(r"\bUNIQUE\s+KEY\s+[`\w]+", "UNIQUE", text, flags=re.I)
+        text = re.sub(r"(?<!FOREIGN )\bKEY\s+[`\w]+\s*\([^)]*\)", "", text, flags=re.I)
         text = re.sub(r"\s+ENGINE\s*=\s*\w+", "", text, flags=re.I)
         text = re.sub(r"\s+DEFAULT\s+CHARSET\s*=\s*\w+", "", text, flags=re.I)
         text = re.sub(r"\s+COLLATE\s*=\s*\w+", "", text, flags=re.I)
         text = re.sub(r"\bNOW\s*\(\s*\)", "CURRENT_TIMESTAMP", text, flags=re.I)
+        text = re.sub(r"\bLIMIT\s+(\d+)\s*,\s*(\d+)\b", r"LIMIT \2 OFFSET \1", text, flags=re.I)
         return text
+
+    @staticmethod
+    def _register_mysql_functions(conn):
+        def mysql_if(condition, when_true, when_false):
+            return when_true if condition else when_false
+
+        def mysql_concat(*values):
+            return ''.join('' if value is None else str(value) for value in values)
+
+        def date_part(value, part):
+            match = re.search(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", str(value or ''))
+            if not match: return None
+            return int(match.group({'year': 1, 'month': 2, 'day': 3}[part]))
+
+        def date_format(value, pattern):
+            text = str(value or '')
+            replacements = {'%Y': text[0:4], '%m': text[5:7], '%d': text[8:10], '%H': text[11:13], '%i': text[14:16], '%s': text[17:19]}
+            return re.sub(r"%[YmdHis]", lambda match: replacements.get(match.group(0), match.group(0)), str(pattern or ''))
+
+        conn.create_function("IF", 3, mysql_if)
+        conn.create_function("CONCAT", -1, mysql_concat)
+        conn.create_function("YEAR", 1, lambda value: date_part(value, 'year'))
+        conn.create_function("MONTH", 1, lambda value: date_part(value, 'month'))
+        conn.create_function("DAY", 1, lambda value: date_part(value, 'day'))
+        conn.create_function("DATE_FORMAT", 2, date_format)
+        conn.create_function("REGEXP", 2, lambda pattern, value: 1 if value is not None and re.search(str(pattern), str(value)) else 0)
 
     @classmethod
     def _flatten(cls, value, prefix=""):
@@ -83,6 +119,11 @@ class SqlService:
 
     @classmethod
     def _table_docs(cls, conn, table_name, docs):
+        snapshot_create_sql = docs.get("__create_sql__") if isinstance(docs, dict) else None
+        if snapshot_create_sql:
+            conn.execute(snapshot_create_sql)
+            cls._insert_snapshot_rows(conn, table_name, docs.get("__rows__"))
+            return
         schema = None
         if isinstance(docs, dict) and "__rows__" in docs:
             schema = docs.get("__schema__") if isinstance(docs.get("__schema__"), list) else None
@@ -123,11 +164,35 @@ class SqlService:
             conn.execute(sql, [cls._scalar(row.get(original)) for _, original, _, _ in columns])
 
     @classmethod
+    def _insert_snapshot_rows(cls, conn, table_name, docs):
+        rows = docs if isinstance(docs, list) else []
+        if len(rows) > cls.MAX_SANDBOX_ROWS:
+            raise ValueError(f"A sandbox table may contain at most {cls.MAX_SANDBOX_ROWS} rows")
+        columns = conn.execute(f"PRAGMA table_info({cls._quote(cls._safe_name(table_name))})").fetchall()
+        if not columns or not rows: return
+        names = [row[1] for row in columns]
+        sql = f"INSERT INTO {cls._quote(cls._safe_name(table_name))} ({', '.join(cls._quote(name) for name in names)}) VALUES ({','.join('?' for _ in names)})"
+        for value in rows:
+            flattened = cls._flatten(value) if isinstance(value, dict) else {"value": value}
+            conn.execute(sql, [cls._scalar(flattened.get(name, flattened.get(cls._safe_name(name)))) for name in names])
+
+    @classmethod
     def build_sqlite_db_from_docs(cls, table_docs_map):
         conn = sqlite3.connect(":memory:", check_same_thread=False)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        cls._register_mysql_functions(conn)
+        snapshot_tables = []
         for name, docs in (table_docs_map or {}).items():
-            cls._table_docs(conn, name, docs)
+            if isinstance(docs, dict) and docs.get("__create_sql__"):
+                conn.execute(docs["__create_sql__"])
+                snapshot_tables.append((name, docs))
+            else:
+                cls._table_docs(conn, name, docs)
+        for name, docs in snapshot_tables:
+            cls._insert_snapshot_rows(conn, name, docs.get("__rows__"))
+            for index_sql in docs.get("__indexes__", []) if isinstance(docs, dict) else []:
+                if index_sql: conn.execute(index_sql)
         conn.commit()
         return conn
 
@@ -165,11 +230,12 @@ class SqlService:
             raise ValueError("SQL query is required")
         if cls._blocked.search(statement):
             raise ValueError("This SQL operation is not allowed in the sandbox")
-        first = re.match(r"^(select|with|insert|update|delete|replace|create|alter|drop|show|describe|desc)\b", statement, re.I)
+        first = re.match(r"^(select|with|insert|update|delete|replace|create|alter|drop|show|describe|desc|use|truncate)\b", statement, re.I)
         if not first:
             raise ValueError("Supported SQL starts with SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, or WITH")
         kind = first.group(1).lower()
-        if kind in {"show", "describe", "desc"}: kind = "select"
+        if kind in {"show", "describe", "desc", "use"}: kind = "select"
+        if kind == "truncate": kind = "delete"
         if kind == "with":
             dml = re.search(r"\b(insert|update|delete|replace)\b", statement, re.I)
             kind = dml.group(1).lower() if dml else "select"
@@ -260,12 +326,21 @@ class SqlService:
         for (name,) in names:
             columns = conn.execute(f"PRAGMA table_info({cls._quote(name)})").fetchall()
             cursor = conn.execute(f"SELECT * FROM {cls._quote(name)} LIMIT ?", (cls.MAX_SANDBOX_ROWS,))
+            create_row = conn.execute(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", (name,)
+            ).fetchone()
+            index_rows = conn.execute(
+                "SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = ? AND sql IS NOT NULL",
+                (name,),
+            ).fetchall()
             result[name] = {
+                "__create_sql__": create_row[0] if create_row else None,
                 "__schema__": [
                     {"name": row[1], "type": row[2] or "TEXT", "notnull": row[3], "pk": row[5]}
                     for row in columns
                 ],
                 "__rows__": [dict(row) for row in cursor.fetchall()],
+                "__indexes__": [row[0] for row in index_rows],
             }
         return result
 
