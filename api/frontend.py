@@ -9163,7 +9163,9 @@ function splitSqlNotebookCells(source) {
   lines.forEach(line => {
     if (marker.test(line)) {
       sawMarker = true;
-      if (current.join('\\n').trim()) cells.push(current.join('\\n').trim());
+      // After the first marker, an empty segment is a real blank cell. Keep
+      // it so newly inserted cells do not disappear until the user types.
+      if (current.join('\\n').trim() || cells.length || sawMarker && current.length > 0) cells.push(current.join('\\n').trim());
       current = [];
     } else current.push(line);
   });
