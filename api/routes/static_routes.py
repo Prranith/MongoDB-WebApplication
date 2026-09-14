@@ -1,7 +1,6 @@
 import sys
-import base64
 from pathlib import Path
-from flask import Blueprint, send_from_directory, jsonify, Response
+from flask import Blueprint, send_from_directory, jsonify
 
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
@@ -13,14 +12,6 @@ except ImportError:
         from frontend import INDEX_HTML
     except ImportError:
         INDEX_HTML = None
-
-try:
-    from api.embedded_assets import EMBEDDED_ASSETS
-except ImportError:
-    try:
-        from embedded_assets import EMBEDDED_ASSETS
-    except ImportError:
-        EMBEDDED_ASSETS = {}
 
 PUBLIC_DIR = ROOT / "public"
 
@@ -77,25 +68,16 @@ def serve_favicon():
 
 @static_bp.route("/assets/<path:path>")
 def serve_asset(path):
-    """Serve explorer SVGs from the serverless bundle, with local fallback."""
-    normalized = path.replace("\\", "/").lstrip("/")
-    encoded = EMBEDDED_ASSETS.get(normalized)
-    if encoded:
-        return Response(
-            base64.b64decode(encoded),
-            mimetype="image/svg+xml",
-            headers={"Cache-Control": "public, max-age=31536000, immutable"},
-        )
-
+    """Serve local assets for direct/local development requests."""
     assets_dir = PUBLIC_DIR / "assets"
-    asset = assets_dir / normalized
+    asset = assets_dir / path
     try:
         asset.resolve().relative_to(assets_dir.resolve())
     except ValueError:
         return jsonify({"error": "Not found"}), 404
     if not asset.is_file():
         return jsonify({"error": "Not found"}), 404
-    return send_from_directory(str(assets_dir), normalized, max_age=31536000)
+    return send_from_directory(str(assets_dir), path, max_age=31536000)
 
 @static_bp.route("/<path:path>")
 def serve_static(path):

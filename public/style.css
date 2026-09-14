@@ -5297,6 +5297,7 @@ li.CodeMirror-hint-active {
 .section-actions .phbtn { width: 24px; height: 24px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; color:var(--text3); }
 .section-actions .phbtn:hover { background:var(--hl2); color:var(--text); }
 .codicon-toolbar-icon { width:16px; height:16px; display:block; opacity:.85; filter:invert(78%); }
+.codicon-toolbar-icon svg { width:16px; height:16px; display:block; }
 .section-actions .phbtn:hover .codicon-toolbar-icon { opacity:1; }
 .file-type-icon { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-right:6px; border:1px solid; border-radius:3px; font:bold 8px Arial; box-sizing:border-box; }
 .tab-file-icon { display:inline-flex; align-items:center; margin-right:3px; }
@@ -5307,6 +5308,8 @@ li.CodeMirror-hint-active {
 .file-item { padding-top: 1px; padding-bottom: 1px; min-height: 23px; line-height: 20px; }
 .file-item.active { border-left-color: transparent !important; }
 .file-type-icon { width:16px; height:16px; margin:0; border:0 !important; border-radius:0; box-sizing:content-box; }
+.file-type-icon.inline-svg-icon { display:inline-flex; align-items:center; justify-content:center; }
+.file-type-icon.inline-svg-icon svg { width:100%; height:100%; display:block; }
 .tab-file-icon .file-type-icon { width:16px; height:16px; margin:0; }
 
 /* ── Meeting control dock / window behavior ───────────────────────────────

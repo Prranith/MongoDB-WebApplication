@@ -27,10 +27,17 @@ async function loadFiles() {
   }
 }
 
-const ICON_ROOT = '/assets/icons/material/';
-const SVG_MONGO_LEAF = `<img class="file-type-icon" src="${ICON_ROOT}database.svg" alt="MongoDB" title="MongoDB">`;
-const SVG_FOLDER_ICON = `<img class="file-type-icon" src="${ICON_ROOT}folder-base.svg" alt="Folder">`;
-const SVG_FILE_ICON = `<img class="file-type-icon" src="${ICON_ROOT}document.svg" alt="File">`;
+const EMBEDDED_ICONS = window.CODEXA_EMBEDDED_ICONS || {};
+function embeddedIconMarkup(iconPath, alt, title) {
+  const svg = EMBEDDED_ICONS[iconPath];
+  if (svg) {
+    return `<span class="file-type-icon inline-svg-icon" role="img" aria-label="${alt || 'File'}" title="${title || alt || ''}">${svg}</span>`;
+  }
+  return `<span class="file-type-icon inline-svg-icon" role="img" aria-label="${alt || 'File'}" title="${title || alt || ''}"></span>`;
+}
+const SVG_MONGO_LEAF = embeddedIconMarkup('icons/material/database.svg', 'MongoDB', 'MongoDB');
+const SVG_FOLDER_ICON = embeddedIconMarkup('icons/material/folder-base.svg', 'Folder', 'Folder');
+const SVG_FILE_ICON = embeddedIconMarkup('icons/material/document.svg', 'File', 'File');
 function fileIconLegacy(name) {
   const ext = (name.split('.').pop() || '').toLowerCase();
   const marks = {
@@ -61,7 +68,7 @@ function getFileIconName(filename) {
 // Local official Material Icon Theme SVG; no runtime network dependency.
 function fileIcon(name) {
   const icon = getFileIconName(name);
-  return `<img class="file-type-icon" src="${ICON_ROOT}${icon}.svg" alt="${icon} file" title="${icon}">`;
+  return embeddedIconMarkup(`icons/material/${icon}.svg`, `${icon} file`, icon);
 }
 
 function toggleFolder(path) {
@@ -95,7 +102,7 @@ function renderFileTree() {
   
   container.innerHTML = sorted.map(f => {
     let icon = f.type === 'folder'
-      ? `<img class="file-type-icon" src="${ICON_ROOT}${f.expanded === false ? 'folder-base.svg' : 'folder-base-open.svg'}" alt="Folder">`
+      ? embeddedIconMarkup(`icons/material/${f.expanded === false ? 'folder-base.svg' : 'folder-base-open.svg'}`, 'Folder', 'Folder')
       : fileIcon(f.name);
     if (f.type === 'file' && f.name.toLowerCase().endsWith('.mongo')) icon = SVG_MONGO_LEAF;
     const depth = f.path.split('/').length - 1;

@@ -303,13 +303,13 @@
           </span>
           <div class="section-actions" style="display: flex; gap: 4px; padding-right: 4px">
             <button class="phbtn" title="New File" aria-label="New File" onclick="createNewQueryFile(event)">
-              <img class="codicon-toolbar-icon" src="/assets/icons/codicons/new-file.svg" alt="">
+              <span class="codicon-toolbar-icon" data-inline-icon="icons/codicons/new-file.svg" aria-hidden="true"></span>
             </button>
             <button class="phbtn" title="New Folder" aria-label="New Folder" onclick="createNewFolder(event)">
-              <img class="codicon-toolbar-icon" src="/assets/icons/codicons/new-folder.svg" alt="">
+              <span class="codicon-toolbar-icon" data-inline-icon="icons/codicons/new-folder.svg" aria-hidden="true"></span>
             </button>
             <button class="phbtn" title="Refresh Explorer" aria-label="Refresh Explorer" onclick="loadFiles(event)">
-              <img class="codicon-toolbar-icon" src="/assets/icons/codicons/refresh.svg" alt="">
+              <span class="codicon-toolbar-icon" data-inline-icon="icons/codicons/refresh.svg" aria-hidden="true"></span>
             </button>
             <button class="phbtn" title="Collapse All" onclick="collapseAllFiles(event)">
               <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1.5H5v-1h4v1zM2 4h12V3H2v1zm2 3h8V6H4v1zm7 3H5V9h6v1zm2 3H3v-1h10v1z"/></svg>
@@ -685,6 +685,7 @@
 <script src="js/ui/panels.js"></script>
 <script src="js/ui/sidebar.js"></script>
 <script src="js/ui/views.js"></script>
+<script src="js/ui/embedded_icons.js"></script>
 <script src="js/ui/workspace.js"></script>
 <script src="js/features/execution.js"></script>
 <script src="js/features/editor.js"></script>
