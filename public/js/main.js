@@ -33,9 +33,15 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   });
   editor.setSize('100%', '100%');
+  attachCodexaKeywordHints(editor, () => {
+    const select = document.getElementById('workspace-lang-select');
+    return select ? select.value : 'mongodb';
+  });
 
   // Trigger IntelliSense autocompletion as user types
   editor.on('inputRead', (cm, change) => {
+    const lang = document.getElementById('workspace-lang-select')?.value || 'mongodb';
+    if (lang !== 'mongodb') return;
     if (change.text[0] === '.' || change.text[0] === '$' || (change.text[0].length === 1 && change.text[0].match(/[a-zA-Z]/))) {
       cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false });
     }
@@ -77,6 +83,19 @@ window.addEventListener('DOMContentLoaded', () => {
   recordLaunch();
 
   // Setup Global Keyboard Shortcuts
+  window.addEventListener('keydown', e => {
+    const key = e.key.toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && ['r', 't', 'w', 'n', 'l'].includes(key)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if (e.key === 'F5') {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+  }, true);
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') { e.preventDefault(); toggleSidebar(); }

@@ -38,6 +38,7 @@ from api.routes.file_routes import file_bp
 from api.routes.analytics_routes import analytics_bp
 from api.routes.exam_routes import exam_bp
 from api.routes.meeting_routes import meeting_bp
+from api.routes.sql_routes import sql_bp
 
 # Register blueprints to keep code structure modular and maintainable
 app.register_blueprint(static_bp)
@@ -46,6 +47,7 @@ app.register_blueprint(file_bp)
 app.register_blueprint(analytics_bp)
 app.register_blueprint(exam_bp)
 app.register_blueprint(meeting_bp)
+app.register_blueprint(sql_bp)
 
 
 @app.before_request

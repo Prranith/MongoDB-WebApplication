@@ -10,17 +10,7 @@ async function loadFiles() {
     const legacyPaths = ['01_find_paid.mongo', '02_aggregate_pipeline.mongo', 'kishor.mongo'];
     localFiles = localFiles.filter(lf => !legacyPaths.includes(lf.path));
 
-    // If local files are empty, initialize with default templates
-    if (localFiles.length === 0) {
-      localFiles = [
-        {
-          name: 'query.js',
-          path: 'query.js',
-          content: '// MongoDB Query Sandbox\n// Write queries here (Ctrl+Enter to run)\ndb.users.find({})\n',
-          type: 'file'
-        }
-      ];
-    }
+    // Keep the workspace empty until the user explicitly creates a file.
     
     S.files = localFiles;
     localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
@@ -37,36 +27,90 @@ async function loadFiles() {
   }
 }
 
-const SVG_MONGO_LEAF = `<svg viewBox="0 0 16 16" width="14" height="14" style="margin-right:6px;flex-shrink:0"><path fill="#47a248" d="M8 1s-4.5 4.5-4.5 8.5C3.5 12 5.5 15 8 15s4.5-3 4.5-5.5C12.5 5.5 8 1 8 1zm0 12.5c-1.5 0-2.5-1.5-2.5-3 0-2.5 2.5-6 2.5-6s2.5 3.5 2.5 6c0 1.5-1 3-2.5 3z"/></svg>`;
-const SVG_FOLDER_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" fill="#a7a7a7" style="margin-right:6px;flex-shrink:0"><path d="M14 4.5h-5.5L7 2.5H2a1.5 1.5 0 0 0-1.5 1.5v8c0 .8.7 1.5 1.5 1.5h12c.8 0 1.5-.7 1.5-1.5v-6c0-.8-.7-1.5-1.5-1.5z"/></svg>`;
-const SVG_FILE_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" fill="#a7a7a7" style="margin-right:6px;flex-shrink:0"><path d="M9 1H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6l-5-5zM8 5V2.5L11.5 5H8z"/></svg>`;
+const ICON_ROOT = '/assets/icons/material/';
+const SVG_MONGO_LEAF = `<img class="file-type-icon" src="${ICON_ROOT}database.svg" alt="MongoDB" title="MongoDB">`;
+const SVG_FOLDER_ICON = `<img class="file-type-icon" src="${ICON_ROOT}folder-base.svg" alt="Folder">`;
+const SVG_FILE_ICON = `<img class="file-type-icon" src="${ICON_ROOT}document.svg" alt="File">`;
+function fileIconLegacy(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  const marks = {
+    js: '<path fill="#1e1e1e" d="M5 11.7c.4.7.9 1 1.6 1 .6 0 .9-.3.9-.7 0-.4-.3-.6-1-.9l-.3-.1c-1-.4-1.5-1-1.5-1.9 0-1 .8-1.7 1.9-1.7.9 0 1.5.4 1.9 1.2l-1 .6c-.2-.4-.5-.6-.9-.6-.3 0-.5.2-.5.5 0 .3.2.4.8.7l.3.1c1.1.5 1.7 1 1.7 2.1 0 1.2-.9 1.9-2.3 1.9-1.2 0-2-.6-2.4-1.5zM9.6 7.5h4v1.1h-1.4v4h-1.2v-4H9.6z"/>',
+    mongo: '<path fill="#fff" d="M10.1 2.7c-.9 1.8-2.2 3.3-2.2 5.7 0 2.2 1.1 3.6 1.4 5.1.2-1.2.8-2.2 1.1-3.5.5-2.4.1-4.7-.3-7.3z"/>',
+    sql: '<path fill="#fff" d="M5 6h6v1H5zm0 2h6v1H5zm0 2h4v1H5z"/><path fill="#fff" d="M11 11h2v1h-2z"/>',
+    sqlite: '<path fill="#12343b" d="M5 6h6v1H5zm0 2h6v1H5zm0 2h4v1H5z"/>',
+    json: '<path fill="#1e1e1e" d="M7 4.5c-.8 0-1.2.5-1.2 1.3v.8c0 .5-.2.7-.7.7v1c.5 0 .7.2.7.7v.8c0 .8.4 1.3 1.2 1.3v-.9c-.3 0-.4-.2-.4-.6v-.8c0-.6-.2-.9-.6-1 .4-.1.6-.4.6-1v-.8c0-.4.1-.6.4-.6zm2 0v.9c.3 0 .4.2.4.6v.8c0 .6.2.9.6 1-.4.1-.6.4-.6 1v.8c0 .4-.1.6-.4.6v.9c.8 0 1.2-.5 1.2-1.3v-.8c0-.5.2-.7.7-.7v-1c-.5 0-.7-.2-.7-.7v-.8c0-.8-.4-1.3-1.2-1.3z"/>',
+    py: '<path fill="#ffd343" d="M8 3.5H6.2c-1.2 0-1.8.6-1.8 1.8v1.8h2.8V8H4.4v1.2H8c1.2 0 1.8-.6 1.8-1.8V5.3C9.8 4.1 9.2 3.5 8 3.5zm-1.2 1.3h1v1h-1z"/><path fill="#3776ab" d="M8 12.5h1.8c1.2 0 1.8-.6 1.8-1.8V8.9H8.8V8H12v-1.2H8c-1.2 0-1.8.6-1.8 1.8v2.1c0 1.2.6 1.8 1.8 1.8zm1.2-1.3h-1v-1h1z"/>',
+    cpp: '<path fill="#fff" d="M5.7 7.3a2.7 2.7 0 1 0 0 5.4c.8 0 1.5-.3 2- .9l-.8-.7c-.3.3-.7.5-1.2.5a1.6 1.6 0 1 1 0-3.2c.5 0 .9.2 1.2.5l.8-.7c-.5-.6-1.2-.9-2-.9zm4.5 0h-1v1.9H8.3v1h.9v1.9h1v-1.9h1v-1h-1z"/>',
+    c: '<path fill="#fff" d="M7 7.3a2.7 2.7 0 1 0 0 5.4c.8 0 1.5-.3 2-.9l-.8-.7c-.3.3-.7.5-1.2.5a1.6 1.6 0 1 1 0-3.2c.5 0 .9.2 1.2.5l.8-.7c-.5-.6-1.2-.9-2-.9z"/>',
+    java: '<path fill="#fff" d="M8.8 3.5c1.1 1-.2 1.7-.3 2.4-.1.6.7 1 .7 1S7 6.6 7 5.7c0-.7 1.2-1.3 1.8-2.2zM5.2 9.7c.7.4 1.6.6 2.8.6s2.1-.2 2.8-.6c-.1.9-1.1 1.5-2.8 1.5s-2.7-.6-2.8-1.5zM6 12c.6.3 1.3.4 2 .4s1.4-.1 2-.4c-.2.6-.9.9-2 .9s-1.8-.3-2-.9z"/>'
+  };
+  const colors = { mongo:'#47a248', js:'#f7df1e', sql:'#cc7832', sqlite:'#80cbc4', json:'#cbcb41', py:'#3776ab', cpp:'#519aba', c:'#519aba', java:'#b07219' };
+  const color = colors[ext] || '#a7a7a7';
+  return `<svg class="file-type-icon" viewBox="0 0 16 16" aria-label="${ext || 'file'}" role="img"><path fill="${color}" d="M2 1h8l4 4v10H2z"/><path fill="#fff" opacity=".9" d="M10 1v4h4z"/>${marks[ext] || '<path fill="#fff" d="M5 7h6v1H5zm0 2h6v1H5z"/>'}</svg>`;
+}
+
+function getFileIconName(filename) {
+  const base = String(filename || '').split('/').pop().toLowerCase();
+  const special = { dockerfile: 'docker', makefile: 'document', 'package.json': 'json', 'package-lock.json': 'json', 'pnpm-lock.yaml': 'yaml', 'readme.md': 'markdown', license: 'document' };
+  if (special[base]) return special[base];
+  const ext = base.includes('.') ? base.slice(base.lastIndexOf('.') + 1) : base;
+  const map = { mongo:'database', js:'javascript', jsx:'javascript', mjs:'javascript', cjs:'javascript', ts:'typescript', tsx:'typescript', mts:'typescript', cts:'typescript', c:'c', h:'h', cpp:'cpp', cc:'cpp', cxx:'cpp', hpp:'hpp', java:'java', py:'python', pyw:'python', pyi:'python', cs:'csharp', go:'go', rs:'rust', swift:'swift', kt:'kotlin', kts:'kotlin', php:'php', rb:'ruby', dart:'dart', scala:'scala', lua:'lua', r:'r', ex:'elixir', exs:'elixir', zig:'zig', html:'html', htm:'html', css:'css', scss:'css', sass:'css', less:'css', json:'json', jsonc:'json', json5:'json', xml:'xml', yaml:'yaml', yml:'yaml', md:'markdown', markdown:'markdown', sh:'console', bash:'console', zsh:'console', fish:'console', ps1:'powershell', sql:'database', sqlite:'database', sqlite3:'database', db:'database', db3:'database', graphql:'graphql', gql:'graphql', vue:'vue', svelte:'svelte', bat:'console', toml:'toml', ini:'settings', env:'document', asm:'assembly' };
+  return map[ext] || 'document';
+}
+
+// Local official Material Icon Theme SVG; no runtime network dependency.
+function fileIcon(name) {
+  const icon = getFileIconName(name);
+  return `<img class="file-type-icon" src="${ICON_ROOT}${icon}.svg" alt="${icon} file" title="${icon}">`;
+}
+
+function toggleFolder(path) {
+  const folder = S.files.find(f => f.type === 'folder' && f.path === path);
+  if (!folder) return;
+  S.activeFolder = path;
+  S.activeFile = null;
+  folder.expanded = folder.expanded === false;
+  localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
+  renderFileTree();
+}
+
+function isFileVisible(path) {
+  const parts = path.split('/');
+  for (let i = 1; i < parts.length; i++) {
+    const parent = S.files.find(f => f.type === 'folder' && f.path === parts.slice(0, i).join('/'));
+    if (parent && parent.expanded === false) return false;
+  }
+  return true;
+}
 
 function renderFileTree() {
   const container = document.getElementById('q-list');
   if (!S.files.length) {
-    container.innerHTML = `<div style="padding:8px 12px;color:var(--text3)">No query files.</div>`;
+    container.innerHTML = `<div style="padding:8px 12px;color:var(--text3)">No files.</div>`;
     return;
   }
   
   // Sort: folders first, then files
-  const sorted = [...S.files].sort((a,b) => {
-    if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
+  const sorted = [...S.files].sort((a,b) => a.path.localeCompare(b.path, undefined, {numeric:true}));
   
   container.innerHTML = sorted.map(f => {
-    let icon = f.type === 'folder' ? SVG_FOLDER_ICON : SVG_FILE_ICON;
-    if (f.type === 'file' && f.name.endsWith('.mongo')) {
-      icon = SVG_MONGO_LEAF;
-    }
-    const indentClass = f.path.includes('/') ? 'style="padding-left:36px"' : '';
+    let icon = f.type === 'folder'
+      ? `<img class="file-type-icon" src="${ICON_ROOT}${f.expanded === false ? 'folder-base.svg' : 'folder-base-open.svg'}" alt="Folder">`
+      : fileIcon(f.name);
+    if (f.type === 'file' && f.name.toLowerCase().endsWith('.mongo')) icon = SVG_MONGO_LEAF;
+    const depth = f.path.split('/').length - 1;
+    if (!isFileVisible(f.path)) return '';
+    const indentClass = `style="padding-left:${28 + depth * 18}px"`;
+    const isFolder = f.type === 'folder';
+    const isActive = f.path === (S.activeFile || S.activeFolder);
+    const folderArrow = isFolder ? `<span class="folder-chevron">${f.expanded === false ? '›' : '⌄'}</span>` : '';
     return `
-      <div class="file-item ${f.path === S.activeFile ? 'active' : ''}" 
+      <div class="file-item ${isActive ? 'active' : ''}"
            data-path="${esc(f.path)}"
            ${indentClass}
-           onclick="openFileInTab('${f.path}')"
+           onclick="${isFolder ? `toggleFolder('${f.path}')` : `openFileInTab('${f.path}')` }"
            oncontextmenu="handleFileContextMenu(event, '${f.path}')">
-        <span class="file-icon" style="display:flex; align-items:center">${icon}</span>
+        ${folderArrow}<span class="file-icon" style="display:flex; align-items:center">${icon}</span>
         <span>${esc(f.name)}</span>
       </div>
     `;
@@ -78,6 +122,9 @@ function openFileInTab(path) {
   if (!file || file.type === 'folder') return;
   
   S.activeFile = path;
+  // New items are created in the selected file's containing folder.
+  const parentParts = path.split('/');
+  S.activeFolder = null;
   if (!S.tabs.includes(path)) {
     S.tabs.push(path);
     createTabElement(file);
@@ -107,6 +154,8 @@ function openFileInTab(path) {
     lang = 'java';
     cmMode = 'text/x-java';
     langIndicator = 'Java';
+  } else if (lowerPath.endsWith('.sql')) {
+    lang = 'sql'; cmMode = 'text/x-sql'; langIndicator = 'SQL';
   }
   
   const langSelect = document.getElementById('workspace-lang-select');
@@ -152,7 +201,7 @@ function createTabElement(file) {
   tab.className = 'tab';
   tab.id = `tab-${escId(file.path)}`;
   tab.innerHTML = `
-    <span class="tab-dot"></span>
+    <span class="tab-file-icon">${fileIcon(file.name)}</span>
     <span>${esc(file.name)}</span>
     <button class="tab-close" onclick="closeTab('${file.path}', event)">×</button>
   `;
@@ -224,13 +273,16 @@ function renderInlineCreateInput(type) {
   // Check if an input is already showing
   if (document.getElementById('inline-create-input')) return;
   
+  const selectedParent = S.activeFolder || (S.activeFile && S.activeFile.includes('/') ? S.activeFile.split('/').slice(0, -1).join('/') : '');
+  const selectedFolder = selectedParent ? S.files.find(f => f.type === 'folder' && f.path === selectedParent) : null;
+  if (selectedFolder && selectedFolder.expanded === false) selectedFolder.expanded = true;
+  const createDepth = selectedParent ? selectedParent.split('/').length : 0;
   const tempDiv = document.createElement('div');
   tempDiv.className = 'file-item inline-create-container';
-  tempDiv.style.paddingLeft = '28px';
+  tempDiv.style.paddingLeft = `${28 + createDepth * 18}px`;
   tempDiv.style.background = 'var(--hl2)';
   
   const icon = type === 'folder' ? SVG_FOLDER_ICON : SVG_FILE_ICON;
-  
   tempDiv.innerHTML = `
     <span class="file-icon" style="margin-right: 6px; display: flex; align-items: center">${icon}</span>
     <input id="inline-create-input" 
@@ -238,8 +290,10 @@ function renderInlineCreateInput(type) {
            style="flex: 1; background: #2d2d2d; border: 1px solid #007acc; border-radius: 2px; color: #fff; font-size: 12px; outline: none; padding: 2px 4px; font-family: inherit; width: 100%" />
   `;
   
-  // Insert at the top of the file list
-  container.insertBefore(tempDiv, container.firstChild);
+  // Insert directly inside the selected folder, like VS Code's inline create row.
+  const folderRow = selectedParent && container.querySelector(`[data-path="${CSS.escape(selectedParent)}"]`);
+  if (folderRow) folderRow.insertAdjacentElement('afterend', tempDiv);
+  else container.insertBefore(tempDiv, container.firstChild);
   
   const inputEl = document.getElementById('inline-create-input');
   inputEl.focus();
@@ -252,36 +306,35 @@ function renderInlineCreateInput(type) {
     if (name) {
       if (type === 'file') {
         let filename = name;
-        const validExtensions = ['.mongo', '.js', '.json', '.cpp', '.java', '.py', '.c'];
-        const hasExt = validExtensions.some(ext => filename.toLowerCase().endsWith(ext));
-        if (!hasExt) {
-          filename += '.js';
-        }
+        const targetPath = selectedParent ? `${selectedParent}/${filename}` : filename;
+        // Preserve exactly what the user typed; never append an extension.
         
         // Check duplicate
-        if (S.files.some(f => f.path === filename)) {
+        if (S.files.some(f => f.path === targetPath)) {
           alert('File already exists.');
           renderFileTree();
           return;
         }
         
-        let starter = `// MongoDB Query: ${filename}\n\ndb.users.find({})\n`;
-        if (filename.endsWith('.py')) {
+        let starter = `// ${filename}\n`;
+        if (filename.toLowerCase().endsWith('.py')) {
           starter = `# Python 3 script\nprint("Hello World")\n`;
-        } else if (filename.endsWith('.cpp')) {
+        } else if (filename.toLowerCase().endsWith('.cpp')) {
           starter = `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello World" << endl;\n    return 0;\n}\n`;
-        } else if (filename.endsWith('.c')) {
+        } else if (filename.toLowerCase().endsWith('.c')) {
           starter = `#include <stdio.h>\n\nint main() {\n    printf("Hello World\\n");\n    return 0;\n}\n`;
-        } else if (filename.endsWith('.java')) {
+        } else if (filename.toLowerCase().endsWith('.java')) {
           const baseName = filename.replace(/\.java$/, '');
           starter = `public class ${baseName} {\n    public static void main(String[] args) {\n        System.out.println("Hello from ${baseName}!");\n    }\n}\n`;
-        } else if (filename.endsWith('.js')) {
+        } else if (filename.toLowerCase().endsWith('.js')) {
           starter = `// JavaScript/MongoDB query\ndb.users.find({});\n`;
+        } else if (filename.toLowerCase().endsWith('.sql')) {
+          starter = `-- SQL query\nSELECT * FROM users LIMIT 10;\n`;
         }
 
         const fileObj = {
           name: filename,
-          path: filename,
+          path: targetPath,
           content: starter,
           type: 'file'
         };
@@ -291,7 +344,8 @@ function renderInlineCreateInput(type) {
         openFileInTab(fileObj.path);
       } else {
         // Folder
-        if (S.files.some(f => f.path === name)) {
+        const folderPath = selectedParent ? `${selectedParent}/${name}` : name;
+        if (S.files.some(f => f.path === folderPath)) {
           alert('Folder already exists.');
           renderFileTree();
           return;
@@ -299,9 +353,10 @@ function renderInlineCreateInput(type) {
         
         const folderObj = {
           name: name,
-          path: name,
+          path: folderPath,
           type: 'folder',
-          content: ''
+          content: '',
+          expanded: true
         };
         S.files.push(folderObj);
         localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));

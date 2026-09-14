@@ -6,7 +6,7 @@ Decomposed controller layer delegating to domain services.
 
 import sys
 from pathlib import Path
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, request, jsonify, g, Response, stream_with_context
 
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
@@ -16,6 +16,9 @@ from services.submission.submission_service import SubmissionService
 from services.proctoring.proctoring_service import ProctoringService
 from services.leaderboard.leaderboard_service import LeaderboardService
 from services.compiler.compiler_service import CompilerService
+from services.sql.sql_service import SqlService
+from services.exam.media_service import QuestionMediaService
+from services.shared.redis_client import redis_one
 from utils.logger import get_logger, bind_component
 
 exam_bp = Blueprint("exam_bp", __name__)
@@ -218,6 +221,52 @@ def api_exam_save_questions(room_id: str):
         return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
+@exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/media", methods=["POST"])
+def api_exam_upload_question_media(room_id: str, question_id: str):
+    """Upload a question image/video to GridFS (mentor-only, max 30 MB)."""
+    mentor_id = request.form.get("mentorId", "").strip()
+    file_storage = request.files.get("file")
+    room_mentor = redis_one(["HGET", f"room:{room_id}", "mentorId"])
+    if not room_mentor:
+        return _json_response({"status": "error", "error": "Room not found"}, status=404)
+    if room_mentor != mentor_id:
+        return _json_response({"status": "error", "error": "Unauthorized"}, status=403)
+    try:
+        media = QuestionMediaService.upload(room_id, question_id, file_storage)
+        return _json_response({"status": "ok", "media": media})
+    except ValueError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=400)
+    except Exception as e:
+        log.error("question_media_upload_failed", room_id=room_id, question_id=question_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": "Unable to store media right now"}, status=503)
+
+
+@exam_bp.route("/api/exam/room/<room_id>/media/<media_id>", methods=["GET"])
+def api_exam_get_question_media(room_id: str, media_id: str):
+    """Stream a room's question media from GridFS."""
+    try:
+        meta, stream = QuestionMediaService.get(room_id, media_id)
+        def chunks():
+            try:
+                while True:
+                    chunk = stream.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    yield chunk
+            finally:
+                stream.close()
+        response = Response(stream_with_context(chunks()), mimetype=meta.get("contentType", "application/octet-stream"))
+        response.headers["Content-Length"] = str(meta.get("size", 0))
+        response.headers["Content-Disposition"] = f'inline; filename="{meta.get("filename", "media").replace(chr(34), "")}"'
+        response.headers["Cache-Control"] = "private, max-age=3600"
+        return response
+    except KeyError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=404)
+    except Exception as e:
+        log.error("question_media_read_failed", room_id=room_id, media_id=media_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": "Unable to read media"}, status=503)
+
+
 @exam_bp.route("/api/exam/room/<room_id>/dataset", methods=["POST"])
 def api_exam_upload_dataset(room_id: str):
     """Upload a dataset for a room."""
@@ -301,7 +350,10 @@ def api_exam_run_query(room_id: str):
     if not dataset_ids or not query:
         return _json_response({"status": "error", "error": "datasetIds and query are required"}, status=400)
 
-    result = SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=limit)
+    if body.get("queryType") == "sql" or body.get("type") == "sql":
+        result = SqlService.execute_room_query(room_id, dataset_ids, query, limit=limit)
+    else:
+        result = SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=limit)
     return _json_response(result)
 
 
@@ -321,7 +373,13 @@ def api_exam_freeze_answer(room_id: str):
         return _json_response({"status": "error", "error": "questionId, datasetIds, and query are required"}, status=400)
 
     try:
-        res = SubmissionService.freeze_answer(room_id, mentor_id, question_id, dataset_ids, query)
+        if body.get("queryType") == "sql" or body.get("type") == "sql":
+            result = SqlService.execute_room_query(room_id, dataset_ids, query, limit=10000)
+            if result.get("status") != "ok":
+                raise ValueError(result.get("error", "SQL execution failed"))
+            res = SubmissionService.freeze_answer(room_id, mentor_id, question_id, dataset_ids, query, query_type="sql", result=result)
+        else:
+            res = SubmissionService.freeze_answer(room_id, mentor_id, question_id, dataset_ids, query)
         return _json_response({
             "status": "ok",
             "questionId": res["questionId"],

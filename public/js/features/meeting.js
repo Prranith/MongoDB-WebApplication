@@ -13,6 +13,7 @@ const MeetingRoom = (() => {
   // ─── State ────────────────────────────────────────────────────────────
   const state = {
     roomId: "",
+    roomTitle: "Codexa Meeting",
     peerId: "",
     peer: null,
     userName: "Codexa User",
@@ -27,6 +28,9 @@ const MeetingRoom = (() => {
     participants: {},        // peerId -> { name, stream, dataConnection }
     callActive: false,
     chatOpen: false,
+    chatTargetPeerId: "",
+    chatTargetName: "Everyone",
+    participantSearch: "",
     participantsOpen: false,
     handRaised: false,
     spotlightId: null,     // "self" | peerId | null — user pinned as MY main stage
@@ -37,6 +41,7 @@ const MeetingRoom = (() => {
     joining: false,        // true while a join/create call is starting
     isHost: false,
     _prevPeers: 0,
+    hostToken: "",
   };
 
   // ─── DOM refs ──────────────────────────────────────────────────────────
@@ -48,6 +53,7 @@ const MeetingRoom = (() => {
     createScreen: $("meeting-screen-create"),
     joinScreen:   $("meeting-screen-join"),
     createNameInput: $("meeting-create-name"),
+    createTitleInput: $("meeting-create-title"),
     createRoomInput: $("meeting-create-room"),
     container:    $("meeting-container"),
     videoArea:    $("meeting-video-area"),
@@ -58,6 +64,7 @@ const MeetingRoom = (() => {
     localUserLabel: $("local-user-label"),
     remoteGrid:   $("meeting-remote-grid"),
     roomLabel:    $("meeting-room-label"),
+    roomTitle:    $("meeting-room-title"),
     participantCount: $("meeting-participant-count"),
     micBtn:       $("meeting-mic-btn"),
     camBtn:       $("meeting-cam-btn"),
@@ -80,6 +87,8 @@ const MeetingRoom = (() => {
     participantList: $("meeting-participant-list"),
     panelSectionTitle: $("meeting-panel-section-title"),
     inviteInput:  $("meeting-invite-input"),
+    participantSearch: $("meeting-participant-search"),
+    chatRecipient: $("meeting-chat-recipient"),
     timerEl:      $("meeting-timer"),
     localHandBadge: $("local-hand-badge"),
     localTileMic: $("local-tile-mic"),
@@ -220,12 +229,39 @@ const MeetingRoom = (() => {
     if (othersOpen) renderOthersOverlay();
   }
 
+  function copyTextToClipboard(text) {
+    const fallback = () => {
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      let copied = false;
+      try { copied = document.execCommand("copy"); } catch (_) {}
+      area.remove();
+      return copied;
+    };
+    const modern = navigator.clipboard && typeof navigator.clipboard.writeText === "function"
+      ? navigator.clipboard.writeText(text).then(() => true).catch(() => false)
+      : Promise.resolve(false);
+    return modern.then((copied) => copied || fallback());
+  }
+
   function copyRoomId() {
     if (!state.roomId) return;
-    navigator.clipboard.writeText(state.roomId).then(() => {
-      toast("Room ID copied to clipboard: " + state.roomId, "success");
-    }).catch(() => {
-      toast("Room ID: " + state.roomId, "success");
+    const text = state.roomId;
+    copyTextToClipboard(text).then((ok) => {
+      toast(ok ? "Room ID copied to clipboard: " + text : "Room ID: " + text, ok ? "success" : "error");
+    });
+  }
+
+  function copyRoomLink() {
+    if (!state.roomId) return;
+    const link = window.location.origin + window.location.pathname + "?room=" + encodeURIComponent(state.roomId);
+    copyTextToClipboard(link).then((ok) => {
+      toast(ok ? "Invite link copied to clipboard" : "Invite link: " + link, ok ? "success" : "error");
     });
   }
 
@@ -258,16 +294,34 @@ const MeetingRoom = (() => {
   }
 
   // ─── Toast / leave cleanup on tab close ──────────────────────────────
-  window.addEventListener("beforeunload", (e) => {
-    if (state.callActive && state.roomId) {
+  function notifyMeetingLeave() {
+    if (!state.callActive || !state.roomId || leaveNotificationSent) return;
+    leaveNotificationSent = true;
+    const payload = JSON.stringify({ roomId: state.roomId, peerId: state.peerId });
+    let sent = false;
+    if (navigator.sendBeacon) {
+      try {
+        sent = navigator.sendBeacon(
+          "/api/meeting/leave",
+          new Blob([payload], { type: "application/json" })
+        );
+      } catch (_) {}
+    }
+    if (!sent) {
       fetch("/api/meeting/leave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId: state.roomId, peerId: state.peerId }),
+        body: payload,
+        keepalive: true,
       }).catch(() => {});
     }
+  }
+
+  window.addEventListener("beforeunload", () => {
+    notifyMeetingLeave();
     disconnectPeer();
   });
+  window.addEventListener("pagehide", notifyMeetingLeave);
 
   // ─── Overlay / screen navigation (Exam-Portal style) ───────────────────
   function showChoiceScreen() {
@@ -283,10 +337,9 @@ const MeetingRoom = (() => {
     if (els.joinScreen) els.joinScreen.style.display = "none";
     if (els.createScreen) els.createScreen.style.display = "flex";
     els.createNameInput.value = state.userName || "Developer";
-    // Always present a room ID so the host can share it immediately
-    if (!els.createRoomInput.value.trim()) {
-      els.createRoomInput.value = generateRoomIdText();
-    }
+    if (els.createTitleInput) els.createTitleInput.value = "";
+    // The room ID is assigned by the server after creation.
+    if (els.createRoomInput) els.createRoomInput.value = "";
     if (els.createNameInput) {
       els.createNameInput.focus();
       els.createNameInput.select();
@@ -300,8 +353,7 @@ const MeetingRoom = (() => {
     if (els.joinScreen) els.joinScreen.style.display = "flex";
     els.userNameInput.value = state.userName || "Developer";
     // Prefer URL ?room= param (invite link), fall back to localStorage
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlRoom = urlParams.get("room");
+    const urlRoom = getInviteRoomId();
     if (urlRoom) {
       els.roomIdInput.value = urlRoom.toUpperCase();
     } else if (!els.roomIdInput.value.trim()) {
@@ -311,6 +363,27 @@ const MeetingRoom = (() => {
     if (els.userNameInput) {
       els.userNameInput.focus();
       els.userNameInput.select();
+    }
+  }
+
+  function getInviteRoomId() {
+    const params = new URLSearchParams(window.location.search || "");
+    const queryRoom = params.get("room");
+    if (queryRoom) return queryRoom.trim().toUpperCase();
+    // Keep invite links usable if a host copies a hash-style SPA URL.
+    const hash = (window.location.hash || "").replace(/^#/, "");
+    const hashParams = new URLSearchParams(hash);
+    return (hashParams.get("room") || "").trim().toUpperCase();
+  }
+
+  function openInviteJoin() {
+    const inviteRoom = getInviteRoomId();
+    if (!inviteRoom || state.callActive) return;
+    if (els.modal) els.modal.classList.add("active");
+    showJoinScreen();
+    if (els.roomIdInput) {
+      els.roomIdInput.value = inviteRoom;
+      els.roomIdInput.dispatchEvent(new Event("input", { bubbles: true }));
     }
   }
 
@@ -337,6 +410,9 @@ const MeetingRoom = (() => {
     showCreateScreen,
     showJoinScreen,
     copyRoomId,
+    copyRoomLink,
+    clearChatTarget,
+    openParticipantChat,
     toggleHand,
     sendReaction,
     openOthers,
@@ -370,7 +446,12 @@ const MeetingRoom = (() => {
   async function createMeeting() {
     if (state.joining) return;
     const name = (els.createNameInput.value || "").trim() || "Developer";
+    const roomTitle = (els.createTitleInput && els.createTitleInput.value || "").trim() || "Codexa Meeting";
     state.userName = name;
+    state.roomTitle = roomTitle;
+    state.hostToken = (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : "host-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 
     showStatus("Creating room...", "success");
     setJoining(true);
@@ -378,7 +459,7 @@ const MeetingRoom = (() => {
       const res = await fetch("/api/meeting/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostName: name }),
+        body: JSON.stringify({ hostName: name, roomTitle: roomTitle, hostToken: state.hostToken }),
       });
       const data = await res.json();
       if (data.status !== "ok") {
@@ -387,10 +468,13 @@ const MeetingRoom = (() => {
         return;
       }
       const roomId = data.roomId;
+      state.roomTitle = data.roomTitle || roomTitle;
       els.createRoomInput.value = roomId;
+      localStorage.setItem("meeting_host_token_" + roomId, state.hostToken);
+      localStorage.setItem("meeting_host_name_" + roomId, name);
       localStorage.setItem("meeting_last_room", roomId);
       hideStatus();
-      await startCall(roomId, name);
+      await startCall(roomId, name, state.hostToken);
     } catch (err) {
       showStatus("Network error creating room.", "error");
       setJoining(false);
@@ -417,10 +501,17 @@ const MeetingRoom = (() => {
     }
 
     state.userName = name;
+    const savedHostName = localStorage.getItem("meeting_host_name_" + roomId) || "";
+    // A host token is a creator-reclaim credential, not a device credential.
+    // Only the creator's matching name may present it; another person using
+    // the same browser must join as a normal participant.
+    state.hostToken = savedHostName && savedHostName.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase()
+      ? localStorage.getItem("meeting_host_token_" + roomId) || ""
+      : "";
     localStorage.setItem("meeting_last_room", roomId);
     hideStatus();
     setJoining(true);
-    await startCall(roomId, name);
+    await startCall(roomId, name, state.hostToken);
   }
 
   window.MeetingRoom.joinMeeting = joinMeeting;
@@ -584,8 +675,9 @@ const MeetingRoom = (() => {
     }
   }
 
-  async function startCall(roomId, name) {
+  async function startCall(roomId, name, hostToken) {
     state.roomId = roomId;
+    leaveNotificationSent = false;
     state.peerId = "peer-" + Math.random().toString(36).substring(2, 10);
 
     // Close any previous call
@@ -658,12 +750,14 @@ const MeetingRoom = (() => {
       state.peerId = peerId;
       state.isConnected = true;
       state.callActive = true;
+      document.body.classList.add("meeting-active");
       setJoining(false);
 
       // Open the meeting UI
       if (els.modal) els.modal.classList.remove("active");
       els.container.style.display = "flex";
       els.roomLabel.textContent = "Room: " + state.roomId;
+      if (els.roomTitle) els.roomTitle.textContent = state.roomTitle || "Codexa Meeting";
       updateLocalInitials();
       updateParticipantCount();
       updateControlUI();
@@ -673,7 +767,12 @@ const MeetingRoom = (() => {
       fetch("/api/meeting/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId: state.roomId, participantName: state.userName, peerId: state.peerId }),
+        body: JSON.stringify({
+          roomId: state.roomId,
+          participantName: state.userName,
+          peerId: state.peerId,
+          hostToken: hostToken || state.hostToken || "",
+        }),
       })
       .then((r) => r.json())
       .then((data) => {
@@ -685,6 +784,8 @@ const MeetingRoom = (() => {
           return;
         }
         state.isHost = !!data.isHost;
+        state.roomTitle = data.roomTitle || state.roomTitle || "Codexa Meeting";
+        if (els.roomTitle) els.roomTitle.textContent = state.roomTitle;
         if (data && data.hostPeerId && data.hostPeerId !== state.peerId) {
           connectToPeer(data.hostPeerId);
         }
@@ -737,12 +838,23 @@ const MeetingRoom = (() => {
 
     // Heartbeat: re-join on reconnect to keep room alive on the server.
     // This maintains the participant count and _activePeers set on the server.
-    setInterval(() => {
+    if (meetingHeartbeatTimer) clearInterval(meetingHeartbeatTimer);
+    meetingHeartbeatTimer = setInterval(() => {
       if (state.callActive && state.roomId && state.peer && !state.peer.destroyed) {
         fetch("/api/meeting/join", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roomId: state.roomId, participantName: state.userName, peerId: state.peerId }),
+          body: JSON.stringify({ roomId: state.roomId, participantName: state.userName, peerId: state.peerId, hostToken: hostToken || state.hostToken || "" }),
+        }).then((r) => r.json()).then((data) => {
+          if (data && data.status === "ok") {
+            const wasHost = state.isHost;
+            state.isHost = !!data.isHost;
+            if (wasHost !== state.isHost) {
+              updateControlUI();
+              renderParticipants();
+              toast(state.isHost ? "You are now the meeting host" : "Host role transferred", "success");
+            }
+          }
         }).catch(() => {});
       }
     }, 15000);
@@ -751,6 +863,8 @@ const MeetingRoom = (() => {
   // ─── Peer Discovery ────────────────────────────────────────────────────
   let peerDiscoveryTimer = null;
   let meetingStatusTimer = null;
+  let meetingHeartbeatTimer = null;
+  let leaveNotificationSent = false;
   let dragState = null; // active PiP drag session
   const pendingCalls = new Set(); // track peer IDs we're currently connecting to
   let _pendingHostConnect = false; // true while we expect an outgoing call to complete
@@ -759,11 +873,19 @@ const MeetingRoom = (() => {
     if (meetingStatusTimer) clearInterval(meetingStatusTimer);
     meetingStatusTimer = setInterval(() => {
       if (!state.callActive) return;
-      fetch("/api/meeting/status/" + encodeURIComponent(roomId))
+      fetch("/api/meeting/status/" + encodeURIComponent(roomId) + "?peerId=" + encodeURIComponent(state.peerId))
         .then((r) => r.json())
         .then((data) => {
           if (data && data.status === "ok" && data.isOpen === false) {
             handleMeetingEnded(data.endedBy || "the host");
+          } else if (data && data.status === "ok") {
+            const wasHost = state.isHost;
+            state.isHost = !!data.isHost;
+            if (wasHost !== state.isHost) {
+              updateControlUI();
+              renderParticipants();
+              toast(state.isHost ? "You are now the meeting host" : "Host role transferred", "success");
+            }
           } else if (data && data.status === "error" && /not found/i.test(data.error || "")) {
             handleMeetingEnded("the host");
           }
@@ -1065,7 +1187,17 @@ const MeetingRoom = (() => {
           state.participants[peerId].name = data.name;
           renderRemoteVideo(peerId);
         } else if (data.type === "chat") {
-          addChatMessage(data.from || peerId, data.message, data.system || false);
+          // Direct messages are addressed to the recipient peer. Do not leak
+          // them into the room chat or display another person's conversation.
+          if (data.targetPeerId && data.targetPeerId !== state.peerId) return;
+          if (state.chatTargetPeerId && peerId !== state.chatTargetPeerId) return;
+          addChatMessage(
+            data.from || peerId,
+            data.message,
+            data.system || false,
+            data.targetPeerId || "",
+            data.targetName || (data.targetPeerId ? state.userName : "Everyone"),
+          );
         } else if (data.type === "screen-toggle") {
           // The peer swapped its camera/screen track; reflect it in the UI
           const p = state.participants[peerId];
@@ -1099,6 +1231,7 @@ const MeetingRoom = (() => {
                 if (ov) { ov.style.display = "flex"; }
               }
             }
+            renderParticipants();
           }
         } else if (data.type === "hand") {
           handlePeerHand(peerId, !!data.handUp, data.name);
@@ -1224,6 +1357,10 @@ const MeetingRoom = (() => {
       clearInterval(meetingStatusTimer);
       meetingStatusTimer = null;
     }
+    if (meetingHeartbeatTimer) {
+      clearInterval(meetingHeartbeatTimer);
+      meetingHeartbeatTimer = null;
+    }
     pendingCalls.clear();
     if (state.peer) {
       try {
@@ -1270,14 +1407,20 @@ const MeetingRoom = (() => {
     state.isHost = false;
     state.callActive = false;
     state.isConnected = false;
+    document.body.classList.remove("meeting-active");
     state.participants = {};
+    state.chatOpen = false;
+    state.participantsOpen = false;
+    state.chatTargetPeerId = "";
+    state.chatTargetName = "Everyone";
+    state.participantSearch = "";
     state.handRaised = false;
     state.spotlightId = null;
     state._prevPeers = 0;
     stopMeetingTimer();
     // Reset UI
     els.container.style.display = "none";
-    els.container.classList.remove("self-main", "spotlight", "focus-mode", "screen-share-clean", "chat-open", "meeting-minimized");
+    els.container.classList.remove("self-main", "spotlight", "focus-mode", "screen-share-clean", "chat-open", "participants-open", "meeting-show-identity", "meeting-show-leave", "meeting-minimized");
     _focusMode = false;
     if (els.localTile) els.localTile.classList.remove("minimized");
     const minBtn = document.getElementById("meeting-local-minimize");
@@ -1298,6 +1441,7 @@ const MeetingRoom = (() => {
     els.localInitials.style.display = "none";
     if (els.localHandBadge) els.localHandBadge.style.display = "none";
     if (els.localTileMic) els.localTileMic.style.display = "none";
+    updateChatTargetUI();
     state.participantsOpen = false;
     if (els.participantsPanel) els.participantsPanel.style.display = "none";
     closeMeetingMenus();
@@ -1473,9 +1617,9 @@ const MeetingRoom = (() => {
     if (gallery) {
       // A dragged/minimized self-view carries inline positioning. Clear it
       // before moving it into the grid or it distorts the next participant's
-      // layout while the other tiles are being rebuilt.
+      // layout while the other tiles are being rebuilt. Keep the minimized
+      // class: a fixed PiP intentionally leaves the gallery flow.
       resetLocalTilePosition();
-      els.localTile.classList.remove("minimized");
     }
     els.remoteGrid.classList.toggle("gallery", gallery);
     els.remoteGrid.classList.toggle("strip", spotlight);
@@ -1761,11 +1905,80 @@ const MeetingRoom = (() => {
   }
 
   // ─── Chat ──────────────────────────────────────────────────────────────
+  function updateChatTargetUI() {
+    const direct = !!state.chatTargetPeerId;
+    if (els.chatRecipient) {
+      const selected = direct ? state.chatTargetPeerId : "";
+      els.chatRecipient.value = selected;
+    }
+    if (els.chatInput) els.chatInput.placeholder = direct
+      ? "Message " + state.chatTargetName + "..."
+      : "Type a message... (Enter to send)";
+  }
+
+  function updateChatRecipientOptions() {
+    if (!els.chatRecipient) return;
+    const selected = state.chatTargetPeerId && state.participants[state.chatTargetPeerId]
+      ? state.chatTargetPeerId
+      : "";
+    if (!selected) {
+      state.chatTargetPeerId = "";
+      state.chatTargetName = "Everyone";
+    }
+    els.chatRecipient.innerHTML = "";
+    const everyone = document.createElement("option");
+    everyone.value = "";
+    everyone.textContent = "Everyone";
+    els.chatRecipient.appendChild(everyone);
+    Object.keys(state.participants)
+      .sort((a, b) => (state.participants[a].name || "Peer").localeCompare(state.participants[b].name || "Peer"))
+      .forEach((peerId) => {
+        const option = document.createElement("option");
+        option.value = peerId;
+        option.textContent = state.participants[peerId].name || "Peer";
+        els.chatRecipient.appendChild(option);
+      });
+    els.chatRecipient.value = selected;
+  }
+
+  function clearChatTarget() {
+    state.chatTargetPeerId = "";
+    state.chatTargetName = "Everyone";
+    updateChatTargetUI();
+    updateChatRecipientOptions();
+  }
+
+  function openParticipantChat(peerId, name) {
+    if (!peerId || !state.participants[peerId]) return;
+    state.chatTargetPeerId = peerId;
+    state.chatTargetName = name || state.participants[peerId].name || "Participant";
+    if (state.participantsOpen) {
+      state.participantsOpen = false;
+      if (els.participantsPanel) els.participantsPanel.style.display = "none";
+      els.container.classList.remove("participants-open");
+    }
+    if (!state.chatOpen) {
+      state.chatOpen = true;
+      if (els.chatDrawer) els.chatDrawer.style.display = "flex";
+      els.container.classList.add("chat-open");
+    }
+    updateChatTargetUI();
+    updateControlUI();
+    if (els.chatInput) els.chatInput.focus();
+    updateChatRecipientOptions();
+  }
+
   function toggleChat() {
     state.chatOpen = !state.chatOpen;
     els.chatDrawer.style.display = state.chatOpen ? "flex" : "none";
     els.container.classList.toggle("chat-open", state.chatOpen);
+    if (state.chatOpen && state.participantsOpen) {
+      state.participantsOpen = false;
+      if (els.participantsPanel) els.participantsPanel.style.display = "none";
+      els.container.classList.remove("participants-open");
+    }
     updateControlUI();
+    updateChatRecipientOptions();
     // When chat opens, shrink the video area so the two panels sit side by
     // side instead of the drawer painting over the video grid.
     if (els.videoArea) {
@@ -1779,7 +1992,7 @@ const MeetingRoom = (() => {
 
   window.MeetingRoom.toggleChat = toggleChat;
 
-  function addChatMessage(from, message, isSystem) {
+  function addChatMessage(from, message, isSystem, targetPeerId, targetName) {
     const box = els.chatMessages;
     if (!box) return;
 
@@ -1796,6 +2009,10 @@ const MeetingRoom = (() => {
       senderSpan.className = "msg-sender";
       senderSpan.textContent = from || "Unknown";
       div.appendChild(senderSpan);
+      const metaSpan = document.createElement("span");
+      metaSpan.className = "msg-meta";
+      metaSpan.textContent = targetPeerId ? "Private · " + (targetName || "Participant") : "Everyone";
+      div.appendChild(metaSpan);
       const textSpan = document.createElement("span");
       // Basic HTML escape for code snippets
       textSpan.textContent = message;
@@ -1810,17 +2027,47 @@ const MeetingRoom = (() => {
     addChatMessage(null, msg, true);
   }
 
+  function recordMeetingEvent(eventType, payload) {
+    if (!state.roomId || !state.peerId || !state.callActive) return;
+    fetch("/api/meeting/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomId: state.roomId,
+        peerId: state.peerId,
+        eventType: eventType,
+        payload: payload || {},
+      }),
+      keepalive: eventType === "chat",
+    }).catch(() => {});
+  }
+
   function sendChatMessage() {
     const input = els.chatInput;
     if (!input) return;
     const msg = input.value.trim();
     if (!msg) return;
 
-    // Send to all peers via data connections
-    broadcastChatMessage(state.userName, { type: "chat", message: msg });
+    const payload = { type: "chat", message: msg };
+    if (state.chatTargetPeerId) {
+      payload.targetPeerId = state.chatTargetPeerId;
+      payload.targetName = state.chatTargetName;
+      const target = state.participants[state.chatTargetPeerId];
+      if (target && target.dataConnection && target.dataConnection.open) {
+        try { target.dataConnection.send(Object.assign({}, payload, { from: state.userName })); } catch (_) {}
+      }
+    } else {
+      broadcastChatMessage(state.userName, payload);
+    }
 
     // Also add locally
-    addChatMessage(state.userName, msg, false);
+    addChatMessage(state.userName, msg, false, state.chatTargetPeerId, state.chatTargetName);
+    recordMeetingEvent("chat", {
+      from: state.userName,
+      message: msg,
+      targetPeerId: state.chatTargetPeerId || null,
+      targetName: state.chatTargetName || "Everyone",
+    });
     input.value = "";
   }
 
@@ -1908,7 +2155,12 @@ const MeetingRoom = (() => {
 
     // Single click on the self tile switches the spotlight to me (when a
     // spotlight is active and the tile sits in the filmstrip).
-    els.localTile.addEventListener("click", () => {
+    els.localTile.addEventListener("click", (e) => {
+      if (els.localTile.classList.contains("minimized")) {
+        if (e.target.closest(".meeting-tile-controls")) return;
+        toggleLocalMinimize();
+        return;
+      }
       if (state.spotlightId && state.spotlightId !== "self" && !state.screenPeerId) {
         setSpotlight("self");
       }
@@ -2055,7 +2307,24 @@ const MeetingRoom = (() => {
 
   function toggleMeetingMinimize() {
     state.meetingMinimized = !state.meetingMinimized;
-    if (els.container) els.container.classList.toggle("meeting-minimized", state.meetingMinimized);
+    if (els.container) {
+      els.container.classList.toggle("meeting-minimized", state.meetingMinimized);
+      // Explicitly set the window geometry as well as the class. This keeps
+      // the control reliable when the meeting container's initial inline
+      // fullscreen styles have higher precedence in older cached builds.
+      if (state.meetingMinimized) {
+        els.container.style.inset = "auto 22px 22px auto";
+        els.container.style.width = "min(440px, calc(100vw - 32px))";
+        els.container.style.height = "260px";
+        els.container.style.borderRadius = "12px";
+      } else {
+        els.container.style.inset = "0";
+        els.container.style.width = "";
+        els.container.style.height = "";
+        els.container.style.borderRadius = "";
+      }
+      requestAnimationFrame(() => renderGrid());
+    }
     const btn = document.getElementById("meeting-minimize-btn");
     if (btn) {
       btn.title = state.meetingMinimized ? "Restore meeting" : "Minimize meeting";
@@ -2105,11 +2374,18 @@ const MeetingRoom = (() => {
     if (els.participantsPanel) {
       els.participantsPanel.style.display = state.participantsOpen ? "flex" : "none";
     }
+    els.container.classList.toggle("participants-open", state.participantsOpen);
+    if (state.participantsOpen && state.chatOpen) {
+      state.chatOpen = false;
+      if (els.chatDrawer) els.chatDrawer.style.display = "none";
+      els.container.classList.remove("chat-open");
+    }
     updateControlUI();
     if (state.participantsOpen) {
       if (els.inviteInput) {
         els.inviteInput.value = state.roomId || "";
       }
+      if (els.participantSearch) els.participantSearch.value = state.participantSearch;
       renderParticipants();
     }
   }
@@ -2120,16 +2396,33 @@ const MeetingRoom = (() => {
     const total = peers.length + 1;
     if (els.panelSectionTitle) els.panelSectionTitle.textContent = "In this meeting (" + total + ")";
     els.participantList.innerHTML = "";
-    els.participantList.appendChild(makeParticipantRow(state.userName, "Organizer", state.isMicOn, state.handRaised, true, null));
+    const query = (state.participantSearch || "").trim().toLowerCase();
+    const selfVideoOn = state.isCamOn && !!(state.localStream && state.localStream.getVideoTracks().length);
+    if (!query || state.userName.toLowerCase().includes(query)) {
+      els.participantList.appendChild(makeParticipantRow(
+        state.userName,
+        state.isHost ? "Organizer" : "Participant",
+        state.isMicOn,
+        selfVideoOn,
+        state.handRaised,
+        true,
+        null,
+      ));
+    }
     peers.forEach((pid) => {
       const p = state.participants[pid];
       const audioTrack = p.stream && p.stream.getAudioTracks()[0];
       const micOn = p.micOn !== undefined ? p.micOn : (audioTrack ? audioTrack.enabled !== false : true);
-      els.participantList.appendChild(makeParticipantRow(p.name || "Peer", "Guest", micOn, !!p.handUp, false, pid));
+      const name = p.name || "Peer";
+      if (query && !name.toLowerCase().includes(query)) return;
+      const videoTrack = p.stream && p.stream.getVideoTracks()[0];
+      const videoOn = p.videoOn !== undefined ? p.videoOn : !!(videoTrack && videoTrack.enabled !== false);
+      els.participantList.appendChild(makeParticipantRow(name, "Guest", micOn, videoOn, !!p.handUp, false, pid));
     });
+    updateChatRecipientOptions();
   }
 
-  function makeParticipantRow(name, role, micOn, handUp, isSelf, peerId) {
+  function makeParticipantRow(name, role, micOn, videoOn, handUp, isSelf, peerId) {
     const row = document.createElement("div");
     row.className = "meeting-participant-row";
 
@@ -2156,11 +2449,23 @@ const MeetingRoom = (() => {
       hand.textContent = "✋";
       status.appendChild(hand);
     }
-    if (!micOn) {
-      status.appendChild(makeMicOffIcon("meeting-participant-mic"));
-    }
-    // Host can remove any participant (except themselves)
+    status.appendChild(makeParticipantMediaIcon("audio", micOn));
+    status.appendChild(makeParticipantMediaIcon("video", videoOn));
     if (!isSelf && peerId) {
+      const chatBtn = document.createElement("button");
+      chatBtn.className = "meeting-participant-chat";
+      chatBtn.title = "Chat with " + name;
+      chatBtn.setAttribute("aria-label", "Chat with " + name);
+      chatBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.4 8.4 0 0 1-4-.9L4 20l1.2-3.1A7.2 7.2 0 0 1 4 12a7.5 7.5 0 0 1 8-7.5 7.5 7.5 0 0 1 8 7z"></path></svg>';
+      chatBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openParticipantChat(peerId, name);
+      });
+      status.appendChild(chatBtn);
+    }
+    // Only the persisted host gets a remove control. The API also verifies the
+    // same role so hiding this button is not the security boundary.
+    if (state.isHost && !isSelf && peerId) {
       const kickBtn = document.createElement("button");
       kickBtn.className = "meeting-participant-kick";
       kickBtn.title = "Remove from meeting";
@@ -2209,6 +2514,19 @@ const MeetingRoom = (() => {
     closeMeetingMenus();
     showReactionBurst(emoji, null, state.userName);
     broadcastChatMessage(state.userName, { type: "reaction", emoji: emoji, name: state.userName });
+    recordMeetingEvent("reaction", { from: state.userName, emoji: emoji });
+  }
+
+  function makeParticipantMediaIcon(kind, enabled) {
+    const span = document.createElement("span");
+    span.className = "meeting-participant-media-status " + (enabled ? "is-on" : "is-off");
+    const label = kind === "audio" ? (enabled ? "Microphone on" : "Microphone off") : (enabled ? "Camera on" : "Camera off");
+    span.title = label;
+    span.setAttribute("aria-label", label);
+    span.innerHTML = kind === "audio"
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"></path>' + (enabled ? "" : '<path class="meeting-slash" d="M4 4l16 16"></path>') + '</svg>'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.5-2.5v9L15 14"></path><rect x="3" y="6" width="12" height="12" rx="2"></rect>' + (enabled ? "" : '<path class="meeting-slash" d="M4 4l16 16"></path>') + '</svg>';
+    return span;
   }
 
   // ─── More actions / Leave menus (Teams-style) ──────────────────────────
@@ -2340,12 +2658,33 @@ const MeetingRoom = (() => {
   document.addEventListener("fullscreenchange", () => {
     const active = !!document.fullscreenElement;
     if (els.fullscreenBtn) els.fullscreenBtn.classList.toggle("active", active);
+    document.body.classList.toggle("meeting-fullscreen", active);
   });
 
   // ─── Host: remove participant ─────────────────────────────────────────
-  function kickParticipant(peerId, name) {
+  async function kickParticipant(peerId, name) {
     if (!peerId) return;
-    // Send a force-leave message via the data channel
+    if (!state.isHost) {
+      toast("Only the meeting host can remove participants", "error");
+      return;
+    }
+    let response;
+    try {
+      response = await fetch("/api/meeting/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId: state.roomId, peerId: state.peerId, targetPeerId: peerId }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.status !== "ok") {
+        toast(result.error || "Unable to remove participant", "error");
+        return;
+      }
+    } catch (_) {
+      toast("Unable to remove participant", "error");
+      return;
+    }
+    // Notify the removed browser after the server has committed the removal.
     const p = state.participants[peerId];
     if (p && p.dataConnection && p.dataConnection.open) {
       try {
@@ -2372,8 +2711,13 @@ const MeetingRoom = (() => {
     if (els.modal) els.modal.classList.remove("active");
     if (els.container) {
       els.container.classList.remove("meeting-minimized", "chat-open", "presentation-mode", "screen-share-clean", "focus-mode");
+      els.container.style.inset = "0";
+      els.container.style.width = "";
+      els.container.style.height = "";
+      els.container.style.borderRadius = "";
       els.container.style.display = "none";
     }
+    state.meetingMinimized = false;
     // Return to the actual Codexa welcome view instead of leaving the user
     // behind an empty meeting layer after the overlay is dismissed.
     if (typeof window.showView === "function") window.showView("intro");
@@ -2383,6 +2727,10 @@ const MeetingRoom = (() => {
   }
 
   function completeMeetingExit(title, message) {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+    document.body.classList.remove("meeting-fullscreen");
     disconnectPeer();
     if (els.modal) els.modal.classList.remove("active");
     if (els.chatDrawer) els.chatDrawer.style.display = "none";
@@ -2434,13 +2782,7 @@ const MeetingRoom = (() => {
       return;
     }
 
-    if (state.roomId) {
-      fetch("/api/meeting/leave", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId: state.roomId, peerId: state.peerId }),
-      }).catch(() => {});
-    }
+    notifyMeetingLeave();
     completeMeetingExit(
       "Thanks for joining Codexa Meeting",
       "You have left the meeting. We hope to see you again soon."
@@ -2455,6 +2797,9 @@ const MeetingRoom = (() => {
 
   // ─── Keyboard shortcuts ────────────────────────────────────────────────
   function onGlobalKeydown(e) {
+    // Browser/application shortcuts must keep their native meaning. In
+    // particular Ctrl/Cmd+C copies selected text; it must never open chat.
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     // Don't trigger if typing in an input
     if (
       e.target &&
@@ -2519,9 +2864,52 @@ const MeetingRoom = (() => {
   }
 
   // ─── Init ──────────────────────────────────────────────────────────────
+  let identityRevealTimer = null;
+  let leaveRevealTimer = null;
+
+  function revealMeetingChrome(event) {
+    if (!els.container || !state.callActive) return;
+    els.container.classList.add("meeting-show-identity");
+    clearTimeout(identityRevealTimer);
+    identityRevealTimer = setTimeout(() => {
+      if (els.container) els.container.classList.remove("meeting-show-identity");
+    }, 1800);
+
+    const rect = els.container.getBoundingClientRect();
+    const nearBottom = event.clientY >= rect.bottom - 132;
+    const nearRight = event.clientX >= rect.right - 340;
+    if (nearBottom && nearRight) {
+      els.container.classList.add("meeting-show-leave");
+      clearTimeout(leaveRevealTimer);
+      leaveRevealTimer = setTimeout(() => {
+        if (els.container) els.container.classList.remove("meeting-show-leave");
+      }, 1800);
+    } else if (!event.target.closest(".meeting-leave-wrap")) {
+      els.container.classList.remove("meeting-show-leave");
+    }
+  }
+
   function init() {
     els.chatInput && els.chatInput.addEventListener("keydown", onChatKeydown);
     document.addEventListener("keydown", onGlobalKeydown);
+    els.chatRecipient && els.chatRecipient.addEventListener("change", (event) => {
+      const peerId = event.target.value || "";
+      if (!peerId) {
+        clearChatTarget();
+        return;
+      }
+      const participant = state.participants[peerId];
+      if (participant) {
+        state.chatTargetPeerId = peerId;
+        state.chatTargetName = participant.name || "Participant";
+        updateChatTargetUI();
+      }
+    });
+    els.participantSearch && els.participantSearch.addEventListener("input", (event) => {
+      state.participantSearch = event.target.value || "";
+      renderParticipants();
+    });
+    els.container && els.container.addEventListener("mousemove", revealMeetingChrome);
 
     // Draggable self-view + click-to-swap
     setupLocalTileInteractions();
@@ -2551,12 +2939,22 @@ const MeetingRoom = (() => {
     els.createNameInput && els.createNameInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        els.createRoomInput && els.createRoomInput.focus();
+        if (els.createTitleInput) els.createTitleInput.focus();
+      }
+    });
+    els.createTitleInput && els.createTitleInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        createMeeting();
       }
     });
     els.createRoomInput && els.createRoomInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") createMeeting();
     });
+
+    // Invite URLs arrive at the SPA's welcome view. Open the Join Meeting
+    // flow automatically and preserve the room ID from the URL.
+    openInviteJoin();
   }
 
   // Auto-init when DOM ready
@@ -2592,5 +2990,8 @@ const MeetingRoom = (() => {
     toggleParticipants,
     toggleMoreMenu,
     toggleLeaveMenu,
+    copyRoomLink,
+    clearChatTarget,
+    openParticipantChat,
   };
 })();

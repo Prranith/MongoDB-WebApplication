@@ -2470,6 +2470,11 @@ li.CodeMirror-hint-active {
   color: var(--green2);
   border: 1px solid rgba(22, 130, 93, 0.4);
 }
+.exam-q-type-sql {
+  background: rgba(56, 189, 248, 0.18);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.38);
+}
 .exam-q-type-mcq {
   background: rgba(0, 122, 204, 0.2);
   color: var(--blue2);
@@ -5259,6 +5264,50 @@ li.CodeMirror-hint-active {
 .meeting-status-connected {
   animation: meeting-pulse 2s infinite;
 }
+.exam-question-media {
+  display: block;
+  max-width: min(100%, 720px);
+  max-height: 420px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  margin: 12px 0;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  background: #090b0f;
+}
+.exam-question-video {
+  width: min(100%, 720px);
+}
+.exam-question-preview {
+  min-height: 28px;
+  padding: 8px 10px;
+  border: 1px dashed var(--border2);
+  border-radius: 5px;
+  color: var(--text2);
+  background: rgba(255,255,255,.015);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.file-type-icon { width:16px; height:16px; display:block; flex-shrink:0; }
+.file-item .folder-chevron { width:12px; color:var(--text3); font-size:14px; text-align:center; flex-shrink:0; }
+.section-actions .phbtn { width:24px; height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--text3); border-radius:3px; }
+.section-actions .phbtn:hover { color:var(--text); background:var(--hl2); }
+.file-item.active[data-path] { outline: none; }
+.section-actions .phbtn { width: 24px; height: 24px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; color:var(--text3); }
+.section-actions .phbtn:hover { background:var(--hl2); color:var(--text); }
+.codicon-toolbar-icon { width:16px; height:16px; display:block; opacity:.85; filter:invert(78%); }
+.section-actions .phbtn:hover .codicon-toolbar-icon { opacity:1; }
+.file-type-icon { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-right:6px; border:1px solid; border-radius:3px; font:bold 8px Arial; box-sizing:border-box; }
+.tab-file-icon { display:inline-flex; align-items:center; margin-right:3px; }
+.tab-file-icon .file-type-icon { margin-right:0; width:14px; height:14px; }
+#output-text { white-space:pre; overflow-x:auto; overflow-y:auto; }
+
+/* Compact VS Code-like explorer rows; the icon artwork itself has no CSS frame. */
+.file-item { padding-top: 1px; padding-bottom: 1px; min-height: 23px; line-height: 20px; }
+.file-item.active { border-left-color: transparent !important; }
+.file-type-icon { width:16px; height:16px; margin:0; border:0 !important; border-radius:0; box-sizing:content-box; }
+.tab-file-icon .file-type-icon { width:16px; height:16px; margin:0; }
 
 /* ── Meeting control dock / window behavior ───────────────────────────────
    Teams keeps meeting controls at the bottom while meeting identity stays
@@ -5360,7 +5409,7 @@ li.CodeMirror-hint-active {
    flow.  The previous absolute layers caused the filmstrip to overlap the
    presentation and made the available space change unpredictably. */
 .meeting-container:not(.meeting-minimized) .meeting-video-area {
-  padding-top: 48px;
+  padding-top: 64px;
   padding-bottom: 82px;
   box-sizing: border-box;
 }
@@ -5368,7 +5417,7 @@ li.CodeMirror-hint-active {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 236px;
   gap: 12px;
-  padding: 60px 16px 92px;
+   padding: 72px 16px 92px;
   background: #050505;
 }
 .meeting-container.presentation-mode.presentation-no-remote .meeting-video-area {
@@ -5511,7 +5560,7 @@ li.CodeMirror-hint-active {
    chrome remains available so the presenter can stop sharing, chat, or leave. */
 .meeting-container.screen-share-clean .meeting-video-area {
   display: block;
-  padding: 60px 16px 92px !important;
+   padding: 72px 16px 92px !important;
   background: #050505;
 }
 .meeting-container.screen-share-clean .meeting-screen-stage {
@@ -5639,6 +5688,84 @@ li.CodeMirror-hint-active {
   padding: 24px;
   background: radial-gradient(circle at 50% 25%, #182a2b 0, #080b0d 48%, #030405 100%);
 }
+
+/* Center meeting identity above the stage; it disappears in true fullscreen
+   so presentation receives the complete display. */
+.meeting-topbar-identity {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  max-width: min(520px, calc(100vw - 360px));
+  padding: 6px 16px 7px;
+  background: rgba(24, 24, 24, .94);
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .46);
+  pointer-events: auto;
+  z-index: 2;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -8px);
+  transition: opacity .18s ease, visibility .18s ease, transform .18s ease;
+}
+.meeting-container:not(.meeting-fullscreen) > .meeting-topbar:hover .meeting-topbar-identity,
+.meeting-container.meeting-show-identity .meeting-topbar-identity {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+.meeting-room-title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--meeting-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.meeting-topbar-identity .meeting-room-label {
+  color: var(--meeting-text3);
+  font-size: 10px;
+}
+.meeting-fullscreen .meeting-topbar-identity { display: none !important; }
+
+/* Meeting notifications sit above the bottom control dock instead of
+   covering the controls or the chat composer. */
+body.meeting-active > .toast-container {
+  bottom: 104px;
+}
+
+/* The fixed initial fullscreen geometry is inline on the container. Keep the
+   minimized window deterministic even in browsers that prioritize it. */
+.meeting-container.meeting-minimized {
+  position: fixed !important;
+  inset: auto 22px 22px auto !important;
+  width: min(440px, calc(100vw - 32px)) !important;
+  height: 260px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Move the leave dock clear of the chat pane so the message composer remains
+   clickable and never sits underneath the red leave control. */
+.meeting-container.chat-open > .meeting-topbar .meeting-topbar-right {
+  right: calc(min(320px, 34vw) + 24px);
+}
+
+@media (max-width: 760px) {
+  .meeting-topbar-identity { max-width: 44vw; }
+  body.meeting-active > .toast-container { bottom: 96px; }
+  .meeting-container.chat-open > .meeting-topbar .meeting-topbar-right {
+    right: 8px;
+  }
+}
 .meeting-exit-card {
   width: min(460px, 100%);
   padding: 42px 34px 34px;
@@ -5670,6 +5797,12 @@ li.CodeMirror-hint-active {
   font-size: 13px;
   line-height: 1.6;
 }
+.meeting-exit-card #meeting-exit-return-btn {
+  display: block;
+  width: min(240px, 100%);
+  margin: 0 auto;
+  text-align: center;
+}
 
 /* Full-bleed presentation: the shared display owns the entire meeting
    viewport. Meeting chrome stays layered above it, while contain preserves
@@ -5698,5 +5831,245 @@ li.CodeMirror-hint-active {
 .meeting-container.screen-share-clean .meeting-screen-label {
   top: 72px;
   left: 20px;
+}
+
+/* ── Final meeting interaction/layout polish ──────────────────────────── */
+.meeting-container > .meeting-topbar {
+  overflow: visible;
+}
+.meeting-container > .meeting-topbar .meeting-topbar-left {
+  position: relative;
+  z-index: 5;
+  gap: 10px;
+  white-space: nowrap;
+}
+.meeting-container > .meeting-topbar .meeting-participant-count,
+.meeting-container > .meeting-topbar .meeting-timer {
+  flex: 0 0 auto;
+  line-height: 22px;
+}
+
+/* Side panes begin at the meeting viewport edge and reserve their width from
+   the media area, just like the Teams right rail. */
+.meeting-container.participants-open .meeting-video-area,
+.meeting-container.chat-open .meeting-video-area {
+  padding-right: min(336px, calc(34vw + 16px)) !important;
+  box-sizing: border-box;
+}
+.meeting-container .meeting-participants-panel,
+.meeting-container .meeting-chat-drawer {
+  top: 0;
+  bottom: 0;
+  height: auto;
+  width: min(320px, 34vw);
+  max-width: 320px;
+  z-index: 42;
+}
+.meeting-container .meeting-panel-header,
+.meeting-container .meeting-chat-header {
+  min-height: 48px;
+}
+.meeting-participant-search-wrap {
+  padding: 0 14px 10px;
+  flex-shrink: 0;
+}
+.meeting-participant-search {
+  width: 100%;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  color: var(--meeting-text);
+  background: rgba(0, 0, 0, .28);
+  border: 1px solid var(--meeting-border);
+  border-radius: 6px;
+  outline: none;
+  font: inherit;
+  font-size: 12px;
+}
+.meeting-participant-search:focus {
+  border-color: var(--meeting-emerald);
+  box-shadow: 0 0 0 2px rgba(78, 201, 176, .12);
+}
+.meeting-participant-media-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--meeting-emerald);
+}
+.meeting-participant-media-status.is-off {
+  color: var(--meeting-red);
+}
+.meeting-participant-media-status .meeting-slash {
+  stroke-width: 2.2;
+}
+.meeting-participant-chat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--meeting-text2);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.meeting-participant-chat:hover {
+  color: var(--meeting-emerald);
+  background: rgba(78, 201, 176, .12);
+}
+.meeting-chat-title-wrap {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  overflow: hidden;
+}
+.meeting-chat-target {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--meeting-emerald);
+  font-size: 11px;
+}
+.meeting-chat-target-clear {
+  margin-left: auto;
+  padding: 3px 7px;
+  color: var(--meeting-text2);
+  background: transparent;
+  border: 1px solid var(--meeting-border);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+.meeting-chat-target-clear:hover {
+  color: var(--meeting-text);
+  border-color: var(--meeting-emerald);
+}
+.meeting-chat-header .meeting-chat-title {
+  flex: 0 0 auto;
+}
+.meeting-chat-recipient-label {
+  margin-left: 10px;
+  color: var(--meeting-text3);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .45px;
+}
+.meeting-chat-recipient {
+  min-width: 108px;
+  max-width: 145px;
+  height: 28px;
+  margin-left: 2px;
+  padding: 0 8px;
+  color: var(--meeting-text);
+  background: rgba(0, 0, 0, .28);
+  border: 1px solid var(--meeting-border);
+  border-radius: 6px;
+  outline: none;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.meeting-chat-recipient:focus,
+.meeting-chat-recipient:hover {
+  border-color: var(--meeting-emerald);
+}
+.meeting-chat-header > .meeting-icon-btn {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+.meeting-chat-msg .msg-meta {
+  display: block;
+  margin: 1px 0 4px;
+  color: var(--meeting-text3);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: .15px;
+}
+.meeting-chat-msg.from-me .msg-meta {
+  color: rgba(78, 201, 176, .75);
+}
+
+/* Keep the stage inside the viewport even when panels or the browser viewport
+   changes size while a participant joins. */
+.meeting-container:not(.meeting-minimized) .meeting-video-area {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.meeting-container:not(.meeting-minimized) .meeting-remote-grid,
+.meeting-container:not(.meeting-minimized) .meeting-screen-stage {
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+}
+.meeting-container.screen-share-clean.chat-open .meeting-screen-stage,
+.meeting-container.screen-share-clean.participants-open .meeting-screen-stage {
+  right: min(320px, 34vw);
+}
+
+/* Match the Participants rail exactly. This selector intentionally matches
+   the older, more-specific chat-open rule so the drawer starts at the meeting
+   viewport edge instead of retaining the old 48px top offset. */
+.meeting-container.chat-open .meeting-chat-drawer {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  height: auto;
+  width: min(320px, 34vw);
+  max-width: 320px;
+  z-index: 42;
+}
+
+/* Teams-style contextual chrome: the red leave control is available when the
+   pointer reaches the lower-right meeting edge, without covering media. */
+.meeting-container > .meeting-topbar .meeting-topbar-right {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease;
+}
+.meeting-container.meeting-show-leave > .meeting-topbar .meeting-topbar-right,
+.meeting-container > .meeting-topbar .meeting-topbar-right:hover {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 760px) {
+  .meeting-container.participants-open .meeting-video-area,
+  .meeting-container.chat-open .meeting-video-area {
+    padding-right: 0 !important;
+  }
+  .meeting-container .meeting-participants-panel {
+    width: 100%;
+    max-width: none;
+  }
+  .meeting-container.chat-open .meeting-chat-drawer {
+    top: auto;
+    bottom: 82px;
+    width: 100%;
+    max-width: none;
+    height: min(48vh, 330px);
+  }
+  .meeting-chat-recipient {
+    min-width: 92px;
+    max-width: 118px;
+  }
+  .meeting-chat-recipient-label {
+    display: none;
+  }
+  .meeting-container.screen-share-clean.chat-open .meeting-screen-stage {
+    right: 0;
+    bottom: calc(min(48vh, 330px) + 82px);
+  }
+  .meeting-container > .meeting-topbar .meeting-topbar-right {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 

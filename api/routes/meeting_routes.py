@@ -29,12 +29,20 @@ def api_meeting_create():
     body = request.get_json(force=True, silent=True) or {}
     host_name = (body.get("hostName") or "Anonymous").strip() or "Anonymous"
     room_id = (body.get("roomId") or "").strip().upper()
+    host_token = (body.get("hostToken") or "").strip()
+    room_title = (body.get("roomTitle") or "").strip()
 
     try:
-        room = MeetingService.create_room(host_name=host_name, room_id=room_id if room_id else None)
+        room = MeetingService.create_room(
+            host_name=host_name,
+            room_id=room_id if room_id else None,
+            host_token=host_token,
+            room_title=room_title,
+        )
         return _json_response({
             "status": "ok",
             "roomId": room["roomId"],
+            "roomTitle": room["roomTitle"],
             "hostName": room["hostName"],
             "createdAt": room["createdAt"],
         })
@@ -53,18 +61,21 @@ def api_meeting_join():
     room_id = (body.get("roomId") or "").strip().upper()
     participant_name = (body.get("participantName") or "Anonymous").strip() or "Anonymous"
     peer_id = (body.get("peerId") or "").strip()
+    host_token = (body.get("hostToken") or "").strip()
 
     if not room_id:
         return _json_response({"status": "error", "error": "roomId is required"}, status=400)
 
     try:
-        res = MeetingService.join_room(room_id, participant_name, peer_id)
+        res = MeetingService.join_room(room_id, participant_name, peer_id, host_token=host_token)
         return _json_response({
             "status": "ok",
             **res,
         })
     except KeyError as e:
         return _json_response({"status": "error", "error": str(e)}, status=404)
+    except PermissionError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except ValueError as e:
         return _json_response({"status": "error", "error": str(e)}, status=400)
     except Exception as e:
@@ -119,13 +130,58 @@ def api_meeting_leave():
         return _json_response({"status": "error", "error": str(e)}, status=500)
 
 
+@meeting_bp.route("/api/meeting/remove", methods=["POST"])
+def api_meeting_remove():
+    """Remove a guest; the server, not the browser, enforces host authority."""
+    body = request.get_json(force=True, silent=True) or {}
+    room_id = (body.get("roomId") or "").strip().upper()
+    peer_id = (body.get("peerId") or "").strip()
+    target_peer_id = (body.get("targetPeerId") or "").strip()
+    if not room_id or not peer_id or not target_peer_id:
+        return _json_response({"status": "error", "error": "roomId, peerId, and targetPeerId are required"}, status=400)
+    try:
+        return _json_response({"status": "ok", **MeetingService.remove_participant(room_id, peer_id, target_peer_id)})
+    except KeyError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=404)
+    except PermissionError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=403)
+    except ValueError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=400)
+    except Exception as e:
+        log.error("meeting_remove_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
+
+
+@meeting_bp.route("/api/meeting/event", methods=["POST"])
+def api_meeting_event():
+    """Persist bounded chat/reaction/participant activity in the room document."""
+    body = request.get_json(force=True, silent=True) or {}
+    room_id = (body.get("roomId") or "").strip().upper()
+    peer_id = (body.get("peerId") or "").strip()
+    event_type = (body.get("eventType") or "").strip().lower()
+    payload = body.get("payload") if isinstance(body.get("payload"), dict) else {}
+    if not room_id or not peer_id or not event_type:
+        return _json_response({"status": "error", "error": "roomId, peerId, and eventType are required"}, status=400)
+    try:
+        return _json_response({"status": "ok", **MeetingService.record_event(room_id, peer_id, event_type, payload)})
+    except KeyError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=404)
+    except PermissionError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=403)
+    except ValueError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=400)
+    except Exception as e:
+        log.error("meeting_event_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": str(e)}, status=500)
+
+
 @meeting_bp.route("/api/meeting/status/<room_id>", methods=["GET"])
 def api_meeting_status(room_id):
     """Fetch lightweight room status metadata."""
     room_id = room_id.strip().upper()
     log.debug("meeting_status_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
-        status = MeetingService.room_status(room_id)
+        status = MeetingService.room_status(room_id, request.args.get("peerId", "").strip())
         return _json_response({
             "status": "ok",
             **status,

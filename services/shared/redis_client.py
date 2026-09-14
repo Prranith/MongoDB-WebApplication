@@ -41,6 +41,18 @@ def _get_rooms_coll():
         return None
 
 
+def get_exam_db():
+    """Return the shared MongoDB database used by exam rooms.
+
+    Exam metadata continues to use the Redis-compatible room helpers above,
+    while larger binary question assets are stored in GridFS in this same
+    database. Keeping this accessor here avoids exposing the module globals to
+    feature services and preserves the existing lazy connection behavior.
+    """
+    _get_rooms_coll()
+    return _db
+
+
 def _get_room_doc(room_id: str) -> dict:
     """Fetch room document from MongoDB Atlas."""
     coll = _get_rooms_coll()
@@ -171,6 +183,12 @@ def redis_one(command: list):
         room_id = command[1].replace("room:", "").strip().upper()
         doc = _get_room_doc(room_id)
         return 1 if bool(doc) else 0
+
+    elif op == "HEXISTS":
+        room_id = command[1].replace("room:", "").strip().upper()
+        field = str(command[2])
+        doc = _get_room_doc(room_id)
+        return 1 if field in doc else 0
 
     elif op == "DEL":
         room_id = command[1].replace("room:", "").strip().upper()

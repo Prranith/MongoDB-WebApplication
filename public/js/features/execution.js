@@ -4,6 +4,24 @@
 async function runQuery() {
   const langSelect = document.getElementById('workspace-lang-select');
   const lang = langSelect ? langSelect.value : 'mongodb';
+  // Treat an obvious SQL statement as SQL even if an older saved workspace
+  // language value left the selector on MongoDB mode.
+  if (lang === 'sql' || /^\s*(select|with)\b/i.test(editor.getValue())) {
+    const q = editor.getValue().trim();
+    if (!q) return;
+    const statEl = document.getElementById('console-status');
+    if (statEl) statEl.textContent = '⟳ Running SQL...';
+    try {
+      const d = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify({ query: q, limit: S.settings ? S.settings.maxResults : 500 }) });
+      if (d.status !== 'ok') throw new Error(d.error || 'SQL execution failed');
+      S.lastData = d.rows; S.lastRaw = JSON.stringify(d, null, 2);
+      if (statEl) statEl.textContent = `✓ ${d.rowCount} row(s) returned`;
+      if (document.getElementById('console-time')) document.getElementById('console-time').textContent = `${d.duration || 0}ms`;
+      if (document.getElementById('console-count')) document.getElementById('console-count').textContent = `${d.rowCount} rows`;
+      renderTreeView(d.rows); renderRawJsonView(d); renderSqlTable(d);
+    } catch (e) { if (statEl) statEl.textContent = `✕ ${e.message}`; logOutput(`<span class="out-error">[error] ${e.message}</span>`); }
+    return;
+  }
   if (lang !== 'mongodb') {
     const consoleEl = document.getElementById('terminal-interactive-console');
     let stdin = '';
@@ -246,6 +264,16 @@ function renderRawJsonView(data) {
   container.innerHTML = `
     <pre style="margin:0;font-family:inherit">${syntaxHighlightJSON(str)}</pre>
   `;
+}
+
+function renderSqlTable(result) {
+  const container = document.getElementById('output-text');
+  if (!container || !result || !Array.isArray(result.columns)) return;
+  const cols = result.columns, rows = result.rows || [];
+  const widths = cols.map(c => Math.max(String(c).length, ...rows.map(r => String(r[c] ?? '').length), 3));
+  const line = '+' + widths.map(w => '-'.repeat(w + 2)).join('+') + '+';
+  const format = vals => '| ' + vals.map((v, i) => String(v ?? '').padEnd(widths[i])).join(' | ') + ' |';
+  container.textContent = [line, format(cols), line, ...rows.map(r => format(cols.map(c => r[c]))), line, `${result.rowCount} row(s) returned`].join('\n');
 }
 
 function syntaxHighlightJSON(str) {
@@ -505,6 +533,14 @@ function runPythonLocally(code, stdin, onFinish) {
 }
 
 async function runPlaygroundCode(language, code, stdin) {
+  const allowed = ['c', 'cpp', 'java', 'python', 'mongodb'];
+  if (!allowed.includes(language)) {
+    const message = `${language || 'This'} format is not allowed to run by the app.`;
+    logOutput(`<span class="out-error">[error] ${message}</span>`);
+    const status = document.getElementById('console-status');
+    if (status) status.textContent = `✕ ${message}`;
+    return;
+  }
   const statEl = document.getElementById('console-status');
   if (statEl) statEl.innerHTML = `⟳ Compiling & Running...`;
 
@@ -664,6 +700,10 @@ function changeWorkspaceLanguage(newLang) {
     cmMode = 'text/x-java';
     placeholder = 'public class Solution {\n    public static void main(String[] args) {\n        System.out.println("Hello World");\n    }\n}\n';
     langIndicator = 'Java';
+  } else if (newLang === 'sql') {
+    cmMode = 'text/x-sql';
+    placeholder = '-- Write a read-only SQL query here\nSELECT * FROM users LIMIT 10;\n';
+    langIndicator = 'SQL';
   }
   
   const langIndicatorEl = document.getElementById('sb-lang-indicator');

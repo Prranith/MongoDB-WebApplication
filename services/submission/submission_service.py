@@ -69,6 +69,15 @@ class SubmissionService:
         except Exception:
             return {"match": False, "score": 0}
 
+    @classmethod
+    def grade_sql_answer(cls, student_result, frozen_result):
+        """Compare SQL result columns and normalized row values deterministically."""
+        if not isinstance(student_result, dict) or not isinstance(frozen_result, dict):
+            return {"match": False, "score": 0}
+        columns_match = [str(c).lower() for c in student_result.get("columns", [])] == [str(c).lower() for c in frozen_result.get("columns", [])]
+        rows_match = cls.grade_query_answer(student_result.get("rows", []), frozen_result.get("rows", []))["match"]
+        return {"match": columns_match and rows_match, "score": 1 if columns_match and rows_match else 0}
+
     @staticmethod
     def execute_room_query(room_id: str, dataset_ids, query: str, max_results: int = 100000):
         """Load datasets from Redis and execute query against them."""
@@ -415,6 +424,21 @@ class SubmissionService:
                 "submittedAt": now,
             })
 
+        elif q_type == "sql":
+            from services.sql.sql_service import SqlService
+            query = body.get("query", "").strip()
+            dataset_ids = body.get("datasetIds", []) or ([body.get("datasetId")] if body.get("datasetId") else [])
+            student_result = body.get("studentResult") or {"columns": [], "rows": []}
+            if query and dataset_ids:
+                student_result = SqlService.execute_room_query(room_id, dataset_ids, query, limit=10000)
+            frozen_result = {}
+            if frozen_json:
+                try: frozen_result = json.loads(frozen_json)
+                except Exception: pass
+            grade = cls.grade_sql_answer(student_result, frozen_result)
+            score = marks if grade["match"] else 0
+            submission = json.dumps({"type": "sql", "query": query, "score": score, "isAutoSave": False, "submittedAt": now})
+
         else:  # query question
             query = body.get("query", "").strip()
             dataset_ids = body.get("datasetIds", [])
@@ -490,33 +514,40 @@ class SubmissionService:
         except Exception:
             raise ValueError("Failed to parse frozen answer")
 
-        return {
-            "docCount": len(docs),
-            "preview": docs[:5],
-        }
+        if isinstance(docs, dict) and "rows" in docs:
+            return {"docCount": len(docs.get("rows", [])), "preview": docs.get("rows", [])[:5], "columns": docs.get("columns", [])}
+        return {"docCount": len(docs), "preview": docs[:5]}
 
     @classmethod
-    def freeze_answer(cls, room_id: str, mentor_id: str, question_id: str, dataset_ids: list, query: str) -> dict:
+    def freeze_answer(cls, room_id: str, mentor_id: str, question_id: str, dataset_ids: list, query: str, query_type="query", result=None) -> dict:
         raw_mentor = redis_one(["HGET", f"room:{room_id}", "mentorId"])
         if not raw_mentor or raw_mentor != mentor_id:
             raise PermissionError("Unauthorized")
 
-        result = cls.execute_room_query(room_id, dataset_ids, query, max_results=100000)
+        if result is None:
+            result = cls.execute_room_query(room_id, dataset_ids, query, max_results=100000)
         if result.get("status") == "error":
             raise ValueError(result.get("error", "Query execution failed"))
 
-        docs = result.get("results", [])
-        stored_docs = docs[:2000]
+        if query_type == "sql":
+            stored_answer = {"columns": result.get("columns", []), "rows": result.get("rows", [])[:2000]}
+            doc_count = len(result.get("rows", []))
+            preview = stored_answer["rows"][:3]
+        else:
+            docs = result.get("results", [])
+            stored_answer = docs[:2000]
+            doc_count = len(docs)
+            preview = docs[:3]
 
         redis_cmd([
-            ["HSET", f"room:{room_id}", f"q_answer:{question_id}", json.dumps(stored_docs)],
+            ["HSET", f"room:{room_id}", f"q_answer:{question_id}", json.dumps(stored_answer)],
             ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ])
 
         return {
             "questionId": question_id,
-            "docCount": len(docs),
-            "preview": docs[:3]
+            "docCount": doc_count,
+            "preview": preview
         }
 
     @staticmethod

@@ -137,6 +137,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
@@ -213,6 +214,7 @@
       <span style="font-size:11px;color:var(--text3);font-family:sans-serif">Language:</span>
       <select id="workspace-lang-select" onchange="changeWorkspaceLanguage(this.value)" style="background:#252526;color:#ccc;border:1px solid #3c3c3c;border-radius:3px;padding:2px 6px;font-size:11px;outline:none;cursor:pointer;height:22px">
         <option value="mongodb">MongoDB / JS</option>
+        <option value="sql">SQL (Relational)</option>
         <option value="python">Python 3</option>
         <option value="cpp">C++</option>
         <option value="c">C</option>
@@ -297,17 +299,17 @@
       <div class="file-section" id="file-section">
         <div class="file-section-hdr" style="display: flex; justify-content: space-between; align-items: center; width: 100%">
           <span class="file-section-title" onclick="toggleFileSection()" style="cursor:pointer; display: flex; align-items:center; gap:6px">
-            <span class="arrow">▼</span> QUERIES
+          <span class="arrow">▼</span> FILES
           </span>
           <div class="section-actions" style="display: flex; gap: 4px; padding-right: 4px">
-            <button class="phbtn" title="New File" onclick="createNewQueryFile(event)">
-              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M9 1H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6l-5-5zm2 5h-3V3.5L11.5 6zM8 8V6H7v2H5v1h2v2h1V9h2V8H8z"/></svg>
+            <button class="phbtn" title="New File" aria-label="New File" onclick="createNewQueryFile(event)">
+              <img class="codicon-toolbar-icon" src="/assets/icons/codicons/new-file.svg" alt="">
             </button>
-            <button class="phbtn" title="New Folder" onclick="createNewFolder(event)">
-              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M14 4H8.5l-2-2H2c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-3 6H9v2H8v-2H6V9h2V7h1v2h2v1z"/></svg>
+            <button class="phbtn" title="New Folder" aria-label="New Folder" onclick="createNewFolder(event)">
+              <img class="codicon-toolbar-icon" src="/assets/icons/codicons/new-folder.svg" alt="">
             </button>
-            <button class="phbtn" title="Refresh Explorer" onclick="loadFiles(event)">
-              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M13.6 2.3C12.2.9 10.2 0 8 0 3.6 0 0 3.6 0 8s3.6 8 8 8c3.7 0 6.9-2.6 7.7-6h-2.1c-.8 2.3-3 4-5.6 4-3.3 0-6-2.7-6-6s2.7-6 6-6c1.7 0 3.1.7 4.2 1.8L9 7h7V0l-2.4 2.3z"/></svg>
+            <button class="phbtn" title="Refresh Explorer" aria-label="Refresh Explorer" onclick="loadFiles(event)">
+              <img class="codicon-toolbar-icon" src="/assets/icons/codicons/refresh.svg" alt="">
             </button>
             <button class="phbtn" title="Collapse All" onclick="collapseAllFiles(event)">
               <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M9 1.5H5v-1h4v1zM2 4h12V3H2v1zm2 3h8V6H4v1zm7 3H5V9h6v1zm2 3H3v-1h10v1z"/></svg>
@@ -913,13 +915,17 @@
             <div class="exam-qlist-body" id="mentor-qlist-body">
               <div class="exam-qlist-empty" id="mentor-qlist-empty">
                 // No questions yet<br/>
-                Click + to add Query or MCQ questions
+                Click + to add Query, SQL, MCQ, or Coding questions
               </div>
             </div>
             <div style="padding:8px;border-top:1px solid var(--border);display:flex;gap:6px">
               <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('query')">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 Query
+              </button>
+              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('sql')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16v2H4V5zm0 6h16v2H4v-2zm0 6h16v2H4v-2z"/></svg>
+                SQL
               </button>
               <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('mcq')">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
@@ -1636,8 +1642,12 @@ db.collection.find({})</textarea>
           <input class="exam-input" id="meeting-create-name" type="text" placeholder="e.g. Alex (Developer)" value="Developer" autocomplete="off" />
         </div>
         <div class="exam-field">
-          <label class="exam-label" for="meeting-create-room">Room ID (auto-generated)</label>
-          <div class="meeting-room-id-row">
+          <label class="exam-label" for="meeting-create-title">Meeting Title</label>
+          <input class="exam-input" id="meeting-create-title" type="text" placeholder="e.g. Frontend Interview" maxlength="120" autocomplete="off" />
+        </div>
+        <div class="exam-field">
+          <label class="exam-label" for="meeting-create-room" style="display:none">Room ID (assigned after creation)</label>
+          <div class="meeting-room-id-row" id="meeting-create-room-row" style="display:none">
             <input class="exam-input" id="meeting-create-room" type="text" value="" readonly />
             <button class="meeting-gen-btn" onclick="MeetingRoom.generateRoomId()" title="Generate random room ID">🎲</button>
           </div>
@@ -1691,12 +1701,12 @@ db.collection.find({})</textarea>
   <!-- Top bar (Teams-style control bar) -->
   <div class="meeting-topbar">
     <div class="meeting-topbar-left">
-      <div class="meeting-room-info">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="#4ec9b0"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        <span id="meeting-room-label" class="meeting-room-label">Room: —</span>
-      </div>
       <span id="meeting-participant-count" class="meeting-participant-count">1 participant</span>
       <span id="meeting-timer" class="meeting-timer">00:00</span>
+    </div>
+    <div class="meeting-topbar-identity" aria-live="polite">
+      <span id="meeting-room-title" class="meeting-room-title">Codexa Meeting</span>
+      <span id="meeting-room-label" class="meeting-room-label">Room: —</span>
     </div>
     <div class="meeting-topbar-center">
       <button class="meeting-ctrl-btn" id="meeting-participants-btn" onclick="MeetingRoom.toggleParticipants()" title="Participants">
@@ -1724,7 +1734,6 @@ db.collection.find({})</textarea>
           </div>
           <div class="meeting-more-sep"></div>
           <button class="meeting-more-item" onclick="MeetingRoom.toggleLayoutMode()">Switch layout</button>
-          <button class="meeting-more-item" onclick="MeetingRoom.toggleMeetingMinimize()">Minimize meeting</button>
           <button class="meeting-more-item" onclick="MeetingRoom.toggleFullscreen()">Fullscreen (F)</button>
           <button class="meeting-more-item" onclick="MeetingRoom.copyRoomId()">Copy Room ID</button>
         </div>
@@ -1741,9 +1750,6 @@ db.collection.find({})</textarea>
       </button>
       <button class="meeting-ctrl-btn" id="meeting-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen (F) — hides the OS taskbar">
         <svg class="meeting-ctrl-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
-      </button>
-      <button class="meeting-ctrl-btn meeting-window-btn" id="meeting-minimize-btn" onclick="MeetingRoom.toggleMeetingMinimize()" title="Minimize meeting" aria-label="Minimize meeting">
-        <svg class="meeting-ctrl-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="19"></line></svg>
       </button>
     </div>
     <div class="meeting-topbar-right">
@@ -1818,9 +1824,12 @@ db.collection.find({})</textarea>
     </div>
     <div class="meeting-panel-invite">
       <input id="meeting-invite-input" class="meeting-invite-input" readonly placeholder="Room ID" />
-      <button class="meeting-icon-btn" onclick="MeetingRoom.copyRoomId()" title="Copy room ID">
+      <button class="meeting-icon-btn" onclick="MeetingRoom.copyRoomLink()" title="Copy invite link">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
       </button>
+    </div>
+    <div class="meeting-participant-search-wrap">
+      <input id="meeting-participant-search" class="meeting-participant-search" type="search" placeholder="Search participants" autocomplete="off" />
     </div>
     <div class="meeting-panel-section-title" id="meeting-panel-section-title">In this meeting (1)</div>
     <div id="meeting-participant-list" class="meeting-participant-list"></div>
@@ -1850,6 +1859,10 @@ db.collection.find({})</textarea>
   <div id="meeting-chat-drawer" class="meeting-chat-drawer" style="display:none">
     <div class="meeting-chat-header">
       <span class="meeting-chat-title">Meeting Chat</span>
+      <label class="meeting-chat-recipient-label" for="meeting-chat-recipient">To</label>
+      <select class="meeting-chat-recipient" id="meeting-chat-recipient" aria-label="Message recipient">
+        <option value="">Everyone</option>
+      </select>
       <button class="meeting-icon-btn" onclick="MeetingRoom.toggleChat()" title="Close Chat">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>

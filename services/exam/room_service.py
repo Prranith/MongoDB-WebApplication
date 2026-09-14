@@ -352,6 +352,7 @@ class RoomService:
     @staticmethod
     def save_questions(room_id: str, mentor_id: str, questions: list) -> int:
         from services.submission.submission_service import SubmissionService
+        from services.sql.sql_service import SqlService
 
         raw = redis_one(["HMGET", f"room:{room_id}", "mentorId", "questions"])
         if not raw or raw[0] is None:
@@ -375,11 +376,13 @@ class RoomService:
             ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)]
         ]
 
-        # Auto-freeze query expected answers
+        # Auto-freeze query/SQL expected answers. The binary media referenced by
+        # question metadata is stored separately in GridFS, so the room paper
+        # remains safely below MongoDB's document-size limit.
         for q in questions:
             q_id = q.get("id")
             q_type = q.get("type", "query")
-            if q_type == "query" and q_id:
+            if q_type in ("query", "sql") and q_id:
                 exists = redis_one(["HEXISTS", f"room:{room_id}", f"q_answer:{q_id}"])
                 if not exists or str(exists) in ("0", "None"):
                     query = q.get("expectedQuery", "").strip()
@@ -387,10 +390,16 @@ class RoomService:
                     if not dataset_ids and q.get("datasetId"):
                         dataset_ids = [q.get("datasetId")]
                     if query and dataset_ids:
-                        res = SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=100000)
+                        if q_type == "sql":
+                            res = SqlService.execute_room_query(room_id, dataset_ids, query, limit=10000)
+                        else:
+                            res = SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=100000)
                         if res.get("status") == "ok":
-                            docs = res.get("results", [])
-                            pipeline.append(["HSET", f"room:{room_id}", f"q_answer:{q_id}", json.dumps(docs[:2000])])
+                            if q_type == "sql":
+                                answer = {"columns": res.get("columns", []), "rows": res.get("rows", [])[:10000]}
+                            else:
+                                answer = res.get("results", [])[:2000]
+                            pipeline.append(["HSET", f"room:{room_id}", f"q_answer:{q_id}", json.dumps(answer)])
 
         if deleted_ids:
             hdel_cmd = ["HDEL", f"room:{room_id}"]
@@ -446,5 +455,11 @@ class RoomService:
         if meta.get("mentorId") != mentor_id:
             raise PermissionError("Unauthorized")
 
+        # Room metadata, questions, datasets, participants, submissions,
+        # scores, kicked records, and query answers are embedded in the room
+        # document. Binary question media lives in room-scoped GridFS and must
+        # be deleted explicitly before removing the room document.
+        from services.exam.media_service import QuestionMediaService
+        QuestionMediaService.delete_room_media(room_id)
         redis_one(["DEL", f"room:{room_id}"])
         return True

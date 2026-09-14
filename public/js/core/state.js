@@ -68,6 +68,7 @@ const S = {
   lastRaw: '',
   files: [], // { name, path, content, type: 'file'/'folder' }
   activeFile: null, // path of currently open file
+  activeFolder: null, // selected folder; activeFile remains the single selected item
   tabs: [], // paths of open files
   history: [], // query runs
   dbRootOpen: true,

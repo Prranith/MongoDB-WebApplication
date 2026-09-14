@@ -56,6 +56,58 @@ const ExamPortal = (() => {
 
   function el(id) { return document.getElementById(id); }
 
+  function isDataQuestion(q) {
+    return !!q && (q.type === 'query' || q.type === 'sql');
+  }
+
+  function escapeExamHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function renderQuestionHtml(q) {
+    const source = q && q.text ? q.text : '';
+    let html = typeof marked !== 'undefined'
+      ? marked.parse(source)
+      : escapeExamHtml(source).replace(/\n/g, '<br>');
+    (q && Array.isArray(q.media) ? q.media : []).forEach(media => {
+      if (!media || !media.id) return;
+      const token = escapeExamHtml(`[media:${media.id}]`);
+      const url = escapeExamHtml(media.url || `/api/exam/room/${state.student.roomId || state.mentor.roomId}/media/${media.id}`);
+      const label = escapeExamHtml(media.name || 'Question media');
+      const tag = media.type === 'video' || String(media.mime || '').startsWith('video/')
+        ? `<video class="exam-question-media exam-question-video" controls preload="metadata" aria-label="${label}" src="${url}"></video>`
+        : `<img class="exam-question-media" loading="lazy" alt="${label}" src="${url}"/>`;
+      html = html.split(token).join(tag);
+    });
+    return html;
+  }
+
+  function formatSqlTable(result) {
+    const columns = Array.isArray(result && result.columns) ? result.columns : [];
+    const rows = Array.isArray(result && result.rows) ? result.rows : [];
+    if (!columns.length) return '<span style="color:var(--text3)">// Query returned no columns</span>';
+    const widths = columns.map(col => Math.min(32, Math.max(String(col).length, ...rows.map(row => String(row && row[col] != null ? row[col] : '').length))));
+    const line = `+${widths.map(w => '-'.repeat(w + 2)).join('+')}+`;
+    const row = values => `| ${values.map((value, i) => escapeExamHtml(String(value == null ? '' : value).slice(0, widths[i])).padEnd(widths[i], ' ')).join(' | ')} |`;
+    return `<pre style="color:var(--text);font-size:11px;white-space:pre;overflow:auto">${escapeExamHtml(line)}\n${escapeExamHtml(row(columns))}\n${escapeExamHtml(line)}\n${rows.map(item => escapeExamHtml(row(columns.map(col => item && item[col])))).join('\n') || ''}\n${escapeExamHtml(line)}</pre>`;
+  }
+
+    function questionMediaControls(qId) {
+    return `<div style="display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap">
+      <button type="button" class="exam-btn exam-btn-secondary" style="font-size:11px;padding:5px 8px" onclick="document.getElementById('qmedia-${qId}').click()">Add image/video</button>
+      <input id="qmedia-${qId}" type="file" accept="image/*,video/*" hidden onchange="ExamPortal.mentor.uploadQuestionMedia('${qId}',event)"/>
+      <span style="font-size:10px;color:var(--text3)">Up to 30 MB; inserted at the cursor.</span>
+    </div>
+    <div id="qmedia-list-${qId}" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+    <div style="margin-top:10px;border-top:1px solid var(--border2);padding-top:8px">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Live student preview</div>
+      <div id="qmedia-preview-${qId}" class="exam-question-preview"></div>
+    </div>`;
+  }
+
   function showPanel(panelId) {
     const panels = document.querySelectorAll('.exam-overlay');
     panels.forEach(p => p.classList.remove('active'));
@@ -692,14 +744,15 @@ const ExamPortal = (() => {
         datasetIds: [],
         datasetId: '',
         // Query specific
-        expectedQuery: '',
+        expectedQuery: type === 'sql' ? 'SELECT * FROM users LIMIT 10;' : '',
         answerFrozen: false,
         answerDocCount: 0,
+        media: [],
         // MCQ specific
         options: type === 'mcq' ? ['', '', '', ''] : [],
         correctOption: type === 'mcq' ? 0 : null,
         // Coding specific
-        language: type === 'coding' ? 'python' : '',
+        language: type === 'coding' ? 'python' : (type === 'sql' ? 'sql' : ''),
         starterCode: type === 'coding' ? '# write your code here\n' : '',
         testCases: type === 'coding' ? [{input: '', expectedOutput: ''}] : [],
       };
@@ -731,7 +784,10 @@ const ExamPortal = (() => {
       body.innerHTML = qs.map((q, i) => {
         let typeLabel = 'QUERY';
         let typeClass = 'exam-q-type-query';
-        if (q.type === 'mcq') {
+        if (q.type === 'sql') {
+          typeLabel = 'SQL';
+          typeClass = 'exam-q-type-sql';
+        } else if (q.type === 'mcq') {
           typeLabel = 'MCQ';
           typeClass = 'exam-q-type-mcq';
         } else if (q.type === 'coding') {
@@ -751,7 +807,7 @@ const ExamPortal = (() => {
             </button>
           </div>
           <div class="exam-q-preview">${q.text ? q.text.substring(0, 60) + (q.text.length > 60 ? '...' : '') : '// No text yet'}</div>
-          ${q.type === 'query' && q.answerFrozen ? `<span class="exam-frozen-chip" style="font-size:10px;padding:2px 8px;margin-top:4px">Answer frozen — ${q.answerDocCount} docs</span>` : ''}
+          ${isDataQuestion(q) && q.answerFrozen ? `<span class="exam-frozen-chip" style="font-size:10px;padding:2px 8px;margin-top:4px">Answer frozen — ${q.answerDocCount} rows</span>` : ''}
         </div>
       `;
       }).join('');
@@ -801,7 +857,7 @@ const ExamPortal = (() => {
       mentor._cleanupMentorMiniEditors();
       const qeditor = el('mentor-qeditor');
 
-      if (q.type === 'query') {
+      if (isDataQuestion(q)) {
         const datasetCheckboxes = state.mentor.datasets.map(ds => {
           const isChecked = (q.datasetIds && q.datasetIds.includes(ds.datasetId)) || q.datasetId === ds.datasetId ? 'checked' : '';
           return `
@@ -817,6 +873,15 @@ const ExamPortal = (() => {
           <div class="exam-fieldset">
             <div class="exam-fieldset-title">Question Text</div>
             <textarea class="exam-textarea" id="qtext-${qId}" oninput="ExamPortal.mentor.updateQField('${qId}','text',this.value)" placeholder="Write the question for students...">${q.text}</textarea>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap">
+              <button type="button" class="exam-btn exam-btn-secondary" style="font-size:11px;padding:5px 8px" onclick="document.getElementById('qmedia-${qId}').click()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 14H6l3.5-4.5 2.5 3.01L15.5 11 18 14.01V17zM8.5 11A1.5 1.5 0 1 0 8.5 8a1.5 1.5 0 0 0 0 3z"/></svg>
+                Add image/video
+              </button>
+              <input id="qmedia-${qId}" type="file" accept="image/*,video/*" hidden onchange="ExamPortal.mentor.uploadQuestionMedia('${qId}',event)"/>
+              <span style="font-size:10px;color:var(--text3)">Images or videos up to 30 MB. The file is inserted at the cursor position.</span>
+            </div>
+            <div id="qmedia-list-${qId}" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
           </div>
           <div style="display:flex;gap:12px;align-items:flex-start">
             <div class="exam-field" style="flex:1;margin:0">
@@ -832,9 +897,9 @@ const ExamPortal = (() => {
             </div>
           </div>
           <div class="exam-fieldset">
-            <div class="exam-fieldset-title">Expected Query (Mentor's Solution)</div>
+            <div class="exam-fieldset-title">${q.type === 'sql' ? 'Expected SQL Query (Mentor\'s Solution)' : 'Expected MongoDB Query (Mentor\'s Solution)'}</div>
             <div class="exam-mini-editor" id="mini-editor-wrap-${qId}">
-              <textarea id="mini-editor-${qId}">${q.expectedQuery || '// db.collection.find({})'}</textarea>
+              <textarea id="mini-editor-${qId}">${q.expectedQuery || (q.type === 'sql' ? 'SELECT * FROM users LIMIT 10;' : '// db.collection.find({})')}</textarea>
             </div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
               <button class="exam-btn exam-btn-green" onclick="ExamPortal.mentor.freezeAnswer('${qId}')">
@@ -857,6 +922,7 @@ const ExamPortal = (() => {
             </div>
           </div>
         `;
+        mentor._renderQuestionMediaList(qId);
         // Init mini CodeMirror
         setTimeout(() => {
           const ta = el(`mini-editor-${qId}`);
@@ -866,7 +932,7 @@ const ExamPortal = (() => {
               delete state.mentor.miniEditors[qId];
             }
             const cm = CodeMirror.fromTextArea(ta, {
-              mode: 'javascript',
+               mode: q.type === 'sql' ? 'text/x-sql' : 'javascript',
               theme: 'default',
               lineNumbers: true,
               matchBrackets: true,
@@ -879,6 +945,7 @@ const ExamPortal = (() => {
               mentor.updateQField(qId, 'expectedQuery', cm.getValue());
             });
             state.mentor.miniEditors[qId] = cm;
+            attachCodexaKeywordHints(cm, () => q.type === 'sql' ? 'sql' : 'mongodb');
           }
         }, 50);
 
@@ -968,6 +1035,7 @@ const ExamPortal = (() => {
           <div class="exam-fieldset">
             <div class="exam-fieldset-title">Question Text (Markdown allowed)</div>
             <textarea class="exam-textarea" id="qtext-${qId}" oninput="ExamPortal.mentor.updateQField('${qId}','text',this.value)" placeholder="Write the coding question for students...">${q.text}</textarea>
+            ${questionMediaControls(qId)}
           </div>
           <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
             <div class="exam-field" style="width:100px;margin:0">
@@ -1070,6 +1138,7 @@ const ExamPortal = (() => {
               mentor._saveQDebounced();
             });
             state.mentor.miniEditors[`starter-${qId}`] = cmS;
+            attachCodexaKeywordHints(cmS, () => q.language || 'python');
           }
 
           // 2. Driver editor
@@ -1096,6 +1165,7 @@ const ExamPortal = (() => {
               mentor._saveQDebounced();
             });
             state.mentor.miniEditors[`driver-${qId}`] = cmD;
+            attachCodexaKeywordHints(cmD, () => q.language || 'python');
           }
 
           // 3. Editorial editor
@@ -1122,6 +1192,7 @@ const ExamPortal = (() => {
               mentor._saveQDebounced();
             });
             state.mentor.miniEditors[`editorial-${qId}`] = cmE;
+            attachCodexaKeywordHints(cmE, () => q.language || 'python');
           }
         }, 50);
 
@@ -1132,6 +1203,7 @@ const ExamPortal = (() => {
           <div class="exam-fieldset">
             <div class="exam-fieldset-title">Question Text (Markdown allowed)</div>
             <textarea class="exam-textarea" id="qtext-${qId}" oninput="ExamPortal.mentor.updateQField('${qId}','text',this.value)" placeholder="Write the multiple-choice question...">${q.text}</textarea>
+            ${questionMediaControls(qId)}
           </div>
           <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
             <div class="exam-field" style="width:100px;margin:0">
@@ -1167,6 +1239,7 @@ const ExamPortal = (() => {
           </div>
         `;
       }
+      mentor._renderQuestionMediaList(qId);
     },
 
     _renderMCQOptionRow(qId, idx, value, isCorrect) {
@@ -1284,6 +1357,8 @@ const ExamPortal = (() => {
         q[field] = value;
         if (field === 'text') {
           mentor._renderQList();
+          const preview = el(`qmedia-preview-${qId}`);
+          if (preview) preview.innerHTML = renderQuestionHtml(q);
         }
         if (field === 'marks') {
           mentor._updateQCounts();
@@ -1344,6 +1419,70 @@ const ExamPortal = (() => {
       };
     })(),
 
+    _renderQuestionMediaList(qId) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      const target = el(`qmedia-list-${qId}`);
+      if (!q || !target) return;
+      target.innerHTML = (q.media || []).map(media => {
+        const label = escapeExamHtml(media.name || 'media');
+        const url = escapeExamHtml(media.url || `/api/exam/room/${state.mentor.roomId}/media/${media.id}`);
+        return `<div style="width:116px;border:1px solid var(--border2);border-radius:5px;overflow:hidden;background:var(--bg)">
+          ${media.type === 'video' ? `<video src="${url}" muted preload="metadata" style="display:block;width:100%;height:68px;object-fit:cover"></video>` : `<img src="${url}" alt="${label}" style="display:block;width:100%;height:68px;object-fit:cover"/>`}
+          <div title="${label}" style="padding:4px 5px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)">${label}</div>
+        </div>`;
+      }).join('');
+      let preview = el(`qmedia-preview-${qId}`);
+      if (!preview && target.parentElement) {
+        target.insertAdjacentHTML('afterend', `<div style="margin-top:10px;border-top:1px solid var(--border2);padding-top:8px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Live student preview</div><div id="qmedia-preview-${qId}" class="exam-question-preview"></div></div>`);
+        preview = el(`qmedia-preview-${qId}`);
+      }
+      if (preview) preview.innerHTML = renderQuestionHtml(q);
+    },
+
+    async uploadQuestionMedia(qId, event) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      const file = event && event.target && event.target.files ? event.target.files[0] : null;
+      if (!q || !file) return;
+      event.target.value = '';
+      if (!(file.type || '').startsWith('image/') && !(file.type || '').startsWith('video/')) {
+        alert('Only image and video files are allowed.');
+        return;
+      }
+      if (file.size > 30 * 1024 * 1024) {
+        alert('Media files must be 30 MB or smaller.');
+        return;
+      }
+      const form = new FormData();
+      form.append('mentorId', state.mentor.mentorId || '');
+      form.append('file', file, file.name);
+      let response;
+      try {
+        response = await fetch(`/api/exam/room/${state.mentor.roomId}/question/${qId}/media`, { method: 'POST', body: form });
+      } catch (error) {
+        alert('Unable to upload media. Please try again.');
+        return;
+      }
+      let result = {};
+      try { result = await response.json(); } catch (error) {}
+      if (!response.ok || result.status !== 'ok' || !result.media) {
+        alert(result.error || 'Unable to upload media.');
+        return;
+      }
+      q.media = Array.isArray(q.media) ? q.media : [];
+      q.media.push(result.media);
+      const textarea = el(`qtext-${qId}`);
+      const marker = `[media:${result.media.id}]`;
+      if (textarea) {
+        const start = Number.isInteger(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
+        const end = Number.isInteger(textarea.selectionEnd) ? textarea.selectionEnd : start;
+        q.text = textarea.value.slice(0, start) + marker + textarea.value.slice(end);
+      } else {
+        q.text = `${q.text || ''}${marker}`;
+      }
+      await mentor._saveQuestions();
+      mentor._renderQEditor(qId);
+    },
+
     async _saveQuestions() {
       if (!state.mentor.roomId || !state.mentor.mentorId) return;
       await apiCall(`/api/exam/room/${state.mentor.roomId}/questions`, 'POST', {
@@ -1380,7 +1519,9 @@ const ExamPortal = (() => {
         mentorId: state.mentor.mentorId,
         questionId: qId,
         datasetIds,
-        query,
+         query,
+         queryType: q.type === 'sql' ? 'sql' : 'query',
+         type: q.type === 'sql' ? 'sql' : 'query',
       });
 
       if (res.status === 'ok') {
@@ -1561,7 +1702,7 @@ const ExamPortal = (() => {
         alert('Add at least one question before starting the exam.');
         return;
       }
-      const unfrozen = state.mentor.questions.filter(q => q.type === 'query' && !q.answerFrozen);
+      const unfrozen = state.mentor.questions.filter(q => isDataQuestion(q) && !q.answerFrozen);
       if (unfrozen.length > 0) {
         if (!confirm(`${unfrozen.length} query question(s) have no frozen answer. Students will get 0 marks for those. Continue?`)) return;
       }
@@ -2089,6 +2230,7 @@ const ExamPortal = (() => {
             matchBrackets: true
           });
           state.mentor.submissionEditor.setSize('100%', '100%');
+          attachCodexaKeywordHints(state.mentor.submissionEditor);
         }
       }
 
@@ -2127,7 +2269,10 @@ const ExamPortal = (() => {
         
         let typeLabel = 'QUERY';
         let typeClass = 'exam-q-type-query';
-        if (q.type === 'mcq') {
+        if (q.type === 'sql') {
+          typeLabel = 'SQL';
+          typeClass = 'exam-q-type-sql';
+        } else if (q.type === 'mcq') {
           typeLabel = 'MCQ';
           typeClass = 'exam-q-type-mcq';
         } else if (q.type === 'coding') {
@@ -2163,7 +2308,10 @@ const ExamPortal = (() => {
 
       let typeLabel = 'QUERY';
       let typeClass = 'exam-q-type-query';
-      if (q.type === 'mcq') {
+      if (q.type === 'sql') {
+        typeLabel = 'SQL';
+        typeClass = 'exam-q-type-sql';
+      } else if (q.type === 'mcq') {
         typeLabel = 'MCQ';
         typeClass = 'exam-q-type-mcq';
       } else if (q.type === 'coding') {
@@ -2175,25 +2323,25 @@ const ExamPortal = (() => {
       el('mentor-sub-q-type-chip').textContent = typeLabel;
       el('mentor-sub-q-type-chip').className = `exam-q-type-chip ${typeClass}`;
       el('mentor-sub-q-marks').textContent = sub ? `Score: ${sub.score} / ${q.marks}` : `Score: 0 / ${q.marks}`;
-      const descHtml = typeof marked !== 'undefined' ? marked.parse(q.text || '') : (q.text || '');
+      const descHtml = renderQuestionHtml(q);
       el('mentor-sub-q-text').innerHTML = descHtml;
       
       el('mentor-sub-question-display').style.display = 'block';
       el('mentor-sub-no-q').style.display = 'none';
       if (el('resizer-mentor-sub-console')) el('resizer-mentor-sub-console').style.display = 'block';
 
-      if (q.type === 'query' || q.type === 'coding') {
+      if (isDataQuestion(q) || q.type === 'coding') {
         el('mentor-sub-query-area').style.display = 'flex';
         el('mentor-sub-mcq-area').style.display = 'none';
         
         if (state.mentor.submissionEditor) {
           let codeVal = '';
           if (sub) {
-            codeVal = q.type === 'coding' ? (sub.code || '// Empty submission') : (sub.query || '// Empty submission');
+             codeVal = q.type === 'coding' ? (sub.code || '// Empty submission') : (sub.query || (q.type === 'sql' ? '-- Empty submission' : '// Empty submission'));
           } else {
             codeVal = '// No submission provided';
           }
-          let cmMode = 'javascript';
+           let cmMode = q.type === 'sql' ? 'text/x-sql' : 'javascript';
           if (q.type === 'coding') {
             if (q.language === 'python') cmMode = 'python';
             else if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
@@ -2484,8 +2632,8 @@ const ExamPortal = (() => {
             if (sub) {
               const isAutoSave = sub.isAutoSave === true || sub.isAutoSave === 'true' || sub.isAutoSave === 1;
               state.student.status[q.id] = isAutoSave ? 'draft' : 'submitted';
-              if (q.type === 'query') {
-                q._studentDraft = sub.query !== undefined ? sub.query : `// Question\ndb.`;
+              if (isDataQuestion(q)) {
+                q._studentDraft = sub.query !== undefined ? sub.query : (q.type === 'sql' ? 'SELECT * FROM users LIMIT 10;' : `// Question\ndb.`);
               } else if (q.type === 'mcq') {
                 if (q.isMultiSelect) {
                   q._studentSelectedOptions = (sub.selectedOptions || []).map(x => parseInt(x));
@@ -2680,6 +2828,10 @@ const ExamPortal = (() => {
         }
       });
       state.student.examEditor = cm;
+      attachCodexaKeywordHints(cm, () => {
+        const q = state.student.questions[state.student.currentQIdx];
+        return q && q.type === 'sql' ? 'sql' : (q && q.type === 'query' ? 'mongodb' : ((q && q.language) || 'python'));
+      });
       
       // Initialize styling settings
       studentNS.updateEditorSettings();
@@ -2688,9 +2840,9 @@ const ExamPortal = (() => {
       if (state.student.currentQIdx !== null) {
         const q = state.student.questions[state.student.currentQIdx];
         if (q) {
-          if (q.type === 'query') {
-            cm.setOption('mode', 'javascript');
-            cm.setValue(q._studentDraft !== undefined ? q._studentDraft : `// Write your MongoDB query here\ndb.collection.find({})`);
+          if (isDataQuestion(q)) {
+            cm.setOption('mode', q.type === 'sql' ? 'text/x-sql' : 'javascript');
+            cm.setValue(q._studentDraft !== undefined ? q._studentDraft : (q.type === 'sql' ? 'SELECT * FROM users LIMIT 10;' : `// Write your MongoDB query here\ndb.collection.find({})`));
           } else if (q.type === 'coding') {
             let currentCode = q._studentDrafts ? q._studentDrafts[q.language] : undefined;
             if (currentCode === undefined) {
@@ -2722,7 +2874,10 @@ const ExamPortal = (() => {
           : 'exam-q-status-unattempted';
         let typeLabel = 'QUERY';
         let typeClass = 'exam-q-type-query';
-        if (q.type === 'mcq') {
+        if (q.type === 'sql') {
+          typeLabel = 'SQL';
+          typeClass = 'exam-q-type-sql';
+        } else if (q.type === 'mcq') {
           typeLabel = 'MCQ';
           typeClass = 'exam-q-type-mcq';
         } else if (q.type === 'coding') {
@@ -2765,7 +2920,10 @@ const ExamPortal = (() => {
       // Update header
       let typeLabel = 'QUERY';
       let typeClass = 'exam-q-type-query';
-      if (q.type === 'mcq') {
+      if (q.type === 'sql') {
+        typeLabel = 'SQL';
+        typeClass = 'exam-q-type-sql';
+      } else if (q.type === 'mcq') {
         typeLabel = 'MCQ';
         typeClass = 'exam-q-type-mcq';
       } else if (q.type === 'coding') {
@@ -2779,7 +2937,7 @@ const ExamPortal = (() => {
       el('student-q-marks').textContent = `${q.marks} marks`;
 
       // Render Markdown question description
-      const descHtml = typeof marked !== 'undefined' ? marked.parse(q.text || '') : (q.text || '');
+      const descHtml = renderQuestionHtml(q);
       el('student-q-text').innerHTML = descHtml;
       el('student-no-q-selected').style.display = 'none';
 
@@ -2789,10 +2947,10 @@ const ExamPortal = (() => {
       state.student.activeTab = 'readme';
 
       // Show/hide areas
-      if (q.type === 'query' || q.type === 'coding') {
+      if (isDataQuestion(q) || q.type === 'coding') {
         el('student-mcq-area').style.display = 'none';
 
-        const isQuery = q.type === 'query';
+        const isQuery = isDataQuestion(q);
         el('btn-inspect-dataset').style.display = isQuery ? 'flex' : 'none';
         el('student-lang-selector-wrap').style.display = isQuery ? 'none' : 'flex';
 
@@ -2808,8 +2966,8 @@ const ExamPortal = (() => {
           // Set editor content
           const cm = state.student.examEditor;
           if (cm) {
-            cm.setOption('mode', 'javascript');
-            cm.setValue(q._studentDraft !== undefined ? q._studentDraft : `// Question ${idx + 1}\ndb.`);
+            cm.setOption('mode', q.type === 'sql' ? 'text/x-sql' : 'javascript');
+            cm.setValue(q._studentDraft !== undefined ? q._studentDraft : (q.type === 'sql' ? 'SELECT * FROM users LIMIT 10;' : `// Question ${idx + 1}\ndb.`));
           }
 
           // Reset console
@@ -2898,7 +3056,7 @@ const ExamPortal = (() => {
         
         el('student-mcq-q-number').textContent = `Q${idx + 1}`;
         el('student-mcq-q-marks').textContent = `${q.marks} marks`;
-        const descHtml = typeof marked !== 'undefined' ? marked.parse(q.text || '') : (q.text || '');
+        const descHtml = renderQuestionHtml(q);
         el('student-mcq-question-text').innerHTML = descHtml;
         
         if (q.isMultiSelect) {
@@ -3042,6 +3200,39 @@ const ExamPortal = (() => {
       const query = cm.getValue();
       const q = state.student.questions[state.student.currentQIdx];
       if (!q) return;
+
+      if (q.type === 'sql') {
+        const datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
+        if (datasetIds.length === 0) {
+          el('student-pane-yours').innerHTML = '<span style="color:var(--red)">// No dataset linked to this question</span>';
+          return;
+        }
+        el('student-run-btn').textContent = 'Running...';
+        el('student-run-btn').disabled = true;
+        el('student-console-status').textContent = '— Running...';
+        const res = await apiCall(`/api/exam/room/${state.student.roomId}/query`, 'POST', {
+          datasetIds, query, queryType: 'sql', type: 'sql', limit: 10000
+        });
+        el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
+        el('student-run-btn').disabled = false;
+        if (res.status === 'ok') {
+          state.student.sqlResult = res;
+          q._studentResult = res;
+          state.student.lastRunOutput = { columns: res.columns || [], rows: res.rows || [] };
+          el('student-console-status').textContent = `— ${(res.rows || []).length} row(s)`;
+          el('student-console-status').style.color = 'var(--text3)';
+          el('student-pane-yours').innerHTML = formatSqlTable(res);
+          state.student.hasRunOnce = true;
+          el('student-submit-query-btn').disabled = false;
+          el('student-submit-query-btn').style.opacity = '1';
+        } else {
+          el('student-console-status').textContent = '— Error';
+          el('student-console-status').style.color = 'var(--red)';
+          el('student-pane-yours').innerHTML = `<span style="color:var(--red)">${escapeExamHtml(res.error || '// Unknown error')}</span>`;
+        }
+        studentNS._fetchExpectedPreview(q.id);
+        return;
+      }
 
       if (q.type === 'coding') {
         const sampleCases = state.student.sampleCases || [];
@@ -3298,7 +3489,12 @@ const ExamPortal = (() => {
         const cm = state.student.examEditor;
         body.query = cm ? cm.getValue() : '';
         body.datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
-        body.studentOutput = state.student.lastRunOutput || [];
+        if (q.type === 'sql') {
+          body.queryType = 'sql';
+          body.studentResult = state.student.sqlResult || state.student.lastRunOutput || { columns: [], rows: [] };
+        } else {
+          body.studentOutput = state.student.lastRunOutput || [];
+        }
       }
 
       // Optimistic UI: immediately mark as submitted
@@ -3386,7 +3582,7 @@ const ExamPortal = (() => {
       const cm = state.student.examEditor;
       if (!cm) return;
       
-      if (q.type === 'query') {
+      if (isDataQuestion(q)) {
         q._studentDraft = cm.getValue();
       } else if (q.type === 'coding') {
         q._studentDrafts = q._studentDrafts || {};
@@ -3439,12 +3635,17 @@ const ExamPortal = (() => {
               body.language = q.language;
               hasValue = true;
             }
-          } else if (q.type === 'query') {
+          } else if (isDataQuestion(q)) {
             const draft = q._studentDraft;
             if (draft && draft.trim()) {
               body.query = draft;
               body.datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
-              body.studentOutput = (state.student.currentQIdx === state.student.questions.indexOf(q)) ? (state.student.lastRunOutput || []) : [];
+              if (q.type === 'sql') {
+                body.queryType = 'sql';
+                body.studentResult = q._studentResult || (state.student.currentQIdx === state.student.questions.indexOf(q) ? state.student.sqlResult : null) || { columns: [], rows: [] };
+              } else {
+                body.studentOutput = (state.student.currentQIdx === state.student.questions.indexOf(q)) ? (state.student.lastRunOutput || []) : [];
+              }
               hasValue = true;
             }
           }
@@ -3495,12 +3696,17 @@ const ExamPortal = (() => {
           body.language = q.language;
           hasValue = true;
         }
-      } else if (q.type === 'query') {
+      } else if (isDataQuestion(q)) {
         const draft = q._studentDraft;
         if (draft && draft.trim()) {
           body.query = draft;
           body.datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
-          body.studentOutput = (state.student.currentQIdx === state.student.questions.indexOf(q)) ? (state.student.lastRunOutput || []) : [];
+          if (q.type === 'sql') {
+            body.queryType = 'sql';
+            body.studentResult = q._studentResult || (state.student.currentQIdx === state.student.questions.indexOf(q) ? state.student.sqlResult : null) || { columns: [], rows: [] };
+          } else {
+            body.studentOutput = (state.student.currentQIdx === state.student.questions.indexOf(q)) ? (state.student.lastRunOutput || []) : [];
+          }
           hasValue = true;
         }
       }
@@ -3683,7 +3889,7 @@ const ExamPortal = (() => {
       const activeTab = state.student.activeTab || 'readme';
 
       // Find code file extension name
-      let codeFilename = 'query.mongo';
+       let codeFilename = q.type === 'sql' ? 'query.sql' : 'query.mongo';
       if (q.type === 'coding') {
         const ext = { python: 'py', cpp: 'cpp', c: 'c', java: 'java' }[q.language || 'python'] || 'py';
         const name = q.language === 'java' ? 'Solution' : 'solution';

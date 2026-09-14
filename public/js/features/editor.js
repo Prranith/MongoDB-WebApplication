@@ -1,6 +1,45 @@
 // ═══════════════════════════════════════════════════════════════════
 // MONGO INTELLISENSE AUTOCOMPLETION PROVIDER
 // ═══════════════════════════════════════════════════════════════════
+const CODEX_KEYWORDS = {
+  mongodb: ['db', 'find', 'findOne', 'aggregate', 'countDocuments', 'distinct', 'sort', 'limit', 'skip', 'match', 'group', 'project', 'lookup', 'unwind'],
+  python: ['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'False', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'None', 'not', 'or', 'pass', 'raise', 'return', 'True', 'try', 'while', 'with', 'yield'],
+  cpp: ['alignas', 'auto', 'bool', 'break', 'case', 'catch', 'class', 'const', 'continue', 'delete', 'do', 'else', 'false', 'for', 'if', 'include', 'namespace', 'new', 'nullptr', 'private', 'protected', 'public', 'return', 'std', 'struct', 'switch', 'template', 'this', 'throw', 'true', 'try', 'using', 'virtual', 'void', 'while'],
+  c: ['auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extern', 'float', 'for', 'if', 'include', 'int', 'long', 'return', 'short', 'signed', 'sizeof', 'static', 'struct', 'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile', 'while'],
+  java: ['abstract', 'boolean', 'break', 'byte', 'case', 'catch', 'class', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extends', 'final', 'finally', 'float', 'for', 'if', 'implements', 'import', 'instanceof', 'int', 'interface', 'new', 'null', 'package', 'private', 'protected', 'public', 'return', 'static', 'super', 'switch', 'this', 'throw', 'throws', 'try', 'void', 'while'],
+  sql: ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INNER', 'LEFT', 'RIGHT', 'CROSS', 'ON', 'GROUP BY', 'HAVING', 'ORDER BY', 'LIMIT', 'OFFSET', 'DISTINCT', 'AS', 'AND', 'OR', 'NOT', 'NULL', 'IS', 'IN', 'BETWEEN', 'LIKE', 'UNION', 'WITH', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'COUNT', 'SUM', 'AVG', 'MIN', 'MAX']
+};
+
+function codexaKeywordHint(cm, language) {
+  const lang = typeof language === 'string' ? language : (typeof language === 'function' ? language() : 'mongodb');
+  const keywords = CODEX_KEYWORDS[lang] || CODEX_KEYWORDS.mongodb;
+  const cur = cm.getCursor();
+  const line = cm.getLine(cur.line).slice(0, cur.ch);
+  const match = line.match(/[A-Za-z_][A-Za-z0-9_ ]*$/);
+  const typed = (match ? match[0] : '').trim().toLowerCase();
+  const start = match ? cur.ch - match[0].length : cur.ch;
+  const list = keywords.filter(keyword => keyword.toLowerCase().startsWith(typed)).map(keyword => ({ text: keyword, displayText: `${keyword} — keyword` }));
+  if (!list.length) return null;
+  return { list, from: CodeMirror.Pos(cur.line, start), to: cur };
+}
+
+CodeMirror.registerHelper('hint', 'codexaKeywords', cm => codexaKeywordHint(cm, cm._codexaKeywordLanguage));
+
+function attachCodexaKeywordHints(cm, languageGetter) {
+  if (!cm || cm._codexaKeywordHintsAttached) return;
+  cm._codexaKeywordHintsAttached = true;
+  cm._codexaKeywordLanguage = languageGetter || 'mongodb';
+  const show = () => cm.showHint({ hint: CodeMirror.hint.codexaKeywords, completeSingle: false });
+  const keys = Object.assign({}, cm.getOption('extraKeys') || {}, {
+    'Ctrl-Space': show,
+    'Cmd-Space': show
+  });
+  cm.setOption('extraKeys', keys);
+  cm.on('inputRead', (instance, change) => {
+    if (change && change.text && /^[A-Za-z_]$/.test(change.text[0] || '')) show();
+  });
+}
+
 function setupMongoIntelliSense() {
   if (typeof CodeMirror === 'undefined') return;
 
