@@ -2,8 +2,22 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/index.py": {
-      "includeFiles": "{api/embedded_assets.py,public/assets/icons/**,public/image.png,public/image1.png,public/robots.txt,public/sitemap.xml}",
-      "excludeFiles": "{tests/**,scratch/**,ui/**,**/__pycache__/**,**/*.pyc,requirements-desktop.txt}"
+      "includeFiles": [
+        "api/embedded_assets.py",
+        "public/assets/icons/**",
+        "public/image.png",
+        "public/image1.png",
+        "public/robots.txt",
+        "public/sitemap.xml"
+      ],
+      "excludeFiles": [
+        "tests/**",
+        "scratch/**",
+        "ui/**",
+        "**/__pycache__/**",
+        "**/*.pyc",
+        "requirements-desktop.txt"
+      ]
     }
   },
   "routes": [
