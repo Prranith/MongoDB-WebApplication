@@ -18,3 +18,15 @@ def test_sql_rejects_comment_only_query():
         assert str(exc) == "SQL query is required"
     else:
         raise AssertionError("comment-only SQL must be rejected")
+
+
+def test_sql_executes_multiple_statements_in_one_sandbox():
+    result = SqlService.execute_query(
+        "CREATE TABLE notes (id INTEGER, body TEXT);"
+        "INSERT INTO notes VALUES (1, 'keep; semicolon');"
+        "SELECT * FROM notes;",
+        custom_tables={},
+    )
+    assert result["status"] == "ok"
+    assert result["rows"] == [{"id": 1, "body": "keep; semicolon"}]
+    assert result["tables"]["notes"] == [{"id": 1, "body": "keep; semicolon"}]

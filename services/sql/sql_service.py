@@ -112,7 +112,7 @@ class SqlService:
         return text.lstrip()
 
     @classmethod
-    def _validate(cls, query):
+    def _validate_statement(cls, query):
         query = str(query or "").lstrip("\ufeff").strip()
         if not query:
             raise ValueError("SQL query is required")
@@ -121,9 +121,6 @@ class SqlService:
         statement = cls._strip_leading_comments(query)
         if not statement:
             raise ValueError("SQL query is required")
-        # Permit one trailing semicolon, but never execute a script.
-        if ";" in statement.rstrip(";"):
-            raise ValueError("Only one SQL statement is allowed")
         if cls._blocked.search(statement):
             raise ValueError("This SQL operation is not allowed in the sandbox")
         first = re.match(r"^(select|with|insert|update|delete|replace|create|alter|drop)\b", statement, re.I)
@@ -138,6 +135,63 @@ class SqlService:
         if kind in {"update", "delete"} and not re.search(r"\bwhere\b", statement, re.I):
             raise ValueError(f"{kind.upper()} requires a WHERE clause for safety")
         return query, kind, statement
+
+    @classmethod
+    def _split_statements(cls, query):
+        """Split scripts while preserving semicolons inside quoted values."""
+        parts, start, index = [], 0, 0
+        quote = None
+        line_comment = False
+        block_comment = False
+        text = str(query)
+        while index < len(text):
+            char = text[index]
+            next_char = text[index + 1] if index + 1 < len(text) else ''
+            if line_comment:
+                if char in '\r\n': line_comment = False
+            elif block_comment:
+                if char == '*' and next_char == '/':
+                    block_comment = False
+                    index += 1
+            elif quote:
+                if char == quote:
+                    if next_char == quote:
+                        index += 1
+                    else:
+                        quote = None
+            elif char == '-' and next_char == '-':
+                line_comment = True
+                index += 1
+            elif char == '/' and next_char == '*':
+                block_comment = True
+                index += 1
+            elif char in "'\"`":
+                quote = char
+            elif char == '[':
+                quote = ']'
+            elif char == ';':
+                parts.append(text[start:index])
+                start = index + 1
+            index += 1
+        if quote and quote != ']': raise ValueError("Unterminated SQL string")
+        if block_comment: raise ValueError("Unterminated SQL comment")
+        parts.append(text[start:])
+        return [part.strip() for part in parts if cls._strip_leading_comments(part).strip()]
+
+    @classmethod
+    def _validated_script(cls, query):
+        query = str(query or '').lstrip('\ufeff').strip()
+        if not query: raise ValueError("SQL query is required")
+        if len(query) > 100000: raise ValueError("SQL query is too large")
+        parts = cls._split_statements(query)
+        if not parts: raise ValueError("SQL query is required")
+        return [cls._validate_statement(part) for part in parts]
+
+    @classmethod
+    def _validate(cls, query):
+        # Keep the historical helper return value for existing callers.
+        cls._validated_script(query)
+        return str(query or '').lstrip('\ufeff').strip()
 
     @classmethod
     def _enforce_limits(cls, conn):
@@ -170,7 +224,7 @@ class SqlService:
         started = time.perf_counter()
         conn = None
         try:
-            query, kind, statement = cls._validate(sql_query)
+            statements = cls._validated_script(sql_query)
             limit = max(1, min(int(limit or cls.DEFAULT_LIMIT), cls.MAX_LIMIT))
             tables = custom_tables if custom_tables is not None else cls._load_playground_tables()
             if not isinstance(tables, dict):
@@ -180,11 +234,22 @@ class SqlService:
             conn = cls.build_sqlite_db_from_docs(tables)
             deadline = time.monotonic() + cls.TIMEOUT_SECONDS
             conn.set_progress_handler(lambda: 1 if time.monotonic() >= deadline else 0, 1000)
-            changes_before = conn.total_changes
-            cur = conn.execute(statement)
-            affected_rows = max(0, conn.total_changes - changes_before)
-            if kind in {"insert", "update", "delete", "replace"} and affected_rows > cls.MAX_MUTATION_ROWS:
-                raise ValueError(f"A single mutation may affect at most {cls.MAX_MUTATION_ROWS} rows")
+            cur = None
+            affected_rows = 0
+            mutated = False
+            final_kind = statements[-1][1]
+            for _, kind, statement in statements:
+                changes_before = conn.total_changes
+                cur = conn.execute(statement)
+                statement_changes = max(0, conn.total_changes - changes_before)
+                if kind in {"insert", "update", "delete", "replace"}:
+                    mutated = True
+                    if statement_changes > cls.MAX_MUTATION_ROWS:
+                        raise ValueError(f"A single mutation may affect at most {cls.MAX_MUTATION_ROWS} rows")
+                    affected_rows += statement_changes
+                elif kind != "select":
+                    mutated = True
+            kind = final_kind
             columns = [d[0] for d in cur.description or []]
             rows = [dict(row) for row in cur.fetchmany(limit)]
             result = {"status": "ok", "columns": columns, "rows": rows,
@@ -192,7 +257,7 @@ class SqlService:
                       "operation": kind, "affectedRows": affected_rows}
             # A mutation returns the new isolated state. A custom-table SELECT
             # returns it too, allowing the browser to keep its sandbox state.
-            if kind != "select" or custom_tables is not None:
+            if mutated or custom_tables is not None:
                 result["tables"] = cls._dump_tables(conn)
             return result
         except (ValueError, sqlite3.Error) as exc:
