@@ -1,4 +1,4 @@
-"""Bounded read-only SQL execution for playground and exam datasets."""
+"""Bounded SQL execution in an isolated, in-memory SQLite sandbox."""
 import json
 import re
 import sqlite3
@@ -12,8 +12,13 @@ class SqlService:
     DEFAULT_LIMIT = 500
     MAX_LIMIT = 10000
     TIMEOUT_SECONDS = 3.0
+    MAX_MUTATION_ROWS = 1000
+    MAX_SANDBOX_ROWS = 10000
+    MAX_SANDBOX_TABLES = 100
+    MAX_SANDBOX_COLUMNS = 100
+    MAX_CUSTOM_TABLE_BYTES = 5 * 1024 * 1024
     _blocked = re.compile(
-        r"\b(attach|detach|pragma|vacuum|create|drop|alter|insert|update|delete|replace|reindex|trigger|load_extension)\b",
+        r"\b(attach|detach|pragma|vacuum|load_extension|begin|commit|rollback|savepoint|release|reindex|trigger|virtual)\b",
         re.I,
     )
 
@@ -53,6 +58,8 @@ class SqlService:
     def _table_docs(cls, conn, table_name, docs):
         if not isinstance(docs, list):
             docs = []
+        if len(docs) > cls.MAX_SANDBOX_ROWS:
+            raise ValueError(f"A sandbox table may contain at most {cls.MAX_SANDBOX_ROWS} rows")
         flattened = [cls._flatten(d) if isinstance(d, dict) else {"value": d} for d in docs]
         columns = []
         seen = set()
@@ -64,6 +71,8 @@ class SqlService:
                     columns.append((safe, key))
         if not columns:
             columns = [("value", "value")]
+        if len(columns) > cls.MAX_SANDBOX_COLUMNS:
+            raise ValueError(f"A sandbox table may contain at most {cls.MAX_SANDBOX_COLUMNS} columns")
         table = cls._safe_name(table_name)
         defs = ", ".join(f"{cls._quote(col)}" + " NUMERIC" for col, _ in columns)
         conn.execute(f"CREATE TABLE {cls._quote(table)} ({defs})")
@@ -116,27 +125,76 @@ class SqlService:
         if ";" in statement.rstrip(";"):
             raise ValueError("Only one SQL statement is allowed")
         if cls._blocked.search(statement):
-            raise ValueError("Only read-only SELECT queries are allowed")
-        if not re.match(r"^(select|with)\b", statement, re.I):
-            raise ValueError("Only SELECT queries are allowed")
-        return query
+            raise ValueError("This SQL operation is not allowed in the sandbox")
+        first = re.match(r"^(select|with|insert|update|delete|replace|create|alter|drop)\b", statement, re.I)
+        if not first:
+            raise ValueError("Supported SQL starts with SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, or WITH")
+        kind = first.group(1).lower()
+        if kind == "with":
+            dml = re.search(r"\b(insert|update|delete|replace)\b", statement, re.I)
+            kind = dml.group(1).lower() if dml else "select"
+        if kind == "create" and re.match(r"^create\s+virtual\b", statement, re.I):
+            raise ValueError("Virtual tables are not allowed in the sandbox")
+        if kind in {"update", "delete"} and not re.search(r"\bwhere\b", statement, re.I):
+            raise ValueError(f"{kind.upper()} requires a WHERE clause for safety")
+        return query, kind, statement
+
+    @classmethod
+    def _enforce_limits(cls, conn):
+        tables = [row[0] for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+        )]
+        if len(tables) > cls.MAX_SANDBOX_TABLES:
+            raise ValueError(f"A sandbox may contain at most {cls.MAX_SANDBOX_TABLES} tables")
+        total_rows = 0
+        for table in tables:
+            count = conn.execute(f"SELECT COUNT(*) FROM {cls._quote(table)}").fetchone()[0]
+            total_rows += int(count)
+            if total_rows > cls.MAX_SANDBOX_ROWS:
+                raise ValueError(f"A sandbox may contain at most {cls.MAX_SANDBOX_ROWS} rows")
+
+    @classmethod
+    def _dump_tables(cls, conn):
+        cls._enforce_limits(conn)
+        result = {}
+        names = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        ).fetchall()
+        for (name,) in names:
+            cursor = conn.execute(f"SELECT * FROM {cls._quote(name)} LIMIT ?", (cls.MAX_SANDBOX_ROWS,))
+            result[name] = [dict(row) for row in cursor.fetchall()]
+        return result
 
     @classmethod
     def execute_query(cls, sql_query, limit=DEFAULT_LIMIT, custom_tables=None):
         started = time.perf_counter()
         conn = None
         try:
-            query = cls._validate(sql_query)
+            query, kind, statement = cls._validate(sql_query)
             limit = max(1, min(int(limit or cls.DEFAULT_LIMIT), cls.MAX_LIMIT))
             tables = custom_tables if custom_tables is not None else cls._load_playground_tables()
+            if not isinstance(tables, dict):
+                raise ValueError("SQL sandbox tables must be an object")
+            if len(json.dumps(tables, separators=(",", ":"), default=str)) > cls.MAX_CUSTOM_TABLE_BYTES:
+                raise ValueError("SQL sandbox data is too large")
             conn = cls.build_sqlite_db_from_docs(tables)
             deadline = time.monotonic() + cls.TIMEOUT_SECONDS
             conn.set_progress_handler(lambda: 1 if time.monotonic() >= deadline else 0, 1000)
-            cur = conn.execute(query)
+            changes_before = conn.total_changes
+            cur = conn.execute(statement)
+            affected_rows = max(0, conn.total_changes - changes_before)
+            if kind in {"insert", "update", "delete", "replace"} and affected_rows > cls.MAX_MUTATION_ROWS:
+                raise ValueError(f"A single mutation may affect at most {cls.MAX_MUTATION_ROWS} rows")
             columns = [d[0] for d in cur.description or []]
             rows = [dict(row) for row in cur.fetchmany(limit)]
-            return {"status": "ok", "columns": columns, "rows": rows,
-                    "rowCount": len(rows), "duration": round((time.perf_counter() - started) * 1000, 2)}
+            result = {"status": "ok", "columns": columns, "rows": rows,
+                      "rowCount": len(rows), "duration": round((time.perf_counter() - started) * 1000, 2),
+                      "operation": kind, "affectedRows": affected_rows}
+            # A mutation returns the new isolated state. A custom-table SELECT
+            # returns it too, allowing the browser to keep its sandbox state.
+            if kind != "select" or custom_tables is not None:
+                result["tables"] = cls._dump_tables(conn)
+            return result
         except (ValueError, sqlite3.Error) as exc:
             return {"status": "error", "error": str(exc),
                     "duration": round((time.perf_counter() - started) * 1000, 2)}

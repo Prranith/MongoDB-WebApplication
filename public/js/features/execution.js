@@ -1,6 +1,20 @@
 // ═══════════════════════════════════════════════════════════════════
 // EXECUTE QUERY RUNNER
 // ═══════════════════════════════════════════════════════════════════
+// Each SQL file gets an isolated table snapshot. The API executes against an
+// in-memory SQLite copy and returns the new snapshot after mutations; nothing
+// is written to server databases or shared JSON files.
+const SQL_SANDBOXES = new Map();
+
+function sqlSandboxKey() {
+  return S.activeFile || '__workspace_editor__';
+}
+
+function isSqlMutation(query) {
+  const statement = String(query || '').replace(/^\s*(?:(?:--[^\r\n]*(?:\r?\n|$))|(?:\/\*[\s\S]*?\*\/\s*))*/g, '').trim();
+  return /^(?:(?:with\b[\s\S]*?\b(?:insert|update|delete|replace)\b)|(?:insert|update|delete|replace|create|alter|drop)\b)/i.test(statement);
+}
+
 async function runQuery() {
   const langSelect = document.getElementById('workspace-lang-select');
   const lang = langSelect ? langSelect.value : 'mongodb';
@@ -14,12 +28,19 @@ async function runQuery() {
     const statEl = document.getElementById('console-status');
     if (statEl) statEl.textContent = '⟳ Running SQL...';
     try {
-      const d = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify({ query: q, limit: S.settings ? S.settings.maxResults : 500 }) });
+      const sandboxKey = sqlSandboxKey();
+      const requestBody = { query: q, limit: S.settings ? S.settings.maxResults : 500 };
+      if (SQL_SANDBOXES.has(sandboxKey)) requestBody.tables = SQL_SANDBOXES.get(sandboxKey);
+      const d = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody) });
       if (d.status !== 'ok') throw new Error(d.error || 'SQL execution failed');
+      if (d.tables) SQL_SANDBOXES.set(sandboxKey, d.tables);
       S.lastData = d.rows; S.lastRaw = JSON.stringify(d, null, 2);
-      if (statEl) statEl.textContent = `✓ ${d.rowCount} row(s) returned`;
+      const resultCount = d.operation && d.operation !== 'select' ? (d.affectedRows || 0) : d.rowCount;
+      if (statEl) statEl.textContent = d.operation && d.operation !== 'select'
+        ? `✓ ${d.operation.toUpperCase()} completed · ${resultCount} row(s) affected`
+        : `✓ ${d.rowCount} row(s) returned`;
       if (document.getElementById('console-time')) document.getElementById('console-time').textContent = `${d.duration || 0}ms`;
-      if (document.getElementById('console-count')) document.getElementById('console-count').textContent = `${d.rowCount} rows`;
+      if (document.getElementById('console-count')) document.getElementById('console-count').textContent = `${resultCount} ${d.operation && d.operation !== 'select' ? 'affected' : 'rows'}`;
       renderTreeView(d.rows); renderRawJsonView(d); renderSqlTable(d);
     } catch (e) { if (statEl) statEl.textContent = `✕ ${e.message}`; logOutput(`<span class="out-error">[error] ${e.message}</span>`); }
     return;
@@ -704,7 +725,7 @@ function changeWorkspaceLanguage(newLang) {
     langIndicator = 'Java';
   } else if (newLang === 'sql') {
     cmMode = 'text/x-sql';
-    placeholder = '-- Write a read-only SQL query here\nSELECT * FROM users LIMIT 10;\n';
+    placeholder = '-- Safe in-memory SQL sandbox\nCREATE TABLE users (id INTEGER, name TEXT);\nINSERT INTO users VALUES (1, \'Alice\');\nSELECT * FROM users;\n';
     langIndicator = 'SQL';
   }
   

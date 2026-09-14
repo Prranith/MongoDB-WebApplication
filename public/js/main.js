@@ -30,6 +30,9 @@ window.addEventListener('DOMContentLoaded', () => {
       'Alt-F': formatQuery,
       'Ctrl-S': cm => { saveQuery(); },
       'Ctrl-Space': cm => { cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false }); },
+      // The browser must not treat the IDE shortcut as “close tab”.
+      'Ctrl-W': () => {},
+      'Cmd-W': () => {},
     },
   });
   editor.setSize('100%', '100%');
@@ -53,7 +56,8 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sb-pos').textContent = `Ln ${c.line + 1}, Col ${c.ch + 1}`;
   });
 
-  // Track workspace changes and sync to tab state (with local auto-save to browser cache)
+  // Track workspace changes and persist to the selected local folder when one
+  // is connected. The browser-storage fallback remains available elsewhere.
   editor.on('change', () => {
     if (S.activeFile) {
       const file = S.files.find(f => f.path === S.activeFile);
@@ -61,7 +65,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const val = editor.getValue();
         if (file.content !== val) {
           file.content = val;
-          localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
+          if (typeof persistBrowserWorkspace === 'function') persistBrowserWorkspace();
+          if (typeof scheduleWorkspaceFileWrite === 'function') scheduleWorkspaceFileWrite(file);
         }
         // Remove dirty dot since it is auto-saved
         const tabEl = document.getElementById(`tab-${escId(S.activeFile)}`);
@@ -85,9 +90,24 @@ window.addEventListener('DOMContentLoaded', () => {
   // Setup Global Keyboard Shortcuts
   window.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
+    const previewOpen = document.getElementById('workspace-file-preview')?.classList.contains('active');
+    if (previewOpen && !e.altKey && !e.shiftKey) {
+      if (key === '+' || key === '=') {
+        e.preventDefault(); e.stopImmediatePropagation(); changeWorkspacePreviewZoom(0.25); return;
+      }
+      if (key === '-' || key === '_') {
+        e.preventDefault(); e.stopImmediatePropagation(); changeWorkspacePreviewZoom(-0.25); return;
+      }
+      if (key === '0') {
+        e.preventDefault(); e.stopImmediatePropagation(); resetWorkspacePreviewTransform(); return;
+      }
+      if (key === 'r' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault(); e.stopImmediatePropagation(); rotateWorkspacePreview(90); return;
+      }
+    }
     if ((e.ctrlKey || e.metaKey) && ['r', 't', 'w', 'n', 'l'].includes(key)) {
       e.preventDefault();
-      e.stopPropagation();
+      e.stopImmediatePropagation();
       return;
     }
     if (e.key === 'F5') {
