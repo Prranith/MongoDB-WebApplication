@@ -75,6 +75,15 @@ function syncSqlNotebookToFile() {
   if (typeof scheduleWorkspaceFileWrite === 'function' && file) scheduleWorkspaceFileWrite(file);
 }
 
+function sqlNotebookIcon(name) {
+  const paths = {
+    run: '<path d="M8 5v14l11-7z"/>',
+    clear: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+    delete: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  };
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || ''}</svg>`;
+}
+
 function formatSqlCellResult(result) {
   if (!result || !Array.isArray(result.columns) || !result.columns.length) {
     return `${result?.operation || 'Statement'} completed · ${result?.affectedRows || 0} row(s) affected`;
@@ -113,12 +122,7 @@ function renderSqlNotebook(source) {
   const addCell = document.createElement('button');
   addCell.className = 'sql-notebook-action';
   addCell.textContent = '+ Cell';
-  addCell.onclick = () => {
-    syncSqlNotebookToFile();
-    const nextSource = `${editor ? editor.getValue().trimEnd() : source.trimEnd()}\n-- %%\n`;
-    if (editor) editor.setValue(nextSource);
-    initializeSqlNotebook(nextSource);
-  };
+  addCell.onclick = () => insertSqlNotebookCell(SQL_NOTEBOOK_EDITORS.length);
   header.append(runAll, addCell, reset);
   notebook.appendChild(header);
   cells.forEach((cellSource, index) => {
@@ -129,10 +133,32 @@ function renderSqlNotebook(source) {
     cellHeader.className = 'sql-notebook-cell-header';
     cellHeader.innerHTML = `<strong>Cell ${index + 1}</strong><span>SQL</span>`;
     const run = document.createElement('button');
-    run.className = 'sql-notebook-run';
-    run.textContent = 'Run cell';
+    run.className = 'sql-notebook-icon';
+    run.title = 'Run cell';
+    run.setAttribute('aria-label', 'Run cell');
+    run.innerHTML = sqlNotebookIcon('run');
     run.onclick = () => runSqlNotebookCell(index);
     cellHeader.appendChild(run);
+    const clear = document.createElement('button');
+    clear.className = 'sql-notebook-icon';
+    clear.title = 'Clear cell output';
+    clear.setAttribute('aria-label', 'Clear cell output');
+    clear.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+    clear.onclick = () => {
+      output.textContent = '';
+      output.classList.remove('has-result', 'error');
+      const outputs = SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {};
+      delete outputs[index];
+      SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, outputs);
+    };
+    cellHeader.appendChild(clear);
+    const remove = document.createElement('button');
+    remove.className = 'sql-notebook-icon sql-notebook-delete';
+    remove.title = 'Delete cell';
+    remove.setAttribute('aria-label', 'Delete cell');
+    remove.innerHTML = sqlNotebookIcon('delete');
+    remove.onclick = () => deleteSqlNotebookCell(index);
+    cellHeader.appendChild(remove);
     const input = document.createElement('textarea');
     input.className = 'sql-cell-input';
     input.value = cellSource;
@@ -154,8 +180,9 @@ function renderSqlNotebook(source) {
         'Cmd-Enter': () => runSqlNotebookCell(index),
       },
     });
-    editorInstance.setSize('100%', 'auto');
-    editorInstance.on('change', syncSqlNotebookToFile);
+    const resize = () => editorInstance.setSize('100%', `${Math.max(30, Math.min(420, editorInstance.lineCount() * 20 + 10))}px`);
+    resize();
+    editorInstance.on('change', () => { resize(); syncSqlNotebookToFile(); });
     SQL_NOTEBOOK_EDITORS.push(editorInstance);
     const insert = document.createElement('div');
     insert.className = 'sql-notebook-insert';
@@ -175,6 +202,18 @@ function insertSqlNotebookCell(index) {
   if (editor) editor.setValue(source);
   initializeSqlNotebook(source);
   setTimeout(() => SQL_NOTEBOOK_EDITORS[index]?.focus(), 0);
+}
+
+function deleteSqlNotebookCell(index) {
+  if (SQL_NOTEBOOK_EDITORS.length <= 1) return;
+  syncSqlNotebookToFile();
+  const values = SQL_NOTEBOOK_EDITORS.map(instance => instance.getValue());
+  values.splice(index, 1);
+  const runtimeKey = S.activeFile || '__workspace_editor__';
+  SQL_NOTEBOOK_OUTPUTS.delete(runtimeKey);
+  const source = values.map((value, cellIndex) => `${cellIndex ? '-- %%\n' : ''}${value}`).join('\n\n');
+  if (editor) editor.setValue(source);
+  initializeSqlNotebook(source);
 }
 
 function initializeSqlNotebook(source) {

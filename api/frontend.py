@@ -1040,24 +1040,27 @@ body {
 }
 
 /* SQL files use a notebook-style cell runner instead of the shared console. */
-#sql-notebook { display:none; flex:1; min-height:0; overflow:auto; background:var(--bg); padding:18px 20px 36px; }
+#sql-notebook { display:none; flex:1; min-height:0; overflow:auto; background:var(--bg); padding:18px 8px 36px; }
 #ide-panel.sql-notebook-mode #sql-notebook { display:block; }
 #ide-panel.sql-notebook-mode #cm-wrap > .CodeMirror { display:none; }
 #ide-panel.sql-notebook-mode #console,
 #ide-panel.sql-notebook-mode #console-resizer,
 #ide-panel.sql-notebook-mode #inspector { display:none !important; }
-.sql-notebook-header { display:flex; align-items:center; gap:8px; max-width:980px; margin:0 auto 14px; color:var(--text2); font-size:12px; }
+.sql-notebook-header { display:flex; align-items:center; gap:8px; width:100%; margin:0 0 14px; color:var(--text2); font-size:12px; }
 .sql-notebook-header strong { color:var(--text); font-size:13px; }
 .sql-notebook-header span { color:var(--text3); }
 .sql-notebook-action { margin-left:auto; padding:5px 9px; border:1px solid var(--border2); border-radius:4px; background:var(--bg3); color:var(--text2); cursor:pointer; font-size:11px; }
 .sql-notebook-action:hover { background:var(--hl2); color:var(--text); }
-.sql-notebook-cell { max-width:980px; margin:0 auto 14px; border:1px solid var(--border); border-left:3px solid #3a7d0a; border-radius:5px; background:var(--bg2); overflow:hidden; }
+.sql-notebook-cell { width:100%; margin:0 0 7px; border:1px solid var(--border); border-left:3px solid #3a7d0a; border-radius:5px; background:var(--bg2); overflow:hidden; }
 .sql-notebook-cell-header { display:flex; align-items:center; gap:8px; height:30px; padding:0 9px; border-bottom:1px solid var(--border); color:var(--text3); font-size:11px; }
 .sql-notebook-cell-header strong { color:var(--text2); }
-.sql-notebook-run { margin-left:auto; padding:3px 8px; border:1px solid rgba(78,201,176,.35); border-radius:3px; background:rgba(78,201,176,.08); color:var(--green2); cursor:pointer; font-size:11px; }
-.sql-notebook-run:hover { background:rgba(78,201,176,.18); }
-.sql-cell-input { display:block; width:100%; min-height:92px; padding:11px 13px; border:0; outline:0; resize:vertical; box-sizing:border-box; background:#1e1e1e; color:#d4d4d4; font:13px/1.55 'JetBrains Mono',Consolas,monospace; }
-.sql-notebook-cell .CodeMirror { min-height:112px; height:auto !important; padding:5px 0; font-size:13px; line-height:1.55; background:#1e1e1e; }
+.sql-notebook-icon { width:27px; height:24px; display:inline-grid; place-items:center; margin-left:3px; padding:3px; border:1px solid transparent; border-radius:3px; background:transparent; color:var(--text3); cursor:pointer; }
+.sql-notebook-icon:first-of-type { margin-left:auto; }
+.sql-notebook-icon svg { width:15px; height:15px; }
+.sql-notebook-icon:hover { border-color:var(--border2); background:var(--hl2); color:var(--text); }
+.sql-notebook-delete:hover { color:#f48771; }
+.sql-cell-input { display:block; width:100%; min-height:30px; padding:0; border:0; outline:0; resize:none; box-sizing:border-box; background:#1e1e1e; color:#d4d4d4; font:13px/1.55 'JetBrains Mono',Consolas,monospace; }
+.sql-notebook-cell .CodeMirror { min-height:30px; height:30px; padding:0; font-size:13px; line-height:1.55; background:#1e1e1e; }
 .sql-notebook-cell .CodeMirror-gutters { background:#1e1e1e; border-right:1px solid #303030; }
 .sql-notebook-cell .CodeMirror-linenumber { color:#666; }
 .sql-cell-output { display:none; border-top:1px solid var(--border); padding:10px 13px; background:#181818; color:var(--text2); font:12px/1.55 'JetBrains Mono',Consolas,monospace; white-space:pre-wrap; overflow:auto; }
@@ -9183,6 +9186,15 @@ function syncSqlNotebookToFile() {
   if (typeof scheduleWorkspaceFileWrite === 'function' && file) scheduleWorkspaceFileWrite(file);
 }
 
+function sqlNotebookIcon(name) {
+  const paths = {
+    run: '<path d="M8 5v14l11-7z"/>',
+    clear: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+    delete: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  };
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || ''}</svg>`;
+}
+
 function formatSqlCellResult(result) {
   if (!result || !Array.isArray(result.columns) || !result.columns.length) {
     return `${result?.operation || 'Statement'} completed · ${result?.affectedRows || 0} row(s) affected`;
@@ -9221,12 +9233,7 @@ function renderSqlNotebook(source) {
   const addCell = document.createElement('button');
   addCell.className = 'sql-notebook-action';
   addCell.textContent = '+ Cell';
-  addCell.onclick = () => {
-    syncSqlNotebookToFile();
-    const nextSource = `${editor ? editor.getValue().trimEnd() : source.trimEnd()}\\n-- %%\\n`;
-    if (editor) editor.setValue(nextSource);
-    initializeSqlNotebook(nextSource);
-  };
+  addCell.onclick = () => insertSqlNotebookCell(SQL_NOTEBOOK_EDITORS.length);
   header.append(runAll, addCell, reset);
   notebook.appendChild(header);
   cells.forEach((cellSource, index) => {
@@ -9237,10 +9244,32 @@ function renderSqlNotebook(source) {
     cellHeader.className = 'sql-notebook-cell-header';
     cellHeader.innerHTML = `<strong>Cell ${index + 1}</strong><span>SQL</span>`;
     const run = document.createElement('button');
-    run.className = 'sql-notebook-run';
-    run.textContent = 'Run cell';
+    run.className = 'sql-notebook-icon';
+    run.title = 'Run cell';
+    run.setAttribute('aria-label', 'Run cell');
+    run.innerHTML = sqlNotebookIcon('run');
     run.onclick = () => runSqlNotebookCell(index);
     cellHeader.appendChild(run);
+    const clear = document.createElement('button');
+    clear.className = 'sql-notebook-icon';
+    clear.title = 'Clear cell output';
+    clear.setAttribute('aria-label', 'Clear cell output');
+    clear.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+    clear.onclick = () => {
+      output.textContent = '';
+      output.classList.remove('has-result', 'error');
+      const outputs = SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {};
+      delete outputs[index];
+      SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, outputs);
+    };
+    cellHeader.appendChild(clear);
+    const remove = document.createElement('button');
+    remove.className = 'sql-notebook-icon sql-notebook-delete';
+    remove.title = 'Delete cell';
+    remove.setAttribute('aria-label', 'Delete cell');
+    remove.innerHTML = sqlNotebookIcon('delete');
+    remove.onclick = () => deleteSqlNotebookCell(index);
+    cellHeader.appendChild(remove);
     const input = document.createElement('textarea');
     input.className = 'sql-cell-input';
     input.value = cellSource;
@@ -9262,8 +9291,9 @@ function renderSqlNotebook(source) {
         'Cmd-Enter': () => runSqlNotebookCell(index),
       },
     });
-    editorInstance.setSize('100%', 'auto');
-    editorInstance.on('change', syncSqlNotebookToFile);
+    const resize = () => editorInstance.setSize('100%', `${Math.max(30, Math.min(420, editorInstance.lineCount() * 20 + 10))}px`);
+    resize();
+    editorInstance.on('change', () => { resize(); syncSqlNotebookToFile(); });
     SQL_NOTEBOOK_EDITORS.push(editorInstance);
     const insert = document.createElement('div');
     insert.className = 'sql-notebook-insert';
@@ -9283,6 +9313,18 @@ function insertSqlNotebookCell(index) {
   if (editor) editor.setValue(source);
   initializeSqlNotebook(source);
   setTimeout(() => SQL_NOTEBOOK_EDITORS[index]?.focus(), 0);
+}
+
+function deleteSqlNotebookCell(index) {
+  if (SQL_NOTEBOOK_EDITORS.length <= 1) return;
+  syncSqlNotebookToFile();
+  const values = SQL_NOTEBOOK_EDITORS.map(instance => instance.getValue());
+  values.splice(index, 1);
+  const runtimeKey = S.activeFile || '__workspace_editor__';
+  SQL_NOTEBOOK_OUTPUTS.delete(runtimeKey);
+  const source = values.map((value, cellIndex) => `${cellIndex ? '-- %%\\n' : ''}${value}`).join('\\n\\n');
+  if (editor) editor.setValue(source);
+  initializeSqlNotebook(source);
 }
 
 function initializeSqlNotebook(source) {

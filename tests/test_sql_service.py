@@ -29,7 +29,7 @@ def test_sql_executes_multiple_statements_in_one_sandbox():
     )
     assert result["status"] == "ok"
     assert result["rows"] == [{"id": 1, "body": "keep; semicolon"}]
-    assert result["tables"]["notes"] == [{"id": 1, "body": "keep; semicolon"}]
+    assert result["tables"]["notes"]["__rows__"] == [{"id": 1, "body": "keep; semicolon"}]
 
 
 def test_sql_accepts_common_mysql_compatibility_queries():
