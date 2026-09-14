@@ -9172,10 +9172,18 @@ function splitSqlNotebookCells(source) {
 }
 
 function sqlNotebookSourceFromInputs() {
-  const inputs = SQL_NOTEBOOK_EDITORS.length
-    ? SQL_NOTEBOOK_EDITORS.map(instance => instance.getValue())
-    : [...document.querySelectorAll('.sql-cell-input')].map(input => input.value);
+  const inputs = [...document.querySelectorAll('.sql-notebook-cell')].map((cell, index) => {
+    const instance = SQL_NOTEBOOK_EDITORS[index];
+    return instance ? instance.getValue() : (cell.querySelector('.sql-cell-input')?.value || '');
+  });
   return inputs.map((value, index) => `${index ? '-- %%\\n' : ''}${value}`.trim()).join('\\n\\n');
+}
+
+function getSqlNotebookCellValues() {
+  return [...document.querySelectorAll('.sql-notebook-cell')].map((cell, index) => {
+    const instance = SQL_NOTEBOOK_EDITORS[index];
+    return instance ? instance.getValue() : (cell.querySelector('.sql-cell-input')?.value || '');
+  });
 }
 
 function syncSqlNotebookToFile() {
@@ -9250,6 +9258,11 @@ function renderSqlNotebook(source) {
   addCell.dataset.insertIndex = String(cells.length);
   addCell.className = 'sql-notebook-action';
   addCell.textContent = '+ Cell';
+  addCell.onclick = event => {
+    event.preventDefault();
+    event.stopPropagation();
+    insertSqlNotebookCell(getSqlNotebookCellValues().length);
+  };
   header.append(runAll, addCell, reset);
   notebook.appendChild(header);
   cells.forEach((cellSource, index) => {
@@ -9328,8 +9341,8 @@ function renderSqlNotebook(source) {
 
 function insertSqlNotebookCell(index) {
   syncSqlNotebookToFile();
-  const values = SQL_NOTEBOOK_EDITORS.map(instance => instance.getValue());
-  values.splice(index, 0, '');
+  const values = getSqlNotebookCellValues();
+  values.splice(Math.max(0, Math.min(index, values.length)), 0, '');
   const source = values.map((value, cellIndex) => `${cellIndex ? '-- %%\\n' : ''}${value}`).join('\\n\\n');
   if (editor) editor.setValue(source);
   initializeSqlNotebook(source);
@@ -9337,9 +9350,9 @@ function insertSqlNotebookCell(index) {
 }
 
 function deleteSqlNotebookCell(index) {
-  if (SQL_NOTEBOOK_EDITORS.length <= 1) return;
+  if (document.querySelectorAll('.sql-notebook-cell').length <= 1) return;
   syncSqlNotebookToFile();
-  const values = SQL_NOTEBOOK_EDITORS.map(instance => instance.getValue());
+  const values = getSqlNotebookCellValues();
   values.splice(index, 1);
   const runtimeKey = S.activeFile || '__workspace_editor__';
   SQL_NOTEBOOK_OUTPUTS.delete(runtimeKey);
