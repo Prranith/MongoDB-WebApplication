@@ -66,6 +66,24 @@ def serve_logo():
 def serve_favicon():
     return "", 204
 
+@static_bp.route("/assets/<path:path>")
+def serve_asset(path):
+    """Serve bundled UI assets without falling back to the SPA document.
+
+    Vercel packages this directory into the Python function via vercel.json.
+    Returning a real 404 for a missing asset prevents a broken image request
+    from receiving index.html with an incorrect content type.
+    """
+    assets_dir = PUBLIC_DIR / "assets"
+    asset = assets_dir / path
+    try:
+        asset.resolve().relative_to(assets_dir.resolve())
+    except ValueError:
+        return jsonify({"error": "Not found"}), 404
+    if not asset.is_file():
+        return jsonify({"error": "Not found"}), 404
+    return send_from_directory(str(assets_dir), path, max_age=31536000)
+
 @static_bp.route("/<path:path>")
 def serve_static(path):
     if path.startswith("api/"):
