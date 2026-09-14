@@ -9159,13 +9159,15 @@ function splitSqlNotebookCells(source) {
   }
   const cells = [];
   let current = [];
+  let sawMarker = false;
   lines.forEach(line => {
     if (marker.test(line)) {
+      sawMarker = true;
       if (current.join('\\n').trim()) cells.push(current.join('\\n').trim());
       current = [];
     } else current.push(line);
   });
-  if (current.join('\\n').trim() || !cells.length) cells.push(current.join('\\n').trim());
+  if (current.join('\\n').trim() || !cells.length || sawMarker) cells.push(current.join('\\n').trim());
   return cells;
 }
 
@@ -9233,7 +9235,11 @@ function renderSqlNotebook(source) {
   const addCell = document.createElement('button');
   addCell.className = 'sql-notebook-action';
   addCell.textContent = '+ Cell';
-  addCell.onclick = () => insertSqlNotebookCell(SQL_NOTEBOOK_EDITORS.length);
+  addCell.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    insertSqlNotebookCell(SQL_NOTEBOOK_EDITORS.length);
+  });
   header.append(runAll, addCell, reset);
   notebook.appendChild(header);
   cells.forEach((cellSource, index) => {
