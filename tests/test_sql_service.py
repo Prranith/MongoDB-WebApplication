@@ -41,3 +41,22 @@ def test_sql_accepts_common_mysql_compatibility_queries():
     )
     assert result["status"] == "ok"
     assert result["rows"] == [{"Tables_in_database": "users"}]
+
+
+def test_sql_snapshot_preserves_primary_key_constraints():
+    created = SqlService.execute_query(
+        "CREATE TABLE students (stu_id INTEGER PRIMARY KEY, stu_name TEXT);",
+        custom_tables={},
+    )
+    assert created["status"] == "ok"
+    duplicate = SqlService.execute_query(
+        "INSERT INTO students VALUES (1, 'first');",
+        custom_tables=created["tables"],
+    )
+    assert duplicate["status"] == "ok"
+    rejected = SqlService.execute_query(
+        "INSERT INTO students VALUES (1, 'duplicate');",
+        custom_tables=duplicate["tables"],
+    )
+    assert rejected["status"] == "error"
+    assert "UNIQUE constraint failed" in rejected["error"]

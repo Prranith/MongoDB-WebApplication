@@ -101,6 +101,16 @@ function formatSqlCellResult(result) {
 function renderSqlNotebook(source) {
   const notebook = document.getElementById('sql-notebook');
   if (!notebook) return;
+  if (!notebook.dataset.actionsBound) {
+    notebook.addEventListener('click', event => {
+      const trigger = event.target.closest('[data-sql-action="add-cell"]');
+      if (!trigger || !notebook.contains(trigger)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      insertSqlNotebookCell(Number(trigger.dataset.insertIndex || SQL_NOTEBOOK_EDITORS.length));
+    });
+    notebook.dataset.actionsBound = 'true';
+  }
   const cells = splitSqlNotebookCells(source);
   const runtimeKey = S.activeFile || '__workspace_editor__';
   const saved = SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {};
@@ -125,13 +135,10 @@ function renderSqlNotebook(source) {
   runAll.onclick = async () => { for (let index = 0; index < document.querySelectorAll('.sql-notebook-cell').length; index++) await runSqlNotebookCell(index); };
   const addCell = document.createElement('button');
   addCell.type = 'button';
+  addCell.dataset.sqlAction = 'add-cell';
+  addCell.dataset.insertIndex = String(cells.length);
   addCell.className = 'sql-notebook-action';
   addCell.textContent = '+ Cell';
-  addCell.onclick = event => {
-    event.preventDefault();
-    event.stopPropagation();
-    insertSqlNotebookCell(SQL_NOTEBOOK_EDITORS.length);
-  };
   header.append(runAll, addCell, reset);
   notebook.appendChild(header);
   cells.forEach((cellSource, index) => {
@@ -200,8 +207,9 @@ function renderSqlNotebook(source) {
     insert.className = 'sql-notebook-insert';
     const insertButton = document.createElement('button');
     insertButton.type = 'button';
+    insertButton.dataset.sqlAction = 'add-cell';
+    insertButton.dataset.insertIndex = String(index + 1);
     insertButton.textContent = '+ Add code cell';
-    insertButton.onclick = () => insertSqlNotebookCell(index + 1);
     insert.appendChild(insertButton);
     notebook.appendChild(insert);
   });

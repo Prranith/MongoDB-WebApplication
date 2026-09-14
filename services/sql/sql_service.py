@@ -97,7 +97,7 @@ class SqlService:
             for item in schema:
                 if isinstance(item, dict) and item.get("name"):
                     original = str(item["name"])
-                    columns.append((cls._safe_name(original), original, str(item.get("type") or "TEXT")))
+                    columns.append((cls._safe_name(original), original, str(item.get("type") or "TEXT"), item))
         seen = set()
         seen.update(column[0] for column in columns)
         for row in flattened:
@@ -105,17 +105,22 @@ class SqlService:
                 safe = cls._safe_name(key)
                 if safe not in seen:
                     seen.add(safe)
-                    columns.append((safe, key, "NUMERIC"))
+                    columns.append((safe, key, "NUMERIC", {}))
         if not columns:
-            columns = [("value", "value", "NUMERIC")]
+            columns = [("value", "value", "NUMERIC", {})]
         if len(columns) > cls.MAX_SANDBOX_COLUMNS:
             raise ValueError(f"A sandbox table may contain at most {cls.MAX_SANDBOX_COLUMNS} columns")
         table = cls._safe_name(table_name)
-        defs = ", ".join(f"{cls._quote(col)} {data_type}" for col, _, data_type in columns)
+        defs = ", ".join(
+            f"{cls._quote(col)} {data_type}"
+            + (" PRIMARY KEY" if metadata.get("pk") else "")
+            + (" NOT NULL" if metadata.get("notnull") else "")
+            for col, _, data_type, metadata in columns
+        )
         conn.execute(f"CREATE TABLE {cls._quote(table)} ({defs})")
-        sql = f"INSERT INTO {cls._quote(table)} ({', '.join(cls._quote(c) for c, _, _ in columns)}) VALUES ({','.join('?' for _ in columns)})"
+        sql = f"INSERT INTO {cls._quote(table)} ({', '.join(cls._quote(c) for c, _, _, _ in columns)}) VALUES ({','.join('?' for _ in columns)})"
         for row in flattened:
-            conn.execute(sql, [cls._scalar(row.get(original)) for _, original, _ in columns])
+            conn.execute(sql, [cls._scalar(row.get(original)) for _, original, _, _ in columns])
 
     @classmethod
     def build_sqlite_db_from_docs(cls, table_docs_map):
@@ -256,7 +261,10 @@ class SqlService:
             columns = conn.execute(f"PRAGMA table_info({cls._quote(name)})").fetchall()
             cursor = conn.execute(f"SELECT * FROM {cls._quote(name)} LIMIT ?", (cls.MAX_SANDBOX_ROWS,))
             result[name] = {
-                "__schema__": [{"name": row[1], "type": row[2] or "TEXT"} for row in columns],
+                "__schema__": [
+                    {"name": row[1], "type": row[2] or "TEXT", "notnull": row[3], "pk": row[5]}
+                    for row in columns
+                ],
                 "__rows__": [dict(row) for row in cursor.fetchall()],
             }
         return result
