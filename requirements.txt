@@ -1,42 +1,13 @@
-# MongoSandbox — Requirements
+# Codexa web/API runtime dependencies.
 # Install: pip install -r requirements.txt
-
-# Core GUI Framework
-PySide6>=6.7.0
-
-# Professional Code Editor Component
-QScintilla>=2.14.1
-
-# Dark/Light Theming
-pyqtdarktheme>=2.1.0
-
-# MongoDB Driver
-pymongo>=4.7.0
-
-# BSON utilities (ships with pymongo)
-# bson is included in pymongo
-
-# Structured Logging
+#
+# Keep desktop GUI and test dependencies in requirements-desktop.txt. Vercel
+# installs this file for the Flask function; including Qt/GUI packages here
+# makes the serverless bundle exceed Vercel's function-size limit.
+flask>=3.0.0
+flask-cors>=4.0.0
+mongomock>=4.1.0
+pymongo[srv]>=4.7.0
+dnspython>=2.6.0
 structlog>=24.1.0
-
-# Excel export support
-openpyxl>=3.1.2
-
-# Configuration (TOML support — built-in Python 3.11+, fallback below)
-# tomli>=2.0.1  # Only needed if Python < 3.11
-
-# Testing
-pytest>=8.2.0
-pytest-qt>=4.4.0
-
-# Optional: Lark parser for AST-based translator (Phase 5)
-# lark>=1.2.2
-
-# Optional: OS keyring for secure credential storage
-# keyring>=25.0.0
-
-# Optional: pyqtgraph for result charts
-# pyqtgraph>=0.13.7
-
-# Python Web Deployment Engine
-streamlit>=1.35.0
+requests>=2.31.0
