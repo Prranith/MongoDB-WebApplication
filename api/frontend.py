@@ -1057,9 +1057,16 @@ body {
 .sql-notebook-run { margin-left:auto; padding:3px 8px; border:1px solid rgba(78,201,176,.35); border-radius:3px; background:rgba(78,201,176,.08); color:var(--green2); cursor:pointer; font-size:11px; }
 .sql-notebook-run:hover { background:rgba(78,201,176,.18); }
 .sql-cell-input { display:block; width:100%; min-height:92px; padding:11px 13px; border:0; outline:0; resize:vertical; box-sizing:border-box; background:#1e1e1e; color:#d4d4d4; font:13px/1.55 'JetBrains Mono',Consolas,monospace; }
+.sql-notebook-cell .CodeMirror { min-height:112px; height:auto !important; padding:5px 0; font-size:13px; line-height:1.55; background:#1e1e1e; }
+.sql-notebook-cell .CodeMirror-gutters { background:#1e1e1e; border-right:1px solid #303030; }
+.sql-notebook-cell .CodeMirror-linenumber { color:#666; }
 .sql-cell-output { display:none; border-top:1px solid var(--border); padding:10px 13px; background:#181818; color:var(--text2); font:12px/1.55 'JetBrains Mono',Consolas,monospace; white-space:pre-wrap; overflow:auto; }
 .sql-cell-output.has-result { display:block; }
 .sql-cell-output.error { color:#f48771; }
+.sql-notebook-insert { height:18px; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .12s ease; }
+.sql-notebook-insert:hover, .sql-notebook-cell:hover + .sql-notebook-insert { opacity:1; }
+.sql-notebook-insert button { padding:2px 10px; border:1px solid var(--border2); border-radius:12px; background:var(--bg3); color:var(--text3); cursor:pointer; font-size:10px; }
+.sql-notebook-insert button:hover { color:var(--text); border-color:var(--blue); background:var(--hl2); }
 
 /* ── Inspector pane ──────────────────────────────────── */
 #inspector {
@@ -9107,6 +9114,7 @@ function deleteActiveQueryFile(path) {
 // is written to server databases or shared JSON files.
 const SQL_SANDBOXES = new Map();
 const SQL_NOTEBOOK_OUTPUTS = new Map();
+let SQL_NOTEBOOK_EDITORS = [];
 
 function sqlSandboxKey() {
   return S.activeFile || '__workspace_editor__';
@@ -9159,8 +9167,10 @@ function splitSqlNotebookCells(source) {
 }
 
 function sqlNotebookSourceFromInputs() {
-  const inputs = [...document.querySelectorAll('.sql-cell-input')];
-  return inputs.map((input, index) => `${index ? '-- %%\\n' : ''}${input.value}`.trim()).join('\\n\\n');
+  const inputs = SQL_NOTEBOOK_EDITORS.length
+    ? SQL_NOTEBOOK_EDITORS.map(instance => instance.getValue())
+    : [...document.querySelectorAll('.sql-cell-input')].map(input => input.value);
+  return inputs.map((value, index) => `${index ? '-- %%\\n' : ''}${value}`.trim()).join('\\n\\n');
 }
 
 function syncSqlNotebookToFile() {
@@ -9191,6 +9201,7 @@ function renderSqlNotebook(source) {
   const cells = splitSqlNotebookCells(source);
   const runtimeKey = S.activeFile || '__workspace_editor__';
   const saved = SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {};
+  SQL_NOTEBOOK_EDITORS = [];
   notebook.innerHTML = '';
   const header = document.createElement('div');
   header.className = 'sql-notebook-header';
@@ -9234,20 +9245,44 @@ function renderSqlNotebook(source) {
     input.className = 'sql-cell-input';
     input.value = cellSource;
     input.spellcheck = false;
-    input.oninput = syncSqlNotebookToFile;
-    input.onkeydown = event => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-        event.preventDefault();
-        runSqlNotebookCell(index);
-      }
-    };
     const output = document.createElement('pre');
     output.className = 'sql-cell-output';
     if (saved[index]) { output.textContent = saved[index].text; output.classList.add('has-result'); if (saved[index].error) output.classList.add('error'); }
-    cellHeader.appendChild(run);
     cell.append(cellHeader, input, output);
     notebook.appendChild(cell);
+    const editorInstance = CodeMirror.fromTextArea(input, {
+      mode: 'text/x-sql',
+      theme: 'default',
+      lineNumbers: true,
+      lineWrapping: true,
+      matchBrackets: true,
+      viewportMargin: Infinity,
+      extraKeys: {
+        'Ctrl-Enter': () => runSqlNotebookCell(index),
+        'Cmd-Enter': () => runSqlNotebookCell(index),
+      },
+    });
+    editorInstance.setSize('100%', 'auto');
+    editorInstance.on('change', syncSqlNotebookToFile);
+    SQL_NOTEBOOK_EDITORS.push(editorInstance);
+    const insert = document.createElement('div');
+    insert.className = 'sql-notebook-insert';
+    const insertButton = document.createElement('button');
+    insertButton.textContent = '+ Add code cell';
+    insertButton.onclick = () => insertSqlNotebookCell(index + 1);
+    insert.appendChild(insertButton);
+    notebook.appendChild(insert);
   });
+}
+
+function insertSqlNotebookCell(index) {
+  syncSqlNotebookToFile();
+  const values = SQL_NOTEBOOK_EDITORS.map(instance => instance.getValue());
+  values.splice(index, 0, '');
+  const source = values.map((value, cellIndex) => `${cellIndex ? '-- %%\\n' : ''}${value}`).join('\\n\\n');
+  if (editor) editor.setValue(source);
+  initializeSqlNotebook(source);
+  setTimeout(() => SQL_NOTEBOOK_EDITORS[index]?.focus(), 0);
 }
 
 function initializeSqlNotebook(source) {
@@ -9261,7 +9296,7 @@ async function runSqlNotebookCell(index) {
   if (!cell) return;
   const input = cell.querySelector('.sql-cell-input');
   const output = cell.querySelector('.sql-cell-output');
-  const query = input.value.trim();
+  const query = (SQL_NOTEBOOK_EDITORS[index]?.getValue() || input.value).trim();
   if (!query) return;
   output.classList.add('has-result');
   output.classList.remove('error');

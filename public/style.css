@@ -902,9 +902,16 @@ body {
 .sql-notebook-run { margin-left:auto; padding:3px 8px; border:1px solid rgba(78,201,176,.35); border-radius:3px; background:rgba(78,201,176,.08); color:var(--green2); cursor:pointer; font-size:11px; }
 .sql-notebook-run:hover { background:rgba(78,201,176,.18); }
 .sql-cell-input { display:block; width:100%; min-height:92px; padding:11px 13px; border:0; outline:0; resize:vertical; box-sizing:border-box; background:#1e1e1e; color:#d4d4d4; font:13px/1.55 'JetBrains Mono',Consolas,monospace; }
+.sql-notebook-cell .CodeMirror { min-height:112px; height:auto !important; padding:5px 0; font-size:13px; line-height:1.55; background:#1e1e1e; }
+.sql-notebook-cell .CodeMirror-gutters { background:#1e1e1e; border-right:1px solid #303030; }
+.sql-notebook-cell .CodeMirror-linenumber { color:#666; }
 .sql-cell-output { display:none; border-top:1px solid var(--border); padding:10px 13px; background:#181818; color:var(--text2); font:12px/1.55 'JetBrains Mono',Consolas,monospace; white-space:pre-wrap; overflow:auto; }
 .sql-cell-output.has-result { display:block; }
 .sql-cell-output.error { color:#f48771; }
+.sql-notebook-insert { height:18px; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .12s ease; }
+.sql-notebook-insert:hover, .sql-notebook-cell:hover + .sql-notebook-insert { opacity:1; }
+.sql-notebook-insert button { padding:2px 10px; border:1px solid var(--border2); border-radius:12px; background:var(--bg3); color:var(--text3); cursor:pointer; font-size:10px; }
+.sql-notebook-insert button:hover { color:var(--text); border-color:var(--blue); background:var(--hl2); }
 
 /* ── Inspector pane ──────────────────────────────────── */
 #inspector {

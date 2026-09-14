@@ -34,6 +34,33 @@ class SqlService:
         return '"' + str(name).replace('"', '""') + '"'
 
     @classmethod
+    def _normalize_mysql(cls, statement):
+        """Translate common MySQL syntax to the isolated SQLite dialect."""
+        text = statement.strip()
+        if re.match(r"^show\s+tables\s*$", text, re.I):
+            return "SELECT name AS Tables_in_database FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        describe = re.match(r"^(?:describe|desc)\s+([`\w]+)\s*$", text, re.I)
+        if describe:
+            table = describe.group(1).strip('`')
+            return (
+                "SELECT name AS Field, type AS Type, CASE WHEN \"notnull\" = 0 THEN 'YES' ELSE 'NO' END AS \"Null\", "
+                "CASE WHEN pk = 1 THEN 'PRI' ELSE '' END AS \"Key\", dflt_value AS \"Default\", '' AS Extra "
+                f"FROM pragma_table_info({cls._quote(table)})"
+            )
+        text = re.sub(r"\bINSERT\s+IGNORE\b", "INSERT OR IGNORE", text, flags=re.I)
+        text = re.sub(r"\bAUTO_INCREMENT\b", "", text, flags=re.I)
+        text = re.sub(r"\bUNSIGNED\b|\bZEROFILL\b", "", text, flags=re.I)
+        text = re.sub(r"\b(TINYINT|SMALLINT|MEDIUMINT|INT|BIGINT)(?:\s*\(\s*\d+\s*\))?(?![A-Z0-9_])", "INTEGER", text, flags=re.I)
+        text = re.sub(r"\b(?:VARCHAR|CHAR|NVARCHAR)\s*\(\s*\d+\s*\)", "TEXT", text, flags=re.I)
+        text = re.sub(r"\b(?:DATETIME|TIMESTAMP|DATE|TIME)\b", "TEXT", text, flags=re.I)
+        text = re.sub(r"\bDECIMAL\s*\([^)]*\)", "REAL", text, flags=re.I)
+        text = re.sub(r"\s+ENGINE\s*=\s*\w+", "", text, flags=re.I)
+        text = re.sub(r"\s+DEFAULT\s+CHARSET\s*=\s*\w+", "", text, flags=re.I)
+        text = re.sub(r"\s+COLLATE\s*=\s*\w+", "", text, flags=re.I)
+        text = re.sub(r"\bNOW\s*\(\s*\)", "CURRENT_TIMESTAMP", text, flags=re.I)
+        return text
+
+    @classmethod
     def _flatten(cls, value, prefix=""):
         if isinstance(value, dict):
             out = {}
@@ -123,10 +150,11 @@ class SqlService:
             raise ValueError("SQL query is required")
         if cls._blocked.search(statement):
             raise ValueError("This SQL operation is not allowed in the sandbox")
-        first = re.match(r"^(select|with|insert|update|delete|replace|create|alter|drop)\b", statement, re.I)
+        first = re.match(r"^(select|with|insert|update|delete|replace|create|alter|drop|show|describe|desc)\b", statement, re.I)
         if not first:
             raise ValueError("Supported SQL starts with SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, or WITH")
         kind = first.group(1).lower()
+        if kind in {"show", "describe", "desc"}: kind = "select"
         if kind == "with":
             dml = re.search(r"\b(insert|update|delete|replace)\b", statement, re.I)
             kind = dml.group(1).lower() if dml else "select"
@@ -240,7 +268,7 @@ class SqlService:
             final_kind = statements[-1][1]
             for _, kind, statement in statements:
                 changes_before = conn.total_changes
-                cur = conn.execute(statement)
+                cur = conn.execute(cls._normalize_mysql(statement))
                 statement_changes = max(0, conn.total_changes - changes_before)
                 if kind in {"insert", "update", "delete", "replace"}:
                     mutated = True
