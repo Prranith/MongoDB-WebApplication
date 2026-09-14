@@ -1,6 +1,7 @@
 import sys
+import base64
 from pathlib import Path
-from flask import Blueprint, send_from_directory, jsonify
+from flask import Blueprint, send_from_directory, jsonify, Response
 
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
@@ -12,6 +13,14 @@ except ImportError:
         from frontend import INDEX_HTML
     except ImportError:
         INDEX_HTML = None
+
+try:
+    from api.embedded_assets import EMBEDDED_ASSETS
+except ImportError:
+    try:
+        from embedded_assets import EMBEDDED_ASSETS
+    except ImportError:
+        EMBEDDED_ASSETS = {}
 
 PUBLIC_DIR = ROOT / "public"
 
@@ -68,21 +77,25 @@ def serve_favicon():
 
 @static_bp.route("/assets/<path:path>")
 def serve_asset(path):
-    """Serve bundled UI assets without falling back to the SPA document.
+    """Serve explorer SVGs from the serverless bundle, with local fallback."""
+    normalized = path.replace("\\", "/").lstrip("/")
+    encoded = EMBEDDED_ASSETS.get(normalized)
+    if encoded:
+        return Response(
+            base64.b64decode(encoded),
+            mimetype="image/svg+xml",
+            headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        )
 
-    Vercel packages this directory into the Python function via vercel.json.
-    Returning a real 404 for a missing asset prevents a broken image request
-    from receiving index.html with an incorrect content type.
-    """
     assets_dir = PUBLIC_DIR / "assets"
-    asset = assets_dir / path
+    asset = assets_dir / normalized
     try:
         asset.resolve().relative_to(assets_dir.resolve())
     except ValueError:
         return jsonify({"error": "Not found"}), 404
     if not asset.is_file():
         return jsonify({"error": "Not found"}), 404
-    return send_from_directory(str(assets_dir), path, max_age=31536000)
+    return send_from_directory(str(assets_dir), normalized, max_age=31536000)
 
 @static_bp.route("/<path:path>")
 def serve_static(path):
