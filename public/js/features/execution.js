@@ -110,6 +110,7 @@ function renderSqlNotebook(source) {
   header.className = 'sql-notebook-header';
   header.innerHTML = `<strong>SQL Notebook</strong><span>${cells.length} cell${cells.length === 1 ? '' : 's'}</span>`;
   const reset = document.createElement('button');
+  reset.type = 'button';
   reset.className = 'sql-notebook-action';
   reset.textContent = 'Restart runtime';
   reset.onclick = () => {
@@ -118,17 +119,19 @@ function renderSqlNotebook(source) {
     renderSqlNotebook(editor ? editor.getValue() : source);
   };
   const runAll = document.createElement('button');
+  runAll.type = 'button';
   runAll.className = 'sql-notebook-action';
   runAll.textContent = 'Run all';
   runAll.onclick = async () => { for (let index = 0; index < document.querySelectorAll('.sql-notebook-cell').length; index++) await runSqlNotebookCell(index); };
   const addCell = document.createElement('button');
+  addCell.type = 'button';
   addCell.className = 'sql-notebook-action';
   addCell.textContent = '+ Cell';
-  addCell.addEventListener('click', event => {
+  addCell.onclick = event => {
     event.preventDefault();
     event.stopPropagation();
     insertSqlNotebookCell(SQL_NOTEBOOK_EDITORS.length);
-  });
+  };
   header.append(runAll, addCell, reset);
   notebook.appendChild(header);
   cells.forEach((cellSource, index) => {
@@ -139,6 +142,7 @@ function renderSqlNotebook(source) {
     cellHeader.className = 'sql-notebook-cell-header';
     cellHeader.innerHTML = `<strong>Cell ${index + 1}</strong><span>SQL</span>`;
     const run = document.createElement('button');
+    run.type = 'button';
     run.className = 'sql-notebook-icon';
     run.title = 'Run cell';
     run.setAttribute('aria-label', 'Run cell');
@@ -146,6 +150,7 @@ function renderSqlNotebook(source) {
     run.onclick = () => runSqlNotebookCell(index);
     cellHeader.appendChild(run);
     const clear = document.createElement('button');
+    clear.type = 'button';
     clear.className = 'sql-notebook-icon';
     clear.title = 'Clear cell output';
     clear.setAttribute('aria-label', 'Clear cell output');
@@ -159,6 +164,7 @@ function renderSqlNotebook(source) {
     };
     cellHeader.appendChild(clear);
     const remove = document.createElement('button');
+    remove.type = 'button';
     remove.className = 'sql-notebook-icon sql-notebook-delete';
     remove.title = 'Delete cell';
     remove.setAttribute('aria-label', 'Delete cell');
@@ -193,6 +199,7 @@ function renderSqlNotebook(source) {
     const insert = document.createElement('div');
     insert.className = 'sql-notebook-insert';
     const insertButton = document.createElement('button');
+    insertButton.type = 'button';
     insertButton.textContent = '+ Add code cell';
     insertButton.onclick = () => insertSqlNotebookCell(index + 1);
     insert.appendChild(insertButton);
