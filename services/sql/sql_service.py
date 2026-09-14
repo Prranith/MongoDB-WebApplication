@@ -421,8 +421,16 @@ class SqlService:
             except (ValueError, TypeError):
                 continue
             name = meta.get("name") or meta.get("collection") or str(dataset_id)
-            tables[name] = docs if isinstance(docs, list) else [docs]
-            tables[str(dataset_id)] = tables[name]
+            rows = docs if isinstance(docs, list) else [docs]
+            # Keep the aliases users see in the exam dataset panel.  This lets
+            # a mentor/student use either the uploaded dataset name, the SQL
+            # collection name, or the dataset id without changing execution
+            # semantics.  All aliases point at the same immutable input rows.
+            aliases = {str(name), str(dataset_id)}
+            if meta.get("collection"):
+                aliases.add(str(meta["collection"]))
+            for alias in aliases:
+                tables[alias] = rows
         if not tables:
             return {"status": "error", "error": "No datasets found/loaded in room"}
         return cls.execute_query(query, limit=limit, custom_tables=tables)

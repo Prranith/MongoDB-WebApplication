@@ -60,6 +60,10 @@ const ExamPortal = (() => {
     return !!q && (q.type === 'query' || q.type === 'sql');
   }
 
+  function isSqlQuestion(q) {
+    return !!q && q.type === 'sql';
+  }
+
   function escapeExamHtml(value) {
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -93,6 +97,29 @@ const ExamPortal = (() => {
     const line = `+${widths.map(w => '-'.repeat(w + 2)).join('+')}+`;
     const row = values => `| ${values.map((value, i) => escapeExamHtml(String(value == null ? '' : value).slice(0, widths[i])).padEnd(widths[i], ' ')).join(' | ')} |`;
     return `<pre style="color:var(--text);font-size:11px;white-space:pre;overflow:auto">${escapeExamHtml(line)}\n${escapeExamHtml(row(columns))}\n${escapeExamHtml(line)}\n${rows.map(item => escapeExamHtml(row(columns.map(col => item && item[col])))).join('\n') || ''}\n${escapeExamHtml(line)}</pre>`;
+  }
+
+  // One execution path for SQL questions in both mentor and student views.
+  // The server route is backed by SqlService, so SQL questions get the same
+  // MySQL-compatible parser, constraints, joins, aggregates, and limits.
+  async function runExamSql(roomId, datasetIds, query, limit = 10000) {
+    return apiCall(`/api/exam/room/${roomId}/query`, 'POST', {
+      datasetIds,
+      query,
+      queryType: 'sql',
+      type: 'sql',
+      limit,
+    });
+  }
+
+  function renderExamSqlResult(result, emptyMessage = '// No rows returned') {
+    if (!result || result.status !== 'ok') {
+      return `<span style="color:var(--red)">${escapeExamHtml((result && result.error) || '// SQL execution failed')}</span>`;
+    }
+    if (!Array.isArray(result.columns) || result.columns.length === 0) {
+      return `<span style="color:var(--green2)">${escapeExamHtml(emptyMessage)}</span>`;
+    }
+    return formatSqlTable(result);
   }
 
     function questionMediaControls(qId) {
@@ -898,11 +925,15 @@ const ExamPortal = (() => {
           </div>
           <div class="exam-fieldset">
             <div class="exam-fieldset-title">${q.type === 'sql' ? 'Expected SQL Query (Mentor\'s Solution)' : 'Expected MongoDB Query (Mentor\'s Solution)'}</div>
-            <div class="exam-mini-editor" id="mini-editor-wrap-${qId}">
+            <div class="exam-mini-editor ${q.type === 'sql' ? 'exam-sql-editor' : ''}" id="mini-editor-wrap-${qId}">
               <textarea id="mini-editor-${qId}">${q.expectedQuery || (q.type === 'sql' ? 'SELECT * FROM users LIMIT 10;' : '// db.collection.find({})')}</textarea>
             </div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
-              <button class="exam-btn exam-btn-green" onclick="ExamPortal.mentor.freezeAnswer('${qId}')">
+              ${q.type === 'sql' ? `<button type="button" class="exam-btn exam-btn-secondary" onclick="ExamPortal.mentor.runSqlPreview('${qId}')" title="Execute with the exam SQL service">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                Run SQL
+              </button>` : ''}
+              <button type="button" class="exam-btn exam-btn-green" onclick="ExamPortal.mentor.freezeAnswer('${qId}')">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
                 ${q.answerFrozen ? 'Re-run &amp; Update Frozen Answer' : 'Run &amp; Freeze Answer'}
               </button>
@@ -938,6 +969,10 @@ const ExamPortal = (() => {
               matchBrackets: true,
               autoCloseBrackets: true,
               readOnly: false,
+              extraKeys: q.type === 'sql' ? {
+                'Ctrl-Enter': () => mentor.runSqlPreview(qId),
+                'Cmd-Enter': () => mentor.runSqlPreview(qId),
+              } : {},
             });
             cm.setSize('100%', '130px');
             cm.on('change', () => {
@@ -1490,6 +1525,60 @@ const ExamPortal = (() => {
         questions: state.mentor.questions,
       });
       mentor._updateQCounts();
+    },
+
+    async runSqlPreview(qId) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q || !isSqlQuestion(q)) return;
+
+      const cm = state.mentor.miniEditors[qId];
+      const query = cm ? cm.getValue() : (q.expectedQuery || '');
+      const datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
+      const statusEl = el(`freeze-status-${qId}`);
+      const outputEl = el(`freeze-output-${qId}`);
+
+      if (!datasetIds.length) {
+        showMsg(`freeze-status-${qId}`, '// Select at least one dataset first', true);
+        if (statusEl) statusEl.style.display = 'block';
+        return;
+      }
+      if (!query.trim()) {
+        showMsg(`freeze-status-${qId}`, '// Write the SQL query first', true);
+        if (statusEl) statusEl.style.display = 'block';
+        return;
+      }
+
+      if (statusEl) {
+        statusEl.textContent = '// Running SQL with the exam sandbox...';
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--text3)';
+      }
+
+      const res = await runExamSql(state.mentor.roomId, datasetIds, query);
+      if (res.status === 'ok') {
+        q.lastOutputPreview = (res.rows || []).slice(0, 20);
+        q.lastOutputError = null;
+        if (statusEl) {
+          statusEl.textContent = `// SQL executed — ${(res.rows || []).length} row(s) returned`;
+          statusEl.style.color = 'var(--green3)';
+        }
+        if (outputEl) {
+          outputEl.style.display = 'block';
+          outputEl.style.borderColor = 'var(--border2)';
+          outputEl.innerHTML = `<span style="color:var(--green2)">// Preview output</span>${renderExamSqlResult(res)}`;
+        }
+      } else {
+        q.lastOutputError = res.error || '// SQL execution failed';
+        if (statusEl) {
+          statusEl.textContent = q.lastOutputError;
+          statusEl.style.color = 'var(--red)';
+        }
+        if (outputEl) {
+          outputEl.style.display = 'block';
+          outputEl.style.borderColor = 'var(--red)';
+          outputEl.innerHTML = `<span style="color:var(--red)">// SQL execution failed</span>\n${escapeExamHtml(q.lastOutputError)}`;
+        }
+      }
     },
 
     async freezeAnswer(qId) {
@@ -2953,6 +3042,8 @@ const ExamPortal = (() => {
         const isQuery = isDataQuestion(q);
         el('btn-inspect-dataset').style.display = isQuery ? 'flex' : 'none';
         el('student-lang-selector-wrap').style.display = isQuery ? 'none' : 'flex';
+        const editorWrap = document.querySelector('#student-query-area .exam-editor-wrap');
+        if (editorWrap) editorWrap.classList.toggle('exam-sql-editor-wrap', isSqlQuestion(q));
 
         if (isQuery) {
           el('student-console-title-text').textContent = 'Query Output Comparison';
@@ -2962,6 +3053,8 @@ const ExamPortal = (() => {
           el('student-pane-expected').style.display = 'block';
           el('student-pane-yours').style.display = 'block';
           el('student-stdin-input').style.display = 'none';
+          state.student.sqlResult = null;
+          state.student.lastRunOutput = null;
 
           // Set editor content
           const cm = state.student.examEditor;
@@ -3210,9 +3303,7 @@ const ExamPortal = (() => {
         el('student-run-btn').textContent = 'Running...';
         el('student-run-btn').disabled = true;
         el('student-console-status').textContent = '— Running...';
-        const res = await apiCall(`/api/exam/room/${state.student.roomId}/query`, 'POST', {
-          datasetIds, query, queryType: 'sql', type: 'sql', limit: 10000
-        });
+        const res = await runExamSql(state.student.roomId, datasetIds, query);
         el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
         el('student-run-btn').disabled = false;
         if (res.status === 'ok') {
@@ -3221,7 +3312,7 @@ const ExamPortal = (() => {
           state.student.lastRunOutput = { columns: res.columns || [], rows: res.rows || [] };
           el('student-console-status').textContent = `— ${(res.rows || []).length} row(s)`;
           el('student-console-status').style.color = 'var(--text3)';
-          el('student-pane-yours').innerHTML = formatSqlTable(res);
+          el('student-pane-yours').innerHTML = renderExamSqlResult(res);
           state.student.hasRunOnce = true;
           el('student-submit-query-btn').disabled = false;
           el('student-submit-query-btn').style.opacity = '1';

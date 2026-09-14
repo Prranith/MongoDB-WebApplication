@@ -1,3 +1,6 @@
+import json
+
+import services.sql.sql_service as sql_module
 from services.sql.sql_service import SqlService
 
 
@@ -112,3 +115,21 @@ def test_sql_supports_composite_primary_key():
     )
     assert duplicate["status"] == "error"
     assert "UNIQUE constraint failed" in duplicate["error"]
+
+
+def test_exam_sql_loads_dataset_name_collection_and_id_aliases(monkeypatch):
+    docs = [{"id": 1, "name": "Ada"}]
+
+    def fake_redis_one(command):
+        field = command[-1]
+        if field == "dataset_docs:dataset-1":
+            return json.dumps(docs)
+        if field == "dataset_meta:dataset-1":
+            return json.dumps({"name": "Students CSV", "collection": "students"})
+        return None
+
+    monkeypatch.setattr(sql_module, "redis_one", fake_redis_one)
+    result = SqlService.execute_room_query("ROOM", ["dataset-1"], "SELECT * FROM students;")
+
+    assert result["status"] == "ok"
+    assert result["rows"] == [{"id": 1, "name": "Ada"}]
