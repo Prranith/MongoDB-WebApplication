@@ -146,12 +146,6 @@ INDEX_HTML = """
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/indent-fold.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -681,26 +675,24 @@ body {
   flex-shrink: 0;
 }
 
-/* Subtle VS Code-style fold controls in the editor gutter. */
-.CodeMirror-foldgutter {
+/* Local VS Code-style fold controls in the editor gutter. */
+.codexa-fold-gutter {
   width: 14px;
 }
 
-.CodeMirror-foldgutter-open,
-.CodeMirror-foldgutter-folded {
+.codexa-fold-marker {
+  display: inline-block;
+  width: 14px;
   color: #858585;
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
   text-align: center;
+  user-select: none;
 }
 
-.CodeMirror-foldgutter-open::after {
-  content: 'v';
-}
-
-.CodeMirror-foldgutter-folded::after {
-  content: '>';
+.codexa-fold-marker:hover {
+  color: #d4d4d4;
 }
 
 /* ── Accordion bars for files outline/timeline ────────── */
@@ -10366,9 +10358,8 @@ window.addEventListener('DOMContentLoaded', () => {
     indentUnit: tabVal,
     tabSize: tabVal,
     styleActiveLine: true,
-    // VS Code-style code folding in the gutter.
-    foldGutter: typeof CodeMirror.foldCode === 'function',
-    gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+    // Local VS Code-style fold gutter. This does not depend on a CDN addon.
+    gutters: ['CodeMirror-linenumbers', 'codexa-fold-gutter'],
     extraKeys: {
       'Ctrl-Enter': runQuery,
       'Cmd-Enter': runQuery,
@@ -10382,6 +10373,7 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   });
   editor.setSize('100%', '100%');
+  initializeCodexaFolding(editor);
   attachCodexaKeywordHints(editor, () => {
     const select = document.getElementById('workspace-lang-select');
     return select ? select.value : 'mongodb';
@@ -10506,6 +10498,108 @@ function toggleCommentWithIndent(cm) {
       }
     });
   });
+}
+
+// Local VS Code-style folding for the main editor. This keeps the fold gutter
+// available even when a third-party CodeMirror addon CDN is unavailable.
+function initializeCodexaFolding(cm) {
+  const gutterName = 'codexa-fold-gutter';
+  const foldedRanges = new Map();
+  let marks = new Map();
+  let refreshing = false;
+
+  function indentation(line) {
+    const match = line.match(/^\\s*/);
+    return match ? match[0].replace(/\\t/g, ' '.repeat(cm.getOption('tabSize') || 4)).length : 0;
+  }
+
+  function braceRange(startLine) {
+    const first = cm.getLine(startLine);
+    if (!/[{]/.test(first)) return null;
+    let depth = 0;
+    for (let line = startLine; line < cm.lineCount(); line += 1) {
+      const value = cm.getLine(line);
+      for (const char of value) {
+        if (char === '{') depth += 1;
+        else if (char === '}') depth -= 1;
+      }
+      if (depth === 0 && line > startLine) return { start: startLine, end: line };
+    }
+    return null;
+  }
+
+  function indentationRange(startLine) {
+    const first = cm.getLine(startLine);
+    if (!first.trim() || /[{]/.test(first)) return null;
+    const base = indentation(first);
+    let end = startLine;
+    let foundChild = false;
+    for (let line = startLine + 1; line < cm.lineCount(); line += 1) {
+      const value = cm.getLine(line);
+      if (!value.trim()) {
+        if (foundChild) end = line;
+        continue;
+      }
+      if (indentation(value) <= base) break;
+      foundChild = true;
+      end = line;
+    }
+    return foundChild && end > startLine ? { start: startLine, end } : null;
+  }
+
+  function rangeForLine(line) {
+    return braceRange(line) || indentationRange(line);
+  }
+
+  function marker(text, folded) {
+    const node = document.createElement('span');
+    node.className = 'codexa-fold-marker ' + (folded ? 'is-folded' : 'is-open');
+    node.textContent = text;
+    node.title = folded ? 'Expand section' : 'Collapse section';
+    return node;
+  }
+
+  function refresh() {
+    if (refreshing) return;
+    refreshing = true;
+    marks.forEach(mark => mark.clear());
+    marks = new Map();
+    for (let line = 0; line < cm.lineCount(); line += 1) {
+      const range = rangeForLine(line);
+      if (!range) {
+        cm.setGutterMarker(line, gutterName, null);
+        continue;
+      }
+      const key = range.start + ':' + range.end;
+      const isFolded = foldedRanges.has(key);
+      cm.setGutterMarker(line, gutterName, marker(isFolded ? '>' : 'v', isFolded));
+      if (isFolded) {
+        const mark = cm.markText(
+          { line: range.start, ch: cm.getLine(range.start).length },
+          { line: range.end, ch: 0 },
+          { collapsed: true, clearWhenEmpty: false, replacedWith: marker('…', true) }
+        );
+        marks.set(key, mark);
+      }
+    }
+    refreshing = false;
+  }
+
+  function toggle(line) {
+    const range = rangeForLine(line);
+    if (!range) return;
+    const key = range.start + ':' + range.end;
+    if (foldedRanges.has(key)) foldedRanges.delete(key);
+    else foldedRanges.set(key, range);
+    refresh();
+  }
+
+  cm.on('gutterClick', (instance, line, gutter) => {
+    if (gutter === gutterName) toggle(line);
+  });
+  cm.on('change', refresh);
+  cm._codexaFolding = { refresh, toggle };
+  refresh();
 }
 
 // Apply VS Code dark theme style tokens directly

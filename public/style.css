@@ -520,26 +520,24 @@ body {
   flex-shrink: 0;
 }
 
-/* Subtle VS Code-style fold controls in the editor gutter. */
-.CodeMirror-foldgutter {
+/* Local VS Code-style fold controls in the editor gutter. */
+.codexa-fold-gutter {
   width: 14px;
 }
 
-.CodeMirror-foldgutter-open,
-.CodeMirror-foldgutter-folded {
+.codexa-fold-marker {
+  display: inline-block;
+  width: 14px;
   color: #858585;
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
   text-align: center;
+  user-select: none;
 }
 
-.CodeMirror-foldgutter-open::after {
-  content: 'v';
-}
-
-.CodeMirror-foldgutter-folded::after {
-  content: '>';
+.codexa-fold-marker:hover {
+  color: #d4d4d4;
 }
 
 /* ── Accordion bars for files outline/timeline ────────── */
