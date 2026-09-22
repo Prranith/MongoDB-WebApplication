@@ -182,6 +182,10 @@ function initializeCodexaFolding(cm) {
     const first = cm.getLine(startLine);
     const braceIndex = first.indexOf('{');
     if (braceIndex < 0 || first.slice(braceIndex + 1).trim()) return null;
+    const header = first.slice(0, braceIndex).trim();
+    const blockKeyword = /^(?:class|struct|union|namespace|enum|if|else|for|while|switch|catch|try|do)\b/.test(header);
+    const callable = /\)\s*$/.test(header);
+    if (!blockKeyword && !callable) return null;
     let depth = 0;
     for (let line = startLine; line < cm.lineCount(); line += 1) {
       const value = cm.getLine(line);
@@ -190,7 +194,13 @@ function initializeCodexaFolding(cm) {
         else if (char === '}') depth -= 1;
       }
       if (depth === 0 && line > startLine) {
-        return { start: startLine, startCh: braceIndex + 1, end: line };
+        const closingLine = cm.getLine(line);
+        return {
+          start: startLine,
+          startCh: braceIndex + 1,
+          end: line,
+          endCh: closingLine.search(/\S|$/)
+        };
       }
     }
     return null;
@@ -214,7 +224,7 @@ function initializeCodexaFolding(cm) {
       foundChild = true;
       end = line;
     }
-    return foundChild && end > startLine ? { start: startLine, startCh: first.length, end } : null;
+    return foundChild && end > startLine ? { start: startLine, startCh: first.length, end, endCh: 0 } : null;
   }
 
   function rangeForLine(line) {
@@ -246,7 +256,7 @@ function initializeCodexaFolding(cm) {
       if (isFolded) {
         const mark = cm.markText(
           { line: range.start, ch: range.startCh },
-          { line: range.end, ch: 0 },
+          { line: range.end, ch: range.endCh },
           { collapsed: true, clearWhenEmpty: false, replacedWith: marker('...', true, true) }
         );
         marks.set(key, mark);
