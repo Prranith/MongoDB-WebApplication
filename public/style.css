@@ -540,6 +540,13 @@ body {
   color: #d4d4d4;
 }
 
+.codexa-fold-placeholder {
+  width: auto;
+  margin: 0 2px;
+  color: #858585;
+  cursor: default;
+}
+
 /* ── Accordion bars for files outline/timeline ────────── */
 .accordion-bar {
   height: 24px;

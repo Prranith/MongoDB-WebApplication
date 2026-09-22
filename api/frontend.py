@@ -695,6 +695,13 @@ body {
   color: #d4d4d4;
 }
 
+.codexa-fold-placeholder {
+  width: auto;
+  margin: 0 2px;
+  color: #858585;
+  cursor: default;
+}
+
 /* ── Accordion bars for files outline/timeline ────────── */
 .accordion-bar {
   height: 24px;
@@ -10515,7 +10522,8 @@ function initializeCodexaFolding(cm) {
 
   function braceRange(startLine) {
     const first = cm.getLine(startLine);
-    if (!/[{]/.test(first)) return null;
+    const braceIndex = first.indexOf('{');
+    if (braceIndex < 0 || first.slice(braceIndex + 1).trim()) return null;
     let depth = 0;
     for (let line = startLine; line < cm.lineCount(); line += 1) {
       const value = cm.getLine(line);
@@ -10523,12 +10531,16 @@ function initializeCodexaFolding(cm) {
         if (char === '{') depth += 1;
         else if (char === '}') depth -= 1;
       }
-      if (depth === 0 && line > startLine) return { start: startLine, end: line };
+      if (depth === 0 && line > startLine) {
+        return { start: startLine, startCh: braceIndex + 1, end: line };
+      }
     }
     return null;
   }
 
   function indentationRange(startLine) {
+    const mode = String(cm.getOption('mode') || '').toLowerCase();
+    if (!mode.includes('python')) return null;
     const first = cm.getLine(startLine);
     if (!first.trim() || /[{]/.test(first)) return null;
     const base = indentation(first);
@@ -10544,16 +10556,16 @@ function initializeCodexaFolding(cm) {
       foundChild = true;
       end = line;
     }
-    return foundChild && end > startLine ? { start: startLine, end } : null;
+    return foundChild && end > startLine ? { start: startLine, startCh: first.length, end } : null;
   }
 
   function rangeForLine(line) {
     return braceRange(line) || indentationRange(line);
   }
 
-  function marker(text, folded) {
+  function marker(text, folded, placeholder) {
     const node = document.createElement('span');
-    node.className = 'codexa-fold-marker ' + (folded ? 'is-folded' : 'is-open');
+    node.className = 'codexa-fold-marker ' + (folded ? 'is-folded' : 'is-open') + (placeholder ? ' codexa-fold-placeholder' : '');
     node.textContent = text;
     node.title = folded ? 'Expand section' : 'Collapse section';
     return node;
@@ -10575,9 +10587,9 @@ function initializeCodexaFolding(cm) {
       cm.setGutterMarker(line, gutterName, marker(isFolded ? '>' : 'v', isFolded));
       if (isFolded) {
         const mark = cm.markText(
-          { line: range.start, ch: cm.getLine(range.start).length },
+          { line: range.start, ch: range.startCh },
           { line: range.end, ch: 0 },
-          { collapsed: true, clearWhenEmpty: false, replacedWith: marker('…', true) }
+          { collapsed: true, clearWhenEmpty: false, replacedWith: marker('...', true, true) }
         );
         marks.set(key, mark);
       }
