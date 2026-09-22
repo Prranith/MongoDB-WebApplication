@@ -630,6 +630,8 @@ body {
   font-size: 9px;
   color: var(--text3);
   transition: transform .15s;
+  width: 12px;
+  text-align: center;
 }
 
 .file-section.collapsed .file-section-hdr .arrow {
@@ -667,6 +669,15 @@ body {
   background: var(--hl);
   border-left-color: var(--blue2);
   color: #fff;
+}
+
+.file-item:focus-visible,
+.phbtn:focus-visible,
+.tab:focus-visible,
+.tab-close:focus-visible,
+.tab-add:focus-visible {
+  outline: 1px solid var(--blue);
+  outline-offset: -1px;
 }
 
 .file-icon {
@@ -985,12 +996,26 @@ body {
   white-space: nowrap;
   flex-shrink: 0;
   border-bottom: 1px solid transparent;
+  transition: background-color .12s ease, color .12s ease;
+}
+
+.tab:hover {
+  background: #2a2d2e;
+  color: var(--text);
 }
 
 .tab.active {
   background: var(--bg);
   color: var(--text);
   border-bottom: 1px solid var(--bg);
+  box-shadow: inset 0 2px 0 var(--blue);
+}
+
+.tab-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tab-dot {
@@ -1020,6 +1045,14 @@ body {
   align-items: center;
   flex: 0 0 18px;
   visibility: visible;
+  opacity: .62;
+  transition: opacity .12s ease, background-color .12s ease, color .12s ease;
+}
+
+.tab:hover .tab-close,
+.tab.active .tab-close,
+.tab-close:focus-visible {
+  opacity: 1;
 }
 
 .tab-close:hover {
@@ -1064,6 +1097,23 @@ body {
   font-family: 'JetBrains Mono', Consolas, monospace;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.CodeMirror-scroll {
+  padding-top: 2px;
+  padding-bottom: 18px;
+}
+
+.CodeMirror-vscrollbar,
+.CodeMirror-hscrollbar,
+#sidebar .file-list-container,
+#sidebar .panel-body {
+  scrollbar-width: thin;
+  scrollbar-color: #4a4a4a transparent;
+}
+
+.CodeMirror ::selection {
+  background: #264f78;
 }
 
 /* SQL files use a notebook-style cell runner instead of the shared console. */
@@ -8757,12 +8807,21 @@ function createTabElement(file) {
   tab.className = 'tab';
   tab.id = `tab-${escId(file.path)}`;
   tab.dataset.path = file.path;
+  tab.title = file.path;
+  tab.setAttribute('role', 'tab');
+  tab.setAttribute('tabindex', '0');
   tab.innerHTML = `
     <span class="tab-file-icon">${fileIcon(file.name)}</span>
-    <span>${esc(file.name)}</span>
-    <button class="tab-close" onclick="closeTab('${file.path}', event)">×</button>
+    <span class="tab-label" title="${esc(file.name)}">${esc(file.name)}</span>
+    <button class="tab-close" title="Close ${esc(file.name)}" aria-label="Close ${esc(file.name)}" onclick="closeTab('${file.path}', event)">×</button>
   `;
   tab.onclick = () => openFileInTab(file.path);
+  tab.onkeydown = event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openFileInTab(file.path);
+    }
+  };
   tabbar.insertBefore(tab, addBtn);
 }
 

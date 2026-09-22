@@ -819,12 +819,21 @@ function createTabElement(file) {
   tab.className = 'tab';
   tab.id = `tab-${escId(file.path)}`;
   tab.dataset.path = file.path;
+  tab.title = file.path;
+  tab.setAttribute('role', 'tab');
+  tab.setAttribute('tabindex', '0');
   tab.innerHTML = `
     <span class="tab-file-icon">${fileIcon(file.name)}</span>
-    <span>${esc(file.name)}</span>
-    <button class="tab-close" onclick="closeTab('${file.path}', event)">×</button>
+    <span class="tab-label" title="${esc(file.name)}">${esc(file.name)}</span>
+    <button class="tab-close" title="Close ${esc(file.name)}" aria-label="Close ${esc(file.name)}" onclick="closeTab('${file.path}', event)">×</button>
   `;
   tab.onclick = () => openFileInTab(file.path);
+  tab.onkeydown = event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openFileInTab(file.path);
+    }
+  };
   tabbar.insertBefore(tab, addBtn);
 }
 
