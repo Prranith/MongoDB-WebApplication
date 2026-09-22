@@ -146,6 +146,12 @@ INDEX_HTML = """
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/indent-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -673,6 +679,28 @@ body {
   color: #519aba;
   font-size: 12px;
   flex-shrink: 0;
+}
+
+/* Subtle VS Code-style fold controls in the editor gutter. */
+.CodeMirror-foldgutter {
+  width: 14px;
+}
+
+.CodeMirror-foldgutter-open,
+.CodeMirror-foldgutter-folded {
+  color: #858585;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+}
+
+.CodeMirror-foldgutter-open::after {
+  content: 'v';
+}
+
+.CodeMirror-foldgutter-folded::after {
+  content: '>';
 }
 
 /* ── Accordion bars for files outline/timeline ────────── */
@@ -8446,7 +8474,6 @@ function scheduleWorkspaceFileWrite(file) {
   workspaceWriteTimer = setTimeout(async () => {
     try {
       await writeWorkspaceFile(file.path, file.content);
-      logOutput(`[info] Saved ${file.name} to ${localWorkspaceHandle.name}`);
     } catch (error) {
       console.error('workspace write error:', error);
       logOutput(`[error] Could not save ${file.name}: ${error.message}`);
@@ -10339,10 +10366,13 @@ window.addEventListener('DOMContentLoaded', () => {
     indentUnit: tabVal,
     tabSize: tabVal,
     styleActiveLine: true,
+    // VS Code-style code folding in the gutter.
+    foldGutter: typeof CodeMirror.foldCode === 'function',
+    gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
     extraKeys: {
       'Ctrl-Enter': runQuery,
       'Cmd-Enter': runQuery,
-      'Ctrl-/': cm => cm.execCommand('toggleComment'),
+      'Ctrl-/': toggleCommentWithIndent,
       'Alt-F': formatQuery,
       'Ctrl-S': cm => { saveQuery(); },
       'Ctrl-Space': cm => { cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false }); },
@@ -10442,6 +10472,41 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', closeMenus);
 });
+
+// Keep toggled comments aligned with the selected code block. The generic
+// CodeMirror command can place markers at column zero for mixed indentation.
+function toggleCommentWithIndent(cm) {
+  const mode = String(cm.getOption('mode') || '').toLowerCase();
+  const marker = mode.includes('python') ? '# ' : mode.includes('sql') ? '-- ' : '// ';
+  const selections = cm.listSelections();
+
+  cm.operation(() => {
+    selections.forEach(selection => {
+      const start = Math.min(selection.anchor.line, selection.head.line);
+      const end = Math.max(selection.anchor.line, selection.head.line);
+      const lines = [];
+      for (let line = start; line <= end; line += 1) lines.push(cm.getLine(line));
+      const nonBlank = lines.filter(line => line.trim());
+      if (!nonBlank.length) return;
+
+      const isCommented = nonBlank.every(line =>
+        /^(\\s*)(?:(?:\\/\\/)|(?:#)|(?:--))(?:\\s|$)/.test(line)
+      );
+
+      for (let line = start; line <= end; line += 1) {
+        const value = cm.getLine(line);
+        if (!value.trim()) continue;
+        if (isCommented) {
+          const uncommented = value.replace(/^(\\s*)(?:(?:\\/\\/)|(?:#)|(?:--))\\s?/, '$1');
+          cm.replaceRange(uncommented, { line, ch: 0 }, { line, ch: value.length });
+        } else {
+          const match = value.match(/^(\\s*)/);
+          cm.replaceRange(marker, { line, ch: match[1].length });
+        }
+      }
+    });
+  });
+}
 
 // Apply VS Code dark theme style tokens directly
 function applyEditorTheme() {

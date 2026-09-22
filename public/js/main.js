@@ -23,10 +23,13 @@ window.addEventListener('DOMContentLoaded', () => {
     indentUnit: tabVal,
     tabSize: tabVal,
     styleActiveLine: true,
+    // VS Code-style code folding in the gutter.
+    foldGutter: typeof CodeMirror.foldCode === 'function',
+    gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
     extraKeys: {
       'Ctrl-Enter': runQuery,
       'Cmd-Enter': runQuery,
-      'Ctrl-/': cm => cm.execCommand('toggleComment'),
+      'Ctrl-/': toggleCommentWithIndent,
       'Alt-F': formatQuery,
       'Ctrl-S': cm => { saveQuery(); },
       'Ctrl-Space': cm => { cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false }); },
@@ -126,6 +129,41 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', closeMenus);
 });
+
+// Keep toggled comments aligned with the selected code block. The generic
+// CodeMirror command can place markers at column zero for mixed indentation.
+function toggleCommentWithIndent(cm) {
+  const mode = String(cm.getOption('mode') || '').toLowerCase();
+  const marker = mode.includes('python') ? '# ' : mode.includes('sql') ? '-- ' : '// ';
+  const selections = cm.listSelections();
+
+  cm.operation(() => {
+    selections.forEach(selection => {
+      const start = Math.min(selection.anchor.line, selection.head.line);
+      const end = Math.max(selection.anchor.line, selection.head.line);
+      const lines = [];
+      for (let line = start; line <= end; line += 1) lines.push(cm.getLine(line));
+      const nonBlank = lines.filter(line => line.trim());
+      if (!nonBlank.length) return;
+
+      const isCommented = nonBlank.every(line =>
+        /^(\s*)(?:(?:\/\/)|(?:#)|(?:--))(?:\s|$)/.test(line)
+      );
+
+      for (let line = start; line <= end; line += 1) {
+        const value = cm.getLine(line);
+        if (!value.trim()) continue;
+        if (isCommented) {
+          const uncommented = value.replace(/^(\s*)(?:(?:\/\/)|(?:#)|(?:--))\s?/, '$1');
+          cm.replaceRange(uncommented, { line, ch: 0 }, { line, ch: value.length });
+        } else {
+          const match = value.match(/^(\s*)/);
+          cm.replaceRange(marker, { line, ch: match[1].length });
+        }
+      }
+    });
+  });
+}
 
 // Apply VS Code dark theme style tokens directly
 function applyEditorTheme() {

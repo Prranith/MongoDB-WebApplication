@@ -535,7 +535,6 @@ function scheduleWorkspaceFileWrite(file) {
   workspaceWriteTimer = setTimeout(async () => {
     try {
       await writeWorkspaceFile(file.path, file.content);
-      logOutput(`[info] Saved ${file.name} to ${localWorkspaceHandle.name}`);
     } catch (error) {
       console.error('workspace write error:', error);
       logOutput(`[error] Could not save ${file.name}: ${error.message}`);

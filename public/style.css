@@ -520,6 +520,28 @@ body {
   flex-shrink: 0;
 }
 
+/* Subtle VS Code-style fold controls in the editor gutter. */
+.CodeMirror-foldgutter {
+  width: 14px;
+}
+
+.CodeMirror-foldgutter-open,
+.CodeMirror-foldgutter-folded {
+  color: #858585;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+}
+
+.CodeMirror-foldgutter-open::after {
+  content: 'v';
+}
+
+.CodeMirror-foldgutter-folded::after {
+  content: '>';
+}
+
 /* ── Accordion bars for files outline/timeline ────────── */
 .accordion-bar {
   height: 24px;
