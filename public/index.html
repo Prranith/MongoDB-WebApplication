@@ -1755,6 +1755,9 @@ db.collection.find({})</textarea>
       <button class="meeting-ctrl-btn" id="meeting-share-btn" onclick="MeetingRoom.toggleScreenShare()" title="Share Screen (S)">
         <svg class="meeting-ctrl-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
       </button>
+      <button class="meeting-ctrl-btn meeting-editor-share-btn" id="meeting-editor-share-btn" onclick="MeetingRoom.toggleEditorShare()" title="Share Codexa Editor (E)">
+        <svg class="meeting-ctrl-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 9 4 12 8 15"></polyline><polyline points="16 9 20 12 16 15"></polyline><line x1="14" y1="5" x2="10" y2="19"></line></svg>
+      </button>
       <button class="meeting-ctrl-btn" id="meeting-fullscreen-btn" onclick="MeetingRoom.toggleFullscreen()" title="Fullscreen (F) — hides the OS taskbar">
         <svg class="meeting-ctrl-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
       </button>
@@ -1815,6 +1818,21 @@ db.collection.find({})</textarea>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         Gallery
       </button>
+    </div>
+    <div id="meeting-editor-stage" class="meeting-editor-stage" style="display:none">
+      <div class="meeting-editor-share-toolbar">
+        <div class="meeting-editor-share-heading">
+          <span class="meeting-editor-share-live-dot"></span>
+          <span id="meeting-editor-share-title">Codexa editor</span>
+        </div>
+        <span id="meeting-editor-share-status" class="meeting-editor-share-status">Live editor sync</span>
+      </div>
+      <div id="meeting-editor-share-tabs" class="meeting-editor-share-tabs"></div>
+      <div class="meeting-editor-share-meta-row">
+        <span id="meeting-editor-share-meta">Untitled · text · 1 line</span>
+        <span class="meeting-editor-share-readonly">READ ONLY</span>
+      </div>
+      <pre id="meeting-editor-share-code" class="meeting-editor-share-code" spellcheck="false"></pre>
     </div>
     <div id="meeting-remote-grid" class="meeting-remote-grid"></div>
   </div>

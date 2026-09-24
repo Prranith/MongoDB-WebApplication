@@ -23,6 +23,13 @@ const MeetingRoom = (() => {
     isMicOn: true,
     isCamOn: true,
     isScreenSharing: false,
+    isEditorSharing: false,
+    editorPeerId: "",
+    editorSyncTimer: null,
+    editorSyncHandlers: [],
+    editorSendTimer: null,
+    editorSnapshotSignature: "",
+    editorShareSeq: 0,
     screenPeerId: "",          // peerId whose stream is in the screen stage
     isConnected: false,
     participants: {},        // peerId -> { name, stream, dataConnection }
@@ -69,6 +76,7 @@ const MeetingRoom = (() => {
     micBtn:       $("meeting-mic-btn"),
     camBtn:       $("meeting-cam-btn"),
     shareBtn:     $("meeting-share-btn"),
+    editorShareBtn: $("meeting-editor-share-btn"),
     chatBtn:      $("meeting-chat-btn"),
     endBtn:       $("meeting-end-btn"),
     chatDrawer:   $("meeting-chat-drawer"),
@@ -95,6 +103,12 @@ const MeetingRoom = (() => {
     screenStage: $("meeting-screen-stage"),
     screenVideo: $("meeting-screen-video"),
     screenLabel: $("meeting-screen-label"),
+    editorStage: $("meeting-editor-stage"),
+    editorShareTitle: $("meeting-editor-share-title"),
+    editorShareMeta: $("meeting-editor-share-meta"),
+    editorShareTabs: $("meeting-editor-share-tabs"),
+    editorShareCode: $("meeting-editor-share-code"),
+    editorShareStatus: $("meeting-editor-share-status"),
     fullscreenBtn: $("meeting-fullscreen-btn"),
     endHostItem: $("meeting-end-host-item"),
     exitScreen: $("meeting-exit-screen"),
@@ -271,6 +285,7 @@ const MeetingRoom = (() => {
     if (els.micBtn) els.micBtn.classList.toggle("off", !state.isMicOn);
     if (els.camBtn) els.camBtn.classList.toggle("off", !state.isCamOn);
     if (els.shareBtn) els.shareBtn.classList.toggle("active", state.isScreenSharing);
+    if (els.editorShareBtn) els.editorShareBtn.classList.toggle("active", state.isEditorSharing);
     if (els.chatBtn) els.chatBtn.classList.toggle("active", state.chatOpen);
     if (els.participantsBtn) els.participantsBtn.classList.toggle("active", state.participantsOpen);
     if (els.handBtn) els.handBtn.classList.toggle("hand-up", state.handRaised);
@@ -316,6 +331,264 @@ const MeetingRoom = (() => {
       }).catch(() => {});
     }
   }
+
+  // ─── Codexa editor sharing ───────────────────────────────────────────
+  // Editor sharing is intentionally data-channel based. It shares only the
+  // active Codexa editor state; it never requests browser display capture.
+  function editorHash(value) {
+    let hash = 2166136261;
+    const text = String(value || "");
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16);
+  }
+
+  function getEditorSnapshot() {
+    let content = "";
+    try {
+      if (typeof editor !== "undefined" && editor && typeof editor.getValue === "function") {
+        content = editor.getValue();
+      } else {
+        const textarea = document.getElementById("raw-editor");
+        content = textarea ? textarea.value : "";
+      }
+    } catch (_) {}
+
+    let activePath = "Untitled";
+    let tabs = [];
+    try {
+      if (typeof S !== "undefined" && S) {
+        activePath = S.activeFile || activePath;
+        tabs = Array.isArray(S.tabs) ? S.tabs.slice(0, 40) : [];
+      }
+    } catch (_) {}
+
+    const languageEl = document.getElementById("workspace-lang-select");
+    const language = languageEl ? languageEl.value : "mongodb";
+    let cursor = { line: 0, ch: 0 };
+    let scroll = { top: 0, left: 0 };
+    try {
+      if (typeof editor !== "undefined" && editor) {
+        if (typeof editor.getCursor === "function") cursor = editor.getCursor();
+        if (typeof editor.getScrollInfo === "function") {
+          const info = editor.getScrollInfo();
+          scroll = { top: Math.max(0, info.top || 0), left: Math.max(0, info.left || 0) };
+        }
+      }
+    } catch (_) {}
+    const maxChars = 500000;
+    const truncated = content.length > maxChars;
+    content = content.slice(0, maxChars);
+    return {
+      type: "editor-snapshot",
+      version: 1,
+      seq: ++state.editorShareSeq,
+      senderPeerId: state.peerId,
+      senderName: state.userName,
+      fileName: String(activePath).split("/").pop() || "Untitled",
+      path: activePath,
+      language,
+      tabs,
+      content,
+      truncated,
+      lineCount: content ? content.split("\n").length : 1,
+      cursor,
+      scroll,
+    };
+  }
+
+  function sendEditorSnapshot(targetPeerId, force) {
+    if (!state.isEditorSharing || !state.peer) return;
+    const snapshot = getEditorSnapshot();
+    const signature = [
+      snapshot.path,
+      snapshot.language,
+      snapshot.content.length,
+      editorHash(snapshot.content),
+      snapshot.cursor && snapshot.cursor.line,
+      snapshot.cursor && snapshot.cursor.ch,
+      snapshot.scroll && snapshot.scroll.top,
+      snapshot.scroll && snapshot.scroll.left,
+    ].join("|");
+    if (!force && signature === state.editorSnapshotSignature) return;
+    state.editorSnapshotSignature = signature;
+
+    const payload = Object.assign({}, snapshot, { from: state.userName });
+    const recipients = targetPeerId
+      ? [state.participants[targetPeerId]]
+      : Object.values(state.participants);
+    recipients.forEach((participant) => {
+      const conn = participant && participant.dataConnection;
+      if (conn && conn.open) {
+        try { conn.send(payload); } catch (_) {}
+      }
+    });
+    renderEditorShare(snapshot, state.userName, true);
+  }
+
+  function startEditorSync() {
+    if (state.editorSyncTimer) clearInterval(state.editorSyncTimer);
+    state.editorSyncHandlers.forEach(({ target, event, handler }) => {
+      try { target.off(event, handler); } catch (_) {}
+    });
+    state.editorSyncHandlers = [];
+
+    const queue = () => {
+      if (state.editorSendTimer) return;
+      state.editorSendTimer = setTimeout(() => {
+        state.editorSendTimer = null;
+        sendEditorSnapshot();
+      }, 70);
+    };
+    try {
+      if (typeof editor !== "undefined" && editor && typeof editor.on === "function") {
+        ["change", "cursorActivity", "scroll"].forEach((event) => {
+          editor.on(event, queue);
+          state.editorSyncHandlers.push({ target: editor, event, handler: queue });
+        });
+      }
+    } catch (_) {}
+    state.editorSyncTimer = setInterval(() => {
+      if (!state.callActive || !state.isEditorSharing) return;
+      sendEditorSnapshot();
+    }, 350);
+    sendEditorSnapshot(null, true);
+  }
+
+  function stopEditorSync() {
+    if (state.editorSyncTimer) clearInterval(state.editorSyncTimer);
+    state.editorSyncTimer = null;
+    if (state.editorSendTimer) clearTimeout(state.editorSendTimer);
+    state.editorSendTimer = null;
+    state.editorSyncHandlers.forEach(({ target, event, handler }) => {
+      try { target.off(event, handler); } catch (_) {}
+    });
+    state.editorSyncHandlers = [];
+    state.editorSnapshotSignature = "";
+  }
+
+  function escapeEditorHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function renderEditorShare(snapshot, name, local) {
+    if (!snapshot || !els.editorStage) return;
+    if (els.editorShareTitle) {
+      els.editorShareTitle.textContent = local
+        ? "You're sharing the Codexa editor"
+        : (name || "Participant") + " is sharing the Codexa editor";
+    }
+    if (els.editorShareMeta) {
+      const path = snapshot.path || snapshot.fileName || "Untitled";
+      const suffix = snapshot.truncated ? " · preview truncated for performance" : "";
+      els.editorShareMeta.textContent =
+        path + " · " + (snapshot.language || "text") + " · " +
+        (snapshot.lineCount || 1) + " lines" + suffix;
+    }
+    if (els.editorShareTabs) {
+      els.editorShareTabs.innerHTML = "";
+      (snapshot.tabs || []).forEach((tab) => {
+        const item = document.createElement("span");
+        item.className = "meeting-editor-share-tab";
+        item.textContent = String(tab).split("/").pop() || tab;
+        if (tab === snapshot.path) item.classList.add("active");
+        els.editorShareTabs.appendChild(item);
+      });
+    }
+    if (els.editorShareCode) {
+      const lines = String(snapshot.content || "").split("\n");
+      const maxVisibleLines = 12000;
+      const visibleLines = lines.slice(0, maxVisibleLines);
+      const cursorLine = Number(snapshot.cursor && snapshot.cursor.line);
+      els.editorShareCode.innerHTML = visibleLines.map((line, index) => {
+        const active = Number.isFinite(cursorLine) && index === cursorLine ? " active" : "";
+        return `<span class="meeting-editor-share-line${active}" data-line="${index + 1}">${escapeEditorHtml(line) || " "}</span>`;
+      }).join("");
+      if (lines.length > maxVisibleLines) {
+        const omitted = lines.length - maxVisibleLines;
+        els.editorShareCode.insertAdjacentHTML(
+          "beforeend",
+          `<span class="meeting-editor-share-line meeting-editor-share-omitted" data-line="…">… ${omitted} more lines omitted</span>`,
+        );
+      }
+      requestAnimationFrame(() => {
+        if (!els.editorShareCode || !snapshot.scroll) return;
+        els.editorShareCode.scrollTop = Math.max(0, Number(snapshot.scroll.top) || 0);
+        els.editorShareCode.scrollLeft = Math.max(0, Number(snapshot.scroll.left) || 0);
+      });
+    }
+    if (els.editorShareStatus) {
+      els.editorShareStatus.textContent = local
+        ? "LIVE · viewers are read-only"
+        : "LIVE · read-only synchronized view";
+    }
+    els.editorStage.style.display = "flex";
+    els.container.classList.add("editor-share-active");
+  }
+
+  function clearEditorShareStage() {
+    if (els.editorStage) els.editorStage.style.display = "none";
+    if (els.editorShareCode) els.editorShareCode.textContent = "";
+    if (els.editorShareTabs) els.editorShareTabs.innerHTML = "";
+    els.container.classList.remove("editor-share-active");
+  }
+
+  function showRemoteEditorShare(peerId, snapshot) {
+    const participant = state.participants[peerId];
+    if (!participant) return;
+    participant.editorSnapshot = snapshot;
+    participant.isEditor = true;
+    state.editorPeerId = peerId;
+    clearSpotlight();
+    renderEditorShare(snapshot, participant.name || snapshot.senderName || "Participant", false);
+  }
+
+  function stopEditorShare() {
+    if (!state.isEditorSharing) return;
+    state.isEditorSharing = false;
+    state.editorPeerId = "";
+    stopEditorSync();
+    broadcastChatMessage(null, {
+      type: "editor-share-toggle",
+      sharing: false,
+      name: state.userName,
+    });
+    clearEditorShareStage();
+    updateControlUI();
+    toast("Editor sharing stopped", "success");
+  }
+
+  function toggleEditorShare() {
+    if (!state.callActive || !state.peer) {
+      toast("Join the meeting before sharing the editor.", "error");
+      return;
+    }
+    if (state.isEditorSharing) {
+      stopEditorShare();
+      return;
+    }
+    if (state.isScreenSharing) stopScreenShare();
+    state.isEditorSharing = true;
+    state.editorPeerId = state.peerId;
+    state.editorShareSeq = 0;
+    broadcastChatMessage(null, {
+      type: "editor-share-toggle",
+      sharing: true,
+      name: state.userName,
+    });
+    updateControlUI();
+    startEditorSync();
+    toast("Codexa editor sharing started", "success");
+  }
+
+  window.MeetingRoom.toggleEditorShare = toggleEditorShare;
 
   window.addEventListener("beforeunload", () => {
     notifyMeetingLeave();
@@ -1177,6 +1450,12 @@ const MeetingRoom = (() => {
         } catch (_) {}
         openScreenCall(peerId);
       }
+      if (state.isEditorSharing && conn.open) {
+        try {
+          conn.send({ type: "editor-share-toggle", sharing: true, name: state.userName });
+        } catch (_) {}
+        sendEditorSnapshot(peerId, true);
+      }
 
       conn.on("data", (data) => {
         if (!data || typeof data !== "object") return;
@@ -1214,6 +1493,17 @@ const MeetingRoom = (() => {
               }
             }
           }
+        } else if (data.type === "editor-share-toggle") {
+          const p = state.participants[peerId];
+          if (p) {
+            p.isEditor = !!data.sharing;
+            if (!data.sharing && state.editorPeerId === peerId) {
+              state.editorPeerId = "";
+              clearEditorShareStage();
+            }
+          }
+        } else if (data.type === "editor-snapshot") {
+          showRemoteEditorShare(peerId, data);
         } else if (data.type === "video-toggle") {
           // Peer toggled their camera — swap between video and initials
           const p = state.participants[peerId];
@@ -1362,6 +1652,10 @@ const MeetingRoom = (() => {
       meetingHeartbeatTimer = null;
     }
     pendingCalls.clear();
+    stopEditorSync();
+    state.isEditorSharing = false;
+    state.editorPeerId = "";
+    clearEditorShareStage();
     if (state.peer) {
       try {
         // Close all calls and data connections. PeerJS 1.5.x keeps both in
@@ -1722,6 +2016,10 @@ const MeetingRoom = (() => {
     if (state.screenPeerId === peerId) {
       clearScreenStage();
     }
+    if (state.editorPeerId === peerId) {
+      state.editorPeerId = "";
+      clearEditorShareStage();
+    }
     // Full re-render so the grid reflows correctly after a participant leaves
     renderGrid();
     updateParticipantCount();
@@ -1790,6 +2088,7 @@ const MeetingRoom = (() => {
       stopScreenShare();
       return;
     }
+    if (state.isEditorSharing) stopEditorShare();
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: { cursor: "always" },
@@ -2831,6 +3130,10 @@ const MeetingRoom = (() => {
         toggleScreenShare();
         e.preventDefault();
         break;
+      case "e":
+        toggleEditorShare();
+        e.preventDefault();
+        break;
       case "c":
         toggleChat();
         e.preventDefault();
@@ -2980,6 +3283,7 @@ const MeetingRoom = (() => {
     toggleMic,
     toggleCamera,
     toggleScreenShare,
+    toggleEditorShare,
     toggleChat,
     sendChatMessage,
     endMeeting,

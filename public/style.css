@@ -6249,6 +6249,198 @@ body.meeting-active > .toast-container {
   pointer-events: auto;
 }
 
+/* Codexa editor sharing is an application-level read-only collaboration view.
+   It deliberately does not use browser display capture, so other tabs and
+   desktop content can never leak into the meeting. */
+.meeting-container.editor-share-active .meeting-video-area {
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 16px;
+  background: #101112;
+}
+
+.meeting-container.editor-share-active .meeting-editor-stage {
+  display: flex !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #3a3d40;
+  border-radius: 10px;
+  background: #1e1f21;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .34);
+}
+
+.meeting-editor-share-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+  padding: 0 16px;
+  color: #e6e6e6;
+  background: #292b2e;
+  border-bottom: 1px solid #3a3d40;
+}
+
+.meeting-editor-share-heading {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meeting-editor-share-live-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #73c991;
+  box-shadow: 0 0 0 3px rgba(115, 201, 145, .12);
+}
+
+.meeting-editor-share-status {
+  flex: 0 0 auto;
+  color: #a6aaae;
+  font-size: 11px;
+  letter-spacing: .2px;
+}
+
+.meeting-editor-share-tabs {
+  display: flex;
+  min-height: 34px;
+  align-items: stretch;
+  gap: 1px;
+  padding: 0 10px;
+  overflow: hidden;
+  background: #242629;
+  border-bottom: 1px solid #35383c;
+}
+
+.meeting-editor-share-tab {
+  max-width: 220px;
+  padding: 9px 13px 8px;
+  overflow: hidden;
+  color: #9da2a7;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-editor-share-tab.active {
+  color: #f0f0f0;
+  background: #1e1f21;
+  box-shadow: inset 0 2px 0 #9b9fa4;
+}
+
+.meeting-editor-share-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 32px;
+  padding: 0 16px;
+  color: #8f9499;
+  background: #202225;
+  border-bottom: 1px solid #303337;
+  font-size: 11px;
+}
+
+.meeting-editor-share-readonly {
+  padding: 3px 7px;
+  color: #b7bbc0;
+  border: 1px solid #4a4e53;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .7px;
+}
+
+.meeting-editor-share-code {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 14px 0 22px;
+  overflow: auto;
+  color: #d6d7d8;
+  background: #1e1f21;
+  font-family: Consolas, 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  tab-size: 4;
+  white-space: pre;
+  counter-reset: editor-share-line;
+}
+
+.meeting-editor-share-line {
+  display: block;
+  min-height: 1.65em;
+  padding: 0 24px 0 68px;
+  position: relative;
+  counter-increment: editor-share-line;
+}
+
+.meeting-editor-share-line::before {
+  position: absolute;
+  left: 0;
+  width: 52px;
+  padding-right: 14px;
+  color: #666b70;
+  content: attr(data-line);
+  text-align: right;
+  user-select: none;
+}
+
+.meeting-editor-share-line.active {
+  background: rgba(255, 255, 255, .055);
+}
+
+.meeting-editor-share-line.active::before {
+  color: #bfc3c7;
+}
+
+.meeting-editor-share-omitted {
+  color: #858a8f;
+  font-style: italic;
+  background: rgba(255, 255, 255, .025);
+}
+
+.meeting-container.editor-share-active .meeting-remote-grid,
+.meeting-container.editor-share-active .meeting-local-tile,
+.meeting-container.editor-share-active .meeting-screen-stage {
+  display: none !important;
+}
+
+.meeting-editor-share-btn.active {
+  color: #e3e5e7;
+  background: #45484c;
+  border-color: #8d9297;
+  box-shadow: 0 0 0 2px rgba(190, 194, 198, .12);
+}
+
+@media (max-width: 760px) {
+  .meeting-container.editor-share-active .meeting-video-area {
+    padding: 8px;
+  }
+  .meeting-editor-share-toolbar {
+    padding: 0 10px;
+  }
+  .meeting-editor-share-status {
+    display: none;
+  }
+  .meeting-editor-share-line {
+    padding-left: 54px;
+  }
+}
+
 @media (max-width: 760px) {
   .meeting-container.participants-open .meeting-video-area,
   .meeting-container.chat-open .meeting-video-area {
