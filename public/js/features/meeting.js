@@ -588,8 +588,6 @@ const MeetingRoom = (() => {
     toast("Codexa editor sharing started", "success");
   }
 
-  window.MeetingRoom.toggleEditorShare = toggleEditorShare;
-
   window.addEventListener("beforeunload", () => {
     notifyMeetingLeave();
     disconnectPeer();
@@ -682,6 +680,7 @@ const MeetingRoom = (() => {
     showChoiceScreen,
     showCreateScreen,
     showJoinScreen,
+    toggleEditorShare,
     copyRoomId,
     copyRoomLink,
     clearChatTarget,

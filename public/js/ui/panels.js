@@ -161,7 +161,8 @@ function getSampleValue(field, coll) {
 // COMMAND PALETTE
 // ═══════════════════════════════════════════════════════════════════
 const CMDS = [
-  { icon: '▶', label: 'Run MongoDB Query', key: 'Ctrl+Enter', action: runQuery },
+  // execution.js is loaded after this module; resolve the handler lazily.
+  { icon: '▶', label: 'Run MongoDB Query', key: 'Ctrl+Enter', action: () => runQuery() },
   { icon: '🎯', label: 'Open Exam Portal (Mentor & Student)', action: () => window.ExamPortal && window.ExamPortal.showRoleSelection() },
   { icon: '📁', label: 'Toggle Side Explorer Panel', key: 'Ctrl+B', action: toggleSidebar },
   { icon: '📺', label: 'Toggle Console/Terminal Panel', action: toggleConsole },
