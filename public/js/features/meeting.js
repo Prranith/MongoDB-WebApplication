@@ -30,6 +30,7 @@ const MeetingRoom = (() => {
     editorSendTimer: null,
     editorSnapshotSignature: "",
     editorShareSeq: 0,
+    editorFollowMuted: false,
     screenPeerId: "",          // peerId whose stream is in the screen stage
     isConnected: false,
     participants: {},        // peerId -> { name, stream, dataConnection }
@@ -627,6 +628,7 @@ const MeetingRoom = (() => {
 
   function stopEditorFollow() {
     if (!state.editorFollowBackup && !state.editorFollowing) return;
+    const wasRemoteFollow = !!state.editorFollowing;
     if (state.editorFollowing && typeof editor !== "undefined" && editor && state.editorFollowBackup) {
       try {
         window.__codexaEditorShareApplying = true;
@@ -646,6 +648,7 @@ const MeetingRoom = (() => {
     }
     state.editorFollowBackup = null;
     state.editorFollowing = false;
+    state.editorFollowMuted = wasRemoteFollow;
     document.body.classList.remove("meeting-editor-following");
     setEditorFollowBanner(false, false);
     if (els.container && state.callActive) {
@@ -659,6 +662,7 @@ const MeetingRoom = (() => {
   function showRemoteEditorShare(peerId, snapshot) {
     const participant = state.participants[peerId];
     if (!participant) return;
+    if (state.editorFollowMuted) return;
     participant.editorSnapshot = snapshot;
     participant.isEditor = true;
     state.editorPeerId = peerId;
@@ -678,6 +682,7 @@ const MeetingRoom = (() => {
     });
     clearEditorShareStage();
     stopEditorFollow();
+    state.editorFollowMuted = false;
     updateControlUI();
     toast("Editor sharing stopped", "success");
   }
@@ -693,6 +698,7 @@ const MeetingRoom = (() => {
     }
     if (state.isScreenSharing) stopScreenShare();
     state.isEditorSharing = true;
+    state.editorFollowMuted = false;
     state.editorPeerId = state.peerId;
     state.editorShareSeq = 0;
     broadcastChatMessage(null, {
@@ -1617,6 +1623,7 @@ const MeetingRoom = (() => {
             if (!data.sharing && state.editorPeerId === peerId) {
               state.editorPeerId = "";
               clearEditorShareStage();
+              stopEditorFollow();
             }
           }
         } else if (data.type === "editor-snapshot") {
@@ -1771,6 +1778,7 @@ const MeetingRoom = (() => {
     pendingCalls.clear();
     stopEditorSync();
     stopEditorFollow();
+    state.editorFollowMuted = false;
     state.isEditorSharing = false;
     state.editorPeerId = "";
     clearEditorShareStage();
