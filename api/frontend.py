@@ -7803,7 +7803,8 @@ const CMDS = [
   { icon: '🎯', label: 'Open Exam Portal (Mentor & Student)', action: () => window.ExamPortal && window.ExamPortal.showRoleSelection() },
   { icon: '📁', label: 'Toggle Side Explorer Panel', key: 'Ctrl+B', action: toggleSidebar },
   { icon: '📺', label: 'Toggle Console/Terminal Panel', action: toggleConsole },
-  { icon: '📄', label: 'Create New Query File', key: 'Ctrl+N', action: createNewQueryFile },
+  // workspace.js is loaded after this module; resolve the handler lazily.
+  { icon: '📄', label: 'Create New Query File', key: 'Ctrl+N', action: () => createNewQueryFile() },
   { icon: '💾', label: 'Save Current File changes', key: 'Ctrl+S', action: saveQuery },
   { icon: '⛁', label: 'Open Schema ER Details Dialog', key: 'F1', action: () => openModal('schema-modal') },
   { icon: '🗑', label: 'Clear Result Console Panels', action: clearConsole },
