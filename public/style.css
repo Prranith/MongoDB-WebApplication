@@ -6184,6 +6184,13 @@ body.meeting-active > .toast-container {
   font: inherit;
   font-size: 11px;
   cursor: pointer;
+  color-scheme: dark;
+  background: #111214;
+}
+
+.meeting-chat-recipient option {
+  color: #dedede;
+  background: #1b1d20;
 }
 .meeting-chat-recipient:focus,
 .meeting-chat-recipient:hover {
@@ -6439,6 +6446,64 @@ body.meeting-active > .toast-container {
   .meeting-editor-share-line {
     padding-left: 54px;
   }
+}
+
+/* When editor sharing is active, participants use the real Codexa workspace
+   instead of a second meeting-only editor surface. */
+.meeting-editor-follow-banner {
+  min-height: 34px;
+  display: none;
+  align-items: center;
+  gap: 9px;
+  flex: 0 0 auto;
+  padding: 0 12px;
+  color: #dedede;
+  background: #25272a;
+  border-bottom: 1px solid #424549;
+  font-size: 11px;
+}
+
+.meeting-editor-follow-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #8fc7a0;
+  box-shadow: 0 0 0 3px rgba(143, 199, 160, .12);
+}
+
+.meeting-editor-follow-file {
+  min-width: 0;
+  overflow: hidden;
+  color: #969ba0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-editor-follow-banner button {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 4px 9px;
+  color: #d6d8da;
+  background: #34373b;
+  border: 1px solid #555a60;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.meeting-editor-follow-banner button:hover {
+  color: #fff;
+  background: #41454a;
+  border-color: #737980;
+}
+
+body.meeting-editor-following #ide-panel {
+  position: relative;
+}
+
+body.meeting-editor-following #raw-editor {
+  caret-color: transparent;
 }
 
 @media (max-width: 760px) {

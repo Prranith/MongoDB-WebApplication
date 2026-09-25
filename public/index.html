@@ -433,6 +433,13 @@
     <!-- IDE panel (tab bar + editor + console) -->
     <div id="ide-panel" style="display:none;flex-direction:column;flex:1;overflow:hidden">
 
+      <div id="meeting-editor-follow-banner" class="meeting-editor-follow-banner" style="display:none" role="status">
+        <span class="meeting-editor-follow-dot" aria-hidden="true"></span>
+        <span id="meeting-editor-follow-label">Following shared Codexa workspace</span>
+        <span id="meeting-editor-follow-file" class="meeting-editor-follow-file"></span>
+        <button id="meeting-editor-follow-action" type="button" onclick="MeetingRoom.stopEditorFollow()">Return to my workspace</button>
+      </div>
+
       <!-- Tab bar -->
       <div id="tabbar">
         <!-- Tab items added dynamically by app.js -->

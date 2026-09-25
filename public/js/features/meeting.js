@@ -109,6 +109,10 @@ const MeetingRoom = (() => {
     editorShareTabs: $("meeting-editor-share-tabs"),
     editorShareCode: $("meeting-editor-share-code"),
     editorShareStatus: $("meeting-editor-share-status"),
+    editorFollowBanner: $("meeting-editor-follow-banner"),
+    editorFollowLabel: $("meeting-editor-follow-label"),
+    editorFollowFile: $("meeting-editor-follow-file"),
+    editorFollowAction: $("meeting-editor-follow-action"),
     fullscreenBtn: $("meeting-fullscreen-btn"),
     endHostItem: $("meeting-end-host-item"),
     exitScreen: $("meeting-exit-screen"),
@@ -540,6 +544,118 @@ const MeetingRoom = (() => {
     els.container.classList.remove("editor-share-active");
   }
 
+  function sharedLanguageMode(language) {
+    return ({
+      mongodb: "javascript",
+      python: "python",
+      cpp: "text/x-c++src",
+      c: "text/x-c++src",
+      java: "text/x-java",
+      sql: "text/x-sql",
+    })[language] || "javascript";
+  }
+
+  function captureEditorFollowBackup() {
+    if (state.editorFollowBackup || typeof editor === "undefined" || !editor) return;
+    let cursor = { line: 0, ch: 0 };
+    let scroll = { top: 0, left: 0 };
+    try {
+      cursor = editor.getCursor();
+      const info = editor.getScrollInfo();
+      scroll = { top: info.top || 0, left: info.left || 0 };
+    } catch (_) {}
+    state.editorFollowBackup = {
+      content: editor.getValue(),
+      mode: editor.getOption("mode"),
+      readOnly: editor.getOption("readOnly"),
+      cursor,
+      scroll,
+    };
+  }
+
+  function setEditorFollowBanner(active, remote, snapshot) {
+    if (!els.editorFollowBanner) return;
+    els.editorFollowBanner.style.display = active ? "flex" : "none";
+    if (!active) return;
+    if (els.editorFollowLabel) {
+      els.editorFollowLabel.textContent = remote
+        ? "Following " + (snapshot && snapshot.senderName ? snapshot.senderName : "shared Codexa workspace")
+        : "Sharing your Codexa workspace with participants";
+    }
+    if (els.editorFollowFile) {
+      els.editorFollowFile.textContent = snapshot && (snapshot.path || snapshot.fileName)
+        ? " · " + (snapshot.path || snapshot.fileName)
+        : "";
+    }
+    if (els.editorFollowAction) {
+      els.editorFollowAction.textContent = remote ? "Return to my workspace" : "Back to meeting";
+      els.editorFollowAction.onclick = remote ? stopEditorFollow : toggleEditorShare;
+    }
+  }
+
+  function enterEditorWorkspace(snapshot, remote) {
+    captureEditorFollowBackup();
+    state.editorFollowing = !!remote;
+    if (typeof window.showView === "function") window.showView("ide");
+    document.body.classList.add("meeting-editor-following");
+    if (els.container) {
+      state.editorMeetingDisplay = els.container.style.display || "flex";
+      els.container.style.display = "none";
+    }
+    setEditorFollowBanner(true, remote, snapshot);
+
+    if (!remote || !snapshot || typeof editor === "undefined" || !editor) return;
+    try {
+      window.__codexaEditorShareApplying = true;
+      const languageEl = document.getElementById("workspace-lang-select");
+      if (languageEl) languageEl.value = snapshot.language || "mongodb";
+      editor.setOption("mode", sharedLanguageMode(snapshot.language));
+      editor.setOption("readOnly", true);
+      editor.setValue(snapshot.content || "");
+      if (snapshot.cursor) editor.setCursor(snapshot.cursor);
+      editor.scrollTo(
+        snapshot.scroll ? Number(snapshot.scroll.left) || 0 : 0,
+        snapshot.scroll ? Number(snapshot.scroll.top) || 0 : 0,
+      );
+      editor.refresh();
+    } catch (_) {
+      // The meeting must remain usable even if an editor mode is unavailable.
+    } finally {
+      window.__codexaEditorShareApplying = false;
+    }
+  }
+
+  function stopEditorFollow() {
+    if (!state.editorFollowBackup && !state.editorFollowing) return;
+    if (state.editorFollowing && typeof editor !== "undefined" && editor && state.editorFollowBackup) {
+      try {
+        window.__codexaEditorShareApplying = true;
+        editor.setOption("mode", state.editorFollowBackup.mode);
+        editor.setOption("readOnly", state.editorFollowBackup.readOnly);
+        editor.setValue(state.editorFollowBackup.content);
+        editor.setCursor(state.editorFollowBackup.cursor);
+        editor.scrollTo(
+          state.editorFollowBackup.scroll.left || 0,
+          state.editorFollowBackup.scroll.top || 0,
+        );
+        editor.refresh();
+      } catch (_) {
+      } finally {
+        window.__codexaEditorShareApplying = false;
+      }
+    }
+    state.editorFollowBackup = null;
+    state.editorFollowing = false;
+    document.body.classList.remove("meeting-editor-following");
+    setEditorFollowBanner(false, false);
+    if (els.container && state.callActive) {
+      els.container.style.display = state.editorMeetingDisplay || "flex";
+    }
+    state.editorMeetingDisplay = "";
+  }
+
+  window.MeetingRoom.stopEditorFollow = stopEditorFollow;
+
   function showRemoteEditorShare(peerId, snapshot) {
     const participant = state.participants[peerId];
     if (!participant) return;
@@ -547,7 +663,7 @@ const MeetingRoom = (() => {
     participant.isEditor = true;
     state.editorPeerId = peerId;
     clearSpotlight();
-    renderEditorShare(snapshot, participant.name || snapshot.senderName || "Participant", false);
+    enterEditorWorkspace(snapshot, true);
   }
 
   function stopEditorShare() {
@@ -561,6 +677,7 @@ const MeetingRoom = (() => {
       name: state.userName,
     });
     clearEditorShareStage();
+    stopEditorFollow();
     updateControlUI();
     toast("Editor sharing stopped", "success");
   }
@@ -584,6 +701,7 @@ const MeetingRoom = (() => {
       name: state.userName,
     });
     updateControlUI();
+    enterEditorWorkspace(null, false);
     startEditorSync();
     toast("Codexa editor sharing started", "success");
   }
@@ -1652,6 +1770,7 @@ const MeetingRoom = (() => {
     }
     pendingCalls.clear();
     stopEditorSync();
+    stopEditorFollow();
     state.isEditorSharing = false;
     state.editorPeerId = "";
     clearEditorShareStage();
@@ -1707,6 +1826,7 @@ const MeetingRoom = (() => {
     state.chatTargetPeerId = "";
     state.chatTargetName = "Everyone";
     state.participantSearch = "";
+    if (els.chatMessages) els.chatMessages.replaceChildren();
     state.handRaised = false;
     state.spotlightId = null;
     state._prevPeers = 0;

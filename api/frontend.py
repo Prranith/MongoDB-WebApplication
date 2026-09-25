@@ -6339,6 +6339,13 @@ body.meeting-active > .toast-container {
   font: inherit;
   font-size: 11px;
   cursor: pointer;
+  color-scheme: dark;
+  background: #111214;
+}
+
+.meeting-chat-recipient option {
+  color: #dedede;
+  background: #1b1d20;
 }
 .meeting-chat-recipient:focus,
 .meeting-chat-recipient:hover {
@@ -6594,6 +6601,64 @@ body.meeting-active > .toast-container {
   .meeting-editor-share-line {
     padding-left: 54px;
   }
+}
+
+/* When editor sharing is active, participants use the real Codexa workspace
+   instead of a second meeting-only editor surface. */
+.meeting-editor-follow-banner {
+  min-height: 34px;
+  display: none;
+  align-items: center;
+  gap: 9px;
+  flex: 0 0 auto;
+  padding: 0 12px;
+  color: #dedede;
+  background: #25272a;
+  border-bottom: 1px solid #424549;
+  font-size: 11px;
+}
+
+.meeting-editor-follow-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #8fc7a0;
+  box-shadow: 0 0 0 3px rgba(143, 199, 160, .12);
+}
+
+.meeting-editor-follow-file {
+  min-width: 0;
+  overflow: hidden;
+  color: #969ba0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-editor-follow-banner button {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 4px 9px;
+  color: #d6d8da;
+  background: #34373b;
+  border: 1px solid #555a60;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.meeting-editor-follow-banner button:hover {
+  color: #fff;
+  background: #41454a;
+  border-color: #737980;
+}
+
+body.meeting-editor-following #ide-panel {
+  position: relative;
+}
+
+body.meeting-editor-following #raw-editor {
+  caret-color: transparent;
 }
 
 @media (max-width: 760px) {
@@ -6914,6 +6979,13 @@ body.meeting-active > .toast-container {
 
     <!-- IDE panel (tab bar + editor + console) -->
     <div id="ide-panel" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+
+      <div id="meeting-editor-follow-banner" class="meeting-editor-follow-banner" style="display:none" role="status">
+        <span class="meeting-editor-follow-dot" aria-hidden="true"></span>
+        <span id="meeting-editor-follow-label">Following shared Codexa workspace</span>
+        <span id="meeting-editor-follow-file" class="meeting-editor-follow-file"></span>
+        <button id="meeting-editor-follow-action" type="button" onclick="MeetingRoom.stopEditorFollow()">Return to my workspace</button>
+      </div>
 
       <!-- Tab bar -->
       <div id="tabbar">
@@ -10656,6 +10728,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Track workspace changes and persist to the selected local folder when one
   // is connected. The browser-storage fallback remains available elsewhere.
   editor.on('change', () => {
+    if (window.__codexaEditorShareApplying) return;
     if (S.activeFile) {
       const file = S.files.find(f => f.path === S.activeFile);
       if (file) {
@@ -16833,6 +16906,10 @@ const MeetingRoom = (() => {
     editorShareTabs: $("meeting-editor-share-tabs"),
     editorShareCode: $("meeting-editor-share-code"),
     editorShareStatus: $("meeting-editor-share-status"),
+    editorFollowBanner: $("meeting-editor-follow-banner"),
+    editorFollowLabel: $("meeting-editor-follow-label"),
+    editorFollowFile: $("meeting-editor-follow-file"),
+    editorFollowAction: $("meeting-editor-follow-action"),
     fullscreenBtn: $("meeting-fullscreen-btn"),
     endHostItem: $("meeting-end-host-item"),
     exitScreen: $("meeting-exit-screen"),
@@ -17264,6 +17341,118 @@ const MeetingRoom = (() => {
     els.container.classList.remove("editor-share-active");
   }
 
+  function sharedLanguageMode(language) {
+    return ({
+      mongodb: "javascript",
+      python: "python",
+      cpp: "text/x-c++src",
+      c: "text/x-c++src",
+      java: "text/x-java",
+      sql: "text/x-sql",
+    })[language] || "javascript";
+  }
+
+  function captureEditorFollowBackup() {
+    if (state.editorFollowBackup || typeof editor === "undefined" || !editor) return;
+    let cursor = { line: 0, ch: 0 };
+    let scroll = { top: 0, left: 0 };
+    try {
+      cursor = editor.getCursor();
+      const info = editor.getScrollInfo();
+      scroll = { top: info.top || 0, left: info.left || 0 };
+    } catch (_) {}
+    state.editorFollowBackup = {
+      content: editor.getValue(),
+      mode: editor.getOption("mode"),
+      readOnly: editor.getOption("readOnly"),
+      cursor,
+      scroll,
+    };
+  }
+
+  function setEditorFollowBanner(active, remote, snapshot) {
+    if (!els.editorFollowBanner) return;
+    els.editorFollowBanner.style.display = active ? "flex" : "none";
+    if (!active) return;
+    if (els.editorFollowLabel) {
+      els.editorFollowLabel.textContent = remote
+        ? "Following " + (snapshot && snapshot.senderName ? snapshot.senderName : "shared Codexa workspace")
+        : "Sharing your Codexa workspace with participants";
+    }
+    if (els.editorFollowFile) {
+      els.editorFollowFile.textContent = snapshot && (snapshot.path || snapshot.fileName)
+        ? " · " + (snapshot.path || snapshot.fileName)
+        : "";
+    }
+    if (els.editorFollowAction) {
+      els.editorFollowAction.textContent = remote ? "Return to my workspace" : "Back to meeting";
+      els.editorFollowAction.onclick = remote ? stopEditorFollow : toggleEditorShare;
+    }
+  }
+
+  function enterEditorWorkspace(snapshot, remote) {
+    captureEditorFollowBackup();
+    state.editorFollowing = !!remote;
+    if (typeof window.showView === "function") window.showView("ide");
+    document.body.classList.add("meeting-editor-following");
+    if (els.container) {
+      state.editorMeetingDisplay = els.container.style.display || "flex";
+      els.container.style.display = "none";
+    }
+    setEditorFollowBanner(true, remote, snapshot);
+
+    if (!remote || !snapshot || typeof editor === "undefined" || !editor) return;
+    try {
+      window.__codexaEditorShareApplying = true;
+      const languageEl = document.getElementById("workspace-lang-select");
+      if (languageEl) languageEl.value = snapshot.language || "mongodb";
+      editor.setOption("mode", sharedLanguageMode(snapshot.language));
+      editor.setOption("readOnly", true);
+      editor.setValue(snapshot.content || "");
+      if (snapshot.cursor) editor.setCursor(snapshot.cursor);
+      editor.scrollTo(
+        snapshot.scroll ? Number(snapshot.scroll.left) || 0 : 0,
+        snapshot.scroll ? Number(snapshot.scroll.top) || 0 : 0,
+      );
+      editor.refresh();
+    } catch (_) {
+      // The meeting must remain usable even if an editor mode is unavailable.
+    } finally {
+      window.__codexaEditorShareApplying = false;
+    }
+  }
+
+  function stopEditorFollow() {
+    if (!state.editorFollowBackup && !state.editorFollowing) return;
+    if (state.editorFollowing && typeof editor !== "undefined" && editor && state.editorFollowBackup) {
+      try {
+        window.__codexaEditorShareApplying = true;
+        editor.setOption("mode", state.editorFollowBackup.mode);
+        editor.setOption("readOnly", state.editorFollowBackup.readOnly);
+        editor.setValue(state.editorFollowBackup.content);
+        editor.setCursor(state.editorFollowBackup.cursor);
+        editor.scrollTo(
+          state.editorFollowBackup.scroll.left || 0,
+          state.editorFollowBackup.scroll.top || 0,
+        );
+        editor.refresh();
+      } catch (_) {
+      } finally {
+        window.__codexaEditorShareApplying = false;
+      }
+    }
+    state.editorFollowBackup = null;
+    state.editorFollowing = false;
+    document.body.classList.remove("meeting-editor-following");
+    setEditorFollowBanner(false, false);
+    if (els.container && state.callActive) {
+      els.container.style.display = state.editorMeetingDisplay || "flex";
+    }
+    state.editorMeetingDisplay = "";
+  }
+
+  window.MeetingRoom.stopEditorFollow = stopEditorFollow;
+
   function showRemoteEditorShare(peerId, snapshot) {
     const participant = state.participants[peerId];
     if (!participant) return;
@@ -17271,7 +17460,7 @@ const MeetingRoom = (() => {
     participant.isEditor = true;
     state.editorPeerId = peerId;
     clearSpotlight();
-    renderEditorShare(snapshot, participant.name || snapshot.senderName || "Participant", false);
+    enterEditorWorkspace(snapshot, true);
   }
 
   function stopEditorShare() {
@@ -17285,6 +17474,7 @@ const MeetingRoom = (() => {
       name: state.userName,
     });
     clearEditorShareStage();
+    stopEditorFollow();
     updateControlUI();
     toast("Editor sharing stopped", "success");
   }
@@ -17308,6 +17498,7 @@ const MeetingRoom = (() => {
       name: state.userName,
     });
     updateControlUI();
+    enterEditorWorkspace(null, false);
     startEditorSync();
     toast("Codexa editor sharing started", "success");
   }
@@ -18376,6 +18567,7 @@ const MeetingRoom = (() => {
     }
     pendingCalls.clear();
     stopEditorSync();
+    stopEditorFollow();
     state.isEditorSharing = false;
     state.editorPeerId = "";
     clearEditorShareStage();
@@ -18431,6 +18623,7 @@ const MeetingRoom = (() => {
     state.chatTargetPeerId = "";
     state.chatTargetName = "Everyone";
     state.participantSearch = "";
+    if (els.chatMessages) els.chatMessages.replaceChildren();
     state.handRaised = false;
     state.spotlightId = null;
     state._prevPeers = 0;

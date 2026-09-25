@@ -62,6 +62,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Track workspace changes and persist to the selected local folder when one
   // is connected. The browser-storage fallback remains available elsewhere.
   editor.on('change', () => {
+    if (window.__codexaEditorShareApplying) return;
     if (S.activeFile) {
       const file = S.files.find(f => f.path === S.activeFile);
       if (file) {
