@@ -7805,9 +7805,9 @@ const CMDS = [
   { icon: '📺', label: 'Toggle Console/Terminal Panel', action: toggleConsole },
   // workspace.js is loaded after this module; resolve the handler lazily.
   { icon: '📄', label: 'Create New Query File', key: 'Ctrl+N', action: () => createNewQueryFile() },
-  { icon: '💾', label: 'Save Current File changes', key: 'Ctrl+S', action: saveQuery },
+  { icon: '💾', label: 'Save Current File changes', key: 'Ctrl+S', action: () => saveQuery() },
   { icon: '⛁', label: 'Open Schema ER Details Dialog', key: 'F1', action: () => openModal('schema-modal') },
-  { icon: '🗑', label: 'Clear Result Console Panels', action: clearConsole },
+  { icon: '🗑', label: 'Clear Result Console Panels', action: () => clearConsole() },
   { icon: '🔍', label: 'Toggle Right Inspector Widget', action: toggleInspector },
   { icon: '🏠', label: 'Go to Welcome Screen Dashboard', action: () => showView('intro') }
 ];
