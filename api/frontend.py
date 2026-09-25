@@ -16848,6 +16848,7 @@ const MeetingRoom = (() => {
     screenPeerId: "",          // peerId whose stream is in the screen stage
     isConnected: false,
     participants: {},        // peerId -> { name, stream, dataConnection }
+    dataConnections: {},     // peerId -> PeerJS data connection (independent of video)
     callActive: false,
     chatOpen: false,
     chatTargetPeerId: "",
@@ -17235,11 +17236,10 @@ const MeetingRoom = (() => {
     state.editorSnapshotSignature = signature;
 
     const payload = Object.assign({}, snapshot, { from: state.userName });
-    const recipients = targetPeerId
-      ? [state.participants[targetPeerId]]
-      : Object.values(state.participants);
-    recipients.forEach((participant) => {
-      const conn = participant && participant.dataConnection;
+    const connections = targetPeerId
+      ? [state.dataConnections[targetPeerId] || (state.participants[targetPeerId] && state.participants[targetPeerId].dataConnection)]
+      : Object.values(state.dataConnections);
+    connections.forEach((conn) => {
       if (conn && conn.open) {
         try { conn.send(payload); } catch (_) {}
       }
@@ -17489,7 +17489,7 @@ const MeetingRoom = (() => {
     state.isEditorSharing = false;
     state.editorPeerId = "";
     stopEditorSync();
-    broadcastChatMessage(null, {
+    broadcastMeetingData({
       type: "editor-share-toggle",
       sharing: false,
       name: state.userName,
@@ -17515,7 +17515,7 @@ const MeetingRoom = (() => {
     state.editorFollowMuted = false;
     state.editorPeerId = state.peerId;
     state.editorShareSeq = 0;
-    broadcastChatMessage(null, {
+    broadcastMeetingData({
       type: "editor-share-toggle",
       sharing: true,
       name: state.userName,
@@ -17523,6 +17523,18 @@ const MeetingRoom = (() => {
     updateControlUI();
     enterEditorWorkspace(null, false);
     startEditorSync();
+    // Peer discovery normally runs every few seconds, but editor sharing
+    // should connect immediately to everyone already in the room.
+    fetch("/api/meeting/peers?roomId=" + encodeURIComponent(state.roomId) + "&peerId=" + encodeURIComponent(state.peerId))
+      .then((response) => response.json())
+      .then((data) => {
+        (data && Array.isArray(data.peerIds) ? data.peerIds : []).forEach((peerId) => {
+          if (peerId && peerId !== state.peerId && !state.dataConnections[peerId]) {
+            connectToPeer(peerId);
+          }
+        });
+      })
+      .catch(() => {});
     toast("Codexa editor sharing started", "success");
   }
 
@@ -18369,6 +18381,7 @@ const MeetingRoom = (() => {
     conn.on("open", () => {
       // Store data connection for chat
       const peerId = conn.peer;
+      state.dataConnections[peerId] = conn;
       if (!state.participants[peerId]) {
         state.participants[peerId] = { name: "Peer" };
       }
@@ -18488,6 +18501,7 @@ const MeetingRoom = (() => {
       });
 
       conn.on("close", () => {
+        delete state.dataConnections[peerId];
         if (state.participants[peerId]) {
           state.participants[peerId].dataConnection = null;
         }
@@ -18596,6 +18610,7 @@ const MeetingRoom = (() => {
       meetingHeartbeatTimer = null;
     }
     pendingCalls.clear();
+    state.dataConnections = {};
     stopEditorSync();
     stopEditorFollow();
     state.editorFollowMuted = false;
@@ -19322,11 +19337,23 @@ const MeetingRoom = (() => {
   function broadcastChatMessage(from, payload) {
     if (!state.peer) return;
     const data = Object.assign({}, payload, { from: from || state.userName });
-    Object.values(state.participants).forEach((p) => {
-      if (p.dataConnection && p.dataConnection.open) {
-        try {
-          p.dataConnection.send(data);
-        } catch (_) {}
+    broadcastMeetingData(data);
+  }
+
+  function broadcastMeetingData(payload) {
+    if (!state.peer) return;
+    const data = Object.assign({}, payload, { from: state.userName });
+    const connections = Object.values(state.dataConnections);
+    // Backward-compatible fallback for connections created before the map
+    // was populated.
+    Object.values(state.participants).forEach((participant) => {
+      if (participant && participant.dataConnection && !connections.includes(participant.dataConnection)) {
+        connections.push(participant.dataConnection);
+      }
+    });
+    connections.forEach((connection) => {
+      if (connection && connection.open) {
+        try { connection.send(data); } catch (_) {}
       }
     });
   }
