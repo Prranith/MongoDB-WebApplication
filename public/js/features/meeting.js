@@ -35,6 +35,7 @@ const MeetingRoom = (() => {
     isConnected: false,
     participants: {},        // peerId -> { name, stream, dataConnection }
     dataConnections: {},     // peerId -> PeerJS data connection (independent of video)
+    editorConnections: {},   // peerId -> dedicated reliable editor channel
     callActive: false,
     chatOpen: false,
     chatTargetPeerId: "",
@@ -405,6 +406,91 @@ const MeetingRoom = (() => {
     };
   }
 
+  function editorConnectionIsOpen(connection) {
+    return !!(connection && connection.open && !connection.closed);
+  }
+
+  function sendEditorMessage(payload, targetPeerId) {
+    const connections = targetPeerId
+      ? [state.editorConnections[targetPeerId]]
+      : Object.values(state.editorConnections);
+    connections.forEach((connection) => {
+      if (editorConnectionIsOpen(connection)) {
+        try { connection.send(payload); } catch (_) {}
+      }
+    });
+  }
+
+  function handleEditorMessage(peerId, connection, data) {
+    if (!data || typeof data !== "object") return;
+    const participant = state.participants[peerId] || (state.participants[peerId] = { name: "Peer" });
+    if (data.type === "editor-share-toggle") {
+      participant.isEditor = !!data.sharing;
+      if (data.name) participant.name = data.name;
+      if (data.sharing) {
+        state.editorFollowMuted = false;
+        try { if (editorConnectionIsOpen(connection)) connection.send({ type: "editor-share-request" }); } catch (_) {}
+      } else if (state.editorPeerId === peerId) {
+        state.editorPeerId = "";
+        clearEditorShareStage();
+        stopEditorFollow();
+      }
+    } else if (data.type === "editor-share-request") {
+      if (state.isEditorSharing) sendEditorSnapshot(peerId, true);
+    } else if (data.type === "editor-snapshot") {
+      showRemoteEditorShare(peerId, data);
+    }
+  }
+
+  function handleEditorDataConnection(connection) {
+    const peerId = connection.peer;
+    const register = () => {
+      state.editorConnections[peerId] = connection;
+      if (!state.participants[peerId]) state.participants[peerId] = { name: "Peer" };
+      if (state.isEditorSharing && editorConnectionIsOpen(connection)) {
+        try {
+          connection.send({ type: "editor-share-toggle", sharing: true, name: state.userName });
+        } catch (_) {}
+        sendEditorSnapshot(peerId, true);
+      }
+    };
+    connection.on("open", register);
+    connection.on("data", (data) => handleEditorMessage(peerId, connection, data));
+    connection.on("close", () => {
+      if (state.editorConnections[peerId] === connection) delete state.editorConnections[peerId];
+    });
+    connection.on("error", () => {
+      if (state.editorConnections[peerId] === connection) delete state.editorConnections[peerId];
+    });
+    if (connection.open) register();
+  }
+
+  function connectEditorPeer(peerId) {
+    if (!state.peer || !peerId || peerId === state.peerId) return;
+    const existing = state.editorConnections[peerId];
+    if (existing && !existing.closed) return;
+    try {
+      const connection = state.peer.connect(peerId, {
+        reliable: true,
+        serialization: "json",
+        metadata: { kind: "codexa-editor", version: 1 },
+      });
+      if (connection) handleEditorDataConnection(connection);
+    } catch (_) {}
+  }
+
+  function connectEditorPeers() {
+    if (!state.peer || !state.roomId) return;
+    fetch("/api/meeting/peers?roomId=" + encodeURIComponent(state.roomId) + "&peerId=" + encodeURIComponent(state.peerId))
+      .then((response) => response.json())
+      .then((data) => {
+        (data && Array.isArray(data.peerIds) ? data.peerIds : []).forEach((peerId) => {
+          if (peerId && peerId !== state.peerId) connectEditorPeer(peerId);
+        });
+      })
+      .catch(() => {});
+  }
+
   function sendEditorSnapshot(targetPeerId, force) {
     if (!state.isEditorSharing || !state.peer) return;
     const snapshot = getEditorSnapshot();
@@ -423,8 +509,8 @@ const MeetingRoom = (() => {
 
     const payload = Object.assign({}, snapshot, { from: state.userName });
     const connections = targetPeerId
-      ? [state.dataConnections[targetPeerId] || (state.participants[targetPeerId] && state.participants[targetPeerId].dataConnection)]
-      : Object.values(state.dataConnections);
+      ? [state.editorConnections[targetPeerId] || state.dataConnections[targetPeerId] || (state.participants[targetPeerId] && state.participants[targetPeerId].dataConnection)]
+      : Object.values(state.editorConnections).concat(Object.values(state.dataConnections));
     connections.forEach((conn) => {
       if (conn && conn.open) {
         try { conn.send(payload); } catch (_) {}
@@ -675,7 +761,7 @@ const MeetingRoom = (() => {
     state.isEditorSharing = false;
     state.editorPeerId = "";
     stopEditorSync();
-    broadcastMeetingData({
+    sendEditorMessage({
       type: "editor-share-toggle",
       sharing: false,
       name: state.userName,
@@ -701,7 +787,7 @@ const MeetingRoom = (() => {
     state.editorFollowMuted = false;
     state.editorPeerId = state.peerId;
     state.editorShareSeq = 0;
-    broadcastMeetingData({
+    sendEditorMessage({
       type: "editor-share-toggle",
       sharing: true,
       name: state.userName,
@@ -709,18 +795,7 @@ const MeetingRoom = (() => {
     updateControlUI();
     enterEditorWorkspace(null, false);
     startEditorSync();
-    // Peer discovery normally runs every few seconds, but editor sharing
-    // should connect immediately to everyone already in the room.
-    fetch("/api/meeting/peers?roomId=" + encodeURIComponent(state.roomId) + "&peerId=" + encodeURIComponent(state.peerId))
-      .then((response) => response.json())
-      .then((data) => {
-        (data && Array.isArray(data.peerIds) ? data.peerIds : []).forEach((peerId) => {
-          if (peerId && peerId !== state.peerId && !state.dataConnections[peerId]) {
-            connectToPeer(peerId);
-          }
-        });
-      })
-      .catch(() => {});
+    connectEditorPeers();
     toast("Codexa editor sharing started", "success");
   }
 
@@ -1220,7 +1295,12 @@ const MeetingRoom = (() => {
 
     // Data connections for chat / signaling
     state.peer.on("connection", (conn) => {
-      handleDataConnection(conn);
+      const metadata = conn && (conn.metadata || (conn.options && conn.options.metadata));
+      if (metadata && metadata.kind === "codexa-editor") {
+        handleEditorDataConnection(conn);
+      } else {
+        handleDataConnection(conn);
+      }
     });
 
     // If the PeerJS signaling connection drops, reconnect instead of
@@ -1323,6 +1403,9 @@ const MeetingRoom = (() => {
           // Connect to any peer IDs we haven't seen yet
           if (data.peerIds && Array.isArray(data.peerIds)) {
             data.peerIds.forEach((pid) => {
+              if (state.isEditorSharing && pid && pid !== state.peerId) {
+                connectEditorPeer(pid);
+              }
               if (pid && pid !== state.peerId && !state.participants[pid]) {
                 connectToPeer(pid);
               }
@@ -1587,12 +1670,7 @@ const MeetingRoom = (() => {
         } catch (_) {}
         openScreenCall(peerId);
       }
-      if (state.isEditorSharing && conn.open) {
-        try {
-          conn.send({ type: "editor-share-toggle", sharing: true, name: state.userName });
-        } catch (_) {}
-        sendEditorSnapshot(peerId, true);
-      }
+      if (state.isEditorSharing && conn.open) connectEditorPeer(peerId);
 
       conn.on("data", (data) => {
         if (!data || typeof data !== "object") return;
@@ -1797,6 +1875,7 @@ const MeetingRoom = (() => {
     }
     pendingCalls.clear();
     state.dataConnections = {};
+    state.editorConnections = {};
     stopEditorSync();
     stopEditorFollow();
     state.editorFollowMuted = false;
