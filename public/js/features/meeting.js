@@ -658,8 +658,10 @@ const MeetingRoom = (() => {
   }
 
   function showRemoteEditorShare(peerId, snapshot) {
-    const participant = state.participants[peerId];
-    if (!participant) return;
+    // A snapshot can arrive before the media/participant metadata. Keep the
+    // editor channel independent from video so viewers still get the shared
+    // workspace even when camera negotiation is delayed or unavailable.
+    const participant = state.participants[peerId] || (state.participants[peerId] = { name: "Peer" });
     if (state.editorFollowMuted) return;
     participant.editorSnapshot = snapshot;
     participant.isEditor = true;
@@ -1616,15 +1618,20 @@ const MeetingRoom = (() => {
             }
           }
         } else if (data.type === "editor-share-toggle") {
-          const p = state.participants[peerId];
-          if (p) {
-            p.isEditor = !!data.sharing;
-            if (!data.sharing && state.editorPeerId === peerId) {
-              state.editorPeerId = "";
-              clearEditorShareStage();
-              stopEditorFollow();
-            }
+          const p = state.participants[peerId] || (state.participants[peerId] = { name: data.name || "Peer" });
+          p.isEditor = !!data.sharing;
+          if (data.name) p.name = data.name;
+          if (data.sharing) {
+            // Request a fresh snapshot so a viewer that joined after the
+            // original broadcast receives the complete current workspace.
+            try { if (conn.open) conn.send({ type: "editor-share-request" }); } catch (_) {}
+          } else if (state.editorPeerId === peerId) {
+            state.editorPeerId = "";
+            clearEditorShareStage();
+            stopEditorFollow();
           }
+        } else if (data.type === "editor-share-request") {
+          if (state.isEditorSharing) sendEditorSnapshot(peerId, true);
         } else if (data.type === "editor-snapshot") {
           showRemoteEditorShare(peerId, data);
         } else if (data.type === "video-toggle") {

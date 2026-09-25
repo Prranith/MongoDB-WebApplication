@@ -6606,16 +6606,21 @@ body.meeting-active > .toast-container {
 /* When editor sharing is active, participants use the real Codexa workspace
    instead of a second meeting-only editor surface. */
 .meeting-editor-follow-banner {
-  min-height: 34px;
+  min-height: 46px;
   display: none;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   flex: 0 0 auto;
-  padding: 0 12px;
-  color: #dedede;
-  background: #25272a;
-  border-bottom: 1px solid #424549;
-  font-size: 11px;
+  padding: 0 16px;
+  color: #f2f4f5;
+  background: linear-gradient(90deg, #202a24 0%, #252a2d 52%, #202326 100%);
+  border-bottom: 2px solid #75b889;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .28);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .1px;
+  position: relative;
+  z-index: 4;
 }
 
 .meeting-editor-follow-dot {
@@ -6630,7 +6635,7 @@ body.meeting-active > .toast-container {
 .meeting-editor-follow-file {
   min-width: 0;
   overflow: hidden;
-  color: #969ba0;
+  color: #b5c0b8;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -6638,19 +6643,30 @@ body.meeting-active > .toast-container {
 .meeting-editor-follow-banner button {
   margin-left: auto;
   flex: 0 0 auto;
-  padding: 4px 9px;
-  color: #d6d8da;
-  background: #34373b;
-  border: 1px solid #555a60;
-  border-radius: 4px;
+  min-height: 32px;
+  padding: 6px 14px;
+  color: #111714;
+  background: #a9e2b7;
+  border: 1px solid #d0f3d7;
+  border-radius: 6px;
   cursor: pointer;
   font: inherit;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
 }
 
 .meeting-editor-follow-banner button:hover {
-  color: #fff;
-  background: #41454a;
-  border-color: #737980;
+  color: #08100b;
+  background: #c4f0cc;
+  border-color: #effff1;
+  transform: translateY(-1px);
+}
+
+/* While the shared workspace is the active surface, prevent navigation into
+   another meeting or the exam portal until the user returns to the call. */
+body.meeting-editor-following #act-exam,
+body.meeting-editor-following #btn-join-meeting {
+  display: none !important;
 }
 
 body.meeting-editor-following #ide-panel {
@@ -17456,8 +17472,10 @@ const MeetingRoom = (() => {
   }
 
   function showRemoteEditorShare(peerId, snapshot) {
-    const participant = state.participants[peerId];
-    if (!participant) return;
+    // A snapshot can arrive before the media/participant metadata. Keep the
+    // editor channel independent from video so viewers still get the shared
+    // workspace even when camera negotiation is delayed or unavailable.
+    const participant = state.participants[peerId] || (state.participants[peerId] = { name: "Peer" });
     if (state.editorFollowMuted) return;
     participant.editorSnapshot = snapshot;
     participant.isEditor = true;
@@ -18414,15 +18432,20 @@ const MeetingRoom = (() => {
             }
           }
         } else if (data.type === "editor-share-toggle") {
-          const p = state.participants[peerId];
-          if (p) {
-            p.isEditor = !!data.sharing;
-            if (!data.sharing && state.editorPeerId === peerId) {
-              state.editorPeerId = "";
-              clearEditorShareStage();
-              stopEditorFollow();
-            }
+          const p = state.participants[peerId] || (state.participants[peerId] = { name: data.name || "Peer" });
+          p.isEditor = !!data.sharing;
+          if (data.name) p.name = data.name;
+          if (data.sharing) {
+            // Request a fresh snapshot so a viewer that joined after the
+            // original broadcast receives the complete current workspace.
+            try { if (conn.open) conn.send({ type: "editor-share-request" }); } catch (_) {}
+          } else if (state.editorPeerId === peerId) {
+            state.editorPeerId = "";
+            clearEditorShareStage();
+            stopEditorFollow();
           }
+        } else if (data.type === "editor-share-request") {
+          if (state.isEditorSharing) sendEditorSnapshot(peerId, true);
         } else if (data.type === "editor-snapshot") {
           showRemoteEditorShare(peerId, data);
         } else if (data.type === "video-toggle") {
