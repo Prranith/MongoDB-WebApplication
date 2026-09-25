@@ -16845,6 +16845,8 @@ const MeetingRoom = (() => {
     editorSnapshotSignature: "",
     editorShareSeq: 0,
     editorFollowMuted: false,
+    editorScreenStream: null, // dedicated capture of the sharer's Codexa tab
+    editorScreenCalls: {},     // peerId -> editor presentation MediaConnection
     screenPeerId: "",          // peerId whose stream is in the screen stage
     isConnected: false,
     participants: {},        // peerId -> { name, stream, dataConnection }
@@ -17243,16 +17245,18 @@ const MeetingRoom = (() => {
       if (data.name) participant.name = data.name;
       if (data.sharing) {
         state.editorFollowMuted = false;
+        document.body.classList.add("meeting-editor-following");
+        setEditorFollowBanner(false, true);
         try { if (editorConnectionIsOpen(connection)) connection.send({ type: "editor-share-request" }); } catch (_) {}
       } else if (state.editorPeerId === peerId) {
         state.editorPeerId = "";
         clearEditorShareStage();
         stopEditorFollow();
+        document.body.classList.remove("meeting-editor-following");
       }
     } else if (data.type === "editor-share-request") {
-      if (state.isEditorSharing) sendEditorSnapshot(peerId, true);
-    } else if (data.type === "editor-snapshot") {
-      showRemoteEditorShare(peerId, data);
+      // Editor mode now shares the real Codexa tab as a media stream. Keep
+      // this message type reserved for compatibility with older clients.
     }
   }
 
@@ -17265,7 +17269,7 @@ const MeetingRoom = (() => {
         try {
           connection.send({ type: "editor-share-toggle", sharing: true, name: state.userName });
         } catch (_) {}
-        sendEditorSnapshot(peerId, true);
+        openEditorScreenCall(peerId);
       }
     };
     connection.on("open", register);
@@ -17570,6 +17574,42 @@ const MeetingRoom = (() => {
     enterEditorWorkspace(snapshot, true);
   }
 
+  function openEditorScreenCall(targetPeerId) {
+    if (!state.peer || !targetPeerId || !state.editorScreenStream) return;
+    if (state.editorScreenCalls[targetPeerId]) return;
+    try {
+      const call = state.peer.call(targetPeerId, state.editorScreenStream, {
+        metadata: { kind: "editor-screen", name: state.userName },
+      });
+      if (!call) return;
+      state.editorScreenCalls[targetPeerId] = call;
+      boostCallBitrates(call, 5000000);
+      call.on("close", () => {
+        if (state.editorScreenCalls[targetPeerId] === call) delete state.editorScreenCalls[targetPeerId];
+      });
+      call.on("error", (err) => {
+        console.warn("[Meeting] Editor screen call error from", targetPeerId, err);
+        if (state.editorScreenCalls[targetPeerId] === call) delete state.editorScreenCalls[targetPeerId];
+      });
+    } catch (err) {
+      console.warn("[Meeting] Could not open editor screen call", targetPeerId, err);
+    }
+  }
+
+  function stopEditorScreenShare() {
+    if (state.editorScreenStream) {
+      state.editorScreenStream.getTracks().forEach((track) => track.stop());
+      state.editorScreenStream = null;
+    }
+    Object.values(state.editorScreenCalls).forEach((call) => {
+      try { call.close(); } catch (_) {}
+    });
+    state.editorScreenCalls = {};
+    clearScreenStage();
+    document.body.classList.remove("meeting-editor-following");
+    setEditorFollowBanner(false, false);
+  }
+
   function stopEditorShare() {
     if (!state.isEditorSharing) return;
     state.isEditorSharing = false;
@@ -17580,6 +17620,7 @@ const MeetingRoom = (() => {
       sharing: false,
       name: state.userName,
     });
+    stopEditorScreenShare();
     clearEditorShareStage();
     stopEditorFollow();
     state.editorFollowMuted = false;
@@ -17587,7 +17628,7 @@ const MeetingRoom = (() => {
     toast("Editor sharing stopped", "success");
   }
 
-  function toggleEditorShare() {
+  async function toggleEditorShare() {
     if (!state.callActive || !state.peer) {
       toast("Join the meeting before sharing the editor.", "error");
       return;
@@ -17597,20 +17638,51 @@ const MeetingRoom = (() => {
       return;
     }
     if (state.isScreenSharing) stopScreenShare();
-    state.isEditorSharing = true;
-    state.editorFollowMuted = false;
-    state.editorPeerId = state.peerId;
-    state.editorShareSeq = 0;
-    sendEditorMessage({
-      type: "editor-share-toggle",
-      sharing: true,
-      name: state.userName,
-    });
-    updateControlUI();
-    enterEditorWorkspace(null, false);
-    startEditorSync();
-    connectEditorPeers();
-    toast("Codexa editor sharing started", "success");
+    try {
+      toast("Choose this Codexa browser tab in the sharing dialog to share the complete workspace.", "success");
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          cursor: "always",
+          displaySurface: "browser",
+          frameRate: { ideal: 30, max: 30 },
+          width: { ideal: 1920, max: 2560 },
+          height: { ideal: 1080, max: 1440 },
+        },
+        audio: true,
+      });
+      const track = stream.getVideoTracks()[0];
+      if (track) track.addEventListener("ended", stopEditorShare);
+      state.editorScreenStream = stream;
+      state.isEditorSharing = true;
+      state.editorFollowMuted = false;
+      state.editorPeerId = state.peerId;
+      state.editorShareSeq = 0;
+      document.body.classList.add("meeting-editor-following");
+      if (typeof window.showView === "function") window.showView("ide");
+      if (els.container) {
+        state.editorMeetingDisplay = els.container.style.display || "flex";
+        els.container.style.display = "none";
+      }
+      setEditorFollowBanner(true, false);
+      sendEditorMessage({
+        type: "editor-share-toggle",
+        sharing: true,
+        name: state.userName,
+      });
+      Object.keys(state.participants).forEach(openEditorScreenCall);
+      connectEditorPeers();
+      updateControlUI();
+      toast("Complete Codexa workspace sharing started", "success");
+    } catch (err) {
+      if (err && (err.name === "NotAllowedError" || err.name === "PermissionDeniedError")) {
+        toast("Workspace sharing was cancelled. Choose the current Codexa tab to continue.", "error");
+      } else {
+        toast("Workspace sharing failed: " + ((err && err.message) || "browser capture is unavailable"), "error");
+      }
+      state.isEditorSharing = false;
+      state.editorScreenStream = null;
+      updateControlUI();
+    }
   }
 
   window.addEventListener("beforeunload", () => {
@@ -18303,9 +18375,10 @@ const MeetingRoom = (() => {
   }
 
   function handleIncomingCall(call) {
+    const isEditorScreenCall = call.metadata && call.metadata.kind === "editor-screen";
     const isScreenCall = call.metadata && call.metadata.kind === "screen";
     // Answer with local stream if available
-    if (isScreenCall) {
+    if (isScreenCall || isEditorScreenCall) {
       call.answer(new MediaStream());
     } else if (state.localStream) {
       call.answer(state.localStream);
@@ -18317,6 +18390,17 @@ const MeetingRoom = (() => {
     boostCallBitrates(call);
 
     call.on("stream", (remoteStream) => {
+      if (isEditorScreenCall) {
+        const p = state.participants[call.peer] || (state.participants[call.peer] = { name: "Peer" });
+        p.editorScreenStream = remoteStream;
+        p.editorScreenCall = call;
+        p.isEditor = true;
+        state.editorPeerId = call.peer;
+        document.body.classList.add("meeting-editor-following");
+        setEditorFollowBanner(false, true);
+        showScreenInStage(call.peer, remoteStream, (call.metadata && call.metadata.name) || p.name || "Someone");
+        return;
+      }
       if (isScreenCall) {
         const p = state.participants[call.peer] || (state.participants[call.peer] = { name: "Peer" });
         p.screenStream = remoteStream;
@@ -18372,6 +18456,21 @@ const MeetingRoom = (() => {
     });
 
     call.on("close", () => {
+      if (isEditorScreenCall) {
+        const p = state.participants[call.peer];
+        if (p && p.editorScreenCall === call) {
+          p.editorScreenCall = null;
+          p.editorScreenStream = null;
+          p.isEditor = false;
+        }
+        if (state.editorPeerId === call.peer) {
+          state.editorPeerId = "";
+          clearScreenStage();
+          document.body.classList.remove("meeting-editor-following");
+          setEditorFollowBanner(false, false);
+        }
+        return;
+      }
       if (isScreenCall) {
         const p = state.participants[call.peer];
         if (p && p.screenCall === call) {
@@ -18388,6 +18487,15 @@ const MeetingRoom = (() => {
     });
 
     call.on("error", (err) => {
+      if (isEditorScreenCall) {
+        if (state.editorPeerId === call.peer) {
+          state.editorPeerId = "";
+          clearScreenStage();
+          document.body.classList.remove("meeting-editor-following");
+          setEditorFollowBanner(false, false);
+        }
+        return;
+      }
       if (isScreenCall) {
         if (state.screenPeerId === call.peer) clearScreenStage();
         return;
@@ -18484,7 +18592,10 @@ const MeetingRoom = (() => {
         } catch (_) {}
         openScreenCall(peerId);
       }
-      if (state.isEditorSharing && conn.open) connectEditorPeer(peerId);
+      if (state.isEditorSharing && conn.open) {
+        connectEditorPeer(peerId);
+        openEditorScreenCall(peerId);
+      }
 
       conn.on("data", (data) => {
         if (!data || typeof data !== "object") return;
@@ -18690,6 +18801,7 @@ const MeetingRoom = (() => {
     pendingCalls.clear();
     state.dataConnections = {};
     state.editorConnections = {};
+    stopEditorScreenShare();
     stopEditorSync();
     stopEditorFollow();
     state.editorFollowMuted = false;
