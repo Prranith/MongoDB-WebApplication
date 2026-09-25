@@ -17454,8 +17454,6 @@ const MeetingRoom = (() => {
     state.editorMeetingDisplay = "";
   }
 
-  window.MeetingRoom.stopEditorFollow = stopEditorFollow;
-
   function showRemoteEditorShare(peerId, snapshot) {
     const participant = state.participants[peerId];
     if (!participant) return;
@@ -17601,6 +17599,7 @@ const MeetingRoom = (() => {
     showChoiceScreen,
     showCreateScreen,
     showJoinScreen,
+    stopEditorFollow,
     toggleEditorShare,
     copyRoomId,
     copyRoomLink,
