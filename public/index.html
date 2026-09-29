@@ -372,10 +372,9 @@
     <!-- 5. Search Panel -->
     <div class="sidebar-panel" id="panel-search">
       <div class="workspace-search-toolbar">
-        <div class="workspace-search-input-wrap">
+          <div class="workspace-search-input-wrap">
           <span class="workspace-search-icon">⌕</span>
           <input id="workspace-search-input" type="search" placeholder="Search workspace" autocomplete="off" oninput="searchWorkspace()" onkeydown="if(event.key === 'Enter') searchWorkspace()" />
-          <button type="button" class="workspace-search-clear" title="Clear search" onclick="clearWorkspaceSearch()">×</button>
         </div>
         <div class="workspace-search-options">
           <select id="workspace-search-scope" onchange="searchWorkspace()" aria-label="Search scope">
@@ -549,8 +548,7 @@
             </div>
             <div class="terminal-input-row">
               <span class="terminal-prompt" aria-hidden="true">›</span>
-              <textarea id="terminal-interactive-console" rows="1" oninput="resizeTerminalInput(this)" onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.ctrlKey) { event.preventDefault(); runQuery(); } if(event.ctrlKey && event.key === 'Enter') { event.preventDefault(); runQuery(); }" placeholder="Program input… (Enter to run · Shift+Enter for a new line)"></textarea>
-              <button type="button" class="terminal-run-button" onclick="runQuery()" title="Run active file">Run</button>
+              <textarea id="terminal-interactive-console" rows="1" oninput="resizeTerminalInput(this); dismissTerminalWelcome()" onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.ctrlKey) { event.preventDefault(); runQuery(); } if(event.ctrlKey && event.key === 'Enter') { event.preventDefault(); runQuery(); }" placeholder="Program input… (Enter to run · Shift+Enter for a new line)"></textarea>
             </div>
           </div>
         </div>

@@ -324,6 +324,7 @@ async function runQuery() {
   if (lang !== 'mongodb') {
     const consoleEl = document.getElementById('terminal-interactive-console');
     const stdin = consoleEl ? consoleEl.value : '';
+    dismissTerminalWelcome();
     appendTerminalEntry('command', stdin.trim() || `run ${lang}`);
     if (consoleEl) {
       consoleEl.value = '';
@@ -605,6 +606,11 @@ function appendTerminalEntry(kind, text) {
   entry.textContent = String(text);
   terminal.appendChild(entry);
   terminal.scrollTop = terminal.scrollHeight;
+}
+
+function dismissTerminalWelcome() {
+  const welcome = document.querySelector('#terminal-session-output .terminal-welcome');
+  if (welcome) welcome.remove();
 }
 
 function resizeTerminalInput(input) {

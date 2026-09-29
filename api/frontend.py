@@ -3976,15 +3976,16 @@ li.CodeMirror-hint-active {
 .terminal-entry { margin: 0 0 10px; }
 .terminal-entry-command { color: #dcdcaa; }
 .terminal-entry-command::before { content: '› '; color: #4daaf2; }
+.terminal-entry-output,
+.terminal-entry-error { padding-left: 18px; }
 .terminal-entry-output { color: #d4d4d4; }
 .terminal-entry-error { color: #f48771; }
 .terminal-input-row {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 8px 12px 10px 16px;
-  border-top: 1px solid var(--border);
-  background: #1b1b1b;
+  padding: 8px 16px 10px;
+  background: #171717;
 }
 .terminal-prompt { color: #4daaf2; font: 14px/1.6 'JetBrains Mono', monospace; }
 .terminal-input-row textarea {
@@ -4001,23 +4002,11 @@ li.CodeMirror-hint-active {
   font: 12px/1.6 'JetBrains Mono', 'Consolas', monospace;
 }
 .terminal-input-row textarea::placeholder { color: #777; }
-.terminal-run-button {
-  border: 1px solid rgba(77,170,242,.48);
-  border-radius: 4px;
-  padding: 4px 10px;
-  background: rgba(77,170,242,.16);
-  color: #9bd2fa;
-  cursor: pointer;
-  font-size: 11px;
-}
-.terminal-run-button:hover { background: rgba(77,170,242,.28); }
-
 /* Workspace search */
 .workspace-search-toolbar { padding: 12px 10px 8px; border-bottom: 1px solid var(--border); }
 .workspace-search-input-wrap { display:flex; align-items:center; gap:7px; border:1px solid var(--border2); border-radius:4px; background:var(--bg2); padding:0 7px; }
 .workspace-search-icon { color:var(--text3); font-size:18px; line-height:1; }
 .workspace-search-input-wrap input { flex:1; min-width:0; border:0; outline:0; background:transparent; color:var(--text); padding:8px 0; font-size:12px; }
-.workspace-search-clear { border:0; background:transparent; color:var(--text3); cursor:pointer; font-size:17px; }
 .workspace-search-options { display:flex; align-items:center; gap:9px; margin-top:9px; color:var(--text3); font-size:10px; flex-wrap:wrap; }
 .workspace-search-options select { border:1px solid var(--border2); background:var(--bg); color:var(--text2); border-radius:3px; padding:3px 4px; font-size:10px; }
 .workspace-search-options label { display:flex; align-items:center; gap:4px; white-space:nowrap; }
@@ -7128,10 +7117,9 @@ li.CodeMirror-hint-active {
     <!-- 5. Search Panel -->
     <div class="sidebar-panel" id="panel-search">
       <div class="workspace-search-toolbar">
-        <div class="workspace-search-input-wrap">
+          <div class="workspace-search-input-wrap">
           <span class="workspace-search-icon">⌕</span>
           <input id="workspace-search-input" type="search" placeholder="Search workspace" autocomplete="off" oninput="searchWorkspace()" onkeydown="if(event.key === 'Enter') searchWorkspace()" />
-          <button type="button" class="workspace-search-clear" title="Clear search" onclick="clearWorkspaceSearch()">×</button>
         </div>
         <div class="workspace-search-options">
           <select id="workspace-search-scope" onchange="searchWorkspace()" aria-label="Search scope">
@@ -7305,8 +7293,7 @@ li.CodeMirror-hint-active {
             </div>
             <div class="terminal-input-row">
               <span class="terminal-prompt" aria-hidden="true">›</span>
-              <textarea id="terminal-interactive-console" rows="1" oninput="resizeTerminalInput(this)" onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.ctrlKey) { event.preventDefault(); runQuery(); } if(event.ctrlKey && event.key === 'Enter') { event.preventDefault(); runQuery(); }" placeholder="Program input… (Enter to run · Shift+Enter for a new line)"></textarea>
-              <button type="button" class="terminal-run-button" onclick="runQuery()" title="Run active file">Run</button>
+              <textarea id="terminal-interactive-console" rows="1" oninput="resizeTerminalInput(this); dismissTerminalWelcome()" onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.ctrlKey) { event.preventDefault(); runQuery(); } if(event.ctrlKey && event.key === 'Enter') { event.preventDefault(); runQuery(); }" placeholder="Program input… (Enter to run · Shift+Enter for a new line)"></textarea>
             </div>
           </div>
         </div>
@@ -10211,6 +10198,7 @@ async function runQuery() {
   if (lang !== 'mongodb') {
     const consoleEl = document.getElementById('terminal-interactive-console');
     const stdin = consoleEl ? consoleEl.value : '';
+    dismissTerminalWelcome();
     appendTerminalEntry('command', stdin.trim() || `run ${lang}`);
     if (consoleEl) {
       consoleEl.value = '';
@@ -10492,6 +10480,11 @@ function appendTerminalEntry(kind, text) {
   entry.textContent = String(text);
   terminal.appendChild(entry);
   terminal.scrollTop = terminal.scrollHeight;
+}
+
+function dismissTerminalWelcome() {
+  const welcome = document.querySelector('#terminal-session-output .terminal-welcome');
+  if (welcome) welcome.remove();
 }
 
 function resizeTerminalInput(input) {
