@@ -4022,6 +4022,293 @@ li.CodeMirror-hint-active {
 .workspace-search-result-snippet { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#9b9b9b; font:10px/1.4 'JetBrains Mono', monospace; }
 .workspace-search-empty { padding:18px 10px; color:var(--text3); font-size:11px; text-align:center; }
 .workspace-search-empty.search-error { color:var(--red); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   EXAM WORKSPACE — focused assessment shell
+   Inspired by modern online-assessment layouts: problem context stays
+   visible beside the editor, while navigation and submission remain fixed.
+════════════════════════════════════════════════════════════════════════ */
+#exam-student-exam-panel {
+  --exam-surface: #111411;
+  --exam-surface-2: #151915;
+  --exam-line: #252b25;
+  --exam-muted: #7d877d;
+  --exam-accent: #b8d86f;
+  background: #0c0f0c;
+}
+#exam-student-exam-panel .exam-topbar {
+  height: 52px;
+  padding: 0 18px;
+  background: #101410;
+  border-bottom: 1px solid var(--exam-line);
+  gap: 10px;
+}
+#exam-student-exam-panel .exam-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 5px;
+  background: var(--exam-accent);
+  color: #172012;
+  font-size: 11px;
+}
+#exam-student-exam-panel .exam-topbar-title {
+  color: #e3e8e1;
+  font: 600 13px/1 'Segoe UI', system-ui, sans-serif;
+}
+.exam-topbar-context { color: var(--exam-muted); font-size: 11px; }
+.exam-topbar-progress,
+.exam-save-state { color: var(--exam-muted); font: 11px 'JetBrains Mono', monospace; }
+.exam-save-state { color: #a8c87a; }
+#exam-student-exam-panel .exam-status-chip {
+  border-color: rgba(184,216,111,.3);
+  color: var(--exam-accent);
+  background: rgba(184,216,111,.08);
+}
+#exam-student-exam-panel .exam-btn-red {
+  background: transparent;
+  border-color: #4b5548;
+  color: #d0d8cc;
+}
+.exam-progress-track { height: 2px; background: #202720; flex-shrink: 0; }
+.exam-progress-track > div { height: 100%; width: 0; background: var(--exam-accent); transition: width .2s ease; }
+#exam-student-exam-panel .exam-notice-bar {
+  min-height: 30px;
+  padding: 6px 18px;
+  color: #a4aea2;
+  background: #121712;
+  border-bottom: 1px solid var(--exam-line);
+  font-size: 11px;
+}
+#exam-student-exam-panel .exam-student-shell { background: #0c0f0c; }
+#exam-student-exam-panel .exam-qnav {
+  width: 188px;
+  background: #101310;
+  border-right-color: var(--exam-line);
+}
+#exam-student-exam-panel .exam-qnav-hdr {
+  height: 46px;
+  padding: 0 16px;
+  justify-content: space-between;
+  color: #cfd7ce;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+}
+.exam-qnav-count { color: var(--exam-muted); font: 11px 'JetBrains Mono', monospace; }
+#exam-student-exam-panel .exam-qnav-card {
+  margin: 4px 7px;
+  padding: 10px 9px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+}
+#exam-student-exam-panel .exam-qnav-card:hover { background: #192019; }
+#exam-student-exam-panel .exam-qnav-card.active {
+  background: rgba(184,216,111,.09);
+  border-color: rgba(184,216,111,.26);
+  border-left: 2px solid var(--exam-accent);
+}
+#exam-student-exam-panel .exam-q-num { color: #d5ddd4; }
+#exam-student-exam-panel .exam-q-type-chip { opacity: .78; }
+#exam-student-exam-panel .exam-student-main {
+  display: grid;
+  grid-template-columns: minmax(300px, .88fr) minmax(430px, 1.12fr);
+  grid-template-rows: minmax(0, 1fr);
+  background: #0c0f0c;
+}
+#exam-student-exam-panel .exam-question-display {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  max-height: none;
+  height: 100%;
+  padding: 28px 30px;
+  overflow-y: auto;
+  background: var(--exam-surface);
+  border-right: 1px solid var(--exam-line);
+  border-bottom: 0;
+  border-left: 0;
+}
+#exam-student-exam-panel .exam-question-header {
+  padding-bottom: 14px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--exam-line);
+}
+#exam-student-exam-panel .exam-question-number { color: #dce4da; font-size: 13px; }
+#exam-student-exam-panel .exam-question-marks { color: var(--exam-accent); }
+#exam-student-exam-panel .exam-question-text { color: #b9c2b8; font-size: 13px; line-height: 1.65; }
+#exam-student-exam-panel .exam-question-text h1,
+#exam-student-exam-panel .exam-question-text h2,
+#exam-student-exam-panel .exam-question-text h3 { color: #e4e9e2; letter-spacing: -.01em; }
+#exam-student-exam-panel #student-query-area {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+  background: #101310;
+}
+#exam-student-exam-panel .exam-toolbar {
+  min-height: 46px;
+  padding: 0 12px;
+  background: var(--exam-surface-2);
+  border-bottom: 1px solid var(--exam-line);
+}
+#exam-student-exam-panel .exam-editor-wrap { min-height: 0; background: #101310; }
+#exam-student-exam-panel .exam-student-console {
+  height: 220px !important;
+  background: #0e110e;
+  border-top-color: var(--exam-line);
+}
+#exam-student-exam-panel .exam-console-hdr,
+#exam-student-exam-panel #student-console-panes-box,
+#exam-student-exam-panel #box-pane-left,
+#exam-student-exam-panel #box-pane-right { background: var(--exam-surface-2) !important; }
+#exam-student-exam-panel .exam-console-hdr { border-bottom-color: var(--exam-line); }
+#exam-student-exam-panel #student-console-title-text { color: #d4ddd2 !important; text-transform: none !important; letter-spacing: 0 !important; }
+#exam-student-exam-panel #student-pane-left-title,
+#exam-student-exam-panel #student-pane-right-title { color: var(--exam-muted) !important; background: #111511 !important; border-color: var(--exam-line) !important; }
+#exam-student-exam-panel .exam-student-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 0 16px;
+  background: #101410;
+  border-top: 1px solid var(--exam-line);
+}
+.exam-footer-btn,
+.exam-footer-submit {
+  border: 1px solid #303930;
+  border-radius: 4px;
+  background: #171c17;
+  color: #c0c9be;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.exam-footer-btn:hover:not(:disabled) { border-color: #64735c; background: #202820; }
+.exam-footer-btn:disabled { opacity: .35; cursor: default; }
+.exam-footer-progress { color: var(--exam-muted); font: 11px 'JetBrains Mono', monospace; margin: 0 auto; }
+.exam-footer-submit { border-color: rgba(184,216,111,.45); background: var(--exam-accent); color: #182014; font-weight: 700; }
+.exam-footer-submit:hover { filter: brightness(1.08); }
+#exam-student-exam-panel .exam-mcq-area { grid-column: 1 / -1; }
+#exam-student-exam-panel #student-no-q-selected { grid-column: 1 / -1; }
+
+/* Premium assessment workspace — calm, information-dense, and keyboard-first. */
+#exam-student-exam-panel {
+  background: #0b0e0b;
+  color-scheme: dark;
+}
+#exam-student-exam-panel .exam-topbar {
+  height: 58px;
+  padding: 0 22px;
+  background: #111511;
+  box-shadow: 0 1px 0 rgba(255,255,255,.025);
+}
+#exam-student-exam-panel .exam-brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  box-shadow: 0 0 0 4px rgba(184,216,111,.06);
+}
+.exam-brand-copy { display:flex; flex-direction:column; gap:4px; min-width:180px; }
+#exam-student-exam-panel .exam-topbar-title { font-size:13px; letter-spacing:.01em; }
+#exam-student-exam-panel .exam-topbar-context { font-size:10px; color:#768175; }
+#exam-student-exam-panel .exam-topbar-progress {
+  padding:5px 9px;
+  border:1px solid #293329;
+  border-radius:4px;
+  background:#151b15;
+  color:#b9c5b5;
+}
+#exam-student-exam-panel .exam-save-state { padding-right:10px; border-right:1px solid #293329; }
+.exam-session-strip {
+  display:flex;
+  align-items:center;
+  gap:28px;
+  min-height:42px;
+  padding:0 22px;
+  background:#0f130f;
+  border-bottom:1px solid var(--exam-line);
+  color:#778277;
+  font-size:11px;
+}
+.exam-session-step { display:flex; align-items:center; gap:8px; height:42px; position:relative; }
+.exam-session-step.active { color:#d8e0d5; }
+.exam-session-step.active::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--exam-accent); }
+.exam-session-index { display:grid; place-items:center; width:17px; height:17px; border:1px solid #354035; border-radius:4px; font:10px 'JetBrains Mono',monospace; }
+.exam-session-step.active .exam-session-index { background:rgba(184,216,111,.12); border-color:rgba(184,216,111,.5); color:var(--exam-accent); }
+.exam-session-check { color:var(--exam-accent); font-size:12px; }
+.exam-focus-mode { margin-left:auto; color:#8c978b; display:flex; align-items:center; gap:7px; }
+.exam-focus-glyph { font-size:15px; color:#b4c2af; }
+#exam-student-exam-panel .exam-notice-bar { min-height:28px; padding:5px 22px; background:#121712; }
+#exam-student-exam-panel .exam-student-shell { min-height:0; }
+#exam-student-exam-panel .exam-qnav { width:205px; background:#101410; }
+#exam-student-exam-panel .exam-qnav-hdr { height:50px; padding:0 17px; font-weight:600; border-bottom-color:#293329; }
+#exam-student-exam-panel .exam-qnav-body { padding:7px 0; }
+#exam-student-exam-panel .exam-qnav-card { margin:3px 9px; padding:11px 10px; border-radius:5px; }
+#exam-student-exam-panel .exam-qnav-card.active { box-shadow:inset 0 0 0 1px rgba(184,216,111,.14); }
+#exam-student-exam-panel .exam-qnav-card .exam-q-preview { color:#7d897c; }
+#exam-student-exam-panel .exam-student-main { grid-template-columns:minmax(360px,.9fr) minmax(520px,1.1fr); gap:0; }
+#exam-student-exam-panel .exam-question-display { padding:30px 32px; background:#111511; }
+#exam-student-exam-panel .exam-question-header { margin-bottom:24px; padding-bottom:16px; }
+#exam-student-exam-panel .exam-question-text { max-width:640px; font-size:13px; color:#b9c2b8; }
+#exam-student-exam-panel .exam-question-text p { margin:0 0 14px; }
+#exam-student-exam-panel .exam-question-text pre,
+#exam-student-exam-panel .exam-question-text code { background:#171d17; border:1px solid #222b22; border-radius:4px; }
+#exam-student-exam-panel .exam-question-text pre { padding:14px; overflow:auto; }
+#exam-student-exam-panel #student-query-area { background:#0f130f; }
+#exam-student-exam-panel .exam-toolbar { height:46px; min-height:46px; padding:0 13px; background:#151b15; }
+#exam-student-exam-panel .exam-editor-wrap { background:#101410; }
+#exam-student-exam-panel .exam-student-console { height:228px !important; background:#0d110d; }
+#exam-student-exam-panel .exam-console-hdr { height:38px !important; background:#151b15 !important; padding:0 14px !important; }
+#exam-student-exam-panel #student-console-tabs-bar { align-items:center; }
+#exam-student-exam-panel #student-console-tabs-bar > * { padding:6px 10px; border:1px solid transparent; border-radius:4px; }
+#exam-student-exam-panel #student-console-tabs-bar > *.active { color:#dce7d8; background:#1b241b; border-color:#344334; }
+#exam-student-exam-panel #student-console-panes-box { background:#202820 !important; gap:1px; }
+#exam-student-exam-panel #box-pane-left,
+#exam-student-exam-panel #box-pane-right { background:#101410 !important; }
+#exam-student-exam-panel #student-pane-left-title,
+#exam-student-exam-panel #student-pane-right-title { padding:7px 12px; background:#151b15 !important; }
+#exam-student-exam-panel .exam-student-footer { min-height:58px; padding:0 22px; background:#111511; }
+#exam-student-exam-panel .exam-footer-btn { min-width:92px; }
+#exam-student-exam-panel .exam-footer-submit { min-width:130px; padding:9px 14px; }
+
+/* Bring mentor, join, and waiting screens into the same product system. */
+#exam-mentor-dash-panel .exam-topbar,
+#exam-student-join-panel .exam-topbar,
+#exam-student-wait-panel .exam-topbar { height:54px; background:#111511; border-bottom-color:#293329; }
+#exam-mentor-dash-panel .exam-notice-bar,
+#exam-student-wait-panel .exam-notice-bar { background:#121712; }
+#exam-mentor-dash-panel .exam-dash-shell { background:#0b0e0b; }
+#exam-mentor-dash-panel .exam-dash-left,
+#exam-mentor-dash-panel .exam-dash-right { background:#101410; border-color:#293329; }
+#exam-mentor-dash-panel .exam-dash-main { background:#0f130f; }
+#exam-mentor-dash-panel .exam-tabbar { background:#111511; border-color:#293329; }
+#exam-mentor-dash-panel .exam-tab.active { color:var(--exam-accent); border-bottom-color:var(--exam-accent); }
+#exam-student-join-panel .exam-form-card,
+#exam-student-wait-panel .exam-wait-content { box-shadow:0 18px 55px rgba(0,0,0,.22); }
+#exam-student-join-panel .exam-form-title,
+#exam-student-wait-panel .exam-wait-title { letter-spacing:-.02em; }
+
+@media (max-width: 900px) {
+  #exam-student-exam-panel .exam-qnav { width: 148px; }
+  #exam-student-exam-panel .exam-student-main { grid-template-columns: minmax(250px, .8fr) minmax(360px, 1.2fr); }
+  #exam-student-exam-panel .exam-question-display { padding: 20px; }
+  .exam-topbar-context { display: none; }
+  .exam-session-strip { gap:14px; padding:0 14px; }
+}
+@media (max-width: 700px) {
+  #exam-student-exam-panel .exam-qnav { display: none; }
+  #exam-student-exam-panel .exam-student-main { display: flex; }
+  #exam-student-exam-panel .exam-question-display { max-height: 38%; height: auto; border-right: 0; border-bottom: 1px solid var(--exam-line); }
+  #exam-student-exam-panel #student-query-area { min-height: 0; }
+  #exam-student-exam-panel .exam-save-state { display: none; }
+  .exam-session-strip { min-height:36px; gap:10px; font-size:10px; overflow:auto; }
+  .exam-session-step { height:36px; white-space:nowrap; }
+  .exam-session-step:nth-child(3), .exam-focus-mode { display:none; }
+}
 #terminal-stdout {
   scrollbar-width: thin;
   scrollbar-color: #3a3a3a transparent;
@@ -11850,9 +12137,14 @@ function applyEditorTheme() {
 <!-- Student: Exam Interface -->
 <div class="exam-overlay" id="exam-student-exam-panel">
   <div class="exam-topbar">
-    <span class="exam-topbar-title" id="student-exam-room-title">Exam</span>
-    <span style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-q-progress">Q 0/0</span>
+    <div class="exam-brand-mark" aria-hidden="true">◆</div>
+    <div class="exam-brand-copy">
+      <span class="exam-topbar-title" id="student-exam-room-title">Exam</span>
+      <span class="exam-topbar-context">Codexa secure assessment</span>
+    </div>
+    <span class="exam-topbar-progress" id="student-q-progress">Q 0/0</span>
     <span style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <span class="exam-save-state" id="student-save-state">Saved</span>
       <span id="student-exam-timer" style="display:none"></span>
       <span class="exam-status-chip exam-chip-live" id="student-exam-status">LIVE</span>
       <button class="exam-btn exam-btn-red" id="btn-student-submit-exam" onclick="ExamPortal.student.finishExam()" style="padding:4px 10px;font-size:11px">
@@ -11860,6 +12152,13 @@ function applyEditorTheme() {
         Submit Exam
       </button>
     </span>
+  </div>
+  <div class="exam-progress-track" aria-hidden="true"><div id="student-progress-fill"></div></div>
+  <div class="exam-session-strip" aria-label="Assessment progress">
+    <div class="exam-session-step active"><span class="exam-session-index">1</span><span>Assessment</span><span class="exam-session-check">✓</span></div>
+    <div class="exam-session-step"><span class="exam-session-index">2</span><span>Solve problems</span></div>
+    <div class="exam-session-step"><span class="exam-session-index">3</span><span>Review &amp; submit</span></div>
+    <div class="exam-focus-mode"><span class="exam-focus-glyph">◫</span> Focus mode</div>
   </div>
   <div class="exam-notice-bar">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
@@ -11870,7 +12169,7 @@ function applyEditorTheme() {
   <div class="exam-student-shell">
     <!-- Question Navigator -->
     <div class="exam-qnav">
-      <div class="exam-qnav-hdr">Questions</div>
+      <div class="exam-qnav-hdr"><span>Problems</span><span class="exam-qnav-count" id="student-question-count">0</span></div>
       <div class="exam-qnav-body" id="student-qnav-body">
         <div class="exam-participants-empty">// Loading questions...</div>
       </div>
@@ -12046,6 +12345,12 @@ db.collection.find({})</textarea>
         <span style="font-size:13px;color:var(--text3);font-family:'JetBrains Mono',monospace">// Select a question from the left panel</span>
       </div>
     </div>
+  </div>
+  <div class="exam-student-footer">
+    <button class="exam-footer-btn" id="student-prev-btn" onclick="ExamPortal.student.previousQuestion()" type="button">‹ Previous</button>
+    <span class="exam-footer-progress" id="student-footer-progress">Question 0 of 0</span>
+    <button class="exam-footer-btn" id="student-next-btn" onclick="ExamPortal.student.nextQuestion()" type="button">Next ›</button>
+    <button class="exam-footer-submit" onclick="ExamPortal.student.finishExam()" type="button">Review &amp; submit <span>↗</span></button>
   </div>
 </div>
 
@@ -15214,6 +15519,16 @@ const ExamPortal = (() => {
         return;
       }
       el('student-q-progress').textContent = `Q ${state.student.currentQIdx !== null ? state.student.currentQIdx + 1 : 0}/${qs.length}`;
+      const questionCount = el('student-question-count');
+      if (questionCount) questionCount.textContent = qs.length;
+      const footerProgress = el('student-footer-progress');
+      if (footerProgress) footerProgress.textContent = `Question ${state.student.currentQIdx !== null ? state.student.currentQIdx + 1 : 0} of ${qs.length}`;
+      const progressFill = el('student-progress-fill');
+      if (progressFill) progressFill.style.width = `${state.student.currentQIdx !== null ? ((state.student.currentQIdx + 1) / qs.length) * 100 : 0}%`;
+      const prevBtn = el('student-prev-btn');
+      const nextBtn = el('student-next-btn');
+      if (prevBtn) prevBtn.disabled = state.student.currentQIdx === null || state.student.currentQIdx <= 0;
+      if (nextBtn) nextBtn.disabled = state.student.currentQIdx === null || state.student.currentQIdx >= qs.length - 1;
       body.innerHTML = qs.map((q, i) => {
         const statusKey = state.student.status[q.id] || 'unattempted';
         const dotClass = statusKey === 'submitted' ? 'exam-q-status-submitted'
@@ -15243,6 +15558,18 @@ const ExamPortal = (() => {
           </div>
         `;
       }).join('');
+    },
+
+    previousQuestion() {
+      const current = Number(state.student.currentQIdx);
+      if (!Number.isFinite(current) || current <= 0) return;
+      studentNS.selectQuestion(current - 1);
+    },
+
+    nextQuestion() {
+      const current = Number(state.student.currentQIdx);
+      if (!Number.isFinite(current) || current >= state.student.questions.length - 1) return;
+      studentNS.selectQuestion(current + 1);
     },
 
     selectQuestion(idx) {
@@ -16264,21 +16591,15 @@ const ExamPortal = (() => {
 
       studentNS.renderWorkspaceTabs(q);
 
-      if (tabId === 'readme') {
-        el('student-question-display').style.display = 'block';
-        el('student-question-display').classList.add('workspace-readme-active');
-        el('student-query-area').style.display = 'none';
-      } else {
-        el('student-question-display').style.display = 'none';
-        el('student-question-display').classList.remove('workspace-readme-active');
-        el('student-query-area').style.display = 'flex';
-        setTimeout(() => {
-          if (state.student.examEditor) {
-            state.student.examEditor.refresh();
-            state.student.examEditor.focus();
-          }
-        }, 50);
-      }
+      // Keep the problem statement and editor visible together, matching a
+      // professional assessment workspace. The tabs remain useful as a
+      // context indicator, but changing them no longer hides the statement.
+      el('student-question-display').style.display = 'block';
+      el('student-question-display').classList.add('workspace-readme-active');
+      el('student-query-area').style.display = 'flex';
+      setTimeout(() => {
+        if (state.student.examEditor) state.student.examEditor.refresh();
+      }, 50);
     },
 
     changeLanguage(newLang) {

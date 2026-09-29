@@ -2956,6 +2956,16 @@ const ExamPortal = (() => {
         return;
       }
       el('student-q-progress').textContent = `Q ${state.student.currentQIdx !== null ? state.student.currentQIdx + 1 : 0}/${qs.length}`;
+      const questionCount = el('student-question-count');
+      if (questionCount) questionCount.textContent = qs.length;
+      const footerProgress = el('student-footer-progress');
+      if (footerProgress) footerProgress.textContent = `Question ${state.student.currentQIdx !== null ? state.student.currentQIdx + 1 : 0} of ${qs.length}`;
+      const progressFill = el('student-progress-fill');
+      if (progressFill) progressFill.style.width = `${state.student.currentQIdx !== null ? ((state.student.currentQIdx + 1) / qs.length) * 100 : 0}%`;
+      const prevBtn = el('student-prev-btn');
+      const nextBtn = el('student-next-btn');
+      if (prevBtn) prevBtn.disabled = state.student.currentQIdx === null || state.student.currentQIdx <= 0;
+      if (nextBtn) nextBtn.disabled = state.student.currentQIdx === null || state.student.currentQIdx >= qs.length - 1;
       body.innerHTML = qs.map((q, i) => {
         const statusKey = state.student.status[q.id] || 'unattempted';
         const dotClass = statusKey === 'submitted' ? 'exam-q-status-submitted'
@@ -2985,6 +2995,18 @@ const ExamPortal = (() => {
           </div>
         `;
       }).join('');
+    },
+
+    previousQuestion() {
+      const current = Number(state.student.currentQIdx);
+      if (!Number.isFinite(current) || current <= 0) return;
+      studentNS.selectQuestion(current - 1);
+    },
+
+    nextQuestion() {
+      const current = Number(state.student.currentQIdx);
+      if (!Number.isFinite(current) || current >= state.student.questions.length - 1) return;
+      studentNS.selectQuestion(current + 1);
     },
 
     selectQuestion(idx) {
@@ -4006,21 +4028,15 @@ const ExamPortal = (() => {
 
       studentNS.renderWorkspaceTabs(q);
 
-      if (tabId === 'readme') {
-        el('student-question-display').style.display = 'block';
-        el('student-question-display').classList.add('workspace-readme-active');
-        el('student-query-area').style.display = 'none';
-      } else {
-        el('student-question-display').style.display = 'none';
-        el('student-question-display').classList.remove('workspace-readme-active');
-        el('student-query-area').style.display = 'flex';
-        setTimeout(() => {
-          if (state.student.examEditor) {
-            state.student.examEditor.refresh();
-            state.student.examEditor.focus();
-          }
-        }, 50);
-      }
+      // Keep the problem statement and editor visible together, matching a
+      // professional assessment workspace. The tabs remain useful as a
+      // context indicator, but changing them no longer hides the statement.
+      el('student-question-display').style.display = 'block';
+      el('student-question-display').classList.add('workspace-readme-active');
+      el('student-query-area').style.display = 'flex';
+      setTimeout(() => {
+        if (state.student.examEditor) state.student.examEditor.refresh();
+      }, 50);
     },
 
     changeLanguage(newLang) {

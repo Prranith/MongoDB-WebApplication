@@ -1220,9 +1220,14 @@
 <!-- Student: Exam Interface -->
 <div class="exam-overlay" id="exam-student-exam-panel">
   <div class="exam-topbar">
-    <span class="exam-topbar-title" id="student-exam-room-title">Exam</span>
-    <span style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-q-progress">Q 0/0</span>
+    <div class="exam-brand-mark" aria-hidden="true">◆</div>
+    <div class="exam-brand-copy">
+      <span class="exam-topbar-title" id="student-exam-room-title">Exam</span>
+      <span class="exam-topbar-context">Codexa secure assessment</span>
+    </div>
+    <span class="exam-topbar-progress" id="student-q-progress">Q 0/0</span>
     <span style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <span class="exam-save-state" id="student-save-state">Saved</span>
       <span id="student-exam-timer" style="display:none"></span>
       <span class="exam-status-chip exam-chip-live" id="student-exam-status">LIVE</span>
       <button class="exam-btn exam-btn-red" id="btn-student-submit-exam" onclick="ExamPortal.student.finishExam()" style="padding:4px 10px;font-size:11px">
@@ -1230,6 +1235,13 @@
         Submit Exam
       </button>
     </span>
+  </div>
+  <div class="exam-progress-track" aria-hidden="true"><div id="student-progress-fill"></div></div>
+  <div class="exam-session-strip" aria-label="Assessment progress">
+    <div class="exam-session-step active"><span class="exam-session-index">1</span><span>Assessment</span><span class="exam-session-check">✓</span></div>
+    <div class="exam-session-step"><span class="exam-session-index">2</span><span>Solve problems</span></div>
+    <div class="exam-session-step"><span class="exam-session-index">3</span><span>Review &amp; submit</span></div>
+    <div class="exam-focus-mode"><span class="exam-focus-glyph">◫</span> Focus mode</div>
   </div>
   <div class="exam-notice-bar">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
@@ -1240,7 +1252,7 @@
   <div class="exam-student-shell">
     <!-- Question Navigator -->
     <div class="exam-qnav">
-      <div class="exam-qnav-hdr">Questions</div>
+      <div class="exam-qnav-hdr"><span>Problems</span><span class="exam-qnav-count" id="student-question-count">0</span></div>
       <div class="exam-qnav-body" id="student-qnav-body">
         <div class="exam-participants-empty">// Loading questions...</div>
       </div>
@@ -1416,6 +1428,12 @@ db.collection.find({})</textarea>
         <span style="font-size:13px;color:var(--text3);font-family:'JetBrains Mono',monospace">// Select a question from the left panel</span>
       </div>
     </div>
+  </div>
+  <div class="exam-student-footer">
+    <button class="exam-footer-btn" id="student-prev-btn" onclick="ExamPortal.student.previousQuestion()" type="button">‹ Previous</button>
+    <span class="exam-footer-progress" id="student-footer-progress">Question 0 of 0</span>
+    <button class="exam-footer-btn" id="student-next-btn" onclick="ExamPortal.student.nextQuestion()" type="button">Next ›</button>
+    <button class="exam-footer-submit" onclick="ExamPortal.student.finishExam()" type="button">Review &amp; submit <span>↗</span></button>
   </div>
 </div>
 
