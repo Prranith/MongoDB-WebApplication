@@ -26,6 +26,7 @@ const ExamPortal = (() => {
       timerInterval: null,
       lbInterval: null,
       participantInterval: null,
+      participantsOpen: false,
     },
     // Student
     student: {
@@ -232,6 +233,16 @@ const ExamPortal = (() => {
     e.style.display = text ? 'block' : 'none';
   }
 
+  function setStudentSaveState(label, tone = 'saved') {
+    const saveEl = el('student-save-state');
+    if (!saveEl) return;
+    saveEl.textContent = label;
+    saveEl.classList.remove('is-saving', 'is-dirty', 'is-error');
+    if (tone === 'saving') saveEl.classList.add('is-saving');
+    if (tone === 'dirty') saveEl.classList.add('is-dirty');
+    if (tone === 'error') saveEl.classList.add('is-error');
+  }
+
   async function apiCall(url, method = 'GET', body = null) {
     try {
       const opts = {
@@ -256,7 +267,7 @@ const ExamPortal = (() => {
       return;
     }
     if (countEl) countEl.textContent = `(${participants.length})`;
-    const isMentor = bodyId === 'mentor-participants-body';
+    const isMentor = bodyId === 'mentor-participants-body' && state.mentor.status !== 'waiting';
     body.innerHTML = participants.map(p => `
       <div class="exam-participant-row">
         <div class="exam-participant-icon">
@@ -423,6 +434,25 @@ const ExamPortal = (() => {
           badge.style.color = 'var(--green2)';
           setTimeout(() => badge.style.color = '', 800);
         }
+      }
+    },
+
+    toggleParticipantsPanel() {
+      mentor.setParticipantsOpen(!state.mentor.participantsOpen);
+    },
+
+    setParticipantsOpen(open) {
+      state.mentor.participantsOpen = Boolean(open);
+      const panel = el('mentor-participants-panel');
+      const sidebar = document.querySelector('#exam-mentor-dash-panel .exam-dash-right');
+      const button = el('btn-toggle-participants');
+      const isWaiting = state.mentor.status === 'waiting';
+      if (panel) panel.style.display = isWaiting && state.mentor.participantsOpen ? 'flex' : 'none';
+      if (sidebar) sidebar.style.display = isWaiting && state.mentor.participantsOpen ? 'flex' : 'none';
+      if (button) {
+        button.style.display = isWaiting ? 'flex' : 'none';
+        button.classList.toggle('active', state.mentor.participantsOpen);
+        button.title = state.mentor.participantsOpen ? 'Hide participants' : 'Show participants';
       }
     },
 
@@ -637,6 +667,7 @@ const ExamPortal = (() => {
       el('mentor-dash-title').textContent = `${title} — ${roomId}`;
       el('mentor-dash-room-id').textContent = roomId;
       if (el('mentor-dash-room-id')) el('mentor-dash-room-id').textContent = roomId;
+      if (el('mentor-top-room-id')) el('mentor-top-room-id').textContent = roomId;
 
       // Update status chip
       mentor._updateStatusUI(status);
@@ -648,6 +679,7 @@ const ExamPortal = (() => {
       mentor._startParticipantPoll();
 
       showPanel('exam-mentor-dash-panel');
+      mentor.setParticipantsOpen(false);
       mentor.setTab('questions');
 
       // Auto-select first question if questions are loaded and none is currently active
@@ -680,15 +712,17 @@ const ExamPortal = (() => {
       if (status === 'waiting') {
         el('btn-start-exam').style.display = 'flex';
         el('btn-end-exam').style.display = 'none';
-        el('mentor-participants-panel').style.display = 'flex';
+        el('mentor-participants-panel').style.display = state.mentor.participantsOpen ? 'flex' : 'none';
         el('mentor-export-panel').style.display = 'none';
-        if (rightSidebar) rightSidebar.style.display = 'flex';
+        if (rightSidebar) rightSidebar.style.display = state.mentor.participantsOpen ? 'flex' : 'none';
+        if (el('btn-toggle-participants')) el('btn-toggle-participants').style.display = 'flex';
       } else if (status === 'live') {
         el('btn-start-exam').style.display = 'none';
         el('btn-end-exam').style.display = 'flex';
         el('mentor-participants-panel').style.display = 'none';
         el('mentor-export-panel').style.display = 'none';
         if (rightSidebar) rightSidebar.style.display = 'none'; // Hide sidebar during live test
+        if (el('btn-toggle-participants')) el('btn-toggle-participants').style.display = 'none';
         // Show leaderboard tab, hide questions tab
         el('mentor-tab-live').style.display = 'flex';
         el('mentor-tab-questions').style.display = 'none';
@@ -707,6 +741,7 @@ const ExamPortal = (() => {
         el('mentor-participants-panel').style.display = 'none';
         el('mentor-export-panel').style.display = 'flex';
         if (rightSidebar) rightSidebar.style.display = 'flex'; // Show sidebar for results export
+        if (el('btn-toggle-participants')) el('btn-toggle-participants').style.display = 'none';
         // Stop polls
         clearInterval(state.mentor.participantInterval);
         clearInterval(state.mentor.lbInterval);
@@ -741,6 +776,7 @@ const ExamPortal = (() => {
       const maxScore = qs.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0);
       if (el('mentor-q-count')) el('mentor-q-count').textContent = qs.length;
       if (el('mentor-max-score')) el('mentor-max-score').textContent = maxScore;
+      if (el('mentor-questions-summary')) el('mentor-questions-summary').textContent = `${qs.length} · ${maxScore} pts`;
     },
 
     setTab(tab) {
@@ -1892,7 +1928,7 @@ const ExamPortal = (() => {
       if (!tbody) return;
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);font-family:\'JetBrains Mono\',monospace;padding:20px">// Waiting for submissions...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);font-family:\'JetBrains Mono\',monospace;padding:20px">// Waiting for submissions...</td></tr>';
         return;
       }
 
@@ -1910,6 +1946,11 @@ const ExamPortal = (() => {
           ? Math.round((row.correct / row.answered) * 100) + '%'
           : '—';
         const lastSub = row.lastSubmission ? timeAgo(row.lastSubmission) : '—';
+        const fullscreenExits = Number(row.fullscreenExits || 0);
+        const copyPasteAttempts = Number(row.copyPasteAttempts || 0);
+        const flagCount = fullscreenExits + copyPasteAttempts;
+        const flagClass = flagCount > 0 ? 'is-flagged' : 'is-clear';
+        const flagsBadge = `<button class="exam-flag-badge ${flagClass}" onclick="ExamPortal.mentor.showFlaggedDetails('${String(row.name || 'Student').replace(/'/g, "\\'")}', ${fullscreenExits}, ${copyPasteAttempts}, ${Number(row.lastFlaggedAt || 0)})" title="View proctoring details"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16.999c-.77 1.333.192 3 1.732 3z"/></svg>${flagCount}</button>`;
 
         const blockedBadge = row.isBlocked ? `<span class="exam-status-chip exam-chip-ended" style="font-size: 10px; margin-left: 6px; padding: 2px 6px; background: rgba(255, 77, 77, 0.08); color: #ff4d4d; border: 1px solid rgba(255, 77, 77, 0.3);" title="Reason: ${esc(row.blockReason || 'Kicked')}">BLOCKED</span>` : '';
         const nameContent = row.isBlocked ? `<span style="text-decoration: line-through; opacity: 0.6;">${esc(row.name)}</span> ${blockedBadge}` : esc(row.name);
@@ -1923,6 +1964,7 @@ const ExamPortal = (() => {
             <td class="exam-lb-score">${row.totalScore}/${maxScore}</td>
             <td class="exam-lb-accuracy">${row.answered}/${(state.mentor.questions || []).length}</td>
             <td class="exam-lb-accuracy">${accuracy}</td>
+            <td class="exam-lb-flags">${flagsBadge}</td>
             <td class="exam-lb-time">${lastSub}</td>
             <td style="text-align:center;display:flex;gap:6px;justify-content:center">
               <button class="exam-btn exam-btn-secondary" style="padding:4px 8px;font-size:11px;height:auto"
@@ -2134,7 +2176,10 @@ const ExamPortal = (() => {
               totalScore: parseInt(score) || 0,
               answered,
               correct,
-              lastSubmission: lastSubTime
+              lastSubmission: lastSubTime,
+              fullscreenExits: Number(studentInfo.fullscreenExits || 0),
+              copyPasteAttempts: Number(studentInfo.copyPasteAttempts || 0),
+              lastFlaggedAt: Number(studentInfo.lastFlaggedAt || 0)
             });
           }
 
@@ -2166,7 +2211,10 @@ const ExamPortal = (() => {
                 totalScore: 0,
                 answered,
                 correct,
-                lastSubmission: lastSubTime
+                lastSubmission: lastSubTime,
+                fullscreenExits: Number(p.fullscreenExits || 0),
+                copyPasteAttempts: Number(p.copyPasteAttempts || 0),
+                lastFlaggedAt: Number(p.lastFlaggedAt || 0)
               });
             }
           });
@@ -2870,6 +2918,7 @@ const ExamPortal = (() => {
             state.student.status[currentQ.id] = 'draft';
             studentNS._renderQNav();
           }
+          setStudentSaveState('Unsaved', 'dirty');
           
           // Debounce auto-save to Redis
           clearTimeout(state.student.autoSaveTimeout);
@@ -2955,7 +3004,7 @@ const ExamPortal = (() => {
         body.innerHTML = '<div class="exam-participants-empty">// No questions</div>';
         return;
       }
-      el('student-q-progress').textContent = `Q ${state.student.currentQIdx !== null ? state.student.currentQIdx + 1 : 0}/${qs.length}`;
+      if (el('student-q-progress')) el('student-q-progress').textContent = `Q ${state.student.currentQIdx !== null ? state.student.currentQIdx + 1 : 0}/${qs.length}`;
       const questionCount = el('student-question-count');
       if (questionCount) questionCount.textContent = qs.length;
       const footerProgress = el('student-footer-progress');
@@ -3052,7 +3101,7 @@ const ExamPortal = (() => {
       el('student-q-text').innerHTML = descHtml;
       el('student-no-q-selected').style.display = 'none';
 
-      el('student-q-progress').textContent = `Q ${idx + 1}/${qs.length}`;
+      if (el('student-q-progress')) el('student-q-progress').textContent = `Q ${idx + 1}/${qs.length}`;
 
       // Reset default student activeTab to README for query/coding
       state.student.activeTab = 'readme';
@@ -3263,12 +3312,28 @@ const ExamPortal = (() => {
 
       studentNS._renderMCQOptions(q);
       studentNS._renderQNav();
+      setStudentSaveState('Saving…', 'saving');
 
       // Debounce auto-save to Redis
       clearTimeout(state.student.autoSaveTimeout);
       state.student.autoSaveTimeout = setTimeout(() => {
         studentNS.autoSaveSingleQuestion(q);
       }, 500);
+    },
+
+    toggleFocusMode() {
+      const panel = el('exam-student-exam-panel');
+      if (!panel) return;
+      const active = panel.classList.toggle('exam-focus-mode-active');
+      const button = el('student-focus-button');
+      if (button) {
+        button.setAttribute('aria-pressed', String(active));
+        button.title = active ? 'Exit focus mode' : 'Toggle focus mode';
+        button.classList.toggle('active', active);
+      }
+      setTimeout(() => {
+        if (state.student.examEditor) state.student.examEditor.refresh();
+      }, 60);
     },
 
     changeLanguage(newLang) {
@@ -3773,7 +3838,9 @@ const ExamPortal = (() => {
       }
       
       if (promises.length > 0) {
+        setStudentSaveState('Saving…', 'saving');
         await Promise.all(promises);
+        setStudentSaveState('Saved', 'saved');
       }
     },
 
@@ -3825,8 +3892,16 @@ const ExamPortal = (() => {
       }
       
       if (hasValue) {
+        setStudentSaveState('Saving…', 'saving');
         apiCall(`/api/exam/room/${state.student.roomId}/submit`, 'POST', body)
-          .catch(function(err) { console.error("Debounced auto-save failed for question " + q.id, err); });
+          .then(function(res) {
+            if (res && res.status === 'ok') setStudentSaveState('Saved', 'saved');
+            else setStudentSaveState('Offline', 'error');
+          })
+          .catch(function(err) {
+            console.error("Debounced auto-save failed for question " + q.id, err);
+            setStudentSaveState('Offline', 'error');
+          });
       }
     },
 
@@ -3988,7 +4063,7 @@ const ExamPortal = (() => {
         alert(res.error || 'Failed to submit final exam. Please try again.');
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:3px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Exam';
+          btn.innerHTML = 'Review &amp; submit <span>↗</span>';
         }
         state.student.ignoreFullscreenChange = false;
       }
@@ -3997,6 +4072,11 @@ const ExamPortal = (() => {
     renderWorkspaceTabs(q) {
       const tabsBar = el('student-workspace-tabs');
       if (!tabsBar) return;
+      // Keep the statement and editor visible together; the old file tabs
+      // consume vertical space and imply a separate document workspace.
+      tabsBar.innerHTML = '';
+      tabsBar.style.display = 'none';
+      return;
       tabsBar.style.display = 'flex';
 
       const activeTab = state.student.activeTab || 'readme';
@@ -4149,7 +4229,7 @@ const ExamPortal = (() => {
       if (outputArea) outputArea.style.display = 'block';
 
       const leftH = el('student-pane-left-title');
-      if (leftH) leftH.textContent = 'Custom Input (stdin)';
+      if (leftH) leftH.textContent = tabId.startsWith('case-') ? 'Sample Input' : 'Custom Input (stdin)';
       const rightH = el('student-pane-right-title');
       if (rightH) rightH.textContent = 'Console Output';
 
@@ -4199,8 +4279,9 @@ const ExamPortal = (() => {
               resultColor = matched ? 'var(--green3)' : 'var(--red)';
             }
 
-            statusEl.textContent = `— ${resultTitle}`;
-            statusEl.style.color = resultColor;
+            const verdictClass = isError ? 'error' : matched ? 'accepted' : 'wrong';
+            statusEl.innerHTML = `— <span class="exam-verdict exam-verdict-${verdictClass}">${resultTitle}</span>`;
+            statusEl.style.color = '';
           } else {
             const exitCode = cached.code !== undefined ? cached.code : 0;
             const isError = exitCode !== 0 || (cached.stderr || '').trim().length > 0;
@@ -4293,8 +4374,13 @@ const ExamPortal = (() => {
         const wrapper = cm.getWrapperElement();
         wrapper.className = wrapper.className.replace(/\bcm-theme-\S+/g, '');
         wrapper.classList.add(`cm-theme-${theme}`);
-        wrapper.style.setProperty('font-family', font, 'important');
-        wrapper.style.setProperty('font-size', size, 'important');
+        const fontTargets = [wrapper, cm.getScrollerElement(), cm.getCodeMirrorElement && cm.getCodeMirrorElement(), cm.getInputField && cm.getInputField()];
+        fontTargets.filter(Boolean).forEach(target => {
+          target.style.setProperty('font-family', font, 'important');
+          target.style.setProperty('font-size', size, 'important');
+        });
+        wrapper.dataset.editorFont = font;
+        wrapper.dataset.editorFontSize = size;
         cm.refresh();
       }
     },
@@ -4336,6 +4422,7 @@ const ExamPortal = (() => {
   function initResizers() {
     initVerticalResizer('resizer-mentor-left', '.exam-dash-left', 180, 500);
     initVerticalResizer('resizer-student-qnav', '.exam-qnav', 180, 500);
+    initDescriptionResizer('resizer-student-description');
     initHorizontalResizer('resizer-student-console', '.exam-student-console', 100, 600);
     initPaneSplitter('resizer-student-panes', 'box-pane-yours', 'box-pane-expected');
     
@@ -4368,6 +4455,43 @@ const ExamPortal = (() => {
       if (!leftEl) return;
       startX = e.clientX;
       startWidth = leftEl.getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  function initDescriptionResizer(handleId) {
+    const handle = el(handleId);
+    if (!handle) return;
+    let startX;
+    let startLeft;
+    let startRight;
+
+    const onMouseMove = (event) => {
+      const grid = handle.parentElement;
+      if (!grid) return;
+      const delta = event.clientX - startX;
+      const total = grid.getBoundingClientRect().width;
+      const left = Math.max(280, Math.min(total - 500, startLeft + delta));
+      const right = Math.max(420, total - left - 6);
+      grid.style.gridTemplateColumns = `${left}px 6px ${right}px`;
+    };
+
+    const onMouseUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    handle.addEventListener('mousedown', (event) => {
+      const grid = handle.parentElement;
+      const columns = grid ? getComputedStyle(grid).gridTemplateColumns.split(' ') : [];
+      if (!grid || columns.length < 3) return;
+      startX = event.clientX;
+      startLeft = parseFloat(columns[0]) || grid.getBoundingClientRect().width * 0.45;
+      startRight = parseFloat(columns[2]) || 0;
+      void startRight;
       handle.classList.add('dragging');
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);

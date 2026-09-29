@@ -11,6 +11,24 @@ from services.shared.redis_client import (
 
 class LeaderboardService:
     @staticmethod
+    def _proctoring_metrics(student_info: dict) -> dict:
+        """Expose normalized proctoring counters alongside leaderboard rows."""
+        def number(key):
+            try:
+                return max(0, int(student_info.get(key, 0) or 0))
+            except (TypeError, ValueError):
+                return 0
+
+        fullscreen_exits = number("fullscreenExits")
+        copy_paste_attempts = number("copyPasteAttempts")
+        return {
+            "fullscreenExits": fullscreen_exits,
+            "copyPasteAttempts": copy_paste_attempts,
+            "flagCount": fullscreen_exits + copy_paste_attempts,
+            "lastFlaggedAt": student_info.get("lastFlaggedAt", 0) or 0,
+        }
+
+    @staticmethod
     def _extract_sub_metrics(subs_raw: dict):
         """Safely extract answered count, correct count, and last submission timestamp."""
         if not subs_raw or not isinstance(subs_raw, dict):
@@ -67,6 +85,7 @@ class LeaderboardService:
                 "lastSubmission": last_sub_time,
                 "isBlocked": sid in kicked_raw,
                 "blockReason": kicked_raw.get(sid, ""),
+                **cls._proctoring_metrics(student_info),
             })
 
         for sid, p_val in participants_raw.items():
@@ -91,6 +110,7 @@ class LeaderboardService:
                     "lastSubmission": last_sub_time,
                     "isBlocked": sid in kicked_raw,
                     "blockReason": kicked_raw.get(sid, ""),
+                    **cls._proctoring_metrics(student_info),
                 })
 
         ranked.sort(key=lambda r: (-r["totalScore"], r["studentId"]))

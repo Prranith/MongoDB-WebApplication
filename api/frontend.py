@@ -4309,6 +4309,134 @@ li.CodeMirror-hint-active {
   .exam-session-step { height:36px; white-space:nowrap; }
   .exam-session-step:nth-child(3), .exam-focus-mode { display:none; }
 }
+
+/* ── Exam refinement: compact navigator, collapsible mentor context, and
+   accessible editor controls ─────────────────────────────────────────── */
+.exam-room-copy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #303830;
+  border-radius: 6px;
+  background: #151a15;
+  color: #d8e1d6;
+  font: 600 11px 'JetBrains Mono', monospace;
+  cursor: pointer;
+}
+.exam-shared-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  border-radius: 6px;
+  background: var(--exam-accent, #b8d86f);
+  color: #172012;
+}
+.exam-room-copy-pill:hover,
+.exam-room-copy-pill:focus-visible { border-color: var(--exam-accent, #b8d86f); color: var(--exam-accent, #b8d86f); outline: none; }
+.exam-participants-toggle { gap: 7px; }
+.exam-participants-toggle.active { color: var(--exam-accent, #b8d86f); border-color: rgba(184,216,111,.45); background: rgba(184,216,111,.08); }
+.exam-question-summary { margin-left: 8px; color: var(--exam-muted, #7d877d); font: 11px 'JetBrains Mono', monospace; }
+
+#exam-mentor-dash-panel .exam-dash-left { display: none; }
+#exam-mentor-dash-panel #resizer-mentor-left { display: none; }
+#exam-mentor-dash-panel .exam-dash-main { flex: 1; min-width: 0; }
+#exam-mentor-dash-panel .exam-dash-right { min-width: 260px; }
+.exam-flag-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 34px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font: 600 11px 'JetBrains Mono', monospace;
+  cursor: pointer;
+}
+.exam-flag-badge.is-clear { color: #93a091; border: 1px solid #344034; background: #151b15; }
+.exam-flag-badge.is-flagged { color: #e7b866; border: 1px solid rgba(231,184,102,.4); background: rgba(231,184,102,.1); }
+.exam-flag-badge:hover { filter: brightness(1.15); }
+
+#exam-student-exam-panel .exam-topbar { height: 48px; padding: 0 18px; }
+#exam-student-exam-panel .exam-brand-mark { width: 25px; height: 25px; }
+#exam-student-exam-panel .exam-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #303830;
+  border-radius: 5px;
+  background: transparent;
+  color: #9ca99b;
+  cursor: pointer;
+}
+#exam-student-exam-panel .exam-icon-button:hover,
+#exam-student-exam-panel .exam-icon-button.active { color: var(--exam-accent); border-color: rgba(184,216,111,.48); background: rgba(184,216,111,.08); }
+#exam-student-exam-panel .exam-qnav { width: 76px; }
+#exam-student-exam-panel .exam-qnav-hdr { height: 42px; padding: 0; justify-content: center; }
+#exam-student-exam-panel .exam-qnav-hdr > span:first-child { font-size: 0; }
+#exam-student-exam-panel .exam-qnav-hdr > span:first-child::after { content: 'Q'; font-size: 11px; }
+#exam-student-exam-panel .exam-qnav-count { font-size: 10px; }
+#exam-student-exam-panel .exam-qnav-card { margin: 4px 9px; padding: 10px 5px; align-items: center; }
+#exam-student-exam-panel .exam-q-card-top { flex-direction: column; gap: 6px; align-items: center; }
+#exam-student-exam-panel .exam-q-card-top .exam-q-type-chip,
+#exam-student-exam-panel .exam-q-card-top .exam-q-marks-badge,
+#exam-student-exam-panel .exam-q-preview { display: none; }
+#exam-student-exam-panel .exam-q-status-dot { margin-left: 0 !important; }
+#exam-student-exam-panel .exam-student-main { grid-template-columns: minmax(300px, .9fr) 6px minmax(430px, 1.1fr); }
+#exam-student-exam-panel .exam-description-resizer { grid-column: 2; grid-row: 1; width: 6px; cursor: col-resize; background: #202820; border: 0; z-index: 3; }
+#exam-student-exam-panel .exam-description-resizer:hover,
+#exam-student-exam-panel .exam-description-resizer.dragging { background: var(--exam-accent); }
+#exam-student-exam-panel #student-query-area { grid-column: 3; grid-row: 1; }
+#exam-student-exam-panel .exam-question-display { grid-column: 1; grid-row: 1; }
+#exam-student-exam-panel .exam-mcq-area { grid-column: 1 / -1; width: 100%; padding: 24px 34px !important; }
+#exam-student-exam-panel #student-mcq-question-text { max-width: 1120px; }
+#exam-student-exam-panel #student-mcq-options { width: min(100%, 1120px); display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+#exam-student-exam-panel #student-submit-mcq-btn { display: none !important; }
+#exam-student-exam-panel #student-mcq-status { color: #9ca99b !important; }
+#exam-student-exam-panel #student-mcq-status::before { content: 'Autosaved'; color: #8da37e; }
+#exam-student-exam-panel #student-mcq-status { font-size: 0 !important; }
+#exam-student-exam-panel #student-mcq-status::before { font-size: 11px; }
+#exam-student-exam-panel .exam-student-footer { min-height: 44px; height: 44px; padding: 0 12px; }
+#exam-student-exam-panel .exam-footer-btn { min-width: 78px; padding: 6px 10px; font-size: 11px; }
+#exam-student-exam-panel .exam-footer-submit { min-width: 116px; padding: 7px 10px; font-size: 11px; }
+#exam-student-exam-panel #student-workspace-tabs { display: none !important; }
+#exam-student-exam-panel.exam-focus-mode-active .exam-qnav,
+#exam-student-exam-panel.exam-focus-mode-active #resizer-student-qnav,
+#exam-student-exam-panel.exam-focus-mode-active .exam-notice-bar { display: none !important; }
+#exam-student-exam-panel.exam-focus-mode-active .exam-student-main { grid-template-columns: minmax(320px, .95fr) 6px minmax(480px, 1.05fr); }
+.exam-save-state.is-saving { color: #d8bd72 !important; }
+.exam-save-state.is-dirty { color: #d8bd72 !important; }
+.exam-save-state.is-error { color: #e17d77 !important; }
+.exam-verdict { font-weight: 700; letter-spacing: .01em; }
+.exam-verdict-accepted { color: #a8cf78; }
+.exam-verdict-wrong, .exam-verdict-error { color: #e17b76; }
+
+#exam-student-exam-panel .CodeMirror,
+#exam-student-exam-panel .CodeMirror pre,
+#exam-student-exam-panel .CodeMirror-lines,
+#exam-student-exam-panel .CodeMirror-code { font-family: inherit; font-size: inherit; }
+#exam-student-exam-panel .cm-theme-default { background: #151815; color: #d6ded4; }
+#exam-student-exam-panel .cm-theme-cyberpunk { background: #151815; color: #d6ded4; }
+#exam-student-exam-panel .cm-theme-monokai { background: #191a17; color: #e1ded0; }
+#exam-student-exam-panel .cm-theme-glass { background: #1a1d1a; color: #dce5da; }
+#exam-student-exam-panel .cm-theme-cyberpunk .cm-keyword { color: #9dbf79; }
+#exam-student-exam-panel .cm-theme-monokai .cm-keyword { color: #d6a875; }
+#exam-student-exam-panel .cm-theme-glass .cm-keyword { color: #a9c999; }
+
+@media (max-width: 900px) {
+  #exam-student-exam-panel .exam-qnav { width: 66px; }
+  #exam-student-exam-panel .exam-student-main { grid-template-columns: minmax(250px, .8fr) 6px minmax(360px, 1.2fr); }
+}
+@media (max-width: 700px) {
+  #exam-student-exam-panel .exam-description-resizer { display: none; }
+  #exam-student-exam-panel .exam-student-main { grid-template-columns: 1fr; display: flex; }
+  #exam-student-exam-panel #student-query-area { grid-column: auto; }
+  #exam-student-exam-panel #student-mcq-options { grid-template-columns: 1fr; }
+}
 #terminal-stdout {
   scrollbar-width: thin;
   scrollbar-color: #3a3a3a transparent;
@@ -11779,9 +11907,20 @@ function applyEditorTheme() {
 <!-- Mentor Dashboard -->
 <div class="exam-overlay" id="exam-mentor-dash-panel">
   <div class="exam-topbar">
+    <div class="exam-brand-mark exam-shared-brand-mark" aria-hidden="true">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 2.7 20.2 7v10L12 21.3 3.8 17V7L12 2.7Z" fill="currentColor" opacity=".95"/><path d="m8.2 11.5 2.4 2.4 5.2-5.2" stroke="#172012" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
     <span class="exam-topbar-title" id="mentor-dash-title">Exam Room</span>
+    <button class="exam-room-copy-pill" type="button" onclick="ExamPortal.mentor.copyRoomId()" title="Copy room ID">
+      <span id="mentor-top-room-id">---</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 0-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 0-2 2v14h11c1.1 0 2-0.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+    </button>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
       <span class="exam-status-chip exam-chip-waiting" id="mentor-status-chip">WAITING</span>
+      <button class="exam-btn exam-btn-secondary exam-participants-toggle" id="btn-toggle-participants" type="button" onclick="ExamPortal.mentor.toggleParticipantsPanel()" title="Show participants">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.1.8 1.97 1.9 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        Participants
+      </button>
       <button class="exam-btn exam-btn-secondary" id="btn-view-removed" onclick="ExamPortal.mentor.viewRemoved()">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         Removed Students
@@ -11868,7 +12007,7 @@ function applyEditorTheme() {
           <!-- Question List -->
           <div class="exam-qlist">
             <div class="exam-qlist-hdr">
-              <span class="exam-qlist-hdr-title">Questions</span>
+              <span class="exam-qlist-hdr-title">Questions <span class="exam-question-summary" id="mentor-questions-summary"></span></span>
               <button class="phbtn" title="Add Query Question" onclick="ExamPortal.mentor.addQuestion('query')" id="btn-add-query-q">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
               </button>
@@ -11960,11 +12099,12 @@ function applyEditorTheme() {
               <th>Score</th>
               <th>Answered</th>
               <th>Accuracy</th>
+              <th>Flags</th>
               <th>Last Sub</th>
               <th>Action</th>
             </tr></thead>
             <tbody id="mentor-lb-tbody">
-              <tr><td colspan="9" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">// Waiting for submissions...</td></tr>
+              <tr><td colspan="10" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">// Waiting for submissions...</td></tr>
             </tbody>
           </table>
         </div>
@@ -12137,29 +12277,23 @@ function applyEditorTheme() {
 <!-- Student: Exam Interface -->
 <div class="exam-overlay" id="exam-student-exam-panel">
   <div class="exam-topbar">
-    <div class="exam-brand-mark" aria-hidden="true">◆</div>
+    <div class="exam-brand-mark" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2.7 20.2 7v10L12 21.3 3.8 17V7L12 2.7Z" fill="currentColor" opacity=".95"/><path d="m8.2 11.5 2.4 2.4 5.2-5.2" stroke="#172012" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
     <div class="exam-brand-copy">
       <span class="exam-topbar-title" id="student-exam-room-title">Exam</span>
       <span class="exam-topbar-context">Codexa secure assessment</span>
     </div>
-    <span class="exam-topbar-progress" id="student-q-progress">Q 0/0</span>
     <span style="margin-left:auto;display:flex;align-items:center;gap:12px">
       <span class="exam-save-state" id="student-save-state">Saved</span>
       <span id="student-exam-timer" style="display:none"></span>
       <span class="exam-status-chip exam-chip-live" id="student-exam-status">LIVE</span>
-      <button class="exam-btn exam-btn-red" id="btn-student-submit-exam" onclick="ExamPortal.student.finishExam()" style="padding:4px 10px;font-size:11px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:3px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-        Submit Exam
+      <button class="exam-icon-button" id="student-focus-button" type="button" onclick="ExamPortal.student.toggleFocusMode()" title="Toggle focus mode" aria-pressed="false">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v3"/></svg>
       </button>
     </span>
   </div>
   <div class="exam-progress-track" aria-hidden="true"><div id="student-progress-fill"></div></div>
-  <div class="exam-session-strip" aria-label="Assessment progress">
-    <div class="exam-session-step active"><span class="exam-session-index">1</span><span>Assessment</span><span class="exam-session-check">✓</span></div>
-    <div class="exam-session-step"><span class="exam-session-index">2</span><span>Solve problems</span></div>
-    <div class="exam-session-step"><span class="exam-session-index">3</span><span>Review &amp; submit</span></div>
-    <div class="exam-focus-mode"><span class="exam-focus-glyph">◫</span> Focus mode</div>
-  </div>
   <div class="exam-notice-bar">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
     <span>Do not refresh your screen, Site will auto-refresh, Else Test will be cancelled</span>
@@ -12200,6 +12334,7 @@ function applyEditorTheme() {
       </div>
 
       <!-- Query / Coding question: Editor + Console -->
+      <div class="exam-resizer-v exam-description-resizer" id="resizer-student-description" title="Drag to resize problem and editor"></div>
       <div id="student-query-area" style="display:none;flex:1;flex-direction:column;overflow:hidden;position:relative">
         <div class="exam-toolbar" style="position:relative">
           <!-- Allowed languages selector for coding questions -->
@@ -12350,7 +12485,7 @@ db.collection.find({})</textarea>
     <button class="exam-footer-btn" id="student-prev-btn" onclick="ExamPortal.student.previousQuestion()" type="button">‹ Previous</button>
     <span class="exam-footer-progress" id="student-footer-progress">Question 0 of 0</span>
     <button class="exam-footer-btn" id="student-next-btn" onclick="ExamPortal.student.nextQuestion()" type="button">Next ›</button>
-    <button class="exam-footer-submit" onclick="ExamPortal.student.finishExam()" type="button">Review &amp; submit <span>↗</span></button>
+    <button class="exam-footer-submit" id="btn-student-submit-exam" onclick="ExamPortal.student.finishExam()" type="button">Review &amp; submit <span>↗</span></button>
   </div>
 </div>
 
@@ -12589,6 +12724,7 @@ const ExamPortal = (() => {
       timerInterval: null,
       lbInterval: null,
       participantInterval: null,
+      participantsOpen: false,
     },
     // Student
     student: {
@@ -12795,6 +12931,16 @@ const ExamPortal = (() => {
     e.style.display = text ? 'block' : 'none';
   }
 
+  function setStudentSaveState(label, tone = 'saved') {
+    const saveEl = el('student-save-state');
+    if (!saveEl) return;
+    saveEl.textContent = label;
+    saveEl.classList.remove('is-saving', 'is-dirty', 'is-error');
+    if (tone === 'saving') saveEl.classList.add('is-saving');
+    if (tone === 'dirty') saveEl.classList.add('is-dirty');
+    if (tone === 'error') saveEl.classList.add('is-error');
+  }
+
   async function apiCall(url, method = 'GET', body = null) {
     try {
       const opts = {
@@ -12819,7 +12965,7 @@ const ExamPortal = (() => {
       return;
     }
     if (countEl) countEl.textContent = `(${participants.length})`;
-    const isMentor = bodyId === 'mentor-participants-body';
+    const isMentor = bodyId === 'mentor-participants-body' && state.mentor.status !== 'waiting';
     body.innerHTML = participants.map(p => `
       <div class="exam-participant-row">
         <div class="exam-participant-icon">
@@ -12986,6 +13132,25 @@ const ExamPortal = (() => {
           badge.style.color = 'var(--green2)';
           setTimeout(() => badge.style.color = '', 800);
         }
+      }
+    },
+
+    toggleParticipantsPanel() {
+      mentor.setParticipantsOpen(!state.mentor.participantsOpen);
+    },
+
+    setParticipantsOpen(open) {
+      state.mentor.participantsOpen = Boolean(open);
+      const panel = el('mentor-participants-panel');
+      const sidebar = document.querySelector('#exam-mentor-dash-panel .exam-dash-right');
+      const button = el('btn-toggle-participants');
+      const isWaiting = state.mentor.status === 'waiting';
+      if (panel) panel.style.display = isWaiting && state.mentor.participantsOpen ? 'flex' : 'none';
+      if (sidebar) sidebar.style.display = isWaiting && state.mentor.participantsOpen ? 'flex' : 'none';
+      if (button) {
+        button.style.display = isWaiting ? 'flex' : 'none';
+        button.classList.toggle('active', state.mentor.participantsOpen);
+        button.title = state.mentor.participantsOpen ? 'Hide participants' : 'Show participants';
       }
     },
 
@@ -13200,6 +13365,7 @@ const ExamPortal = (() => {
       el('mentor-dash-title').textContent = `${title} — ${roomId}`;
       el('mentor-dash-room-id').textContent = roomId;
       if (el('mentor-dash-room-id')) el('mentor-dash-room-id').textContent = roomId;
+      if (el('mentor-top-room-id')) el('mentor-top-room-id').textContent = roomId;
 
       // Update status chip
       mentor._updateStatusUI(status);
@@ -13211,6 +13377,7 @@ const ExamPortal = (() => {
       mentor._startParticipantPoll();
 
       showPanel('exam-mentor-dash-panel');
+      mentor.setParticipantsOpen(false);
       mentor.setTab('questions');
 
       // Auto-select first question if questions are loaded and none is currently active
@@ -13243,15 +13410,17 @@ const ExamPortal = (() => {
       if (status === 'waiting') {
         el('btn-start-exam').style.display = 'flex';
         el('btn-end-exam').style.display = 'none';
-        el('mentor-participants-panel').style.display = 'flex';
+        el('mentor-participants-panel').style.display = state.mentor.participantsOpen ? 'flex' : 'none';
         el('mentor-export-panel').style.display = 'none';
-        if (rightSidebar) rightSidebar.style.display = 'flex';
+        if (rightSidebar) rightSidebar.style.display = state.mentor.participantsOpen ? 'flex' : 'none';
+        if (el('btn-toggle-participants')) el('btn-toggle-participants').style.display = 'flex';
       } else if (status === 'live') {
         el('btn-start-exam').style.display = 'none';
         el('btn-end-exam').style.display = 'flex';
         el('mentor-participants-panel').style.display = 'none';
         el('mentor-export-panel').style.display = 'none';
         if (rightSidebar) rightSidebar.style.display = 'none'; // Hide sidebar during live test
+        if (el('btn-toggle-participants')) el('btn-toggle-participants').style.display = 'none';
         // Show leaderboard tab, hide questions tab
         el('mentor-tab-live').style.display = 'flex';
         el('mentor-tab-questions').style.display = 'none';
@@ -13270,6 +13439,7 @@ const ExamPortal = (() => {
         el('mentor-participants-panel').style.display = 'none';
         el('mentor-export-panel').style.display = 'flex';
         if (rightSidebar) rightSidebar.style.display = 'flex'; // Show sidebar for results export
+        if (el('btn-toggle-participants')) el('btn-toggle-participants').style.display = 'none';
         // Stop polls
         clearInterval(state.mentor.participantInterval);
         clearInterval(state.mentor.lbInterval);
@@ -13304,6 +13474,7 @@ const ExamPortal = (() => {
       const maxScore = qs.reduce((sum, q) => sum + (parseInt(q.marks) || 0), 0);
       if (el('mentor-q-count')) el('mentor-q-count').textContent = qs.length;
       if (el('mentor-max-score')) el('mentor-max-score').textContent = maxScore;
+      if (el('mentor-questions-summary')) el('mentor-questions-summary').textContent = `${qs.length} · ${maxScore} pts`;
     },
 
     setTab(tab) {
@@ -14455,7 +14626,7 @@ const ExamPortal = (() => {
       if (!tbody) return;
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);font-family:\\'JetBrains Mono\\',monospace;padding:20px">// Waiting for submissions...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);font-family:\\'JetBrains Mono\\',monospace;padding:20px">// Waiting for submissions...</td></tr>';
         return;
       }
 
@@ -14473,6 +14644,11 @@ const ExamPortal = (() => {
           ? Math.round((row.correct / row.answered) * 100) + '%'
           : '—';
         const lastSub = row.lastSubmission ? timeAgo(row.lastSubmission) : '—';
+        const fullscreenExits = Number(row.fullscreenExits || 0);
+        const copyPasteAttempts = Number(row.copyPasteAttempts || 0);
+        const flagCount = fullscreenExits + copyPasteAttempts;
+        const flagClass = flagCount > 0 ? 'is-flagged' : 'is-clear';
+        const flagsBadge = `<button class="exam-flag-badge ${flagClass}" onclick="ExamPortal.mentor.showFlaggedDetails('${String(row.name || 'Student').replace(/'/g, "\\\\'")}', ${fullscreenExits}, ${copyPasteAttempts}, ${Number(row.lastFlaggedAt || 0)})" title="View proctoring details"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16.999c-.77 1.333.192 3 1.732 3z"/></svg>${flagCount}</button>`;
 
         const blockedBadge = row.isBlocked ? `<span class="exam-status-chip exam-chip-ended" style="font-size: 10px; margin-left: 6px; padding: 2px 6px; background: rgba(255, 77, 77, 0.08); color: #ff4d4d; border: 1px solid rgba(255, 77, 77, 0.3);" title="Reason: ${esc(row.blockReason || 'Kicked')}">BLOCKED</span>` : '';
         const nameContent = row.isBlocked ? `<span style="text-decoration: line-through; opacity: 0.6;">${esc(row.name)}</span> ${blockedBadge}` : esc(row.name);
@@ -14486,6 +14662,7 @@ const ExamPortal = (() => {
             <td class="exam-lb-score">${row.totalScore}/${maxScore}</td>
             <td class="exam-lb-accuracy">${row.answered}/${(state.mentor.questions || []).length}</td>
             <td class="exam-lb-accuracy">${accuracy}</td>
+            <td class="exam-lb-flags">${flagsBadge}</td>
             <td class="exam-lb-time">${lastSub}</td>
             <td style="text-align:center;display:flex;gap:6px;justify-content:center">
               <button class="exam-btn exam-btn-secondary" style="padding:4px 8px;font-size:11px;height:auto"
@@ -14697,7 +14874,10 @@ const ExamPortal = (() => {
               totalScore: parseInt(score) || 0,
               answered,
               correct,
-              lastSubmission: lastSubTime
+              lastSubmission: lastSubTime,
+              fullscreenExits: Number(studentInfo.fullscreenExits || 0),
+              copyPasteAttempts: Number(studentInfo.copyPasteAttempts || 0),
+              lastFlaggedAt: Number(studentInfo.lastFlaggedAt || 0)
             });
           }
 
@@ -14729,7 +14909,10 @@ const ExamPortal = (() => {
                 totalScore: 0,
                 answered,
                 correct,
-                lastSubmission: lastSubTime
+                lastSubmission: lastSubTime,
+                fullscreenExits: Number(p.fullscreenExits || 0),
+                copyPasteAttempts: Number(p.copyPasteAttempts || 0),
+                lastFlaggedAt: Number(p.lastFlaggedAt || 0)
               });
             }
           });
@@ -15433,6 +15616,7 @@ const ExamPortal = (() => {
             state.student.status[currentQ.id] = 'draft';
             studentNS._renderQNav();
           }
+          setStudentSaveState('Unsaved', 'dirty');
           
           // Debounce auto-save to Redis
           clearTimeout(state.student.autoSaveTimeout);
@@ -15518,7 +15702,7 @@ const ExamPortal = (() => {
         body.innerHTML = '<div class="exam-participants-empty">// No questions</div>';
         return;
       }
-      el('student-q-progress').textContent = `Q ${state.student.currentQIdx !== null ? state.student.currentQIdx + 1 : 0}/${qs.length}`;
+      if (el('student-q-progress')) el('student-q-progress').textContent = `Q ${state.student.currentQIdx !== null ? state.student.currentQIdx + 1 : 0}/${qs.length}`;
       const questionCount = el('student-question-count');
       if (questionCount) questionCount.textContent = qs.length;
       const footerProgress = el('student-footer-progress');
@@ -15615,7 +15799,7 @@ const ExamPortal = (() => {
       el('student-q-text').innerHTML = descHtml;
       el('student-no-q-selected').style.display = 'none';
 
-      el('student-q-progress').textContent = `Q ${idx + 1}/${qs.length}`;
+      if (el('student-q-progress')) el('student-q-progress').textContent = `Q ${idx + 1}/${qs.length}`;
 
       // Reset default student activeTab to README for query/coding
       state.student.activeTab = 'readme';
@@ -15826,12 +16010,28 @@ const ExamPortal = (() => {
 
       studentNS._renderMCQOptions(q);
       studentNS._renderQNav();
+      setStudentSaveState('Saving…', 'saving');
 
       // Debounce auto-save to Redis
       clearTimeout(state.student.autoSaveTimeout);
       state.student.autoSaveTimeout = setTimeout(() => {
         studentNS.autoSaveSingleQuestion(q);
       }, 500);
+    },
+
+    toggleFocusMode() {
+      const panel = el('exam-student-exam-panel');
+      if (!panel) return;
+      const active = panel.classList.toggle('exam-focus-mode-active');
+      const button = el('student-focus-button');
+      if (button) {
+        button.setAttribute('aria-pressed', String(active));
+        button.title = active ? 'Exit focus mode' : 'Toggle focus mode';
+        button.classList.toggle('active', active);
+      }
+      setTimeout(() => {
+        if (state.student.examEditor) state.student.examEditor.refresh();
+      }, 60);
     },
 
     changeLanguage(newLang) {
@@ -16336,7 +16536,9 @@ const ExamPortal = (() => {
       }
       
       if (promises.length > 0) {
+        setStudentSaveState('Saving…', 'saving');
         await Promise.all(promises);
+        setStudentSaveState('Saved', 'saved');
       }
     },
 
@@ -16388,8 +16590,16 @@ const ExamPortal = (() => {
       }
       
       if (hasValue) {
+        setStudentSaveState('Saving…', 'saving');
         apiCall(`/api/exam/room/${state.student.roomId}/submit`, 'POST', body)
-          .catch(function(err) { console.error("Debounced auto-save failed for question " + q.id, err); });
+          .then(function(res) {
+            if (res && res.status === 'ok') setStudentSaveState('Saved', 'saved');
+            else setStudentSaveState('Offline', 'error');
+          })
+          .catch(function(err) {
+            console.error("Debounced auto-save failed for question " + q.id, err);
+            setStudentSaveState('Offline', 'error');
+          });
       }
     },
 
@@ -16551,7 +16761,7 @@ const ExamPortal = (() => {
         alert(res.error || 'Failed to submit final exam. Please try again.');
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:3px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Submit Exam';
+          btn.innerHTML = 'Review &amp; submit <span>↗</span>';
         }
         state.student.ignoreFullscreenChange = false;
       }
@@ -16560,6 +16770,11 @@ const ExamPortal = (() => {
     renderWorkspaceTabs(q) {
       const tabsBar = el('student-workspace-tabs');
       if (!tabsBar) return;
+      // Keep the statement and editor visible together; the old file tabs
+      // consume vertical space and imply a separate document workspace.
+      tabsBar.innerHTML = '';
+      tabsBar.style.display = 'none';
+      return;
       tabsBar.style.display = 'flex';
 
       const activeTab = state.student.activeTab || 'readme';
@@ -16712,7 +16927,7 @@ const ExamPortal = (() => {
       if (outputArea) outputArea.style.display = 'block';
 
       const leftH = el('student-pane-left-title');
-      if (leftH) leftH.textContent = 'Custom Input (stdin)';
+      if (leftH) leftH.textContent = tabId.startsWith('case-') ? 'Sample Input' : 'Custom Input (stdin)';
       const rightH = el('student-pane-right-title');
       if (rightH) rightH.textContent = 'Console Output';
 
@@ -16762,8 +16977,9 @@ const ExamPortal = (() => {
               resultColor = matched ? 'var(--green3)' : 'var(--red)';
             }
 
-            statusEl.textContent = `— ${resultTitle}`;
-            statusEl.style.color = resultColor;
+            const verdictClass = isError ? 'error' : matched ? 'accepted' : 'wrong';
+            statusEl.innerHTML = `— <span class="exam-verdict exam-verdict-${verdictClass}">${resultTitle}</span>`;
+            statusEl.style.color = '';
           } else {
             const exitCode = cached.code !== undefined ? cached.code : 0;
             const isError = exitCode !== 0 || (cached.stderr || '').trim().length > 0;
@@ -16856,8 +17072,13 @@ const ExamPortal = (() => {
         const wrapper = cm.getWrapperElement();
         wrapper.className = wrapper.className.replace(/\\bcm-theme-\\S+/g, '');
         wrapper.classList.add(`cm-theme-${theme}`);
-        wrapper.style.setProperty('font-family', font, 'important');
-        wrapper.style.setProperty('font-size', size, 'important');
+        const fontTargets = [wrapper, cm.getScrollerElement(), cm.getCodeMirrorElement && cm.getCodeMirrorElement(), cm.getInputField && cm.getInputField()];
+        fontTargets.filter(Boolean).forEach(target => {
+          target.style.setProperty('font-family', font, 'important');
+          target.style.setProperty('font-size', size, 'important');
+        });
+        wrapper.dataset.editorFont = font;
+        wrapper.dataset.editorFontSize = size;
         cm.refresh();
       }
     },
@@ -16899,6 +17120,7 @@ const ExamPortal = (() => {
   function initResizers() {
     initVerticalResizer('resizer-mentor-left', '.exam-dash-left', 180, 500);
     initVerticalResizer('resizer-student-qnav', '.exam-qnav', 180, 500);
+    initDescriptionResizer('resizer-student-description');
     initHorizontalResizer('resizer-student-console', '.exam-student-console', 100, 600);
     initPaneSplitter('resizer-student-panes', 'box-pane-yours', 'box-pane-expected');
     
@@ -16931,6 +17153,43 @@ const ExamPortal = (() => {
       if (!leftEl) return;
       startX = e.clientX;
       startWidth = leftEl.getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  function initDescriptionResizer(handleId) {
+    const handle = el(handleId);
+    if (!handle) return;
+    let startX;
+    let startLeft;
+    let startRight;
+
+    const onMouseMove = (event) => {
+      const grid = handle.parentElement;
+      if (!grid) return;
+      const delta = event.clientX - startX;
+      const total = grid.getBoundingClientRect().width;
+      const left = Math.max(280, Math.min(total - 500, startLeft + delta));
+      const right = Math.max(420, total - left - 6);
+      grid.style.gridTemplateColumns = `${left}px 6px ${right}px`;
+    };
+
+    const onMouseUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    handle.addEventListener('mousedown', (event) => {
+      const grid = handle.parentElement;
+      const columns = grid ? getComputedStyle(grid).gridTemplateColumns.split(' ') : [];
+      if (!grid || columns.length < 3) return;
+      startX = event.clientX;
+      startLeft = parseFloat(columns[0]) || grid.getBoundingClientRect().width * 0.45;
+      startRight = parseFloat(columns[2]) || 0;
+      void startRight;
       handle.classList.add('dragging');
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
