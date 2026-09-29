@@ -426,6 +426,8 @@ def api_exam_submit_answer(room_id: str):
             "maxMarks": res["maxMarks"],
             "correct": res["correct"]
         }
+        if res.get("dryRun"):
+            ret_data["dryRun"] = True
         if q_type == "coding":
             ret_data["passedCount"] = res["passedCount"]
             ret_data["totalCount"] = res["totalCount"]

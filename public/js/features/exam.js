@@ -41,6 +41,7 @@ const ExamPortal = (() => {
       status: {}, // qId → 'unattempted'|'draft'|'submitted'
       roomStatus: 'waiting',
       lastRunOutput: null,
+      expectedPreview: {},
       hasRunOnce: false,
       selectedOption: null,
       pollInterval: null,
@@ -57,6 +58,17 @@ const ExamPortal = (() => {
 
   function el(id) { return document.getElementById(id); }
 
+  // CodeMirror is loaded from a CDN, so mentor editors may render before the
+  // library has finished loading. Retry briefly instead of leaving a raw
+  // textarea behind when that race occurs.
+  function whenCodeMirrorReady(callback, attempt = 0) {
+    if (typeof CodeMirror !== 'undefined' && typeof CodeMirror.fromTextArea === 'function') {
+      callback();
+      return;
+    }
+    if (attempt < 30) setTimeout(() => whenCodeMirrorReady(callback, attempt + 1), 100);
+  }
+
   function isDataQuestion(q) {
     return !!q && (q.type === 'query' || q.type === 'sql');
   }
@@ -70,6 +82,21 @@ const ExamPortal = (() => {
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function canonicalExamOutput(value) {
+    if (Array.isArray(value)) return value.map(canonicalExamOutput);
+    if (value && typeof value === 'object') {
+      return Object.keys(value).sort().reduce((result, key) => {
+        result[key] = canonicalExamOutput(value[key]);
+        return result;
+      }, {});
+    }
+    return value;
+  }
+
+  function examOutputsMatch(actual, expected) {
+    return JSON.stringify(canonicalExamOutput(actual)) === JSON.stringify(canonicalExamOutput(expected));
   }
 
   function renderQuestionHtml(q) {
@@ -1002,9 +1029,9 @@ const ExamPortal = (() => {
         `;
         mentor._renderQuestionMediaList(qId);
         // Init mini CodeMirror
-        setTimeout(() => {
+        whenCodeMirrorReady(() => {
           const ta = el(`mini-editor-${qId}`);
-          if (ta && typeof CodeMirror !== 'undefined') {
+          if (ta) {
             if (state.mentor.miniEditors[qId]) {
               try { state.mentor.miniEditors[qId].toTextArea(); } catch(e) {}
               delete state.mentor.miniEditors[qId];
@@ -1029,7 +1056,7 @@ const ExamPortal = (() => {
             state.mentor.miniEditors[qId] = cm;
             attachCodexaKeywordHints(cm, () => q.type === 'sql' ? 'sql' : 'mongodb');
           }
-        }, 50);
+        });
 
       } else if (q.type === 'coding') {
         // Initialize coding features if missing
@@ -1192,10 +1219,10 @@ const ExamPortal = (() => {
         `;
 
         // Init CodeMirror instances
-        setTimeout(() => {
+        whenCodeMirrorReady(() => {
           // 1. Starter editor
           const taStarter = el(`mini-editor-starter-${qId}`);
-          if (taStarter && typeof CodeMirror !== 'undefined') {
+          if (taStarter) {
             if (state.mentor.miniEditors[`starter-${qId}`]) {
               try { state.mentor.miniEditors[`starter-${qId}`].toTextArea(); } catch(e) {}
               delete state.mentor.miniEditors[`starter-${qId}`];
@@ -1225,7 +1252,7 @@ const ExamPortal = (() => {
 
           // 2. Driver editor
           const taDriver = el(`mini-editor-driver-${qId}`);
-          if (taDriver && typeof CodeMirror !== 'undefined') {
+          if (taDriver) {
             if (state.mentor.miniEditors[`driver-${qId}`]) {
               try { state.mentor.miniEditors[`driver-${qId}`].toTextArea(); } catch(e) {}
               delete state.mentor.miniEditors[`driver-${qId}`];
@@ -1252,7 +1279,7 @@ const ExamPortal = (() => {
 
           // 3. Editorial editor
           const taEditorial = el(`mini-editor-editorial-${qId}`);
-          if (taEditorial && typeof CodeMirror !== 'undefined') {
+          if (taEditorial) {
             if (state.mentor.miniEditors[`editorial-${qId}`]) {
               try { state.mentor.miniEditors[`editorial-${qId}`].toTextArea(); } catch(e) {}
               delete state.mentor.miniEditors[`editorial-${qId}`];
@@ -1276,7 +1303,7 @@ const ExamPortal = (() => {
             state.mentor.miniEditors[`editorial-${qId}`] = cmE;
             attachCodexaKeywordHints(cmE, () => q.language || 'python');
           }
-        }, 50);
+        });
 
       } else {
         // MCQ editor
@@ -3540,8 +3567,10 @@ const ExamPortal = (() => {
         el('student-pane-yours').innerHTML = `<span style="color:var(--red)">${res.error || '// Unknown error'}</span>`;
       }
 
-      // Automatically fetch and update expected preview on query run
+      // Keep the preview visible, but use the authoritative server grader for
+      // the immediate Run verdict because the preview is intentionally truncated.
       studentNS._fetchExpectedPreview(q.id);
+      studentNS._checkQueryAnswer(q, query, datasetIds);
     },
 
     clearEditor() {
@@ -4020,13 +4049,48 @@ const ExamPortal = (() => {
       if (res.status === 'ok') {
         const docs = res.preview || [];
         const count = res.docCount || 0;
+        state.student.expectedPreview[questionId] = docs;
         pane.innerHTML = `
           <pre style="color:var(--text);font-size:11px;white-space:pre-wrap">${JSON.stringify(docs, null, 2)}</pre>
           <div class="exam-console-hint">// Showing first ${docs.length} of ${count} documents — full result hidden</div>
         `;
       } else {
+        delete state.student.expectedPreview[questionId];
         pane.innerHTML = '<span style="color:var(--text3)">// Expected output preview not available</span>';
       }
+    },
+
+    _updateQueryVerdict(questionId, results) {
+      const expected = state.student.expectedPreview[questionId];
+      const status = el('student-console-status');
+      if (!status || !Array.isArray(expected)) return;
+      const correct = examOutputsMatch(results, expected);
+      status.textContent = correct ? '— Accepted' : '— Wrong Answer';
+      status.style.color = correct ? 'var(--green3)' : 'var(--red)';
+      status.classList.toggle('exam-query-verdict', true);
+      status.classList.toggle('is-accepted', correct);
+      status.classList.toggle('is-wrong', !correct);
+    },
+
+    async _checkQueryAnswer(q, query, datasetIds) {
+      const status = el('student-console-status');
+      if (!status) return;
+      const res = await apiCall(`/api/exam/room/${state.student.roomId}/submit`, 'POST', {
+        studentId: state.student.studentId,
+        questionId: q.id,
+        type: q.type,
+        marks: q.marks,
+        datasetIds,
+        query,
+        dryRun: true,
+      });
+      if (res.status !== 'ok' || res.dryRun !== true) return;
+      const correct = Boolean(res.correct);
+      status.textContent = correct ? '— Accepted' : '— Wrong Answer';
+      status.style.color = correct ? 'var(--green3)' : 'var(--red)';
+      status.classList.add('exam-query-verdict');
+      status.classList.toggle('is-accepted', correct);
+      status.classList.toggle('is-wrong', !correct);
     },
 
     async finishExam() {
@@ -4544,7 +4608,8 @@ const ExamPortal = (() => {
       if (!bottomEl) return;
       const dy = startY - e.clientY;
       const newHeight = Math.min(Math.max(startHeight + dy, minHeight), maxHeight);
-      bottomEl.style.height = newHeight + 'px';
+      bottomEl.style.setProperty('height', newHeight + 'px', 'important');
+      bottomEl.style.setProperty('flex', '0 0 auto', 'important');
     };
 
     const onMouseUp = () => {

@@ -285,6 +285,31 @@ class SubmissionService:
                 "autoSaved": True
             }
 
+        # Run-only grading for the student console. This deliberately reuses
+        # the final-query grader without persisting a submission or changing
+        # the student's score.
+        is_dry_run = body.get("dryRun", False) in [True, "true", "True", 1, "1"]
+        if is_dry_run and q_type in ("query", "sql"):
+            query = body.get("query", "").strip()
+            dataset_ids = body.get("datasetIds", []) or ([body.get("datasetId")] if body.get("datasetId") else [])
+            if q_type == "sql":
+                from services.sql.sql_service import SqlService
+                student_result = SqlService.execute_room_query(room_id, dataset_ids, query, limit=100000) if query and dataset_ids else {"columns": [], "rows": []}
+                try:
+                    frozen_result = json.loads(frozen_json) if frozen_json else {}
+                except Exception:
+                    frozen_result = {}
+                correct = cls.grade_sql_answer(student_result, frozen_result).get("match", False)
+            else:
+                student_result = cls.execute_room_query(room_id, dataset_ids, query, max_results=100000) if query and dataset_ids else {"results": []}
+                student_output = student_result.get("results", []) if student_result.get("status") == "ok" else []
+                try:
+                    frozen_answer = json.loads(frozen_json) if frozen_json else []
+                except Exception:
+                    frozen_answer = []
+                correct = cls.grade_query_answer(student_output, frozen_answer).get("match", False)
+            return {"score": marks if correct else 0, "maxMarks": marks, "correct": correct, "dryRun": True}
+
         if q_type == "mcq":
             is_multi = False
             correct_options = []

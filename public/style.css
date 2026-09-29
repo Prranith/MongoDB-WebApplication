@@ -3432,9 +3432,11 @@ li.CodeMirror-hint-active {
 }
 
 .exam-resizer-h {
-  height: 6px;
+  height: 3px;
   background: var(--border);
   cursor: row-resize;
+  pointer-events: auto;
+  touch-action: none;
   flex-shrink: 0;
   position: relative;
   z-index: 10;
@@ -4001,7 +4003,8 @@ li.CodeMirror-hint-active {
 }
 #exam-student-exam-panel .exam-editor-wrap { min-height: 0; background: #101310; }
 #exam-student-exam-panel .exam-student-console {
-  height: 220px !important;
+  height: 220px;
+  flex: 0 0 auto;
   background: #0e110e;
   border-top-color: var(--exam-line);
 }
@@ -4106,7 +4109,7 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel #student-query-area { background:#0f130f; }
 #exam-student-exam-panel .exam-toolbar { height:46px; min-height:46px; padding:0 13px; background:#151b15; }
 #exam-student-exam-panel .exam-editor-wrap { background:#101410; }
-#exam-student-exam-panel .exam-student-console { height:228px; background:#0d110d; }
+#exam-student-exam-panel .exam-student-console { height:228px; flex:0 0 auto; background:#0d110d; }
 #exam-student-exam-panel .exam-console-hdr { height:38px !important; background:#151b15 !important; padding:0 14px !important; }
 #exam-student-exam-panel #student-console-tabs-bar { align-items:center; }
 #exam-student-exam-panel #student-console-tabs-bar > * { padding:6px 10px; border:1px solid transparent; border-radius:4px; }
@@ -4219,6 +4222,9 @@ li.CodeMirror-hint-active {
 .exam-submit-count, .exam-submit-total { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 9px 10px; border: 1px solid #334333; border-radius: 5px; background: #151b15; }
 .exam-submit-count strong { color: #a8cf78; font: 700 17px 'JetBrains Mono', monospace; }
 .exam-submit-count span, .exam-submit-total span { color: #8c998a; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.exam-query-verdict { font-weight: 700; letter-spacing: .01em; }
+.exam-query-verdict.is-accepted { color: #8fd36a !important; }
+.exam-query-verdict.is-wrong { color: #f27b7b !important; }
 .exam-submit-count.is-pending { border-color: #4a4030; background: #1d1a14; }
 .exam-submit-count.is-pending strong { color: #dcb66a; }
 .exam-submit-total { grid-column: 1 / -1; background: transparent; border-color: #2a302a; }
@@ -4252,7 +4258,7 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel .exam-q-preview { display: none; }
 #exam-student-exam-panel .exam-q-status-dot { margin-left: 0 !important; }
 #exam-student-exam-panel .exam-student-main { width: 100%; flex: 1 1 auto; grid-template-columns: minmax(0, .9fr) 3px minmax(0, 1.1fr); }
-#exam-student-exam-panel .exam-description-resizer { grid-column: 2; grid-row: 1; width: 6px; cursor: col-resize; background: #202820; border: 0; z-index: 3; }
+#exam-student-exam-panel .exam-description-resizer { grid-column: 2; grid-row: 1; width: 3px; cursor: col-resize; background: #202820; border: 0; z-index: 3; pointer-events: auto; touch-action: none; }
 #exam-student-exam-panel .exam-description-resizer:hover,
 #exam-student-exam-panel .exam-description-resizer.dragging { background: var(--exam-accent); }
 #exam-student-exam-panel .exam-description-resizer { width: 3px; }

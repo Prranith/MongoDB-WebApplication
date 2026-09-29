@@ -3587,9 +3587,11 @@ li.CodeMirror-hint-active {
 }
 
 .exam-resizer-h {
-  height: 6px;
+  height: 3px;
   background: var(--border);
   cursor: row-resize;
+  pointer-events: auto;
+  touch-action: none;
   flex-shrink: 0;
   position: relative;
   z-index: 10;
@@ -4156,7 +4158,8 @@ li.CodeMirror-hint-active {
 }
 #exam-student-exam-panel .exam-editor-wrap { min-height: 0; background: #101310; }
 #exam-student-exam-panel .exam-student-console {
-  height: 220px !important;
+  height: 220px;
+  flex: 0 0 auto;
   background: #0e110e;
   border-top-color: var(--exam-line);
 }
@@ -4261,7 +4264,7 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel #student-query-area { background:#0f130f; }
 #exam-student-exam-panel .exam-toolbar { height:46px; min-height:46px; padding:0 13px; background:#151b15; }
 #exam-student-exam-panel .exam-editor-wrap { background:#101410; }
-#exam-student-exam-panel .exam-student-console { height:228px; background:#0d110d; }
+#exam-student-exam-panel .exam-student-console { height:228px; flex:0 0 auto; background:#0d110d; }
 #exam-student-exam-panel .exam-console-hdr { height:38px !important; background:#151b15 !important; padding:0 14px !important; }
 #exam-student-exam-panel #student-console-tabs-bar { align-items:center; }
 #exam-student-exam-panel #student-console-tabs-bar > * { padding:6px 10px; border:1px solid transparent; border-radius:4px; }
@@ -4374,6 +4377,9 @@ li.CodeMirror-hint-active {
 .exam-submit-count, .exam-submit-total { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 9px 10px; border: 1px solid #334333; border-radius: 5px; background: #151b15; }
 .exam-submit-count strong { color: #a8cf78; font: 700 17px 'JetBrains Mono', monospace; }
 .exam-submit-count span, .exam-submit-total span { color: #8c998a; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.exam-query-verdict { font-weight: 700; letter-spacing: .01em; }
+.exam-query-verdict.is-accepted { color: #8fd36a !important; }
+.exam-query-verdict.is-wrong { color: #f27b7b !important; }
 .exam-submit-count.is-pending { border-color: #4a4030; background: #1d1a14; }
 .exam-submit-count.is-pending strong { color: #dcb66a; }
 .exam-submit-total { grid-column: 1 / -1; background: transparent; border-color: #2a302a; }
@@ -4407,7 +4413,7 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel .exam-q-preview { display: none; }
 #exam-student-exam-panel .exam-q-status-dot { margin-left: 0 !important; }
 #exam-student-exam-panel .exam-student-main { width: 100%; flex: 1 1 auto; grid-template-columns: minmax(0, .9fr) 3px minmax(0, 1.1fr); }
-#exam-student-exam-panel .exam-description-resizer { grid-column: 2; grid-row: 1; width: 6px; cursor: col-resize; background: #202820; border: 0; z-index: 3; }
+#exam-student-exam-panel .exam-description-resizer { grid-column: 2; grid-row: 1; width: 3px; cursor: col-resize; background: #202820; border: 0; z-index: 3; pointer-events: auto; touch-action: none; }
 #exam-student-exam-panel .exam-description-resizer:hover,
 #exam-student-exam-panel .exam-description-resizer.dragging { background: var(--exam-accent); }
 #exam-student-exam-panel .exam-description-resizer { width: 3px; }
@@ -12768,6 +12774,7 @@ const ExamPortal = (() => {
       status: {}, // qId → 'unattempted'|'draft'|'submitted'
       roomStatus: 'waiting',
       lastRunOutput: null,
+      expectedPreview: {},
       hasRunOnce: false,
       selectedOption: null,
       pollInterval: null,
@@ -12784,6 +12791,17 @@ const ExamPortal = (() => {
 
   function el(id) { return document.getElementById(id); }
 
+  // CodeMirror is loaded from a CDN, so mentor editors may render before the
+  // library has finished loading. Retry briefly instead of leaving a raw
+  // textarea behind when that race occurs.
+  function whenCodeMirrorReady(callback, attempt = 0) {
+    if (typeof CodeMirror !== 'undefined' && typeof CodeMirror.fromTextArea === 'function') {
+      callback();
+      return;
+    }
+    if (attempt < 30) setTimeout(() => whenCodeMirrorReady(callback, attempt + 1), 100);
+  }
+
   function isDataQuestion(q) {
     return !!q && (q.type === 'query' || q.type === 'sql');
   }
@@ -12797,6 +12815,21 @@ const ExamPortal = (() => {
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function canonicalExamOutput(value) {
+    if (Array.isArray(value)) return value.map(canonicalExamOutput);
+    if (value && typeof value === 'object') {
+      return Object.keys(value).sort().reduce((result, key) => {
+        result[key] = canonicalExamOutput(value[key]);
+        return result;
+      }, {});
+    }
+    return value;
+  }
+
+  function examOutputsMatch(actual, expected) {
+    return JSON.stringify(canonicalExamOutput(actual)) === JSON.stringify(canonicalExamOutput(expected));
   }
 
   function renderQuestionHtml(q) {
@@ -13729,9 +13762,9 @@ const ExamPortal = (() => {
         `;
         mentor._renderQuestionMediaList(qId);
         // Init mini CodeMirror
-        setTimeout(() => {
+        whenCodeMirrorReady(() => {
           const ta = el(`mini-editor-${qId}`);
-          if (ta && typeof CodeMirror !== 'undefined') {
+          if (ta) {
             if (state.mentor.miniEditors[qId]) {
               try { state.mentor.miniEditors[qId].toTextArea(); } catch(e) {}
               delete state.mentor.miniEditors[qId];
@@ -13756,7 +13789,7 @@ const ExamPortal = (() => {
             state.mentor.miniEditors[qId] = cm;
             attachCodexaKeywordHints(cm, () => q.type === 'sql' ? 'sql' : 'mongodb');
           }
-        }, 50);
+        });
 
       } else if (q.type === 'coding') {
         // Initialize coding features if missing
@@ -13919,10 +13952,10 @@ const ExamPortal = (() => {
         `;
 
         // Init CodeMirror instances
-        setTimeout(() => {
+        whenCodeMirrorReady(() => {
           // 1. Starter editor
           const taStarter = el(`mini-editor-starter-${qId}`);
-          if (taStarter && typeof CodeMirror !== 'undefined') {
+          if (taStarter) {
             if (state.mentor.miniEditors[`starter-${qId}`]) {
               try { state.mentor.miniEditors[`starter-${qId}`].toTextArea(); } catch(e) {}
               delete state.mentor.miniEditors[`starter-${qId}`];
@@ -13952,7 +13985,7 @@ const ExamPortal = (() => {
 
           // 2. Driver editor
           const taDriver = el(`mini-editor-driver-${qId}`);
-          if (taDriver && typeof CodeMirror !== 'undefined') {
+          if (taDriver) {
             if (state.mentor.miniEditors[`driver-${qId}`]) {
               try { state.mentor.miniEditors[`driver-${qId}`].toTextArea(); } catch(e) {}
               delete state.mentor.miniEditors[`driver-${qId}`];
@@ -13979,7 +14012,7 @@ const ExamPortal = (() => {
 
           // 3. Editorial editor
           const taEditorial = el(`mini-editor-editorial-${qId}`);
-          if (taEditorial && typeof CodeMirror !== 'undefined') {
+          if (taEditorial) {
             if (state.mentor.miniEditors[`editorial-${qId}`]) {
               try { state.mentor.miniEditors[`editorial-${qId}`].toTextArea(); } catch(e) {}
               delete state.mentor.miniEditors[`editorial-${qId}`];
@@ -14003,7 +14036,7 @@ const ExamPortal = (() => {
             state.mentor.miniEditors[`editorial-${qId}`] = cmE;
             attachCodexaKeywordHints(cmE, () => q.language || 'python');
           }
-        }, 50);
+        });
 
       } else {
         // MCQ editor
@@ -16267,8 +16300,10 @@ const ExamPortal = (() => {
         el('student-pane-yours').innerHTML = `<span style="color:var(--red)">${res.error || '// Unknown error'}</span>`;
       }
 
-      // Automatically fetch and update expected preview on query run
+      // Keep the preview visible, but use the authoritative server grader for
+      // the immediate Run verdict because the preview is intentionally truncated.
       studentNS._fetchExpectedPreview(q.id);
+      studentNS._checkQueryAnswer(q, query, datasetIds);
     },
 
     clearEditor() {
@@ -16747,13 +16782,48 @@ const ExamPortal = (() => {
       if (res.status === 'ok') {
         const docs = res.preview || [];
         const count = res.docCount || 0;
+        state.student.expectedPreview[questionId] = docs;
         pane.innerHTML = `
           <pre style="color:var(--text);font-size:11px;white-space:pre-wrap">${JSON.stringify(docs, null, 2)}</pre>
           <div class="exam-console-hint">// Showing first ${docs.length} of ${count} documents — full result hidden</div>
         `;
       } else {
+        delete state.student.expectedPreview[questionId];
         pane.innerHTML = '<span style="color:var(--text3)">// Expected output preview not available</span>';
       }
+    },
+
+    _updateQueryVerdict(questionId, results) {
+      const expected = state.student.expectedPreview[questionId];
+      const status = el('student-console-status');
+      if (!status || !Array.isArray(expected)) return;
+      const correct = examOutputsMatch(results, expected);
+      status.textContent = correct ? '— Accepted' : '— Wrong Answer';
+      status.style.color = correct ? 'var(--green3)' : 'var(--red)';
+      status.classList.toggle('exam-query-verdict', true);
+      status.classList.toggle('is-accepted', correct);
+      status.classList.toggle('is-wrong', !correct);
+    },
+
+    async _checkQueryAnswer(q, query, datasetIds) {
+      const status = el('student-console-status');
+      if (!status) return;
+      const res = await apiCall(`/api/exam/room/${state.student.roomId}/submit`, 'POST', {
+        studentId: state.student.studentId,
+        questionId: q.id,
+        type: q.type,
+        marks: q.marks,
+        datasetIds,
+        query,
+        dryRun: true,
+      });
+      if (res.status !== 'ok' || res.dryRun !== true) return;
+      const correct = Boolean(res.correct);
+      status.textContent = correct ? '— Accepted' : '— Wrong Answer';
+      status.style.color = correct ? 'var(--green3)' : 'var(--red)';
+      status.classList.add('exam-query-verdict');
+      status.classList.toggle('is-accepted', correct);
+      status.classList.toggle('is-wrong', !correct);
     },
 
     async finishExam() {
@@ -17271,7 +17341,8 @@ const ExamPortal = (() => {
       if (!bottomEl) return;
       const dy = startY - e.clientY;
       const newHeight = Math.min(Math.max(startHeight + dy, minHeight), maxHeight);
-      bottomEl.style.height = newHeight + 'px';
+      bottomEl.style.setProperty('height', newHeight + 'px', 'important');
+      bottomEl.style.setProperty('flex', '0 0 auto', 'important');
     };
 
     const onMouseUp = () => {
