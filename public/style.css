@@ -2588,9 +2588,13 @@ li.CodeMirror-hint-active {
 }
 
 .workspace-folder-status {
-  padding: 3px 10px 4px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  padding: 4px 10px 5px;
   color: var(--text3);
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2598,7 +2602,9 @@ li.CodeMirror-hint-active {
 }
 
 .workspace-folder-status.connected {
-  color: var(--green, #4ec9b0);
+  color: #9fc8e6;
+  border-left: 3px solid #4DAAF2;
+  padding-left: 7px;
 }
 
 .workspace-empty-state {
@@ -6202,7 +6208,7 @@ body.meeting-active > .toast-container {
   --text:       #e3ddd3;
   --text2:      #bdb4a8;
   --text3:      #91897e;
-  --hl:         #4DAAF2;
+  --hl:         rgba(77, 170, 242, .30);
   --hl2:        #373028;
   --blue:       #4DAAF2;
   --statusbar:  #191816;
@@ -6570,7 +6576,7 @@ body.meeting-editor-following #raw-editor {
 
 .CodeMirror-selected,
 .CodeMirror-focused .CodeMirror-selected {
-  background: #4DAAF2 !important;
+  background: rgba(77, 170, 242, .34) !important;
 }
 
 .CodeMirror-hints {
@@ -6583,7 +6589,7 @@ body.meeting-editor-following #raw-editor {
 }
 
 li.CodeMirror-hint-active {
-  background: #4DAAF2 !important;
+  background: rgba(77, 170, 242, .42) !important;
   color: #fff7eb !important;
 }
 
@@ -6596,6 +6602,42 @@ li.CodeMirror-hint-active {
 .sql-notebook-cell .CodeMirror-gutters {
   border-right-color: #37332d !important;
 }
+
+.app-alert-overlay[hidden] { display: none; }
+.app-alert-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .58);
+  backdrop-filter: blur(3px);
+}
+.app-alert-card {
+  width: min(420px, 100%);
+  padding: 18px;
+  color: var(--text);
+  background: #25231f;
+  border: 1px solid var(--border2);
+  border-top: 3px solid #4DAAF2;
+  border-radius: 8px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .45);
+}
+.app-alert-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.app-alert-message { color: var(--text2); font-size: 12px; line-height: 1.55; white-space: pre-wrap; }
+.app-alert-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
+.app-alert-ok {
+  min-width: 72px;
+  padding: 7px 14px;
+  color: #f5fbff;
+  background: rgba(77, 170, 242, .75);
+  border: 1px solid #80c5f4;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.app-alert-ok:hover { background: rgba(77, 170, 242, .92); }
 
 @media (max-width: 760px) {
   .meeting-container.participants-open .meeting-video-area,

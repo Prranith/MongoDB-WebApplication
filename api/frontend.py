@@ -2743,9 +2743,13 @@ li.CodeMirror-hint-active {
 }
 
 .workspace-folder-status {
-  padding: 3px 10px 4px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  padding: 4px 10px 5px;
   color: var(--text3);
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2753,7 +2757,9 @@ li.CodeMirror-hint-active {
 }
 
 .workspace-folder-status.connected {
-  color: var(--green, #4ec9b0);
+  color: #9fc8e6;
+  border-left: 3px solid #4DAAF2;
+  padding-left: 7px;
 }
 
 .workspace-empty-state {
@@ -6357,7 +6363,7 @@ body.meeting-active > .toast-container {
   --text:       #e3ddd3;
   --text2:      #bdb4a8;
   --text3:      #91897e;
-  --hl:         #4DAAF2;
+  --hl:         rgba(77, 170, 242, .30);
   --hl2:        #373028;
   --blue:       #4DAAF2;
   --statusbar:  #191816;
@@ -6725,7 +6731,7 @@ body.meeting-editor-following #raw-editor {
 
 .CodeMirror-selected,
 .CodeMirror-focused .CodeMirror-selected {
-  background: #4DAAF2 !important;
+  background: rgba(77, 170, 242, .34) !important;
 }
 
 .CodeMirror-hints {
@@ -6738,7 +6744,7 @@ body.meeting-editor-following #raw-editor {
 }
 
 li.CodeMirror-hint-active {
-  background: #4DAAF2 !important;
+  background: rgba(77, 170, 242, .42) !important;
   color: #fff7eb !important;
 }
 
@@ -6751,6 +6757,42 @@ li.CodeMirror-hint-active {
 .sql-notebook-cell .CodeMirror-gutters {
   border-right-color: #37332d !important;
 }
+
+.app-alert-overlay[hidden] { display: none; }
+.app-alert-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .58);
+  backdrop-filter: blur(3px);
+}
+.app-alert-card {
+  width: min(420px, 100%);
+  padding: 18px;
+  color: var(--text);
+  background: #25231f;
+  border: 1px solid var(--border2);
+  border-top: 3px solid #4DAAF2;
+  border-radius: 8px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .45);
+}
+.app-alert-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.app-alert-message { color: var(--text2); font-size: 12px; line-height: 1.55; white-space: pre-wrap; }
+.app-alert-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
+.app-alert-ok {
+  min-width: 72px;
+  padding: 7px 14px;
+  color: #f5fbff;
+  background: rgba(77, 170, 242, .75);
+  border: 1px solid #80c5f4;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.app-alert-ok:hover { background: rgba(77, 170, 242, .92); }
 
 @media (max-width: 760px) {
   .meeting-container.participants-open .meeting-video-area,
@@ -6964,10 +7006,10 @@ li.CodeMirror-hint-active {
         </div>
       </div>
       <!-- Accordion Footers -->
-      <div class="accordion-bar" onclick="alert('Outline outlines queries dynamic schema properties.')">
+      <div class="accordion-bar" onclick="showAppAlert('Outline outlines query and dynamic schema properties.', 'Outline')">
         <span>▷ OUTLINE</span>
       </div>
-      <div class="accordion-bar" onclick="alert('Timeline shows recent query tracking logs.')">
+      <div class="accordion-bar" onclick="showAppAlert('Timeline shows recent query tracking logs.', 'Timeline')">
         <span>▷ TIMELINE</span>
       </div>
     </div>
@@ -7124,8 +7166,8 @@ li.CodeMirror-hint-active {
 
         <!-- Console Tabs (Row 2) -->
         <div id="console-tabs" style="height: 28px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: stretch; flex-shrink: 0;">
-          <div class="ctab active" id="ctab-output" onclick="setConTab('output')">Output</div>
           <div class="ctab" id="ctab-stdin" onclick="setConTab('stdin')" style="display: none;">Input (stdin)</div>
+          <div class="ctab active" id="ctab-output" onclick="setConTab('output')">Output</div>
           <div class="ctab" id="ctab-logs" onclick="setConTab('logs')">Logs</div>
         </div>
         
@@ -7329,7 +7371,64 @@ li.CodeMirror-hint-active {
   </div>
 </div>
 
+<!-- In-app notification surface. Browser-native alerts are replaced by the
+     dialog helper loaded below so every feature uses the same UI. -->
+<div class="app-alert-overlay" id="app-alert-overlay" hidden>
+  <div class="app-alert-card" role="alertdialog" aria-modal="true" aria-labelledby="app-alert-title">
+    <div class="app-alert-title" id="app-alert-title">Codexa Labs</div>
+    <div class="app-alert-message" id="app-alert-message"></div>
+    <div class="app-alert-actions">
+      <button type="button" class="app-alert-ok" id="app-alert-ok">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- JavaScript Logic -->
+<script>
+// Unified in-app alert surface. This keeps informational errors and notices
+// inside Codexa instead of opening browser-native alert dialogs.
+(function () {
+  'use strict';
+
+  const overlay = () => document.getElementById('app-alert-overlay');
+  const title = () => document.getElementById('app-alert-title');
+  const message = () => document.getElementById('app-alert-message');
+  const ok = () => document.getElementById('app-alert-ok');
+
+  function showAppAlert(text, heading) {
+    const root = overlay();
+    if (!root) return;
+    if (title()) title().textContent = heading || 'Codexa Labs';
+    if (message()) message().textContent = String(text || '');
+    root.hidden = false;
+    document.body.classList.add('app-alert-open');
+    const close = () => {
+      root.hidden = true;
+      document.body.classList.remove('app-alert-open');
+    };
+    if (ok()) {
+      ok().onclick = close;
+      ok().focus();
+    }
+    root.onclick = (event) => {
+      if (event.target === root) close();
+    };
+  }
+
+  window.showAppAlert = showAppAlert;
+  window.alert = showAppAlert;
+
+  document.addEventListener('keydown', (event) => {
+    const root = overlay();
+    if (!root || root.hidden) return;
+    if (event.key === 'Escape' || event.key === 'Enter') {
+      event.preventDefault();
+      if (ok()) ok().click();
+    }
+  });
+})();
+
+</script>
 <script>
 // ═══════════════════════════════════════════════════════════════════
 // CONSTANTS & CONFIGS
