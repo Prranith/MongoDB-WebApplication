@@ -2884,7 +2884,7 @@ li.CodeMirror-hint-active {
   border-radius: 4px;
   overflow: hidden;
   position: relative;
-  min-height: 132px;
+  min-height: 112px;
 }
 .exam-mini-editor.frozen { opacity: 0.6; pointer-events: none; }
 .exam-frozen-overlay {
@@ -3494,8 +3494,7 @@ li.CodeMirror-hint-active {
 
 /* ── Mini CodeMirror Editor Dark Theme Override ──────────── */
 .exam-mini-editor .CodeMirror {
-  height: 130px !important;
-  min-height: 130px !important;
+  min-height: 110px !important;
   background: #0d1117 !important;
   color: #c9d1d9 !important;
   border: 1px solid var(--border) !important;
@@ -3518,8 +3517,7 @@ li.CodeMirror-hint-active {
    mentor solutions and student answers. */
 .exam-sql-editor .CodeMirror,
 .exam-sql-editor-wrap .CodeMirror {
-  height: 130px !important;
-  min-height: 130px !important;
+  min-height: 110px !important;
   background: #1e1e1e !important;
   color: #d4d4d4 !important;
   border: 1px solid var(--border) !important;
@@ -4405,6 +4403,7 @@ li.CodeMirror-hint-active {
 }
 #exam-student-exam-panel .exam-icon-button:hover,
 #exam-student-exam-panel .exam-icon-button.active { color: var(--exam-accent); border-color: rgba(184,216,111,.48); background: rgba(184,216,111,.08); }
+#exam-student-exam-panel #student-focus-button { display: none !important; }
 #exam-student-exam-panel .exam-qnav { width: 76px; }
 #exam-student-exam-panel #resizer-student-qnav { display: none; }
 #exam-student-exam-panel .exam-qnav-hdr { height: 42px; padding: 0; justify-content: center; }
@@ -12817,6 +12816,14 @@ const ExamPortal = (() => {
     if (attempt < 30) setTimeout(() => whenCodeMirrorReady(callback, attempt + 1), 100);
   }
 
+  function fitMentorCodeMirror(cm) {
+    if (!cm) return;
+    const lineHeight = cm.defaultTextHeight ? cm.defaultTextHeight() : 18;
+    const lineCount = Math.max(5, cm.lineCount ? cm.lineCount() : 5);
+    cm.setSize('100%', `${Math.max(100, lineCount * lineHeight + 14)}px`);
+    cm.refresh();
+  }
+
   function isDataQuestion(q) {
     return !!q && (q.type === 'query' || q.type === 'sql');
   }
@@ -13796,8 +13803,9 @@ const ExamPortal = (() => {
                 'Cmd-Enter': () => mentor.runSqlPreview(qId),
               } : {},
             });
-            cm.setSize('100%', '130px');
+            fitMentorCodeMirror(cm);
             cm.on('change', () => {
+              fitMentorCodeMirror(cm);
               q.expectedQuery = cm.getValue();
               mentor.updateQField(qId, 'expectedQuery', cm.getValue());
             });
@@ -13986,8 +13994,9 @@ const ExamPortal = (() => {
               matchBrackets: true,
               autoCloseBrackets: true,
             });
-            cmS.setSize('100%', '130px');
+            fitMentorCodeMirror(cmS);
             cmS.on('change', () => {
+              fitMentorCodeMirror(cmS);
               q.templates[activeLang].starterCode = cmS.getValue();
               // Backwards compatibility sync
               q.starterCode = cmS.getValue();
@@ -14016,8 +14025,9 @@ const ExamPortal = (() => {
               matchBrackets: true,
               autoCloseBrackets: true,
             });
-            cmD.setSize('100%', '130px');
+            fitMentorCodeMirror(cmD);
             cmD.on('change', () => {
+              fitMentorCodeMirror(cmD);
               q.templates[activeLang].driverCode = cmD.getValue();
               mentor._saveQDebounced();
             });
@@ -14043,8 +14053,9 @@ const ExamPortal = (() => {
               matchBrackets: true,
               autoCloseBrackets: true,
             });
-            cmE.setSize('100%', '130px');
+            fitMentorCodeMirror(cmE);
             cmE.on('change', () => {
+              fitMentorCodeMirror(cmE);
               q.templates[activeLang].editorialCode = cmE.getValue();
               mentor._saveQDebounced();
             });
@@ -15847,6 +15858,9 @@ const ExamPortal = (() => {
     selectQuestion(idx) {
       const qs = state.student.questions;
       if (!qs || !qs[idx]) return;
+      const selectedQuestion = qs[idx];
+      const examPanel = el('exam-student-exam-panel');
+      if (examPanel) examPanel.classList.toggle('exam-mcq-active', selectedQuestion.type === 'mcq');
 
       // Preserve current draft before switching
       const currentQ = state.student.currentQIdx !== null ? state.student.questions[state.student.currentQIdx] : null;
@@ -15895,6 +15909,8 @@ const ExamPortal = (() => {
       // Show/hide areas
       if (isDataQuestion(q) || q.type === 'coding') {
         el('student-mcq-area').style.display = 'none';
+        el('resizer-student-description').style.display = 'block';
+        el('exam-student-exam-panel').querySelector('.exam-student-main').style.gridTemplateColumns = '';
 
         const isQuery = isDataQuestion(q);
         el('btn-inspect-dataset').style.display = isQuery ? 'flex' : 'none';
@@ -16002,6 +16018,8 @@ const ExamPortal = (() => {
         el('student-question-display').style.display = 'none';
         el('student-query-area').style.display = 'none';
         el('student-no-q-selected').style.display = 'none';
+        el('resizer-student-description').style.display = 'none';
+        el('exam-student-exam-panel').querySelector('.exam-student-main').style.gridTemplateColumns = '1fr';
         el('student-mcq-area').style.display = 'flex';
         el('btn-inspect-dataset').style.display = 'none';
         
@@ -16196,6 +16214,7 @@ const ExamPortal = (() => {
           el('student-pane-yours').innerHTML = `<span style="color:var(--red)">${escapeExamHtml(res.error || '// Unknown error')}</span>`;
         }
         studentNS._fetchExpectedPreview(q.id);
+        studentNS._checkQueryAnswer(q, query, datasetIds);
         return;
       }
 
