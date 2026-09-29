@@ -4040,7 +4040,7 @@ li.CodeMirror-hint-active {
 .exam-footer-progress { color: var(--exam-muted); font: 11px 'JetBrains Mono', monospace; margin: 0 auto; }
 .exam-footer-submit { border-color: rgba(184,216,111,.45); background: var(--exam-accent); color: #182014; font-weight: 700; }
 .exam-footer-submit:hover { filter: brightness(1.08); }
-#exam-student-exam-panel .exam-mcq-area { grid-column: 1 / -1; }
+#exam-student-exam-panel #student-mcq-area { grid-column: 1 / -1; }
 #exam-student-exam-panel #student-no-q-selected { grid-column: 1 / -1; }
 
 /* Premium assessment workspace — calm, information-dense, and keyboard-first. */
@@ -4267,7 +4267,7 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel #student-query-area { grid-column: 3; grid-row: 1; }
 #exam-student-exam-panel #student-query-area { width: auto; }
 #exam-student-exam-panel .exam-question-display { grid-column: 1; grid-row: 1; }
-#exam-student-exam-panel .exam-mcq-area { grid-column: 1 / -1; width: 100%; padding: 24px 34px !important; }
+#exam-student-exam-panel #student-mcq-area { grid-column: 1 / -1; width: 100%; padding: 24px 34px !important; }
 #exam-student-exam-panel #student-mcq-question-text { max-width: 1120px; }
 #exam-student-exam-panel #student-mcq-options { width: min(100%, 1120px); display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(52px, auto); align-content: start; gap: 9px; }
 #exam-student-exam-panel #student-mcq-options .exam-mcq-option-item { min-height: 52px; padding: 12px 14px; }
@@ -4283,8 +4283,18 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel.exam-focus-mode-active .exam-qnav,
 #exam-student-exam-panel.exam-focus-mode-active #resizer-student-qnav,
 #exam-student-exam-panel.exam-focus-mode-active .exam-notice-bar { display: none !important; }
-#exam-student-exam-panel.exam-focus-mode-active .exam-student-main { grid-template-columns: minmax(0, .95fr) 3px minmax(0, 1.05fr); }
-#exam-student-exam-panel.exam-focus-mode-active .exam-student-main { width: 100%; }
+#exam-student-exam-panel.exam-focus-mode-active .exam-student-main {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+}
+#exam-student-exam-panel.exam-focus-mode-active #student-question-display,
+#exam-student-exam-panel.exam-focus-mode-active .exam-description-resizer {
+  display: none !important;
+}
+#exam-student-exam-panel.exam-focus-mode-active #student-query-area {
+  grid-column: 1 / -1;
+  width: 100%;
+}
 .exam-save-state.is-saving { color: #d8bd72 !important; }
 .exam-save-state.is-dirty { color: #d8bd72 !important; }
 .exam-save-state.is-error { color: #e17d77 !important; }
