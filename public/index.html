@@ -542,14 +542,8 @@
             </div>
           </div>
           <!-- Unified terminal console (stdout/stderr + stdin) -->
-          <div class="con-view codexa-terminal" id="terminal-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-            <div id="terminal-session-output" class="terminal-session-output" aria-live="polite">
-              <div class="terminal-welcome">Codexa terminal ready. Run the active file with <kbd>Ctrl</kbd> + <kbd>Enter</kbd>.</div>
-            </div>
-            <div class="terminal-input-row">
-              <span class="terminal-prompt" aria-hidden="true">›</span>
-              <textarea id="terminal-interactive-console" rows="1" oninput="resizeTerminalInput(this); dismissTerminalWelcome()" onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.ctrlKey) { event.preventDefault(); runQuery(); } if(event.ctrlKey && event.key === 'Enter') { event.preventDefault(); runQuery(); }" placeholder="Program input… (Enter to run · Shift+Enter for a new line)"></textarea>
-            </div>
+          <div class="con-view" id="terminal-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;background:#181818">
+            <textarea id="terminal-interactive-console" onkeydown="if(event.ctrlKey && event.key === 'Enter') runQuery()" style="flex:1;background:transparent;border:none;color:#d4d4d4;font-family:'Consolas', 'JetBrains Mono', monospace;font-size:12px;line-height:1.6;padding:12px;resize:none;outline:none;user-select:text" placeholder="// Type standard input (stdin) directly here...&#10;// Then click Run (or press Ctrl+Enter) to execute code and see output in this terminal console."></textarea>
           </div>
         </div>
       </div>

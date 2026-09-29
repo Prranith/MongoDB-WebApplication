@@ -7287,14 +7287,8 @@ li.CodeMirror-hint-active {
             </div>
           </div>
           <!-- Unified terminal console (stdout/stderr + stdin) -->
-          <div class="con-view codexa-terminal" id="terminal-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-            <div id="terminal-session-output" class="terminal-session-output" aria-live="polite">
-              <div class="terminal-welcome">Codexa terminal ready. Run the active file with <kbd>Ctrl</kbd> + <kbd>Enter</kbd>.</div>
-            </div>
-            <div class="terminal-input-row">
-              <span class="terminal-prompt" aria-hidden="true">›</span>
-              <textarea id="terminal-interactive-console" rows="1" oninput="resizeTerminalInput(this); dismissTerminalWelcome()" onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.ctrlKey) { event.preventDefault(); runQuery(); } if(event.ctrlKey && event.key === 'Enter') { event.preventDefault(); runQuery(); }" placeholder="Program input… (Enter to run · Shift+Enter for a new line)"></textarea>
-            </div>
+          <div class="con-view" id="terminal-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;background:#181818">
+            <textarea id="terminal-interactive-console" onkeydown="if(event.ctrlKey && event.key === 'Enter') runQuery()" style="flex:1;background:transparent;border:none;color:#d4d4d4;font-family:'Consolas', 'JetBrains Mono', monospace;font-size:12px;line-height:1.6;padding:12px;resize:none;outline:none;user-select:text" placeholder="// Type standard input (stdin) directly here...&#10;// Then click Run (or press Ctrl+Enter) to execute code and see output in this terminal console."></textarea>
           </div>
         </div>
       </div>
@@ -10197,12 +10191,11 @@ async function runQuery() {
   }
   if (lang !== 'mongodb') {
     const consoleEl = document.getElementById('terminal-interactive-console');
-    const stdin = consoleEl ? consoleEl.value : '';
-    dismissTerminalWelcome();
-    appendTerminalEntry('command', stdin.trim() || `run ${lang}`);
+    let stdin = '';
     if (consoleEl) {
-      consoleEl.value = '';
-      resizeTerminalInput(consoleEl);
+      const fullText = consoleEl.value;
+      const parts = fullText.split('================= Output =================');
+      stdin = parts[0].trim();
     }
     await runPlaygroundCode(lang, editor.getValue(), stdin);
     return;
@@ -10472,36 +10465,11 @@ function logOutput(html) {
   outView.scrollTop = outView.scrollHeight;
 }
 
-function appendTerminalEntry(kind, text) {
-  const terminal = document.getElementById('terminal-session-output');
-  if (!terminal || text === undefined || text === null || text === '') return;
-  const entry = document.createElement('div');
-  entry.className = `terminal-entry terminal-entry-${kind}`;
-  entry.textContent = String(text);
-  terminal.appendChild(entry);
-  terminal.scrollTop = terminal.scrollHeight;
-}
-
-function dismissTerminalWelcome() {
-  const welcome = document.querySelector('#terminal-session-output .terminal-welcome');
-  if (welcome) welcome.remove();
-}
-
-function resizeTerminalInput(input) {
-  if (!input) return;
-  input.style.height = 'auto';
-  input.style.height = `${Math.min(input.scrollHeight, 110)}px`;
-}
-
 function setConTab(tab) {
+  S.conTab = tab;
   const langSelect = document.getElementById('workspace-lang-select');
   const lang = langSelect ? langSelect.value : 'mongodb';
   const isMongo = lang === 'mongodb';
-
-  // Coding languages use one terminal stream, just like VS Code. MongoDB
-  // keeps its structured result tabs because those views are database-specific.
-  if (!isMongo) tab = 'terminal';
-  S.conTab = tab;
 
   ['output', 'logs', 'stdin'].forEach(function(t) {
     const el = document.getElementById(`ctab-${t}`);
@@ -10526,8 +10494,13 @@ function setConTab(tab) {
     if (rawView) rawView.style.display = 'none';
     if (viewBtns) viewBtns.style.display = 'none';
     
-    if (outputView) outputView.style.display = 'none';
-    if (terminalView) terminalView.style.display = 'flex';
+    if (tab === 'stdin') {
+      if (outputView) outputView.style.display = 'none';
+      if (terminalView) terminalView.style.display = 'flex';
+    } else {
+      if (outputView) outputView.style.display = 'block';
+      if (terminalView) terminalView.style.display = 'none';
+    }
   }
 }
 
@@ -10550,10 +10523,7 @@ function clearConsole() {
   const termConsole = document.getElementById('terminal-interactive-console');
   if (termConsole) {
     termConsole.value = '';
-    resizeTerminalInput(termConsole);
   }
-  const terminalOutput = document.getElementById('terminal-session-output');
-  if (terminalOutput) terminalOutput.innerHTML = '<div class="terminal-welcome">Codexa terminal ready. Run the active file with Ctrl + Enter.</div>';
   setConsoleStatus('— Ready');
 }
 
@@ -10746,8 +10716,7 @@ async function runPlaygroundCode(language, code, stdin) {
   if (timeEl) timeEl.textContent = '0ms';
   if (countEl) countEl.textContent = 'Playground';
 
-  const isCodingTerminal = language !== 'mongodb';
-  setConTab(isCodingTerminal ? 'terminal' : 'output');
+  setConTab('output');
   const outView = document.getElementById('output-text');
   if (outView) {
     outView.innerHTML = `<span class="out-info">[info] Compiling and executing ${language} code...</span>`;
@@ -10791,19 +10760,12 @@ async function runPlaygroundCode(language, code, stdin) {
         outView.scrollTop = outView.scrollHeight;
       }
 
-      if (isCodingTerminal) {
-        if (stdout) appendTerminalEntry('output', stdout);
-        if (stderr) appendTerminalEntry('error', stderr);
-        if (!stdout && !stderr) appendTerminalEntry('output', `Process completed successfully with exit code ${exitCode}`);
-      }
-
       saveToHistory(`${language.toUpperCase()} Code Run`, isError ? 'error' : 'ok', 0, duration);
     } else {
       if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ Server Error</span>`;
       if (outView) {
         outView.innerHTML = `<div class="out-err"><b>[Error] Failed to execute code:</b> ${esc(d.error || 'Server error')}</div>`;
       }
-      if (isCodingTerminal) appendTerminalEntry('error', d.error || 'Server error');
       saveToHistory(`${language.toUpperCase()} Code Run`, 'error', 0, 0);
     }
   };
@@ -10837,7 +10799,6 @@ async function runPlaygroundCode(language, code, stdin) {
     if (outView) {
       outView.innerHTML = `<div class="out-err"><b>[Error] Request failed:</b> ${esc(err.message || err)}</div>`;
     }
-    if (isCodingTerminal) appendTerminalEntry('error', err.message || err);
     saveToHistory(`${language.toUpperCase()} Code Run`, 'error', 0, 0);
   }
 }
@@ -10870,11 +10831,13 @@ function updateWorkspaceConsoleLayout(newLang) {
     if (S.conTab === 'stdin') S.conTab = 'output';
     setConTab(S.conTab);
   } else {
-    if (conTabs) conTabs.style.display = 'none';
+    if (conTabs) conTabs.style.display = 'flex';
     if (conSubTabs) conSubTabs.style.display = 'none';
-    if (ctabStdin) ctabStdin.style.display = 'none';
-    S.conTab = 'terminal';
-    setConTab('terminal');
+    if (ctabStdin) ctabStdin.style.display = 'block';
+    if (!['output', 'logs', 'stdin'].includes(S.conTab)) {
+      S.conTab = 'output';
+    }
+    setConTab(S.conTab);
   }
 }
 
