@@ -2884,6 +2884,7 @@ li.CodeMirror-hint-active {
   border-radius: 4px;
   overflow: hidden;
   position: relative;
+  min-height: 132px;
 }
 .exam-mini-editor.frozen { opacity: 0.6; pointer-events: none; }
 .exam-frozen-overlay {
@@ -3493,6 +3494,8 @@ li.CodeMirror-hint-active {
 
 /* ── Mini CodeMirror Editor Dark Theme Override ──────────── */
 .exam-mini-editor .CodeMirror {
+  height: 130px !important;
+  min-height: 130px !important;
   background: #0d1117 !important;
   color: #c9d1d9 !important;
   border: 1px solid var(--border) !important;
@@ -3515,6 +3518,8 @@ li.CodeMirror-hint-active {
    mentor solutions and student answers. */
 .exam-sql-editor .CodeMirror,
 .exam-sql-editor-wrap .CodeMirror {
+  height: 130px !important;
+  min-height: 130px !important;
   background: #1e1e1e !important;
   color: #d4d4d4 !important;
   border: 1px solid var(--border) !important;
@@ -15996,6 +16001,7 @@ const ExamPortal = (() => {
         el('student-workspace-tabs').style.display = 'none';
         el('student-question-display').style.display = 'none';
         el('student-query-area').style.display = 'none';
+        el('student-no-q-selected').style.display = 'none';
         el('student-mcq-area').style.display = 'flex';
         el('btn-inspect-dataset').style.display = 'none';
         

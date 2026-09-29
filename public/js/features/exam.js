@@ -3253,6 +3253,7 @@ const ExamPortal = (() => {
         el('student-workspace-tabs').style.display = 'none';
         el('student-question-display').style.display = 'none';
         el('student-query-area').style.display = 'none';
+        el('student-no-q-selected').style.display = 'none';
         el('student-mcq-area').style.display = 'flex';
         el('btn-inspect-dataset').style.display = 'none';
         
