@@ -6357,9 +6357,9 @@ body.meeting-active > .toast-container {
   --text:       #e3ddd3;
   --text2:      #bdb4a8;
   --text3:      #91897e;
-  --hl:         #0078D4;
+  --hl:         #4DAAF2;
   --hl2:        #373028;
-  --blue:       #c7925f;
+  --blue:       #4DAAF2;
   --statusbar:  #191816;
 }
 
@@ -6725,7 +6725,7 @@ body.meeting-editor-following #raw-editor {
 
 .CodeMirror-selected,
 .CodeMirror-focused .CodeMirror-selected {
-  background: #0078D4 !important;
+  background: #4DAAF2 !important;
 }
 
 .CodeMirror-hints {
@@ -6738,7 +6738,7 @@ body.meeting-editor-following #raw-editor {
 }
 
 li.CodeMirror-hint-active {
-  background: #0078D4 !important;
+  background: #4DAAF2 !important;
   color: #fff7eb !important;
 }
 
