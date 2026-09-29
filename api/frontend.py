@@ -4261,7 +4261,7 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel #student-query-area { background:#0f130f; }
 #exam-student-exam-panel .exam-toolbar { height:46px; min-height:46px; padding:0 13px; background:#151b15; }
 #exam-student-exam-panel .exam-editor-wrap { background:#101410; }
-#exam-student-exam-panel .exam-student-console { height:228px !important; background:#0d110d; }
+#exam-student-exam-panel .exam-student-console { height:228px; background:#0d110d; }
 #exam-student-exam-panel .exam-console-hdr { height:38px !important; background:#151b15 !important; padding:0 14px !important; }
 #exam-student-exam-panel #student-console-tabs-bar { align-items:center; }
 #exam-student-exam-panel #student-console-tabs-bar > * { padding:6px 10px; border:1px solid transparent; border-radius:4px; }
@@ -4337,6 +4337,7 @@ li.CodeMirror-hint-active {
 }
 .exam-room-copy-pill:hover,
 .exam-room-copy-pill:focus-visible { border-color: var(--exam-accent, #b8d86f); color: var(--exam-accent, #b8d86f); outline: none; }
+.exam-room-copy-pill svg { display: block; flex: 0 0 auto; }
 .exam-participants-toggle { gap: 7px; }
 .exam-participants-toggle.active { color: var(--exam-accent, #b8d86f); border-color: rgba(184,216,111,.45); background: rgba(184,216,111,.08); }
 .exam-question-summary { margin-left: 8px; color: var(--exam-muted, #7d877d); font: 11px 'JetBrains Mono', monospace; }
@@ -4359,6 +4360,24 @@ li.CodeMirror-hint-active {
 .exam-flag-badge.is-clear { color: #93a091; border: 1px solid #344034; background: #151b15; }
 .exam-flag-badge.is-flagged { color: #e7b866; border: 1px solid rgba(231,184,102,.4); background: rgba(231,184,102,.1); }
 .exam-flag-badge:hover { filter: brightness(1.15); }
+.exam-proctor-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; text-align: left; }
+.exam-proctor-metric,
+.exam-proctor-last-flag { display: flex; flex-direction: column; gap: 7px; padding: 12px 13px; border: 1px solid #373737; border-radius: 6px; background: #202020; }
+.exam-proctor-metric span,
+.exam-proctor-last-flag span { color: #969696; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.exam-proctor-metric strong { color: #e2b866; font: 700 21px 'JetBrains Mono', monospace; }
+.exam-proctor-last-flag { margin-top: 10px; text-align: left; }
+.exam-proctor-last-flag strong { color: #d8ddd6; font: 11px 'JetBrains Mono', monospace; }
+#exam-warning-modal.exam-proctor-log-modal .modal-titlebar { background: rgba(220,182,106,.08); border-bottom-color: rgba(220,182,106,.28); }
+#exam-warning-modal.exam-proctor-log-modal .modal-titlebar > svg { fill: #dcb66a; color: #dcb66a; }
+.exam-submit-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; text-align: left; }
+.exam-submit-count, .exam-submit-total { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 9px 10px; border: 1px solid #334333; border-radius: 5px; background: #151b15; }
+.exam-submit-count strong { color: #a8cf78; font: 700 17px 'JetBrains Mono', monospace; }
+.exam-submit-count span, .exam-submit-total span { color: #8c998a; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.exam-submit-count.is-pending { border-color: #4a4030; background: #1d1a14; }
+.exam-submit-count.is-pending strong { color: #dcb66a; }
+.exam-submit-total { grid-column: 1 / -1; background: transparent; border-color: #2a302a; }
+.exam-submit-total strong { color: #d7ded4; font: 600 12px 'JetBrains Mono', monospace; }
 
 #exam-student-exam-panel .exam-topbar { height: 48px; padding: 0 18px; }
 #exam-student-exam-panel .exam-brand-mark { width: 25px; height: 25px; }
@@ -4376,6 +4395,7 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel .exam-icon-button:hover,
 #exam-student-exam-panel .exam-icon-button.active { color: var(--exam-accent); border-color: rgba(184,216,111,.48); background: rgba(184,216,111,.08); }
 #exam-student-exam-panel .exam-qnav { width: 76px; }
+#exam-student-exam-panel #resizer-student-qnav { display: none; }
 #exam-student-exam-panel .exam-qnav-hdr { height: 42px; padding: 0; justify-content: center; }
 #exam-student-exam-panel .exam-qnav-hdr > span:first-child { font-size: 0; }
 #exam-student-exam-panel .exam-qnav-hdr > span:first-child::after { content: 'Q'; font-size: 11px; }
@@ -4386,15 +4406,20 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel .exam-q-card-top .exam-q-marks-badge,
 #exam-student-exam-panel .exam-q-preview { display: none; }
 #exam-student-exam-panel .exam-q-status-dot { margin-left: 0 !important; }
-#exam-student-exam-panel .exam-student-main { grid-template-columns: minmax(300px, .9fr) 6px minmax(430px, 1.1fr); }
+#exam-student-exam-panel .exam-student-main { width: 100%; flex: 1 1 auto; grid-template-columns: minmax(0, .9fr) 3px minmax(0, 1.1fr); }
 #exam-student-exam-panel .exam-description-resizer { grid-column: 2; grid-row: 1; width: 6px; cursor: col-resize; background: #202820; border: 0; z-index: 3; }
 #exam-student-exam-panel .exam-description-resizer:hover,
 #exam-student-exam-panel .exam-description-resizer.dragging { background: var(--exam-accent); }
+#exam-student-exam-panel .exam-description-resizer { width: 3px; }
+#exam-student-exam-panel .exam-resizer-h { height: 3px; box-shadow: none; }
+#exam-student-exam-panel .exam-resizer-v-sub { width: 3px; box-shadow: none; }
 #exam-student-exam-panel #student-query-area { grid-column: 3; grid-row: 1; }
+#exam-student-exam-panel #student-query-area { width: auto; }
 #exam-student-exam-panel .exam-question-display { grid-column: 1; grid-row: 1; }
 #exam-student-exam-panel .exam-mcq-area { grid-column: 1 / -1; width: 100%; padding: 24px 34px !important; }
 #exam-student-exam-panel #student-mcq-question-text { max-width: 1120px; }
-#exam-student-exam-panel #student-mcq-options { width: min(100%, 1120px); display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+#exam-student-exam-panel #student-mcq-options { width: min(100%, 1120px); display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(52px, auto); align-content: start; gap: 9px; }
+#exam-student-exam-panel #student-mcq-options .exam-mcq-option-item { min-height: 52px; padding: 12px 14px; }
 #exam-student-exam-panel #student-submit-mcq-btn { display: none !important; }
 #exam-student-exam-panel #student-mcq-status { color: #9ca99b !important; }
 #exam-student-exam-panel #student-mcq-status::before { content: 'Autosaved'; color: #8da37e; }
@@ -4407,13 +4432,16 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel.exam-focus-mode-active .exam-qnav,
 #exam-student-exam-panel.exam-focus-mode-active #resizer-student-qnav,
 #exam-student-exam-panel.exam-focus-mode-active .exam-notice-bar { display: none !important; }
-#exam-student-exam-panel.exam-focus-mode-active .exam-student-main { grid-template-columns: minmax(320px, .95fr) 6px minmax(480px, 1.05fr); }
+#exam-student-exam-panel.exam-focus-mode-active .exam-student-main { grid-template-columns: minmax(0, .95fr) 3px minmax(0, 1.05fr); }
+#exam-student-exam-panel.exam-focus-mode-active .exam-student-main { width: 100%; }
 .exam-save-state.is-saving { color: #d8bd72 !important; }
 .exam-save-state.is-dirty { color: #d8bd72 !important; }
 .exam-save-state.is-error { color: #e17d77 !important; }
 .exam-verdict { font-weight: 700; letter-spacing: .01em; }
 .exam-verdict-accepted { color: #a8cf78; }
 .exam-verdict-wrong, .exam-verdict-error { color: #e17b76; }
+.exam-console-preview-label { margin-bottom: 6px; color: #a8c18f; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.exam-console-preview-value { margin: 0 0 10px; padding: 8px; border: 1px solid #2d382d; border-radius: 4px; background: #151a15; color: #d5dfd2; font: 11px/1.5 'JetBrains Mono', monospace; white-space: pre-wrap; }
 
 #exam-student-exam-panel .CodeMirror,
 #exam-student-exam-panel .CodeMirror pre,
@@ -4429,7 +4457,7 @@ li.CodeMirror-hint-active {
 
 @media (max-width: 900px) {
   #exam-student-exam-panel .exam-qnav { width: 66px; }
-  #exam-student-exam-panel .exam-student-main { grid-template-columns: minmax(250px, .8fr) 6px minmax(360px, 1.2fr); }
+  #exam-student-exam-panel .exam-student-main { grid-template-columns: minmax(0, .8fr) 3px minmax(0, 1.2fr); }
 }
 @media (max-width: 700px) {
   #exam-student-exam-panel .exam-description-resizer { display: none; }
@@ -12675,6 +12703,7 @@ db.collection.find({})</textarea>
       <div style="font-size: 13px; line-height: 1.6; color: var(--text2);">
         Are you sure you want to submit the final exam? You will not be able to modify your answers after this.
       </div>
+      <div id="student-submit-summary" class="exam-submit-summary"></div>
       <div style="display: flex; gap: 10px; width: 100%; margin-top: 10px;">
         <button class="exam-btn exam-btn-secondary" onclick="closeModal('exam-confirm-submit-modal')" style="flex: 1; font-weight: 600; border-radius: 4px; padding: 8px 16px;">
           Cancel
@@ -13164,15 +13193,26 @@ const ExamPortal = (() => {
 
     showFlaggedDetails(studentName, fullscreenExits, copyPasteAttempts, lastFlaggedAt) {
       const timeStr = lastFlaggedAt ? new Date(lastFlaggedAt * 1000).toLocaleString() : 'Never';
-      showAppWarningModal(
-        `Proctoring Log — ${studentName}`,
-        `Fullscreen Exits Count: ${fullscreenExits}\\nCopy & Paste Attempt Count: ${copyPasteAttempts}\\nLast Flagged Violation: ${timeStr}`
-      );
-      if (el('warning-modal-title')) el('warning-modal-title').style.color = '#f59e0b';
+      const modal = el('exam-warning-modal');
+      const title = el('warning-modal-title');
+      const message = el('warning-modal-message');
       const btn = el('warning-modal-btn');
+      if (!modal || !title || !message || !btn) return;
+      title.textContent = `Proctoring log · ${studentName}`;
+      title.style.color = '#dcb66a';
+      message.innerHTML = `
+        <div class="exam-proctor-summary">
+          <div class="exam-proctor-metric"><span>Fullscreen exits</span><strong>${Number(fullscreenExits) || 0}</strong></div>
+          <div class="exam-proctor-metric"><span>Copy / paste attempts</span><strong>${Number(copyPasteAttempts) || 0}</strong></div>
+        </div>
+        <div class="exam-proctor-last-flag"><span>Last flagged event</span><strong>${escapeExamHtml(timeStr)}</strong></div>
+      `;
+      btn.onclick = () => modal.classList.remove('open');
+      modal.classList.add('exam-proctor-log-modal');
+      modal.classList.add('open');
       if (btn) {
-        btn.className = 'exam-btn exam-btn-full';
-        btn.style.cssText = 'background: #252526; border: 1px solid var(--border); color: var(--text2);';
+        btn.className = 'exam-btn exam-btn-secondary exam-btn-full';
+        btn.style.cssText = '';
         btn.textContent = 'Close Log';
       }
     },
@@ -16720,6 +16760,22 @@ const ExamPortal = (() => {
       const modal = el('exam-confirm-submit-modal');
       if (modal) {
         state.student.ignoreFullscreenChange = true;
+        const total = state.student.questions.length;
+        const answered = state.student.questions.filter(q => {
+          if (state.student.status[q.id] === 'submitted') return true;
+          if (q.type === 'mcq') return q.isMultiSelect
+            ? Array.isArray(q._studentSelectedOptions) && q._studentSelectedOptions.length > 0
+            : q._studentSelectedOption !== null && q._studentSelectedOption !== undefined;
+          return Boolean((q._studentDraft || '').trim() || (q._studentDrafts && Object.values(q._studentDrafts).some(value => String(value || '').trim())));
+        }).length;
+        const summary = el('student-submit-summary');
+        if (summary) {
+          summary.innerHTML = `
+            <div class="exam-submit-count"><strong>${answered}</strong><span>Answered</span></div>
+            <div class="exam-submit-count is-pending"><strong>${Math.max(0, total - answered)}</strong><span>Unanswered</span></div>
+            <div class="exam-submit-total"><span>Total questions</span><strong>${total}</strong></div>
+          `;
+        }
         
         const okBtn = el('confirm-submit-ok-btn');
         if (okBtn) {
@@ -16994,7 +17050,20 @@ const ExamPortal = (() => {
       if (cached) {
         studentNS.renderRunResult(cached, tabId);
       } else {
-        if (outputArea) outputArea.innerHTML = '<span style="color:var(--text3)">// Click Run to execute code</span>';
+        if (outputArea) {
+          if (tabId.startsWith('case-')) {
+            const idx = parseInt(tabId.split('-')[1]);
+            const tc = state.student.sampleCases[idx];
+            const expected = tc ? (tc.expectedOutput || '').trim() : '';
+            outputArea.innerHTML = `
+              <div class="exam-console-preview-label">Expected output</div>
+              <pre class="exam-console-preview-value">${expected || '// No expected output configured'}</pre>
+              <div class="exam-console-hint">// Run the sample to compare your output</div>
+            `;
+          } else {
+            outputArea.innerHTML = '<span style="color:var(--text3)">// Run the program to see console output</span>';
+          }
+        }
       }
     },
 
@@ -17119,10 +17188,9 @@ const ExamPortal = (() => {
   // ── Drag Resizers Initializer ──────────────────────────────────────────────
   function initResizers() {
     initVerticalResizer('resizer-mentor-left', '.exam-dash-left', 180, 500);
-    initVerticalResizer('resizer-student-qnav', '.exam-qnav', 180, 500);
     initDescriptionResizer('resizer-student-description');
     initHorizontalResizer('resizer-student-console', '.exam-student-console', 100, 600);
-    initPaneSplitter('resizer-student-panes', 'box-pane-yours', 'box-pane-expected');
+    initPaneSplitter('resizer-student-panes', 'box-pane-left', 'box-pane-right');
     
     // Mentor submission panels
     initVerticalResizer('resizer-mentor-sub-qnav', '#exam-mentor-submission-panel .exam-qnav', 180, 500);
@@ -17164,7 +17232,6 @@ const ExamPortal = (() => {
     if (!handle) return;
     let startX;
     let startLeft;
-    let startRight;
 
     const onMouseMove = (event) => {
       const grid = handle.parentElement;
@@ -17172,8 +17239,8 @@ const ExamPortal = (() => {
       const delta = event.clientX - startX;
       const total = grid.getBoundingClientRect().width;
       const left = Math.max(280, Math.min(total - 500, startLeft + delta));
-      const right = Math.max(420, total - left - 6);
-      grid.style.gridTemplateColumns = `${left}px 6px ${right}px`;
+      const right = Math.max(420, total - left - 3);
+      grid.style.gridTemplateColumns = `${left}px 3px ${right}px`;
     };
 
     const onMouseUp = () => {
@@ -17188,8 +17255,6 @@ const ExamPortal = (() => {
       if (!grid || columns.length < 3) return;
       startX = event.clientX;
       startLeft = parseFloat(columns[0]) || grid.getBoundingClientRect().width * 0.45;
-      startRight = parseFloat(columns[2]) || 0;
-      void startRight;
       handle.classList.add('dragging');
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);

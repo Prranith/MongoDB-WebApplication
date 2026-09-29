@@ -466,15 +466,26 @@ const ExamPortal = (() => {
 
     showFlaggedDetails(studentName, fullscreenExits, copyPasteAttempts, lastFlaggedAt) {
       const timeStr = lastFlaggedAt ? new Date(lastFlaggedAt * 1000).toLocaleString() : 'Never';
-      showAppWarningModal(
-        `Proctoring Log — ${studentName}`,
-        `Fullscreen Exits Count: ${fullscreenExits}\nCopy & Paste Attempt Count: ${copyPasteAttempts}\nLast Flagged Violation: ${timeStr}`
-      );
-      if (el('warning-modal-title')) el('warning-modal-title').style.color = '#f59e0b';
+      const modal = el('exam-warning-modal');
+      const title = el('warning-modal-title');
+      const message = el('warning-modal-message');
       const btn = el('warning-modal-btn');
+      if (!modal || !title || !message || !btn) return;
+      title.textContent = `Proctoring log · ${studentName}`;
+      title.style.color = '#dcb66a';
+      message.innerHTML = `
+        <div class="exam-proctor-summary">
+          <div class="exam-proctor-metric"><span>Fullscreen exits</span><strong>${Number(fullscreenExits) || 0}</strong></div>
+          <div class="exam-proctor-metric"><span>Copy / paste attempts</span><strong>${Number(copyPasteAttempts) || 0}</strong></div>
+        </div>
+        <div class="exam-proctor-last-flag"><span>Last flagged event</span><strong>${escapeExamHtml(timeStr)}</strong></div>
+      `;
+      btn.onclick = () => modal.classList.remove('open');
+      modal.classList.add('exam-proctor-log-modal');
+      modal.classList.add('open');
       if (btn) {
-        btn.className = 'exam-btn exam-btn-full';
-        btn.style.cssText = 'background: #252526; border: 1px solid var(--border); color: var(--text2);';
+        btn.className = 'exam-btn exam-btn-secondary exam-btn-full';
+        btn.style.cssText = '';
         btn.textContent = 'Close Log';
       }
     },
@@ -4022,6 +4033,22 @@ const ExamPortal = (() => {
       const modal = el('exam-confirm-submit-modal');
       if (modal) {
         state.student.ignoreFullscreenChange = true;
+        const total = state.student.questions.length;
+        const answered = state.student.questions.filter(q => {
+          if (state.student.status[q.id] === 'submitted') return true;
+          if (q.type === 'mcq') return q.isMultiSelect
+            ? Array.isArray(q._studentSelectedOptions) && q._studentSelectedOptions.length > 0
+            : q._studentSelectedOption !== null && q._studentSelectedOption !== undefined;
+          return Boolean((q._studentDraft || '').trim() || (q._studentDrafts && Object.values(q._studentDrafts).some(value => String(value || '').trim())));
+        }).length;
+        const summary = el('student-submit-summary');
+        if (summary) {
+          summary.innerHTML = `
+            <div class="exam-submit-count"><strong>${answered}</strong><span>Answered</span></div>
+            <div class="exam-submit-count is-pending"><strong>${Math.max(0, total - answered)}</strong><span>Unanswered</span></div>
+            <div class="exam-submit-total"><span>Total questions</span><strong>${total}</strong></div>
+          `;
+        }
         
         const okBtn = el('confirm-submit-ok-btn');
         if (okBtn) {
@@ -4296,7 +4323,20 @@ const ExamPortal = (() => {
       if (cached) {
         studentNS.renderRunResult(cached, tabId);
       } else {
-        if (outputArea) outputArea.innerHTML = '<span style="color:var(--text3)">// Click Run to execute code</span>';
+        if (outputArea) {
+          if (tabId.startsWith('case-')) {
+            const idx = parseInt(tabId.split('-')[1]);
+            const tc = state.student.sampleCases[idx];
+            const expected = tc ? (tc.expectedOutput || '').trim() : '';
+            outputArea.innerHTML = `
+              <div class="exam-console-preview-label">Expected output</div>
+              <pre class="exam-console-preview-value">${expected || '// No expected output configured'}</pre>
+              <div class="exam-console-hint">// Run the sample to compare your output</div>
+            `;
+          } else {
+            outputArea.innerHTML = '<span style="color:var(--text3)">// Run the program to see console output</span>';
+          }
+        }
       }
     },
 
@@ -4421,10 +4461,9 @@ const ExamPortal = (() => {
   // ── Drag Resizers Initializer ──────────────────────────────────────────────
   function initResizers() {
     initVerticalResizer('resizer-mentor-left', '.exam-dash-left', 180, 500);
-    initVerticalResizer('resizer-student-qnav', '.exam-qnav', 180, 500);
     initDescriptionResizer('resizer-student-description');
     initHorizontalResizer('resizer-student-console', '.exam-student-console', 100, 600);
-    initPaneSplitter('resizer-student-panes', 'box-pane-yours', 'box-pane-expected');
+    initPaneSplitter('resizer-student-panes', 'box-pane-left', 'box-pane-right');
     
     // Mentor submission panels
     initVerticalResizer('resizer-mentor-sub-qnav', '#exam-mentor-submission-panel .exam-qnav', 180, 500);
@@ -4466,7 +4505,6 @@ const ExamPortal = (() => {
     if (!handle) return;
     let startX;
     let startLeft;
-    let startRight;
 
     const onMouseMove = (event) => {
       const grid = handle.parentElement;
@@ -4474,8 +4512,8 @@ const ExamPortal = (() => {
       const delta = event.clientX - startX;
       const total = grid.getBoundingClientRect().width;
       const left = Math.max(280, Math.min(total - 500, startLeft + delta));
-      const right = Math.max(420, total - left - 6);
-      grid.style.gridTemplateColumns = `${left}px 6px ${right}px`;
+      const right = Math.max(420, total - left - 3);
+      grid.style.gridTemplateColumns = `${left}px 3px ${right}px`;
     };
 
     const onMouseUp = () => {
@@ -4490,8 +4528,6 @@ const ExamPortal = (() => {
       if (!grid || columns.length < 3) return;
       startX = event.clientX;
       startLeft = parseFloat(columns[0]) || grid.getBoundingClientRect().width * 0.45;
-      startRight = parseFloat(columns[2]) || 0;
-      void startRight;
       handle.classList.add('dragging');
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);

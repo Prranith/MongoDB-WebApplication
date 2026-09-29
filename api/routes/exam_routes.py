@@ -720,6 +720,7 @@ def api_exam_generate_test_cases(room_id: str):
         code = body.get("editorialCode", "")
         inputs = body.get("inputs", [])
         template_type = body.get("templateType", "scratch")
+        driver_code = body.get("driverCode", "") or ""
         outputs = SubmissionService.generate_test_cases(language, code, inputs, template_type, driver_code)
         return _json_response({
             "status": "ok",
