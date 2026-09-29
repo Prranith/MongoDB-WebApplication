@@ -371,7 +371,24 @@
 
     <!-- 5. Search Panel -->
     <div class="sidebar-panel" id="panel-search">
-      <div style="padding:16px;color:var(--text3)">Search coming soon</div>
+      <div class="workspace-search-toolbar">
+        <div class="workspace-search-input-wrap">
+          <span class="workspace-search-icon">⌕</span>
+          <input id="workspace-search-input" type="search" placeholder="Search workspace" autocomplete="off" oninput="searchWorkspace()" onkeydown="if(event.key === 'Enter') searchWorkspace()" />
+          <button type="button" class="workspace-search-clear" title="Clear search" onclick="clearWorkspaceSearch()">×</button>
+        </div>
+        <div class="workspace-search-options">
+          <select id="workspace-search-scope" onchange="searchWorkspace()" aria-label="Search scope">
+            <option value="all">All</option>
+            <option value="names">File names</option>
+            <option value="content">File contents</option>
+          </select>
+          <label><input id="workspace-search-case" type="checkbox" onchange="searchWorkspace()" /> Match case</label>
+          <label><input id="workspace-search-regex" type="checkbox" onchange="searchWorkspace()" /> Regex</label>
+        </div>
+      </div>
+      <div id="workspace-search-status" class="workspace-search-status">Search across the current workspace</div>
+      <div id="workspace-search-results" class="workspace-search-results" role="list"></div>
     </div>
   </div>
 
@@ -526,8 +543,15 @@
             </div>
           </div>
           <!-- Unified terminal console (stdout/stderr + stdin) -->
-          <div class="con-view" id="terminal-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;background:#181818">
-            <textarea id="terminal-interactive-console" onkeydown="if(event.ctrlKey && event.key === 'Enter') runQuery()" style="flex:1;background:transparent;border:none;color:#d4d4d4;font-family:'Consolas', 'JetBrains Mono', monospace;font-size:12px;line-height:1.6;padding:12px;resize:none;outline:none;user-select:text" placeholder="// Type standard input (stdin) directly here...&#10;// Then click Run (or press Ctrl+Enter) to execute code and see output in this terminal console."></textarea>
+          <div class="con-view codexa-terminal" id="terminal-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+            <div id="terminal-session-output" class="terminal-session-output" aria-live="polite">
+              <div class="terminal-welcome">Codexa terminal ready. Run the active file with <kbd>Ctrl</kbd> + <kbd>Enter</kbd>.</div>
+            </div>
+            <div class="terminal-input-row">
+              <span class="terminal-prompt" aria-hidden="true">›</span>
+              <textarea id="terminal-interactive-console" rows="1" oninput="resizeTerminalInput(this)" onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.ctrlKey) { event.preventDefault(); runQuery(); } if(event.ctrlKey && event.key === 'Enter') { event.preventDefault(); runQuery(); }" placeholder="Program input… (Enter to run · Shift+Enter for a new line)"></textarea>
+              <button type="button" class="terminal-run-button" onclick="runQuery()" title="Run active file">Run</button>
+            </div>
           </div>
         </div>
       </div>
@@ -713,6 +737,7 @@
 <script src="js/ui/views.js"></script>
 <script src="js/ui/embedded_icons.js"></script>
 <script src="js/ui/workspace.js"></script>
+<script src="js/ui/search.js"></script>
 <script src="js/features/execution.js"></script>
 <script src="js/features/editor.js"></script>
 <script src="js/main.js"></script>

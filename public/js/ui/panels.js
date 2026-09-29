@@ -34,6 +34,9 @@ function setSidePanel(name) {
   if (name === 'history') {
     renderHistoryPanel();
   }
+  if (name === 'search') {
+    initWorkspaceSearch();
+  }
 }
 
 function toggleSidebar() {

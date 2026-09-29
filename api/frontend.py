@@ -3957,6 +3957,82 @@ li.CodeMirror-hint-active {
 #terminal-view {
   border-top: 1px solid var(--border);
 }
+#terminal-view.codexa-terminal {
+  background: #171717;
+  color: #d4d4d4;
+}
+.terminal-session-output {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 16px 8px;
+  font: 12px/1.6 'JetBrains Mono', 'Consolas', monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+  scrollbar-color: #454545 transparent;
+}
+.terminal-welcome { color: var(--text3); }
+.terminal-entry { margin: 0 0 10px; }
+.terminal-entry-command { color: #dcdcaa; }
+.terminal-entry-command::before { content: '› '; color: #4daaf2; }
+.terminal-entry-output { color: #d4d4d4; }
+.terminal-entry-error { color: #f48771; }
+.terminal-input-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px 10px 16px;
+  border-top: 1px solid var(--border);
+  background: #1b1b1b;
+}
+.terminal-prompt { color: #4daaf2; font: 14px/1.6 'JetBrains Mono', monospace; }
+.terminal-input-row textarea {
+  flex: 1;
+  min-height: 22px;
+  max-height: 110px;
+  resize: none;
+  overflow-y: auto;
+  border: 0;
+  outline: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: #d4d4d4;
+  font: 12px/1.6 'JetBrains Mono', 'Consolas', monospace;
+}
+.terminal-input-row textarea::placeholder { color: #777; }
+.terminal-run-button {
+  border: 1px solid rgba(77,170,242,.48);
+  border-radius: 4px;
+  padding: 4px 10px;
+  background: rgba(77,170,242,.16);
+  color: #9bd2fa;
+  cursor: pointer;
+  font-size: 11px;
+}
+.terminal-run-button:hover { background: rgba(77,170,242,.28); }
+
+/* Workspace search */
+.workspace-search-toolbar { padding: 12px 10px 8px; border-bottom: 1px solid var(--border); }
+.workspace-search-input-wrap { display:flex; align-items:center; gap:7px; border:1px solid var(--border2); border-radius:4px; background:var(--bg2); padding:0 7px; }
+.workspace-search-icon { color:var(--text3); font-size:18px; line-height:1; }
+.workspace-search-input-wrap input { flex:1; min-width:0; border:0; outline:0; background:transparent; color:var(--text); padding:8px 0; font-size:12px; }
+.workspace-search-clear { border:0; background:transparent; color:var(--text3); cursor:pointer; font-size:17px; }
+.workspace-search-options { display:flex; align-items:center; gap:9px; margin-top:9px; color:var(--text3); font-size:10px; flex-wrap:wrap; }
+.workspace-search-options select { border:1px solid var(--border2); background:var(--bg); color:var(--text2); border-radius:3px; padding:3px 4px; font-size:10px; }
+.workspace-search-options label { display:flex; align-items:center; gap:4px; white-space:nowrap; }
+.workspace-search-options input { accent-color:#4daaf2; }
+.workspace-search-status { padding:9px 12px 5px; color:var(--text3); font-size:10px; }
+.workspace-search-results { overflow:auto; padding:0 6px 10px; }
+.workspace-search-result { display:flex; width:100%; gap:8px; padding:8px 7px; text-align:left; border:0; border-bottom:1px solid rgba(255,255,255,.04); background:transparent; color:var(--text2); cursor:pointer; }
+.workspace-search-result:hover { background:rgba(77,170,242,.12); }
+.workspace-search-result-icon { color:#7fbbe4; width:14px; flex:none; }
+.workspace-search-result-main { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.workspace-search-result-path { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); font-size:11px; }
+.workspace-search-result-meta { color:var(--text3); font-size:10px; }
+.workspace-search-result-snippet { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#9b9b9b; font:10px/1.4 'JetBrains Mono', monospace; }
+.workspace-search-empty { padding:18px 10px; color:var(--text3); font-size:11px; text-align:center; }
+.workspace-search-empty.search-error { color:var(--red); }
 #terminal-stdout {
   scrollbar-width: thin;
   scrollbar-color: #3a3a3a transparent;
@@ -7051,7 +7127,24 @@ li.CodeMirror-hint-active {
 
     <!-- 5. Search Panel -->
     <div class="sidebar-panel" id="panel-search">
-      <div style="padding:16px;color:var(--text3)">Search coming soon</div>
+      <div class="workspace-search-toolbar">
+        <div class="workspace-search-input-wrap">
+          <span class="workspace-search-icon">⌕</span>
+          <input id="workspace-search-input" type="search" placeholder="Search workspace" autocomplete="off" oninput="searchWorkspace()" onkeydown="if(event.key === 'Enter') searchWorkspace()" />
+          <button type="button" class="workspace-search-clear" title="Clear search" onclick="clearWorkspaceSearch()">×</button>
+        </div>
+        <div class="workspace-search-options">
+          <select id="workspace-search-scope" onchange="searchWorkspace()" aria-label="Search scope">
+            <option value="all">All</option>
+            <option value="names">File names</option>
+            <option value="content">File contents</option>
+          </select>
+          <label><input id="workspace-search-case" type="checkbox" onchange="searchWorkspace()" /> Match case</label>
+          <label><input id="workspace-search-regex" type="checkbox" onchange="searchWorkspace()" /> Regex</label>
+        </div>
+      </div>
+      <div id="workspace-search-status" class="workspace-search-status">Search across the current workspace</div>
+      <div id="workspace-search-results" class="workspace-search-results" role="list"></div>
     </div>
   </div>
 
@@ -7206,8 +7299,15 @@ li.CodeMirror-hint-active {
             </div>
           </div>
           <!-- Unified terminal console (stdout/stderr + stdin) -->
-          <div class="con-view" id="terminal-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;background:#181818">
-            <textarea id="terminal-interactive-console" onkeydown="if(event.ctrlKey && event.key === 'Enter') runQuery()" style="flex:1;background:transparent;border:none;color:#d4d4d4;font-family:'Consolas', 'JetBrains Mono', monospace;font-size:12px;line-height:1.6;padding:12px;resize:none;outline:none;user-select:text" placeholder="// Type standard input (stdin) directly here...&#10;// Then click Run (or press Ctrl+Enter) to execute code and see output in this terminal console."></textarea>
+          <div class="con-view codexa-terminal" id="terminal-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+            <div id="terminal-session-output" class="terminal-session-output" aria-live="polite">
+              <div class="terminal-welcome">Codexa terminal ready. Run the active file with <kbd>Ctrl</kbd> + <kbd>Enter</kbd>.</div>
+            </div>
+            <div class="terminal-input-row">
+              <span class="terminal-prompt" aria-hidden="true">›</span>
+              <textarea id="terminal-interactive-console" rows="1" oninput="resizeTerminalInput(this)" onkeydown="if(event.key === 'Enter' && !event.shiftKey && !event.ctrlKey) { event.preventDefault(); runQuery(); } if(event.ctrlKey && event.key === 'Enter') { event.preventDefault(); runQuery(); }" placeholder="Program input… (Enter to run · Shift+Enter for a new line)"></textarea>
+              <button type="button" class="terminal-run-button" onclick="runQuery()" title="Run active file">Run</button>
+            </div>
           </div>
         </div>
       </div>
@@ -7860,6 +7960,9 @@ function setSidePanel(name) {
   
   if (name === 'history') {
     renderHistoryPanel();
+  }
+  if (name === 'search') {
+    initWorkspaceSearch();
   }
 }
 
@@ -9674,6 +9777,114 @@ function deleteActiveQueryFile(path) {
 
 </script>
 <script>
+// Workspace search: fast local search over the files already loaded in the browser.
+let workspaceSearchReady = false;
+
+function initWorkspaceSearch() {
+  const input = document.getElementById('workspace-search-input');
+  if (!input) return;
+  if (!workspaceSearchReady) {
+    workspaceSearchReady = true;
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Escape') clearWorkspaceSearch();
+    });
+  }
+  input.focus();
+  searchWorkspace();
+}
+
+function clearWorkspaceSearch() {
+  const input = document.getElementById('workspace-search-input');
+  if (input) input.value = '';
+  searchWorkspace();
+  if (input) input.focus();
+}
+
+function searchWorkspace() {
+  const input = document.getElementById('workspace-search-input');
+  const resultsEl = document.getElementById('workspace-search-results');
+  const statusEl = document.getElementById('workspace-search-status');
+  if (!input || !resultsEl || !statusEl) return;
+
+  const query = input.value.trim();
+  if (!query) {
+    statusEl.textContent = 'Search across the current workspace';
+    resultsEl.innerHTML = '<div class="workspace-search-empty">Type a file name or text to search.</div>';
+    return;
+  }
+
+  const scope = document.getElementById('workspace-search-scope')?.value || 'all';
+  const matchCase = Boolean(document.getElementById('workspace-search-case')?.checked);
+  const useRegex = Boolean(document.getElementById('workspace-search-regex')?.checked);
+  let matcher;
+  try {
+    matcher = useRegex ? new RegExp(query, matchCase ? 'g' : 'gi') : null;
+  } catch (error) {
+    statusEl.textContent = 'Invalid regular expression';
+    resultsEl.innerHTML = `<div class="workspace-search-empty search-error">${esc(error.message)}</div>`;
+    return;
+  }
+
+  const needle = matchCase ? query : query.toLowerCase();
+  const files = Array.isArray(S.files) ? S.files : [];
+  const results = [];
+  files.forEach(file => {
+    const path = String(file.path || '');
+    const name = String(file.name || path.split('/').pop() || '');
+    const nameMatch = scope !== 'content' && (matcher ? testRegex(matcher, name) : (matchCase ? name : name.toLowerCase()).includes(needle));
+    if (file.type === 'folder') {
+      if (nameMatch) results.push({ file, kind: 'folder', line: 0, snippet: path });
+      return;
+    }
+    if (nameMatch) results.push({ file, kind: 'file', line: 0, snippet: path });
+    if (scope === 'names') return;
+
+    const content = String(file.content || '');
+    const lines = content.split(/\\r?\\n/);
+    lines.forEach((line, index) => {
+      if (results.length >= 300) return;
+      const found = matcher ? testRegex(matcher, line) : (matchCase ? line : line.toLowerCase()).includes(needle);
+      if (found) results.push({ file, kind: 'content', line: index + 1, snippet: line.trim() || ' ' });
+    });
+  });
+
+  const fileCount = new Set(results.map(result => result.file.path)).size;
+  statusEl.textContent = results.length
+    ? `${results.length}${results.length === 300 ? '+' : ''} result${results.length === 1 ? '' : 's'} in ${fileCount} file${fileCount === 1 ? '' : 's'}`
+    : 'No matches found';
+  resultsEl.innerHTML = results.length ? results.map((result, index) => {
+    const label = result.kind === 'folder' ? 'Folder' : result.kind === 'content' ? `Line ${result.line}` : 'File name';
+    return `<button type="button" class="workspace-search-result" data-result-index="${index}" role="listitem">
+      <span class="workspace-search-result-icon">${result.kind === 'folder' ? '▰' : '▤'}</span>
+      <span class="workspace-search-result-main"><span class="workspace-search-result-path">${esc(result.file.path)}</span><span class="workspace-search-result-meta">${label}</span>${result.kind === 'content' ? `<span class="workspace-search-result-snippet">${esc(result.snippet)}</span>` : ''}</span>
+    </button>`;
+  }).join('') : '<div class="workspace-search-empty">No files or content match this search.</div>';
+
+  resultsEl.querySelectorAll('[data-result-index]').forEach(element => {
+    element.addEventListener('click', () => {
+      const result = results[Number(element.dataset.resultIndex)];
+      if (!result || result.kind === 'folder') return;
+      openFileInTab(result.file.path);
+      if (result.line > 0 && typeof editor !== 'undefined' && editor) {
+        editor.setCursor({ line: result.line - 1, ch: 0 });
+        editor.scrollIntoView({ line: result.line - 1, ch: 0 }, 120);
+        editor.focus();
+      }
+    });
+  });
+}
+
+function testRegex(regex, value) {
+  regex.lastIndex = 0;
+  return regex.test(value);
+}
+
+window.initWorkspaceSearch = initWorkspaceSearch;
+window.searchWorkspace = searchWorkspace;
+window.clearWorkspaceSearch = clearWorkspaceSearch;
+
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════════════
 // EXECUTE QUERY RUNNER
 // ═══════════════════════════════════════════════════════════════════
@@ -9999,11 +10210,11 @@ async function runQuery() {
   }
   if (lang !== 'mongodb') {
     const consoleEl = document.getElementById('terminal-interactive-console');
-    let stdin = '';
+    const stdin = consoleEl ? consoleEl.value : '';
+    appendTerminalEntry('command', stdin.trim() || `run ${lang}`);
     if (consoleEl) {
-      const fullText = consoleEl.value;
-      const parts = fullText.split('================= Output =================');
-      stdin = parts[0].trim();
+      consoleEl.value = '';
+      resizeTerminalInput(consoleEl);
     }
     await runPlaygroundCode(lang, editor.getValue(), stdin);
     return;
@@ -10273,11 +10484,31 @@ function logOutput(html) {
   outView.scrollTop = outView.scrollHeight;
 }
 
+function appendTerminalEntry(kind, text) {
+  const terminal = document.getElementById('terminal-session-output');
+  if (!terminal || text === undefined || text === null || text === '') return;
+  const entry = document.createElement('div');
+  entry.className = `terminal-entry terminal-entry-${kind}`;
+  entry.textContent = String(text);
+  terminal.appendChild(entry);
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+function resizeTerminalInput(input) {
+  if (!input) return;
+  input.style.height = 'auto';
+  input.style.height = `${Math.min(input.scrollHeight, 110)}px`;
+}
+
 function setConTab(tab) {
-  S.conTab = tab;
   const langSelect = document.getElementById('workspace-lang-select');
   const lang = langSelect ? langSelect.value : 'mongodb';
   const isMongo = lang === 'mongodb';
+
+  // Coding languages use one terminal stream, just like VS Code. MongoDB
+  // keeps its structured result tabs because those views are database-specific.
+  if (!isMongo) tab = 'terminal';
+  S.conTab = tab;
 
   ['output', 'logs', 'stdin'].forEach(function(t) {
     const el = document.getElementById(`ctab-${t}`);
@@ -10302,13 +10533,8 @@ function setConTab(tab) {
     if (rawView) rawView.style.display = 'none';
     if (viewBtns) viewBtns.style.display = 'none';
     
-    if (tab === 'stdin') {
-      if (outputView) outputView.style.display = 'none';
-      if (terminalView) terminalView.style.display = 'flex';
-    } else {
-      if (outputView) outputView.style.display = 'block';
-      if (terminalView) terminalView.style.display = 'none';
-    }
+    if (outputView) outputView.style.display = 'none';
+    if (terminalView) terminalView.style.display = 'flex';
   }
 }
 
@@ -10331,7 +10557,10 @@ function clearConsole() {
   const termConsole = document.getElementById('terminal-interactive-console');
   if (termConsole) {
     termConsole.value = '';
+    resizeTerminalInput(termConsole);
   }
+  const terminalOutput = document.getElementById('terminal-session-output');
+  if (terminalOutput) terminalOutput.innerHTML = '<div class="terminal-welcome">Codexa terminal ready. Run the active file with Ctrl + Enter.</div>';
   setConsoleStatus('— Ready');
 }
 
@@ -10524,7 +10753,8 @@ async function runPlaygroundCode(language, code, stdin) {
   if (timeEl) timeEl.textContent = '0ms';
   if (countEl) countEl.textContent = 'Playground';
 
-  setConTab('output');
+  const isCodingTerminal = language !== 'mongodb';
+  setConTab(isCodingTerminal ? 'terminal' : 'output');
   const outView = document.getElementById('output-text');
   if (outView) {
     outView.innerHTML = `<span class="out-info">[info] Compiling and executing ${language} code...</span>`;
@@ -10568,12 +10798,19 @@ async function runPlaygroundCode(language, code, stdin) {
         outView.scrollTop = outView.scrollHeight;
       }
 
+      if (isCodingTerminal) {
+        if (stdout) appendTerminalEntry('output', stdout);
+        if (stderr) appendTerminalEntry('error', stderr);
+        if (!stdout && !stderr) appendTerminalEntry('output', `Process completed successfully with exit code ${exitCode}`);
+      }
+
       saveToHistory(`${language.toUpperCase()} Code Run`, isError ? 'error' : 'ok', 0, duration);
     } else {
       if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ Server Error</span>`;
       if (outView) {
         outView.innerHTML = `<div class="out-err"><b>[Error] Failed to execute code:</b> ${esc(d.error || 'Server error')}</div>`;
       }
+      if (isCodingTerminal) appendTerminalEntry('error', d.error || 'Server error');
       saveToHistory(`${language.toUpperCase()} Code Run`, 'error', 0, 0);
     }
   };
@@ -10607,6 +10844,7 @@ async function runPlaygroundCode(language, code, stdin) {
     if (outView) {
       outView.innerHTML = `<div class="out-err"><b>[Error] Request failed:</b> ${esc(err.message || err)}</div>`;
     }
+    if (isCodingTerminal) appendTerminalEntry('error', err.message || err);
     saveToHistory(`${language.toUpperCase()} Code Run`, 'error', 0, 0);
   }
 }
@@ -10639,13 +10877,11 @@ function updateWorkspaceConsoleLayout(newLang) {
     if (S.conTab === 'stdin') S.conTab = 'output';
     setConTab(S.conTab);
   } else {
-    if (conTabs) conTabs.style.display = 'flex';
+    if (conTabs) conTabs.style.display = 'none';
     if (conSubTabs) conSubTabs.style.display = 'none';
-    if (ctabStdin) ctabStdin.style.display = 'block';
-    if (!['output', 'logs', 'stdin'].includes(S.conTab)) {
-      S.conTab = 'output';
-    }
-    setConTab(S.conTab);
+    if (ctabStdin) ctabStdin.style.display = 'none';
+    S.conTab = 'terminal';
+    setConTab('terminal');
   }
 }
 

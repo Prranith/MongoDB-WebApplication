@@ -323,11 +323,11 @@ async function runQuery() {
   }
   if (lang !== 'mongodb') {
     const consoleEl = document.getElementById('terminal-interactive-console');
-    let stdin = '';
+    const stdin = consoleEl ? consoleEl.value : '';
+    appendTerminalEntry('command', stdin.trim() || `run ${lang}`);
     if (consoleEl) {
-      const fullText = consoleEl.value;
-      const parts = fullText.split('================= Output =================');
-      stdin = parts[0].trim();
+      consoleEl.value = '';
+      resizeTerminalInput(consoleEl);
     }
     await runPlaygroundCode(lang, editor.getValue(), stdin);
     return;
@@ -597,11 +597,31 @@ function logOutput(html) {
   outView.scrollTop = outView.scrollHeight;
 }
 
+function appendTerminalEntry(kind, text) {
+  const terminal = document.getElementById('terminal-session-output');
+  if (!terminal || text === undefined || text === null || text === '') return;
+  const entry = document.createElement('div');
+  entry.className = `terminal-entry terminal-entry-${kind}`;
+  entry.textContent = String(text);
+  terminal.appendChild(entry);
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+function resizeTerminalInput(input) {
+  if (!input) return;
+  input.style.height = 'auto';
+  input.style.height = `${Math.min(input.scrollHeight, 110)}px`;
+}
+
 function setConTab(tab) {
-  S.conTab = tab;
   const langSelect = document.getElementById('workspace-lang-select');
   const lang = langSelect ? langSelect.value : 'mongodb';
   const isMongo = lang === 'mongodb';
+
+  // Coding languages use one terminal stream, just like VS Code. MongoDB
+  // keeps its structured result tabs because those views are database-specific.
+  if (!isMongo) tab = 'terminal';
+  S.conTab = tab;
 
   ['output', 'logs', 'stdin'].forEach(function(t) {
     const el = document.getElementById(`ctab-${t}`);
@@ -626,13 +646,8 @@ function setConTab(tab) {
     if (rawView) rawView.style.display = 'none';
     if (viewBtns) viewBtns.style.display = 'none';
     
-    if (tab === 'stdin') {
-      if (outputView) outputView.style.display = 'none';
-      if (terminalView) terminalView.style.display = 'flex';
-    } else {
-      if (outputView) outputView.style.display = 'block';
-      if (terminalView) terminalView.style.display = 'none';
-    }
+    if (outputView) outputView.style.display = 'none';
+    if (terminalView) terminalView.style.display = 'flex';
   }
 }
 
@@ -655,7 +670,10 @@ function clearConsole() {
   const termConsole = document.getElementById('terminal-interactive-console');
   if (termConsole) {
     termConsole.value = '';
+    resizeTerminalInput(termConsole);
   }
+  const terminalOutput = document.getElementById('terminal-session-output');
+  if (terminalOutput) terminalOutput.innerHTML = '<div class="terminal-welcome">Codexa terminal ready. Run the active file with Ctrl + Enter.</div>';
   setConsoleStatus('— Ready');
 }
 
@@ -848,7 +866,8 @@ async function runPlaygroundCode(language, code, stdin) {
   if (timeEl) timeEl.textContent = '0ms';
   if (countEl) countEl.textContent = 'Playground';
 
-  setConTab('output');
+  const isCodingTerminal = language !== 'mongodb';
+  setConTab(isCodingTerminal ? 'terminal' : 'output');
   const outView = document.getElementById('output-text');
   if (outView) {
     outView.innerHTML = `<span class="out-info">[info] Compiling and executing ${language} code...</span>`;
@@ -892,12 +911,19 @@ async function runPlaygroundCode(language, code, stdin) {
         outView.scrollTop = outView.scrollHeight;
       }
 
+      if (isCodingTerminal) {
+        if (stdout) appendTerminalEntry('output', stdout);
+        if (stderr) appendTerminalEntry('error', stderr);
+        if (!stdout && !stderr) appendTerminalEntry('output', `Process completed successfully with exit code ${exitCode}`);
+      }
+
       saveToHistory(`${language.toUpperCase()} Code Run`, isError ? 'error' : 'ok', 0, duration);
     } else {
       if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ Server Error</span>`;
       if (outView) {
         outView.innerHTML = `<div class="out-err"><b>[Error] Failed to execute code:</b> ${esc(d.error || 'Server error')}</div>`;
       }
+      if (isCodingTerminal) appendTerminalEntry('error', d.error || 'Server error');
       saveToHistory(`${language.toUpperCase()} Code Run`, 'error', 0, 0);
     }
   };
@@ -931,6 +957,7 @@ async function runPlaygroundCode(language, code, stdin) {
     if (outView) {
       outView.innerHTML = `<div class="out-err"><b>[Error] Request failed:</b> ${esc(err.message || err)}</div>`;
     }
+    if (isCodingTerminal) appendTerminalEntry('error', err.message || err);
     saveToHistory(`${language.toUpperCase()} Code Run`, 'error', 0, 0);
   }
 }
@@ -963,13 +990,11 @@ function updateWorkspaceConsoleLayout(newLang) {
     if (S.conTab === 'stdin') S.conTab = 'output';
     setConTab(S.conTab);
   } else {
-    if (conTabs) conTabs.style.display = 'flex';
+    if (conTabs) conTabs.style.display = 'none';
     if (conSubTabs) conSubTabs.style.display = 'none';
-    if (ctabStdin) ctabStdin.style.display = 'block';
-    if (!['output', 'logs', 'stdin'].includes(S.conTab)) {
-      S.conTab = 'output';
-    }
-    setConTab(S.conTab);
+    if (ctabStdin) ctabStdin.style.display = 'none';
+    S.conTab = 'terminal';
+    setConTab('terminal');
   }
 }
 
