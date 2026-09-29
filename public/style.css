@@ -6188,6 +6188,26 @@ body.meeting-active > .toast-container {
   background: #111214;
 }
 
+/* Warm night-light palette: preserves the existing dark theme while removing
+   the cold near-black/blue cast that becomes harsh during evening use. */
+:root {
+  --bg:         #151514;
+  --bg2:        #1d1c1a;
+  --bg3:        #25231f;
+  --bg4:        #302d28;
+  --bg5:        #3a3630;
+  --actbar:     #191816;
+  --border:     #37332d;
+  --border2:    #4a443b;
+  --text:       #e3ddd3;
+  --text2:      #bdb4a8;
+  --text3:      #91897e;
+  --hl:         #66503d;
+  --hl2:        #373028;
+  --blue:       #c7925f;
+  --statusbar:  #191816;
+}
+
 .meeting-chat-recipient option {
   color: #dedede;
   background: #1b1d20;
@@ -6520,6 +6540,61 @@ body.meeting-editor-following #ide-panel {
 
 body.meeting-editor-following #raw-editor {
   caret-color: transparent;
+}
+
+/* CodeMirror uses its own fixed colors in a few places, so keep the editor
+   on the same warm night-light surface as the surrounding application. */
+.CodeMirror,
+.CodeMirror-scroll,
+.CodeMirror-gutters,
+.sql-notebook-cell .CodeMirror,
+.sql-notebook-cell .CodeMirror-gutters {
+  background: #1d1c1a !important;
+}
+
+.CodeMirror {
+  color: #e3ddd3 !important;
+}
+
+.CodeMirror-gutters {
+  border-right-color: #37332d !important;
+}
+
+.CodeMirror-linenumber {
+  color: #91897e !important;
+}
+
+.CodeMirror-activeline-background {
+  background: #282521 !important;
+}
+
+.CodeMirror-selected,
+.CodeMirror-focused .CodeMirror-selected {
+  background: #554434 !important;
+}
+
+.CodeMirror-hints {
+  background: #25231f !important;
+  border-color: #4a443b !important;
+}
+
+.CodeMirror-hint {
+  color: #e3ddd3 !important;
+}
+
+li.CodeMirror-hint-active {
+  background: #66503d !important;
+  color: #fff7eb !important;
+}
+
+.sql-cell-input,
+.sql-notebook-cell .CodeMirror {
+  background: #1d1c1a !important;
+  color: #e3ddd3 !important;
+}
+
+.sql-notebook-cell .CodeMirror-gutters {
+  border-right-color: #37332d !important;
 }
 
 @media (max-width: 760px) {
