@@ -243,7 +243,7 @@ const ExamPortal = (() => {
       <input id="qmedia-${qId}" type="file" accept="image/*,video/*" hidden onchange="ExamPortal.mentor.uploadQuestionMedia('${qId}',event)"/>
       <span style="font-size:10px;color:var(--text3)">Up to 30 MB; inserted at the cursor.</span>
     </div>
-    <div id="qmedia-list-${qId}" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+    <div id="qmedia-list-${qId}"></div>
     <div style="margin-top:10px;border-top:1px solid var(--border2);padding-top:8px">
       <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Live student preview</div>
       <div id="qmedia-preview-${qId}" class="exam-question-preview"></div>
@@ -327,6 +327,34 @@ const ExamPortal = (() => {
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     return `${Math.floor(diff / 3600)}h ago`;
   }
+
+  // Time remaining until a student's assessment window closes. The server
+  // sends seconds left; we convert that to a local deadline so the label can
+  // tick down between the 5-second leaderboard polls.
+  function fmtTimeLeft(seconds) {
+    if (seconds === null || seconds === undefined || isNaN(seconds)) return '—';
+    const total = Math.max(0, Math.floor(seconds));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return (h > 0 ? h + ':' : '') + pad(m) + ':' + pad(s);
+  }
+
+  function tickLeaderboardCountdowns() {
+    const cells = document.querySelectorAll('#mentor-lb-tbody .exam-lb-countdown[data-deadline]');
+    if (!cells.length) return;
+    const nowSecs = Date.now() / 1000;
+    cells.forEach((cell) => {
+      const deadline = Number(cell.getAttribute('data-deadline'));
+      if (!deadline) return;
+      const left = deadline - nowSecs;
+      cell.textContent = fmtTimeLeft(left);
+      cell.classList.toggle('is-low', left <= 60);
+    });
+  }
+
+  setInterval(tickLeaderboardCountdowns, 1000);
 
   function copyText(text) {
     navigator.clipboard.writeText(text).catch(() => {
@@ -1695,9 +1723,11 @@ const ExamPortal = (() => {
       target.innerHTML = (q.media || []).map(media => {
         const label = escapeExamHtml(media.name || 'media');
         const url = escapeExamHtml(media.url || `/api/exam/room/${state.mentor.roomId}/media/${media.id}`);
-        return `<div style="width:116px;border:1px solid var(--border2);border-radius:5px;overflow:hidden;background:var(--bg)">
+        return `<div class="exam-media-card">
           ${media.type === 'video' ? `<video src="${url}" muted preload="metadata" style="display:block;width:100%;height:68px;object-fit:cover"></video>` : `<img src="${url}" alt="${label}" style="display:block;width:100%;height:68px;object-fit:cover"/>`}
           <div title="${label}" style="padding:4px 5px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)">${label}</div>
+          <button type="button" class="exam-media-remove" title="Remove media"
+            onclick="event.stopPropagation();ExamPortal.mentor.deleteQuestionMedia('${qId}','${media.id}')">&times;</button>
         </div>`;
       }).join('');
       let preview = el(`qmedia-preview-${qId}`);
@@ -1708,12 +1738,16 @@ const ExamPortal = (() => {
       if (preview) preview.innerHTML = renderQuestionHtml(q);
     },
 
+    // Media is uploaded in slices: the serverless host rejects request bodies
+    // above ~4.5 MB, so a single POST made every real video fail with 413.
     async uploadQuestionMedia(qId, event) {
       const q = state.mentor.questions.find(x => x.id === qId);
       const file = event && event.target && event.target.files ? event.target.files[0] : null;
       if (!q || !file) return;
       event.target.value = '';
-      if (!(file.type || '').startsWith('image/') && !(file.type || '').startsWith('video/')) {
+      const isImage = (file.type || '').startsWith('image/');
+      const isVideo = (file.type || '').startsWith('video/');
+      if (!isImage && !isVideo) {
         showExamAlert('Only image and video files are allowed.', { title: 'Invalid File', danger: true });
         return;
       }
@@ -1721,35 +1755,112 @@ const ExamPortal = (() => {
         showExamAlert('Media files must be 30 MB or smaller.', { title: 'File Too Large', danger: true });
         return;
       }
-      const form = new FormData();
-      form.append('mentorId', state.mentor.mentorId || '');
-      form.append('file', file, file.name);
-      let response;
+
+      const roomId = state.mentor.roomId;
+      const mentorId = state.mentor.mentorId || '';
+      const uploadId = 'upl-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      const CHUNK_SIZE = 2 * 1024 * 1024;
+      const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+
       try {
-        response = await fetch(`/api/exam/room/${state.mentor.roomId}/question/${qId}/media`, { method: 'POST', body: form });
+        for (let seq = 0; seq < totalChunks; seq++) {
+          const slice = file.slice(seq * CHUNK_SIZE, Math.min(file.size, (seq + 1) * CHUNK_SIZE));
+          const form = new FormData();
+          form.append('mentorId', mentorId);
+          form.append('uploadId', uploadId);
+          form.append('seq', String(seq));
+          form.append('file', slice, file.name);
+          const res = await fetch(`/api/exam/room/${roomId}/question/${qId}/media/chunk`, { method: 'POST', body: form });
+          let payload = {};
+          try { payload = await res.json(); } catch (e) {}
+          if (!res.ok || payload.status !== 'ok') {
+            throw new Error(payload.error || `Upload failed on part ${seq + 1} of ${totalChunks}`);
+          }
+        }
+
+        const completeRes = await fetch(`/api/exam/room/${roomId}/question/${qId}/media/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mentorId: mentorId,
+            uploadId: uploadId,
+            filename: file.name,
+            contentType: file.type || (isVideo ? 'video/mp4' : 'image/png'),
+            totalChunks: totalChunks,
+          }),
+        });
+        let result = {};
+        try { result = await completeRes.json(); } catch (e) {}
+        if (!completeRes.ok || result.status !== 'ok' || !result.media) {
+          throw new Error(result.error || 'Unable to finish the upload');
+        }
+
+        q.media = Array.isArray(q.media) ? q.media : [];
+        q.media.push(result.media);
+        const textarea = el(`qtext-${qId}`);
+        const marker = `[media:${result.media.id}]`;
+        if (textarea) {
+          const start = Number.isInteger(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
+          const end = Number.isInteger(textarea.selectionEnd) ? textarea.selectionEnd : start;
+          q.text = textarea.value.slice(0, start) + marker + textarea.value.slice(end);
+        } else {
+          q.text = `${q.text || ''}${marker}`;
+        }
+        await mentor._saveQuestions();
+        mentor._renderQEditor(qId);
       } catch (error) {
-        showExamAlert('Unable to upload media. Please try again.', { title: 'Upload Failed', danger: true });
-        return;
+        // Drop any buffered slices so a failed attempt cannot leak storage.
+        fetch(`/api/exam/room/${roomId}/question/${qId}/media/abort`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mentorId: mentorId, uploadId: uploadId }),
+        }).catch(() => {});
+        showExamAlert((error && error.message) || 'Unable to upload media. Please try again.', { title: 'Upload Failed', danger: true });
       }
-      let result = {};
-      try { result = await response.json(); } catch (error) {}
-      if (!response.ok || result.status !== 'ok' || !result.media) {
-        showExamAlert(result.error || 'Unable to upload media.', { title: 'Upload Failed', danger: true });
-        return;
+    },
+
+    async deleteQuestionMedia(qId, mediaId) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+      
+      // Confirm deletion
+      if (!await showExamConfirm('Are you sure you want to remove this media?\n\nThis action cannot be undone.', { 
+        title: 'Remove Media', 
+        danger: true, 
+        confirmText: 'Remove', 
+        cancelText: 'Cancel' 
+      })) return;
+
+      try {
+        const response = await fetch(`/api/exam/room/${state.mentor.roomId}/question/${qId}/media/${mediaId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `mentorId=${encodeURIComponent(state.mentor.mentorId || '')}`
+        });
+        const result = await response.json();
+        
+        if (!response.ok || result.status !== 'ok') {
+          showExamAlert(result.error || 'Failed to delete media.', { title: 'Delete Failed', danger: true });
+          return;
+        }
+        
+        // Remove from question's media array
+        if (q.media && Array.isArray(q.media)) {
+          q.media = q.media.filter(m => m.id !== mediaId);
+          if (q.media.length === 0) delete q.media;
+        }
+        
+        // Remove the media marker from question text
+        const marker = `[media:${mediaId}]`;
+        if (q.text && q.text.includes(marker)) {
+          q.text = q.text.replace(marker, '').replace(/\s+/g, ' ').trim();
+        }
+        
+        await mentor._saveQuestions();
+        mentor._renderQEditor(qId);
+      } catch (error) {
+        showExamAlert('Unable to delete media. Please try again.', { title: 'Delete Failed', danger: true });
       }
-      q.media = Array.isArray(q.media) ? q.media : [];
-      q.media.push(result.media);
-      const textarea = el(`qtext-${qId}`);
-      const marker = `[media:${result.media.id}]`;
-      if (textarea) {
-        const start = Number.isInteger(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
-        const end = Number.isInteger(textarea.selectionEnd) ? textarea.selectionEnd : start;
-        q.text = textarea.value.slice(0, start) + marker + textarea.value.slice(end);
-      } else {
-        q.text = `${q.text || ''}${marker}`;
-      }
-      await mentor._saveQuestions();
-      mentor._renderQEditor(qId);
     },
 
     async _saveQuestions() {
@@ -2228,7 +2339,7 @@ const ExamPortal = (() => {
       if (!tbody) return;
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);font-family:\'JetBrains Mono\',monospace;padding:20px">// Waiting for submissions...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text3);font-family:\'JetBrains Mono\',monospace;padding:20px">// Waiting for submissions...</td></tr>';
         return;
       }
 
@@ -2255,6 +2366,12 @@ const ExamPortal = (() => {
         const blockedBadge = row.isBlocked ? `<span class="exam-status-chip exam-chip-ended" style="font-size: 10px; margin-left: 6px; padding: 2px 6px; background: rgba(255, 77, 77, 0.08); color: #ff4d4d; border: 1px solid rgba(255, 77, 77, 0.3);" title="Reason: ${esc(row.blockReason || 'Kicked')}">BLOCKED</span>` : '';
         const nameContent = row.isBlocked ? `<span style="text-decoration: line-through; opacity: 0.6;">${esc(row.name)}</span> ${blockedBadge}` : esc(row.name);
 
+        const secsLeft = (row.remainingSeconds === null || row.remainingSeconds === undefined)
+          ? null
+          : Number(row.remainingSeconds);
+        const deadline = secsLeft === null ? '' : (Date.now() / 1000 + secsLeft);
+        const timeLeftCell = `<td class="exam-lb-time exam-lb-countdown${secsLeft !== null && secsLeft <= 60 ? ' is-low' : ''}" data-deadline="${deadline}">${secsLeft === null ? '—' : fmtTimeLeft(secsLeft)}</td>`;
+
         return `
           <tr class="${rowClass}">
             <td class="exam-lb-rank ${rankClass}">${rank}</td>
@@ -2266,6 +2383,7 @@ const ExamPortal = (() => {
             <td class="exam-lb-accuracy">${accuracy}</td>
             <td class="exam-lb-flags">${flagsBadge}</td>
             <td class="exam-lb-time">${lastSub}</td>
+            ${timeLeftCell}
             <td style="text-align:center;display:flex;gap:6px;justify-content:center">
               <button class="exam-btn exam-btn-secondary" style="padding:4px 8px;font-size:11px;height:auto"
                 onclick="ExamPortal.mentor.viewSubmission('${row.studentId}')"

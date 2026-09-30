@@ -135,7 +135,7 @@ INDEX_HTML = """
 }
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
@@ -2229,17 +2229,17 @@ li.CodeMirror-hint-active {
 
 /* ── Exam top bar ────────────────────────────────────────── */
 .exam-topbar {
-  height: 40px;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
+  height: 36px;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  gap: 12px;
+  padding: 0 12px;
+  gap: 8px;
   flex-shrink: 0;
 }
 .exam-topbar-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text);
   font-family: 'JetBrains Mono', monospace;
@@ -2247,18 +2247,18 @@ li.CodeMirror-hint-active {
 .exam-topbar-back {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--text3);
+  gap: 4px;
+  font-size: 10px;
+  color: #888;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 3px;
   background: none;
   border: none;
   transition: all .15s;
 }
 .exam-topbar-back:hover {
-  background: var(--hl2);
+  background: rgba(255,255,255,0.05);
   color: var(--text);
 }
 
@@ -2479,10 +2479,10 @@ li.CodeMirror-hint-active {
 }
 .exam-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .exam-btn-green {
-  background: var(--green);
+  background: #2f9e44;
   color: #fff;
 }
-.exam-btn-green:hover:not(:disabled) { background: #444444; }
+.exam-btn-green:hover:not(:disabled) { background: #37b24d; }
 .exam-btn-red {
   background: #6b1a19;
   color: #f48771;
@@ -2493,13 +2493,21 @@ li.CodeMirror-hint-active {
   color: #fff;
 }
 .exam-btn-secondary {
-  background: var(--bg4);
-  color: var(--text2);
-  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.04);
+  color: #aaa;
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 3px 8px;
+  height: 24px;
+  font-size: 10px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .exam-btn-secondary:hover:not(:disabled) {
-  background: var(--hl2);
+  background: rgba(255,255,255,0.08);
   color: var(--text);
+  border-color: rgba(255,255,255,0.12);
 }
 .exam-btn-full { width: 100%; justify-content: center; }
 
@@ -2507,30 +2515,73 @@ li.CodeMirror-hint-active {
 .exam-status-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 10px;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .8px;
+  letter-spacing: .6px;
   font-family: 'JetBrains Mono', monospace;
 }
 .exam-status-chip::before {
   content: '●';
-  font-size: 8px;
+  font-size: 7px;
 }
 .exam-chip-waiting {
-  background: rgba(210, 153, 34, 0.15);
-  color: var(--yellow);
-  border: 1px solid rgba(210, 153, 34, 0.3);
+  background: rgba(210, 153, 34, 0.12);
+  color: #d09922;
+  border: 1px solid rgba(210, 153, 34, 0.25);
 }
 .exam-chip-live {
-  background: rgba(22, 130, 93, 0.15);
+  background: rgba(22, 130, 93, 0.12);
   color: var(--green2);
-  border: 1px solid rgba(22, 130, 93, 0.4);
+  border: 1px solid rgba(22, 130, 93, 0.3);
   animation: exam-live-pulse 2s infinite;
 }
+/* Top bar buttons */
+.topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  height: 22px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #888;
+  cursor: pointer;
+  transition: all .12s;
+}
+.topbar-btn:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  border-color: rgba(255,255,255,0.1);
+}
+.topbar-btn-green {
+  background: #2f9e44;
+  border-color: #2f9e44;
+  color: #fff;
+}
+.topbar-btn-green:hover {
+  background: #37b24d;
+  border-color: #37b24d;
+  color: #fff;
+}
+.topbar-btn-red {
+  background: rgba(218, 54, 51, 0.1);
+  border-color: rgba(218, 54, 51, 0.2);
+  color: #ff6b6b;
+}
+.topbar-btn-red:hover {
+  background: rgba(218, 54, 51, 0.15);
+  border-color: rgba(218, 54, 51, 0.3);
+}
+
 .exam-chip-ended {
   background: rgba(218, 54, 51, 0.12);
   color: var(--red);
@@ -2666,28 +2717,29 @@ li.CodeMirror-hint-active {
   display: flex;
   flex: 1;
   overflow: hidden;
+  background: #0f130f;
 }
 .exam-qlist {
-  width: 260px;
-  border-right: 1px solid var(--border);
+  width: 240px;
+  border-right: 1px solid var(--exam-line, #252b25);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  background: var(--bg2);
+  background: #101410;
 }
 .exam-qlist-hdr {
-  height: 35px;
-  border-bottom: 1px solid var(--border);
+  height: 32px;
+  border-bottom: 1px solid var(--exam-line, #252b25);
   display: flex;
   align-items: center;
-  padding: 0 10px;
-  gap: 8px;
+  padding: 0 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 .exam-qlist-hdr-title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: #bbbbbb;
+  color: var(--exam-muted, #7d877d);
   text-transform: uppercase;
   letter-spacing: .5px;
   flex: 1;
@@ -2698,121 +2750,149 @@ li.CodeMirror-hint-active {
 }
 .exam-qlist-empty {
   padding: 20px 12px;
-  font-size: 12px;
-  color: var(--text3);
+  font-size: 11px;
+  color: var(--exam-muted, #7d877d);
   font-family: 'JetBrains Mono', monospace;
   text-align: center;
   line-height: 1.6;
 }
 .exam-q-card {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+  border-bottom: 1px solid #1a201a;
   cursor: pointer;
   transition: background .1s;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
-.exam-q-card:hover { background: var(--hl2); }
-.exam-q-card.active { background: var(--hl); border-left: 2px solid var(--green2); }
+.exam-q-card:hover { background: #141a14; }
+.exam-q-card.active {
+  background: rgba(184, 216, 111, 0.07);
+  border-left: 2px solid var(--exam-accent, #b8d86f);
+}
 .exam-q-card-top {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 .exam-q-num {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--text3);
+  color: var(--exam-muted, #7d877d);
   font-family: 'JetBrains Mono', monospace;
   flex-shrink: 0;
 }
 .exam-q-type-chip {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 10px;
   text-transform: uppercase;
   letter-spacing: .5px;
   flex-shrink: 0;
 }
 .exam-q-type-query {
-  background: rgba(22, 130, 93, 0.2);
+  background: rgba(22, 130, 93, 0.15);
   color: var(--green2);
-  border: 1px solid rgba(22, 130, 93, 0.4);
-}
-
-.workspace-folder-status {
-  min-height: 28px;
-  display: flex;
-  align-items: center;
-  padding: 4px 10px 5px;
-  color: var(--text3);
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-bottom: 1px solid var(--border);
-}
-
-.workspace-folder-status.connected {
-  color: #9fc8e6;
-  border-left: 3px solid #4DAAF2;
-  padding-left: 7px;
-}
-
-.workspace-empty-state {
-  padding: 14px 12px;
-  color: var(--text3);
-  font-size: 11px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.workspace-empty-state button {
-  border: 1px solid var(--border2, #454545);
-  border-radius: 3px;
-  padding: 4px 8px;
-  color: var(--text);
-  background: var(--bg2);
-  cursor: pointer;
-  font: inherit;
-}
-
-.workspace-empty-state button:hover {
-  background: var(--hl2);
+  border: 1px solid rgba(22, 130, 93, 0.3);
 }
 .exam-q-type-sql {
-  background: rgba(56, 189, 248, 0.18);
+  background: rgba(56, 189, 248, 0.15);
   color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.38);
+  border: 1px solid rgba(56, 189, 248, 0.3);
 }
 .exam-q-type-mcq {
-  background: rgba(0, 122, 204, 0.2);
+  background: rgba(0, 122, 204, 0.15);
   color: var(--blue2);
-  border: 1px solid rgba(0, 122, 204, 0.3);
+  border: 1px solid rgba(0, 122, 204, 0.25);
 }
 .exam-q-type-coding {
-  background: rgba(230, 126, 34, 0.2);
+  background: rgba(230, 126, 34, 0.15);
   color: #e67e22;
-  border: 1px solid rgba(230, 126, 34, 0.4);
+  border: 1px solid rgba(230, 126, 34, 0.3);
 }
 .exam-q-marks-badge {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 9px;
   color: var(--yellow);
   font-family: 'JetBrains Mono', monospace;
   flex-shrink: 0;
 }
 .exam-q-preview {
-  font-size: 11px;
-  color: var(--text2);
+  font-size: 10px;
+  color: var(--exam-muted, #7d877d);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Question type buttons in sidebar */
+.qtype-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 6px;
+  height: 24px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  border-radius: 3px;
+  background: #141a14;
+  border: 1px solid var(--exam-line, #252b25);
+  color: var(--exam-muted, #7d877d);
+  cursor: pointer;
+  transition: all .12s;
+}
+.qtype-btn:hover {
+  background: #1a211a;
+  color: #d8e0d5;
+  border-color: #354035;
+}
+.qtype-btn[data-type="query"]:hover { border-color: var(--exam-accent, #b8d86f); color: var(--exam-accent, #b8d86f); }
+.qtype-btn[data-type="sql"]:hover { border-color: #38bdf8; color: #38bdf8; }
+.qtype-btn[data-type="mcq"]:hover { border-color: #4fc1ff; color: #4fc1ff; }
+.qtype-btn[data-type="coding"]:hover { border-color: #ce9178; color: #ce9178; }
+
+/* Attached media thumbnails (question editor) */
+.exam-media-card {
+  position: relative;
+  width: 116px;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.exam-media-remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .12s, background .12s;
+}
+.exam-media-card:hover .exam-media-remove,
+.exam-media-remove:focus-visible {
+  opacity: 1;
+}
+.exam-media-remove:hover {
+  background: var(--red);
+  border-color: var(--red);
 }
 .exam-q-card-actions {
   display: flex;
@@ -2826,9 +2906,9 @@ li.CodeMirror-hint-active {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  padding: 20px;
-  gap: 16px;
-  background: var(--bg);
+  padding: 16px;
+  gap: 12px;
+  background: #0f130f;
 }
 .exam-qeditor-empty {
   flex: 1;
@@ -2841,42 +2921,42 @@ li.CodeMirror-hint-active {
 }
 .exam-qeditor-type-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 .exam-fieldset {
-  background: var(--bg2);
-  border: 1px solid var(--border);
+  background: var(--exam-surface, #111411);
+  border: 1px solid var(--exam-line, #252b25);
   border-radius: 6px;
-  padding: 16px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .exam-fieldset-title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--text2);
+  color: var(--exam-muted, #7d877d);
   text-transform: uppercase;
   letter-spacing: .5px;
   margin-bottom: 4px;
 }
 .exam-textarea {
   width: 100%;
-  padding: 10px 12px;
-  background: var(--bg);
-  border: 1px solid var(--border2);
+  padding: 8px 10px;
+  background: #0d110d;
+  border: 1px solid var(--exam-line, #252b25);
   border-radius: 4px;
   color: var(--text);
   font-family: 'Segoe UI', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.5;
   outline: none;
   resize: vertical;
-  min-height: 80px;
+  min-height: 70px;
   transition: border-color .15s;
 }
-.exam-textarea:focus { border-color: var(--green2); }
+.exam-textarea:focus { border-color: var(--exam-accent, #b8d86f); }
 
 /* Mini CodeMirror wrapper for expected query */
 .exam-mini-editor {
@@ -3102,17 +3182,17 @@ li.CodeMirror-hint-active {
   z-index: 1;
 }
 .exam-lb-table td {
-  padding: 8px 14px;
+  padding: 6px 10px;
   color: var(--text);
   border-bottom: 1px solid rgba(255,255,255,0.03);
   vertical-align: middle;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 11px;
 }
-.exam-lb-table tr:hover td { background: var(--hl2); }
+.exam-lb-table tr:hover td { background: rgba(255,255,255,0.02); }
 .exam-lb-rank {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text3);
   text-align: center;
 }
@@ -3137,9 +3217,19 @@ li.CodeMirror-hint-active {
   color: var(--text2);
 }
 .exam-lb-time {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text3);
   font-family: 'JetBrains Mono', monospace;
+}
+.exam-lb-countdown {
+  color: var(--exam-accent, #b8d86f);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Under a minute left: warn the mentor before the window closes. */
+.exam-lb-countdown.is-low {
+  color: #ff6b6b;
+  font-weight: 700;
 }
 
 /* ── Student exam layout ─────────────────────────────────── */
@@ -3149,48 +3239,48 @@ li.CodeMirror-hint-active {
   overflow: hidden;
 }
 .exam-qnav {
-  width: 280px;
-  background: var(--bg2);
-  border-right: 1px solid var(--border);
+  width: 260px;
+  background: rgba(255,255,255,0.02);
+  border-right: 1px solid rgba(255,255,255,0.06);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   overflow: hidden;
 }
 .exam-qnav-hdr {
-  height: 35px;
-  border-bottom: 1px solid var(--border);
+  height: 32px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  font-size: 11px;
+  padding: 0 10px;
+  font-size: 10px;
   font-weight: 600;
-  color: #bbbbbb;
+  color: #888;
   text-transform: uppercase;
   letter-spacing: .5px;
   flex-shrink: 0;
 }
 .exam-qnav-body { flex: 1; overflow-y: auto; }
 .exam-qnav-card {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
   cursor: pointer;
   transition: background .1s;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   position: relative;
 }
-.exam-qnav-card:hover { background: var(--hl2); }
-.exam-qnav-card.active { background: var(--hl); border-left: 2px solid var(--green2); }
+.exam-qnav-card:hover { background: rgba(255,255,255,0.03); }
+.exam-qnav-card.active { background: rgba(22,130,93,0.1); border-left: 2px solid var(--green2); }
 .exam-q-status-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
-.exam-q-status-unattempted { background: var(--text3); opacity: 0.5; }
-.exam-q-status-draft { background: var(--yellow); }
+.exam-q-status-unattempted { background: #666; opacity: 0.5; }
+.exam-q-status-draft { background: #d09922; }
 .exam-q-status-submitted { background: var(--green2); }
 
 /* ── Student exam main area ──────────────────────────────── */
@@ -3200,31 +3290,32 @@ li.CodeMirror-hint-active {
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  background: #121610;
 }
 .exam-question-display {
-  padding: 16px 20px;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   border-left: 3px solid var(--green2);
   flex-shrink: 0;
-  max-height: 180px;
+  max-height: 200px;
   overflow-y: auto;
 }
 .exam-question-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 .exam-question-number {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--text3);
+  color: #888;
   font-family: 'JetBrains Mono', monospace;
 }
 .exam-question-marks {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--yellow);
   font-family: 'JetBrains Mono', monospace;
 }
@@ -3349,22 +3440,23 @@ li.CodeMirror-hint-active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 .exam-wait-title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  color: var(--text);
+  color: #fff;
   font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -.02em;
 }
 .exam-wait-status {
-  font-size: 13px;
-  color: var(--text3);
+  font-size: 12px;
+  color: var(--exam-muted, #7d877d);
   font-family: 'JetBrains Mono', monospace;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
+  background: var(--exam-surface, #111411);
+  border: 1px solid var(--exam-line, #252b25);
   border-radius: 4px;
-  padding: 10px 16px;
+  padding: 8px 14px;
   line-height: 1.6;
 }
 .exam-blink {
@@ -4114,7 +4206,7 @@ li.CodeMirror-hint-active {
   border-color: rgba(184,216,111,.26);
   border-left: 2px solid var(--exam-accent);
 }
-#exam-student-exam-panel .exam-q-num { color: #d5ddd4; }
+#exam-student-exam-panel .exam-q-num { color: #d5ddd4; font-size: 10px; }
 #exam-student-exam-panel .exam-q-type-chip { opacity: .78; }
 #exam-student-exam-panel .exam-student-main {
   display: grid;
@@ -4281,6 +4373,18 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel .exam-footer-btn { min-width:92px; }
 #exam-student-exam-panel .exam-footer-submit { min-width:130px; padding:9px 14px; }
 
+/* The mentor, join, and waiting screens share the assessment workspace palette
+   so the whole exam flow reads as one product. */
+#exam-mentor-dash-panel,
+#exam-student-join-panel,
+#exam-student-wait-panel {
+  --exam-surface: #111411;
+  --exam-surface-2: #151915;
+  --exam-line: #252b25;
+  --exam-muted: #7d877d;
+  --exam-accent: #b8d86f;
+}
+
 /* Bring mentor, join, and waiting screens into the same product system. */
 #exam-mentor-dash-panel .exam-topbar,
 #exam-student-join-panel .exam-topbar,
@@ -4404,13 +4508,14 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel .exam-icon-button:hover,
 #exam-student-exam-panel .exam-icon-button.active { color: var(--exam-accent); border-color: rgba(184,216,111,.48); background: rgba(184,216,111,.08); }
 #exam-student-exam-panel #student-focus-button { display: none !important; }
-#exam-student-exam-panel .exam-qnav { width: 76px; }
+#exam-student-exam-panel .exam-qnav { width: 60px; }
 #exam-student-exam-panel #resizer-student-qnav { display: none; }
-#exam-student-exam-panel .exam-qnav-hdr { height: 42px; padding: 0; justify-content: center; }
+#exam-student-exam-panel .exam-qnav-hdr { height: 32px; padding: 0; justify-content: center; }
 #exam-student-exam-panel .exam-qnav-hdr > span:first-child { font-size: 0; }
-#exam-student-exam-panel .exam-qnav-hdr > span:first-child::after { content: 'Q'; font-size: 11px; }
-#exam-student-exam-panel .exam-qnav-count { font-size: 10px; }
-#exam-student-exam-panel .exam-qnav-card { margin: 4px 9px; padding: 10px 5px; align-items: center; }
+#exam-student-exam-panel .exam-qnav-hdr > span:first-child::after { content: 'Q'; font-size: 10px; }
+#exam-student-exam-panel .exam-qnav-count { font-size: 9px; }
+#exam-student-exam-panel .exam-qnav-card { margin: 3px 6px; padding: 6px 4px; align-items: center; gap: 2px; border: 1px solid var(--border); border-radius: 6px; }
+#exam-student-exam-panel .exam-qnav-card.active { border-left: 2px solid var(--green2); }
 #exam-student-exam-panel .exam-q-card-top { flex-direction: column; gap: 6px; align-items: center; }
 #exam-student-exam-panel .exam-q-card-top .exam-q-type-chip,
 #exam-student-exam-panel .exam-q-card-top .exam-q-marks-badge,
@@ -4467,16 +4572,9 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel .CodeMirror pre,
 #exam-student-exam-panel .CodeMirror-lines,
 #exam-student-exam-panel .CodeMirror-code { font-family: inherit; font-size: inherit; }
-#exam-student-exam-panel .cm-theme-default { background: #151815; color: #d6ded4; }
-#exam-student-exam-panel .cm-theme-cyberpunk { background: #151815; color: #d6ded4; }
-#exam-student-exam-panel .cm-theme-monokai { background: #191a17; color: #e1ded0; }
-#exam-student-exam-panel .cm-theme-glass { background: #1a1d1a; color: #dce5da; }
-#exam-student-exam-panel .cm-theme-cyberpunk .cm-keyword { color: #9dbf79; }
-#exam-student-exam-panel .cm-theme-monokai .cm-keyword { color: #d6a875; }
-#exam-student-exam-panel .cm-theme-glass .cm-keyword { color: #a9c999; }
 
 @media (max-width: 900px) {
-  #exam-student-exam-panel .exam-qnav { width: 66px; }
+  #exam-student-exam-panel .exam-qnav { width: 54px; }
   #exam-student-exam-panel .exam-student-main { grid-template-columns: minmax(0, .8fr) 3px minmax(0, 1.2fr); }
 }
 @media (max-width: 700px) {
@@ -12087,22 +12185,22 @@ function applyEditorTheme() {
       <span id="mentor-top-room-id">---</span>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 0-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 0-2 2v14h11c1.1 0 2-0.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
     </button>
-    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
       <span class="exam-status-chip exam-chip-waiting" id="mentor-status-chip">WAITING</span>
-      <button class="exam-btn exam-btn-secondary exam-participants-toggle" id="btn-toggle-participants" type="button" onclick="ExamPortal.mentor.toggleParticipantsPanel()" title="Show participants">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.1.8 1.97 1.9 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <button class="topbar-btn" id="btn-toggle-participants" type="button" onclick="ExamPortal.mentor.toggleParticipantsPanel()" title="Show participants">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.1.8 1.97 1.9 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
         Participants
       </button>
-      <button class="exam-btn exam-btn-secondary" id="btn-view-removed" onclick="ExamPortal.mentor.viewRemoved()" style="display:none">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        Removed Students
+      <button class="topbar-btn" id="btn-view-removed" onclick="ExamPortal.mentor.viewRemoved()" style="display:none">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        Removed
       </button>
-      <button class="exam-btn exam-btn-green" id="btn-start-exam" onclick="ExamPortal.mentor.startExam()" style="display:flex">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+      <button class="topbar-btn topbar-btn-green" id="btn-start-exam" onclick="ExamPortal.mentor.startExam()" style="display:flex">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
         Start Exam
       </button>
-      <button class="exam-btn exam-btn-red" id="btn-end-exam" onclick="ExamPortal.mentor.endExam()" style="display:none">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+      <button class="topbar-btn topbar-btn-red" id="btn-end-exam" onclick="ExamPortal.mentor.endExam()" style="display:none">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
         End Exam
       </button>
     </div>
@@ -12196,20 +12294,20 @@ function applyEditorTheme() {
               </div>
             </div>
             <div style="padding:8px;border-top:1px solid var(--border);display:flex;gap:6px">
-              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('query')">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              <button class="qtype-btn" data-type="query" onclick="ExamPortal.mentor.addQuestion('query')">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 Query
               </button>
-              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('sql')">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16v2H4V5zm0 6h16v2H4v-2zm0 6h16v2H4v-2z"/></svg>
+              <button class="qtype-btn" data-type="sql" onclick="ExamPortal.mentor.addQuestion('sql')">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16v2H4V5zm0 6h16v2H4v-2zm0 6h16v2H4v-2z"/></svg>
                 SQL
               </button>
-              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('mcq')">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              <button class="qtype-btn" data-type="mcq" onclick="ExamPortal.mentor.addQuestion('mcq')">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 MCQ
               </button>
-              <button class="exam-btn exam-btn-secondary" style="flex:1;font-size:11px;padding:6px 2px" onclick="ExamPortal.mentor.addQuestion('coding')">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              <button class="qtype-btn" data-type="coding" onclick="ExamPortal.mentor.addQuestion('coding')">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 Coding
               </button>
             </div>
@@ -12278,10 +12376,11 @@ function applyEditorTheme() {
               <th>Accuracy</th>
               <th>Flags</th>
               <th>Last Sub</th>
+              <th>Time Left</th>
               <th>Action</th>
             </tr></thead>
             <tbody id="mentor-lb-tbody">
-              <tr><td colspan="10" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">// Waiting for submissions...</td></tr>
+              <tr><td colspan="11" style="text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:20px">// Waiting for submissions...</td></tr>
             </tbody>
           </table>
         </div>
@@ -12434,18 +12533,18 @@ function applyEditorTheme() {
 </div>
 
 <!-- Student: Enforce Fullscreen Glassmorphic Overlay -->
-<div class="exam-overlay" id="student-fullscreen-overlay" style="display:none; z-index:99999; background:rgba(10, 10, 12, 0.96); backdrop-filter: blur(12px);">
+<div class="exam-overlay" id="student-fullscreen-overlay" style="display:none; z-index:99999; background:rgba(0, 0, 0, 0.65); backdrop-filter: blur(12px); font-family:'JetBrains Mono', monospace;">
   <div class="exam-body" style="display:flex; justify-content:center; align-items:center; height:100vh;">
-    <div class="exam-form-card" style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; max-width:480px; padding:40px 30px; border:1px solid rgba(255,255,255,0.1); background: rgba(30, 30, 35, 0.8);">
+    <div class="exam-form-card" style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; width:min(480px, calc(100vw - 40px)); padding:32px 28px; border:1px solid var(--border2); border-radius:8px; background:var(--bg2); box-shadow:0 12px 40px rgba(0, 0, 0, 0.6);">
       <div style="width:64px; height:64px; background:rgba(0, 237, 100, 0.1); border:2px solid var(--green2); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--green2)">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 20v-4m0 4h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
       </div>
-      <div class="exam-section-title" style="font-size:20px; margin:0; color:#ffffff; font-weight:700;">Fullscreen Mode Required</div>
-      <div class="exam-section-sub" style="font-size:13px; line-height:1.5; color:var(--text2);">
+      <div class="exam-section-title" style="font-size:20px; margin:0; color:var(--text); font-weight:700; letter-spacing:.4px;">Fullscreen Mode Required</div>
+      <div class="exam-section-sub" style="font-size:13px; line-height:1.6; color:var(--text2);">
         This assessment is configured with strict proctoring rules. You must enter fullscreen mode to proceed with the exam. Exiting fullscreen will flag your assessment.
       </div>
       <button class="exam-btn exam-btn-green exam-btn-full" onclick="ExamPortal.student.requestFullscreen()" style="padding:10px 24px; font-weight:600; font-size:13px;">
-        Enter Fullscreen & Begin
+        Enter Fullscreen &amp; Begin
       </button>
     </div>
   </div>
@@ -13119,7 +13218,7 @@ const ExamPortal = (() => {
       <input id="qmedia-${qId}" type="file" accept="image/*,video/*" hidden onchange="ExamPortal.mentor.uploadQuestionMedia('${qId}',event)"/>
       <span style="font-size:10px;color:var(--text3)">Up to 30 MB; inserted at the cursor.</span>
     </div>
-    <div id="qmedia-list-${qId}" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+    <div id="qmedia-list-${qId}"></div>
     <div style="margin-top:10px;border-top:1px solid var(--border2);padding-top:8px">
       <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Live student preview</div>
       <div id="qmedia-preview-${qId}" class="exam-question-preview"></div>
@@ -13203,6 +13302,34 @@ const ExamPortal = (() => {
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     return `${Math.floor(diff / 3600)}h ago`;
   }
+
+  // Time remaining until a student's assessment window closes. The server
+  // sends seconds left; we convert that to a local deadline so the label can
+  // tick down between the 5-second leaderboard polls.
+  function fmtTimeLeft(seconds) {
+    if (seconds === null || seconds === undefined || isNaN(seconds)) return '—';
+    const total = Math.max(0, Math.floor(seconds));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return (h > 0 ? h + ':' : '') + pad(m) + ':' + pad(s);
+  }
+
+  function tickLeaderboardCountdowns() {
+    const cells = document.querySelectorAll('#mentor-lb-tbody .exam-lb-countdown[data-deadline]');
+    if (!cells.length) return;
+    const nowSecs = Date.now() / 1000;
+    cells.forEach((cell) => {
+      const deadline = Number(cell.getAttribute('data-deadline'));
+      if (!deadline) return;
+      const left = deadline - nowSecs;
+      cell.textContent = fmtTimeLeft(left);
+      cell.classList.toggle('is-low', left <= 60);
+    });
+  }
+
+  setInterval(tickLeaderboardCountdowns, 1000);
 
   function copyText(text) {
     navigator.clipboard.writeText(text).catch(() => {
@@ -14571,9 +14698,11 @@ const ExamPortal = (() => {
       target.innerHTML = (q.media || []).map(media => {
         const label = escapeExamHtml(media.name || 'media');
         const url = escapeExamHtml(media.url || `/api/exam/room/${state.mentor.roomId}/media/${media.id}`);
-        return `<div style="width:116px;border:1px solid var(--border2);border-radius:5px;overflow:hidden;background:var(--bg)">
+        return `<div class="exam-media-card">
           ${media.type === 'video' ? `<video src="${url}" muted preload="metadata" style="display:block;width:100%;height:68px;object-fit:cover"></video>` : `<img src="${url}" alt="${label}" style="display:block;width:100%;height:68px;object-fit:cover"/>`}
           <div title="${label}" style="padding:4px 5px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)">${label}</div>
+          <button type="button" class="exam-media-remove" title="Remove media"
+            onclick="event.stopPropagation();ExamPortal.mentor.deleteQuestionMedia('${qId}','${media.id}')">&times;</button>
         </div>`;
       }).join('');
       let preview = el(`qmedia-preview-${qId}`);
@@ -14584,12 +14713,16 @@ const ExamPortal = (() => {
       if (preview) preview.innerHTML = renderQuestionHtml(q);
     },
 
+    // Media is uploaded in slices: the serverless host rejects request bodies
+    // above ~4.5 MB, so a single POST made every real video fail with 413.
     async uploadQuestionMedia(qId, event) {
       const q = state.mentor.questions.find(x => x.id === qId);
       const file = event && event.target && event.target.files ? event.target.files[0] : null;
       if (!q || !file) return;
       event.target.value = '';
-      if (!(file.type || '').startsWith('image/') && !(file.type || '').startsWith('video/')) {
+      const isImage = (file.type || '').startsWith('image/');
+      const isVideo = (file.type || '').startsWith('video/');
+      if (!isImage && !isVideo) {
         showExamAlert('Only image and video files are allowed.', { title: 'Invalid File', danger: true });
         return;
       }
@@ -14597,35 +14730,112 @@ const ExamPortal = (() => {
         showExamAlert('Media files must be 30 MB or smaller.', { title: 'File Too Large', danger: true });
         return;
       }
-      const form = new FormData();
-      form.append('mentorId', state.mentor.mentorId || '');
-      form.append('file', file, file.name);
-      let response;
+
+      const roomId = state.mentor.roomId;
+      const mentorId = state.mentor.mentorId || '';
+      const uploadId = 'upl-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      const CHUNK_SIZE = 2 * 1024 * 1024;
+      const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+
       try {
-        response = await fetch(`/api/exam/room/${state.mentor.roomId}/question/${qId}/media`, { method: 'POST', body: form });
+        for (let seq = 0; seq < totalChunks; seq++) {
+          const slice = file.slice(seq * CHUNK_SIZE, Math.min(file.size, (seq + 1) * CHUNK_SIZE));
+          const form = new FormData();
+          form.append('mentorId', mentorId);
+          form.append('uploadId', uploadId);
+          form.append('seq', String(seq));
+          form.append('file', slice, file.name);
+          const res = await fetch(`/api/exam/room/${roomId}/question/${qId}/media/chunk`, { method: 'POST', body: form });
+          let payload = {};
+          try { payload = await res.json(); } catch (e) {}
+          if (!res.ok || payload.status !== 'ok') {
+            throw new Error(payload.error || `Upload failed on part ${seq + 1} of ${totalChunks}`);
+          }
+        }
+
+        const completeRes = await fetch(`/api/exam/room/${roomId}/question/${qId}/media/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mentorId: mentorId,
+            uploadId: uploadId,
+            filename: file.name,
+            contentType: file.type || (isVideo ? 'video/mp4' : 'image/png'),
+            totalChunks: totalChunks,
+          }),
+        });
+        let result = {};
+        try { result = await completeRes.json(); } catch (e) {}
+        if (!completeRes.ok || result.status !== 'ok' || !result.media) {
+          throw new Error(result.error || 'Unable to finish the upload');
+        }
+
+        q.media = Array.isArray(q.media) ? q.media : [];
+        q.media.push(result.media);
+        const textarea = el(`qtext-${qId}`);
+        const marker = `[media:${result.media.id}]`;
+        if (textarea) {
+          const start = Number.isInteger(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
+          const end = Number.isInteger(textarea.selectionEnd) ? textarea.selectionEnd : start;
+          q.text = textarea.value.slice(0, start) + marker + textarea.value.slice(end);
+        } else {
+          q.text = `${q.text || ''}${marker}`;
+        }
+        await mentor._saveQuestions();
+        mentor._renderQEditor(qId);
       } catch (error) {
-        showExamAlert('Unable to upload media. Please try again.', { title: 'Upload Failed', danger: true });
-        return;
+        // Drop any buffered slices so a failed attempt cannot leak storage.
+        fetch(`/api/exam/room/${roomId}/question/${qId}/media/abort`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mentorId: mentorId, uploadId: uploadId }),
+        }).catch(() => {});
+        showExamAlert((error && error.message) || 'Unable to upload media. Please try again.', { title: 'Upload Failed', danger: true });
       }
-      let result = {};
-      try { result = await response.json(); } catch (error) {}
-      if (!response.ok || result.status !== 'ok' || !result.media) {
-        showExamAlert(result.error || 'Unable to upload media.', { title: 'Upload Failed', danger: true });
-        return;
+    },
+
+    async deleteQuestionMedia(qId, mediaId) {
+      const q = state.mentor.questions.find(x => x.id === qId);
+      if (!q) return;
+      
+      // Confirm deletion
+      if (!await showExamConfirm('Are you sure you want to remove this media?\\n\\nThis action cannot be undone.', { 
+        title: 'Remove Media', 
+        danger: true, 
+        confirmText: 'Remove', 
+        cancelText: 'Cancel' 
+      })) return;
+
+      try {
+        const response = await fetch(`/api/exam/room/${state.mentor.roomId}/question/${qId}/media/${mediaId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `mentorId=${encodeURIComponent(state.mentor.mentorId || '')}`
+        });
+        const result = await response.json();
+        
+        if (!response.ok || result.status !== 'ok') {
+          showExamAlert(result.error || 'Failed to delete media.', { title: 'Delete Failed', danger: true });
+          return;
+        }
+        
+        // Remove from question's media array
+        if (q.media && Array.isArray(q.media)) {
+          q.media = q.media.filter(m => m.id !== mediaId);
+          if (q.media.length === 0) delete q.media;
+        }
+        
+        // Remove the media marker from question text
+        const marker = `[media:${mediaId}]`;
+        if (q.text && q.text.includes(marker)) {
+          q.text = q.text.replace(marker, '').replace(/\\s+/g, ' ').trim();
+        }
+        
+        await mentor._saveQuestions();
+        mentor._renderQEditor(qId);
+      } catch (error) {
+        showExamAlert('Unable to delete media. Please try again.', { title: 'Delete Failed', danger: true });
       }
-      q.media = Array.isArray(q.media) ? q.media : [];
-      q.media.push(result.media);
-      const textarea = el(`qtext-${qId}`);
-      const marker = `[media:${result.media.id}]`;
-      if (textarea) {
-        const start = Number.isInteger(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
-        const end = Number.isInteger(textarea.selectionEnd) ? textarea.selectionEnd : start;
-        q.text = textarea.value.slice(0, start) + marker + textarea.value.slice(end);
-      } else {
-        q.text = `${q.text || ''}${marker}`;
-      }
-      await mentor._saveQuestions();
-      mentor._renderQEditor(qId);
     },
 
     async _saveQuestions() {
@@ -15104,7 +15314,7 @@ const ExamPortal = (() => {
       if (!tbody) return;
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);font-family:\\'JetBrains Mono\\',monospace;padding:20px">// Waiting for submissions...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text3);font-family:\\'JetBrains Mono\\',monospace;padding:20px">// Waiting for submissions...</td></tr>';
         return;
       }
 
@@ -15131,6 +15341,12 @@ const ExamPortal = (() => {
         const blockedBadge = row.isBlocked ? `<span class="exam-status-chip exam-chip-ended" style="font-size: 10px; margin-left: 6px; padding: 2px 6px; background: rgba(255, 77, 77, 0.08); color: #ff4d4d; border: 1px solid rgba(255, 77, 77, 0.3);" title="Reason: ${esc(row.blockReason || 'Kicked')}">BLOCKED</span>` : '';
         const nameContent = row.isBlocked ? `<span style="text-decoration: line-through; opacity: 0.6;">${esc(row.name)}</span> ${blockedBadge}` : esc(row.name);
 
+        const secsLeft = (row.remainingSeconds === null || row.remainingSeconds === undefined)
+          ? null
+          : Number(row.remainingSeconds);
+        const deadline = secsLeft === null ? '' : (Date.now() / 1000 + secsLeft);
+        const timeLeftCell = `<td class="exam-lb-time exam-lb-countdown${secsLeft !== null && secsLeft <= 60 ? ' is-low' : ''}" data-deadline="${deadline}">${secsLeft === null ? '—' : fmtTimeLeft(secsLeft)}</td>`;
+
         return `
           <tr class="${rowClass}">
             <td class="exam-lb-rank ${rankClass}">${rank}</td>
@@ -15142,6 +15358,7 @@ const ExamPortal = (() => {
             <td class="exam-lb-accuracy">${accuracy}</td>
             <td class="exam-lb-flags">${flagsBadge}</td>
             <td class="exam-lb-time">${lastSub}</td>
+            ${timeLeftCell}
             <td style="text-align:center;display:flex;gap:6px;justify-content:center">
               <button class="exam-btn exam-btn-secondary" style="padding:4px 8px;font-size:11px;height:auto"
                 onclick="ExamPortal.mentor.viewSubmission('${row.studentId}')"
@@ -16147,7 +16364,8 @@ const ExamPortal = (() => {
         return q && q.type === 'sql' ? 'sql' : (q && q.type === 'query' ? 'mongodb' : ((q && q.language) || 'python'));
       });
       
-      // Initialize styling settings
+      // Initialize styling settings (restore saved preferences first)
+      studentNS.loadEditorSettings();
       studentNS.updateEditorSettings();
 
       // If a question was selected before editor initialization, load its value now
@@ -17631,20 +17849,42 @@ const ExamPortal = (() => {
       const size = sizeEl.value;
       const theme = themeEl.value;
 
+      try {
+        localStorage.setItem('codexa.editor.font', font);
+        localStorage.setItem('codexa.editor.fontSize', size);
+        localStorage.setItem('codexa.editor.theme', theme);
+      } catch (err) { /* storage unavailable */ }
+
       const cm = state.student.examEditor;
       if (cm) {
         const wrapper = cm.getWrapperElement();
         wrapper.className = wrapper.className.replace(/\\bcm-theme-\\S+/g, '');
         wrapper.classList.add(`cm-theme-${theme}`);
-        const fontTargets = [wrapper, cm.getScrollerElement(), cm.getCodeMirrorElement && cm.getCodeMirrorElement(), cm.getInputField && cm.getInputField()];
-        fontTargets.filter(Boolean).forEach(target => {
-          target.style.setProperty('font-family', font, 'important');
-          target.style.setProperty('font-size', size, 'important');
+        wrapper.style.setProperty('font-family', font, 'important');
+        wrapper.style.setProperty('font-size', size, 'important');
+        wrapper.querySelectorAll('.CodeMirror-line, .CodeMirror-line span, .CodeMirror-linenumber').forEach(node => {
+          node.style.setProperty('font-family', 'inherit', 'important');
+          node.style.setProperty('font-size', 'inherit', 'important');
         });
         wrapper.dataset.editorFont = font;
         wrapper.dataset.editorFontSize = size;
         cm.refresh();
       }
+    },
+
+    loadEditorSettings() {
+      const fontEl = el('editor-font-family');
+      const sizeEl = el('editor-font-size');
+      const themeEl = el('editor-theme');
+      if (!fontEl || !sizeEl || !themeEl) return;
+      try {
+        const font = localStorage.getItem('codexa.editor.font');
+        const size = localStorage.getItem('codexa.editor.fontSize');
+        const theme = localStorage.getItem('codexa.editor.theme');
+        if (font && [...fontEl.options].some(o => o.value === font)) fontEl.value = font;
+        if (size && [...sizeEl.options].some(o => o.value === size)) sizeEl.value = size;
+        if (theme && [...themeEl.options].some(o => o.value === theme)) themeEl.value = theme;
+      } catch (err) { /* storage unavailable */ }
     },
 
     toggleEditorSettingsPopover(event) {
@@ -17657,6 +17897,7 @@ const ExamPortal = (() => {
         popover.style.display = isHidden ? 'flex' : 'none';
 
         if (isHidden) {
+          studentNS.loadEditorSettings();
           const hidePopover = () => {
             popover.style.display = 'none';
             document.removeEventListener('click', hidePopover);
@@ -17901,16 +18142,13 @@ const ExamPortal = (() => {
       if (state.student.fullscreenExitCount >= limit) {
         studentNS.forceSubmitAndBlock(`You crossed the fullscreen exits threshold (${state.student.fullscreenExitCount}/${limit}). Your assessment has been auto-submitted and access has been terminated.`);
       } else {
-        // Show in-app warning modal instead of native alert
-        showAppWarningModal(
-          "Fullscreen Alert",
-          `You exited fullscreen mode! Exits count: ${state.student.fullscreenExitCount} of ${limit}. You must return to fullscreen immediately or access will be terminated.`,
-          () => {
-            studentNS.requestFullscreen();
-          }
-        );
-        const overlay = el('student-fullscreen-overlay');
-        if (overlay) overlay.style.display = 'flex';
+        // Themed acknowledgement modal (blocks the whole screen until the student returns)
+        showExamModal({
+          title: 'Fullscreen Mode Required',
+          message: `You exited fullscreen mode! Exit ${state.student.fullscreenExitCount} of ${limit}. You must return to fullscreen immediately or your access will be terminated.`,
+          danger: true,
+          buttons: [{ label: 'Return to Fullscreen', value: true, danger: true }],
+        }).then(() => studentNS.requestFullscreen());
       }
     }
   }

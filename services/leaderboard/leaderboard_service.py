@@ -1,5 +1,6 @@
 import sys
 import json
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent.parent
@@ -83,6 +84,7 @@ class LeaderboardService:
                 "answered": answered,
                 "correct": correct,
                 "lastSubmission": last_sub_time,
+                "joinedAt": int(student_info.get("joinedAt", 0) or 0),
                 "isBlocked": sid in kicked_raw,
                 "blockReason": kicked_raw.get(sid, ""),
                 **cls._proctoring_metrics(student_info),
@@ -108,6 +110,7 @@ class LeaderboardService:
                     "answered": answered,
                     "correct": correct,
                     "lastSubmission": last_sub_time,
+                    "joinedAt": int(student_info.get("joinedAt", 0) or 0),
                     "isBlocked": sid in kicked_raw,
                     "blockReason": kicked_raw.get(sid, ""),
                     **cls._proctoring_metrics(student_info),
@@ -126,10 +129,42 @@ class LeaderboardService:
             except Exception:
                 pass
 
+        # ── Per-student time remaining ────────────────────────────────
+        # A timed room starts one shared clock, but a student who joins late
+        # gets their own window, so each row needs its own deadline.
+        raw_timing = redis_one(["HMGET", f"room:{room_id}", "timed", "duration", "startedAt", "status"]) or [None, None, None, None]
+        timed = str(raw_timing[0] or "0") == "1"
+        try:
+            duration_minutes = int(raw_timing[1] or 0)
+        except (TypeError, ValueError):
+            duration_minutes = 0
+        try:
+            room_started_at = int(raw_timing[2] or 0)
+        except (TypeError, ValueError):
+            room_started_at = 0
+        room_status = raw_timing[3] or "waiting"
+        now = int(time.time())
+        duration_seconds = duration_minutes * 60
+
+        for row in ranked:
+            if not timed or not duration_seconds or not room_started_at:
+                row["startedAt"] = 0
+                row["remainingSeconds"] = None
+                continue
+            joined_at = int(row.get("joinedAt") or 0)
+            personal_start = max(room_started_at, joined_at) if joined_at else room_started_at
+            row["startedAt"] = personal_start
+            row["remainingSeconds"] = max(0, duration_seconds - (now - personal_start))
+
         return {
             "leaderboard": ranked,
             "maxScore": max_score,
             "totalQuestions": total_questions,
+            "timed": timed,
+            "durationMinutes": duration_minutes,
+            "startedAt": room_started_at,
+            "status": room_status,
+            "serverNow": now,
         }
 
     @staticmethod

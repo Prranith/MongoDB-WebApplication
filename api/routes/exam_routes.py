@@ -267,6 +267,99 @@ def api_exam_get_question_media(room_id: str, media_id: str):
         return _json_response({"status": "error", "error": "Unable to read media"}, status=503)
 
 
+def _media_mentor_guard(room_id: str, mentor_id: str):
+    """Return an error response when the caller is not this room's mentor."""
+    room_mentor = redis_one(["HGET", f"room:{room_id}", "mentorId"])
+    if not room_mentor:
+        return _json_response({"status": "error", "error": "Room not found"}, status=404)
+    if room_mentor != mentor_id:
+        return _json_response({"status": "error", "error": "Unauthorized"}, status=403)
+    return None
+
+
+@exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/media/chunk", methods=["POST"])
+def api_exam_upload_question_media_chunk(room_id: str, question_id: str):
+    """Buffer one slice of a chunked question-media upload."""
+    mentor_id = request.form.get("mentorId", "").strip()
+    guard = _media_mentor_guard(room_id, mentor_id)
+    if guard is not None:
+        return guard
+
+    upload_id = request.form.get("uploadId", "").strip()
+    seq = request.form.get("seq", "").strip()
+    file_storage = request.files.get("file")
+    try:
+        chunk = QuestionMediaService.store_chunk(room_id, question_id, upload_id, seq, file_storage)
+        return _json_response({"status": "ok", "chunk": chunk})
+    except ValueError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=400)
+    except Exception as e:
+        log.error("question_media_chunk_failed", room_id=room_id, question_id=question_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": "Unable to store media chunk"}, status=503)
+
+
+@exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/media/complete", methods=["POST"])
+def api_exam_complete_question_media(room_id: str, question_id: str):
+    """Assemble buffered chunks into one stored media file."""
+    body = request.get_json(force=True, silent=True) or {}
+    mentor_id = (body.get("mentorId") or "").strip()
+    guard = _media_mentor_guard(room_id, mentor_id)
+    if guard is not None:
+        return guard
+
+    try:
+        media = QuestionMediaService.finalize_upload(
+            room_id,
+            question_id,
+            (body.get("uploadId") or "").strip(),
+            body.get("filename") or "media",
+            body.get("contentType") or "application/octet-stream",
+            body.get("totalChunks"),
+        )
+        return _json_response({"status": "ok", "media": media})
+    except ValueError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=400)
+    except Exception as e:
+        log.error("question_media_complete_failed", room_id=room_id, question_id=question_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": "Unable to finalize media upload"}, status=503)
+
+
+@exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/media/abort", methods=["POST"])
+def api_exam_abort_question_media(room_id: str, question_id: str):
+    """Discard buffered chunks for an abandoned upload."""
+    body = request.get_json(force=True, silent=True) or {}
+    mentor_id = (body.get("mentorId") or "").strip()
+    guard = _media_mentor_guard(room_id, mentor_id)
+    if guard is not None:
+        return guard
+
+    try:
+        removed = QuestionMediaService.abort_upload(room_id, (body.get("uploadId") or "").strip())
+        return _json_response({"status": "ok", "removed": removed})
+    except Exception as e:
+        log.error("question_media_abort_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": "Unable to abort media upload"}, status=503)
+
+
+@exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/media/<media_id>", methods=["DELETE"])
+def api_exam_delete_question_media(room_id: str, question_id: str, media_id: str):
+    """Delete a question's media file from GridFS (mentor-only)."""
+    mentor_id = request.form.get("mentorId", "").strip()
+    room_mentor = redis_one(["HGET", f"room:{room_id}", "mentorId"])
+    if not room_mentor:
+        return _json_response({"status": "error", "error": "Room not found"}, status=404)
+    if room_mentor != mentor_id:
+        return _json_response({"status": "error", "error": "Unauthorized"}, status=403)
+    try:
+        media = QuestionMediaService.delete(room_id, media_id)
+        return _json_response({"status": "ok", "media": media})
+    except KeyError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=404)
+    except Exception as e:
+        log.error("question_media_delete_failed", room_id=room_id, question_id=question_id, media_id=media_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": "Unable to delete media"}, status=503)
+
+
 @exam_bp.route("/api/exam/room/<room_id>/dataset", methods=["POST"])
 def api_exam_upload_dataset(room_id: str):
     """Upload a dataset for a room."""
