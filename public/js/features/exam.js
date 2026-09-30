@@ -670,12 +670,57 @@ const ExamPortal = (() => {
           return mappedQ;
         });
 
+        // 2b. Detach embedded media payloads (re-uploaded after questions exist)
+        const mediaByQId = {};
+        questions.forEach(q => {
+          if (Array.isArray(q.mediaData) && q.mediaData.length > 0) {
+            mediaByQId[q.id] = q.mediaData;
+            delete q.mediaData;
+          }
+        });
+
         // 3. Save the questions to Redis
         state.mentor.questions = questions;
         await apiCall(`/api/exam/room/${roomId}/questions`, 'POST', {
           mentorId,
           questions
         });
+
+        // 4. Re-upload embedded media files and rewrite [media:<id>] tokens
+        let mediaReuploaded = 0;
+        for (const q of questions) {
+          const mediaList = mediaByQId[q.id];
+          if (!mediaList) continue;
+          q.media = Array.isArray(q.media) ? q.media : [];
+          for (const md of mediaList) {
+            try {
+              const blob = await (await fetch(md.dataUri)).blob();
+              const form = new FormData();
+              form.append('mentorId', mentorId);
+              form.append('file', blob, md.filename || 'media');
+              const uploadRes = await fetch(`/api/exam/room/${roomId}/question/${q.id}/media`, { method: 'POST', body: form });
+              const uploadJson = await uploadRes.json().catch(() => ({}));
+              if (uploadRes.ok && uploadJson.status === 'ok' && uploadJson.media) {
+                const oldId = md.id;
+                const newId = uploadJson.media.id;
+                if (oldId !== newId) {
+                  q.text = (q.text || '').split(`[media:${oldId}]`).join(`[media:${newId}]`);
+                }
+                q.media = q.media.filter(x => x.id !== oldId);
+                q.media.push(uploadJson.media);
+                mediaReuploaded++;
+              }
+            } catch (mediaErr) {
+              console.error('Failed to re-upload media for question', q.id, mediaErr);
+            }
+          }
+        }
+        if (mediaReuploaded > 0) {
+          await apiCall(`/api/exam/room/${roomId}/questions`, 'POST', {
+            mentorId,
+            questions
+          });
+        }
 
       } catch (err) {
         console.error("Error loading paper data:", err);
@@ -689,6 +734,28 @@ const ExamPortal = (() => {
       try {
         const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/paper?mentorId=${state.mentor.mentorId}`);
         if (res.status === 'ok') {
+          // Embed media files as base64 data URIs so the export is fully self-contained
+          for (const q of res.questions || []) {
+            if (!Array.isArray(q.media) || q.media.length === 0) continue;
+            q.mediaData = [];
+            for (const m of q.media) {
+              try {
+                const mediaRes = await fetch(`/api/exam/room/${state.mentor.roomId}/media/${m.id}`);
+                if (!mediaRes.ok) continue;
+                const blob = await mediaRes.blob();
+                const dataUri = await new Promise((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onload = () => resolve(reader.result);
+                  reader.onerror = reject;
+                  reader.readAsDataURL(blob);
+                });
+                q.mediaData.push({ id: m.id, filename: m.filename || 'media', contentType: m.contentType || blob.type, size: m.size || blob.size, dataUri });
+              } catch (mediaErr) {
+                console.error('Failed to embed media', m.id, mediaErr);
+              }
+            }
+            if (q.mediaData.length === 0) delete q.mediaData;
+          }
           const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -755,6 +822,7 @@ const ExamPortal = (() => {
       const rightSidebar = document.querySelector('.exam-dash-right');
 
       // Buttons
+      if (el('btn-view-removed')) el('btn-view-removed').style.display = 'none';
       if (status === 'waiting') {
         el('btn-start-exam').style.display = 'flex';
         el('btn-end-exam').style.display = 'none';
@@ -776,6 +844,7 @@ const ExamPortal = (() => {
         if (!state.mentor.isPlayback) {
           mentor._startLeaderboardPoll();
         }
+        if (el('btn-view-removed')) el('btn-view-removed').style.display = 'flex';
         // Start timer if timed
         if (state.mentor.timed && state.mentor.startedAt) {
           mentor._startTimer();
@@ -1877,9 +1946,98 @@ const ExamPortal = (() => {
         alert('Add at least one question before starting the exam.');
         return;
       }
+
+      const btn = el('btn-start-exam');
+      const btnOriginal = btn ? btn.innerHTML : '';
+      const freezeFailures = [];
+      const qLabel = (q) => q.title || q.text || q.id;
+
+      // Auto-generate and freeze expected outputs for every question type
+      try {
+        for (const q of state.mentor.questions) {
+          if (btn) { btn.disabled = true; btn.textContent = `Freezing: ${qLabel(q)}`.slice(0, 40); }
+
+          if (isDataQuestion(q)) {
+            if (q.answerFrozen) continue;
+            const datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
+            const query = q.expectedQuery || '';
+            if (datasetIds.length === 0 || !query.trim()) {
+              freezeFailures.push(`${qLabel(q)} — missing dataset or expected query`);
+              continue;
+            }
+            try {
+              const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/freeze`, 'POST', {
+                mentorId: state.mentor.mentorId,
+                questionId: q.id,
+                datasetIds,
+                query,
+                queryType: q.type === 'sql' ? 'sql' : 'query',
+                type: q.type === 'sql' ? 'sql' : 'query',
+              });
+              if (res.status === 'ok') {
+                q.answerFrozen = true;
+                q.answerDocCount = res.docCount;
+                q.lastOutputPreview = res.preview || [];
+                q.lastOutputError = null;
+              } else {
+                q.lastOutputError = res.error || '// Error running query';
+                freezeFailures.push(`${qLabel(q)} — ${res.error || 'freeze failed'}`);
+              }
+            } catch (freezeErr) {
+              freezeFailures.push(`${qLabel(q)} — ${freezeErr.message || 'freeze failed'}`);
+            }
+          } else if (q.type === 'coding') {
+            const inputs = (q.testCases || []).map(tc => tc.input || '');
+            if (inputs.length === 0) {
+              freezeFailures.push(`${qLabel(q)} — no test cases defined`);
+              continue;
+            }
+            const langs = q.allowedLanguages && q.allowedLanguages.length ? q.allowedLanguages : ['python'];
+            for (const lang of langs) {
+              const tpl = (q.templates && q.templates[lang]) ? q.templates[lang] : null;
+              const editorialCode = tpl ? tpl.editorialCode : '';
+              if (!editorialCode || !editorialCode.trim()) {
+                freezeFailures.push(`${qLabel(q)} (${lang}) — no editorial solution code`);
+                continue;
+              }
+              try {
+                const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/generate_test_cases`, 'POST', {
+                  language: lang,
+                  editorialCode,
+                  inputs,
+                  templateType: q.templateType,
+                  driverCode: (tpl && tpl.driverCode) || '',
+                });
+                if (res.status === 'ok' && res.outputs) {
+                  res.outputs.forEach((out, idx) => {
+                    if (q.testCases[idx]) q.testCases[idx].expectedOutput = out;
+                  });
+                } else {
+                  freezeFailures.push(`${qLabel(q)} (${lang}) — ${res.error || 'output generation failed'}`);
+                }
+              } catch (genErr) {
+                freezeFailures.push(`${qLabel(q)} (${lang}) — ${genErr.message || 'output generation failed'}`);
+              }
+            }
+          } else if (q.type === 'mcq') {
+            // MCQ answers are graded directly from correctOption(s); nothing to generate
+            q.answerFrozen = true;
+          }
+        }
+
+        await mentor._saveQuestions();
+        mentor._renderQList();
+        if (state.mentor.currentQId) mentor._renderQEditor(state.mentor.currentQId);
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = btnOriginal; }
+      }
+
       const unfrozen = state.mentor.questions.filter(q => isDataQuestion(q) && !q.answerFrozen);
-      if (unfrozen.length > 0) {
-        if (!confirm(`${unfrozen.length} query question(s) have no frozen answer. Students will get 0 marks for those. Continue?`)) return;
+      if (freezeFailures.length > 0 || unfrozen.length > 0) {
+        const lines = [];
+        if (unfrozen.length > 0) lines.push(`${unfrozen.length} query question(s) still have no frozen answer — students will get 0 marks for those.`);
+        if (freezeFailures.length > 0) lines.push('Freeze issues:\n' + freezeFailures.map(f => '• ' + f).join('\n'));
+        if (!confirm(`${lines.join('\n\n')}\n\nContinue starting the exam?`)) return;
       }
 
       const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/start`, 'POST', {
@@ -3031,6 +3189,7 @@ const ExamPortal = (() => {
           if (isDataQuestion(q)) {
             cm.setOption('mode', q.type === 'sql' ? 'text/x-sql' : 'javascript');
             cm.setValue(q._studentDraft !== undefined ? q._studentDraft : (q.type === 'sql' ? 'SELECT * FROM users LIMIT 10;' : `// Write your MongoDB query here\ndb.collection.find({})`));
+            cm.clearHistory();
           } else if (q.type === 'coding') {
             let currentCode = q._studentDrafts ? q._studentDrafts[q.language] : undefined;
             if (currentCode === undefined) {
@@ -3041,6 +3200,7 @@ const ExamPortal = (() => {
             if (q.language === 'java') cmMode = 'text/x-java';
             cm.setOption('mode', cmMode);
             cm.setValue(currentCode);
+            cm.clearHistory();
           }
         }
       }
@@ -3187,6 +3347,7 @@ const ExamPortal = (() => {
           if (cm) {
             cm.setOption('mode', q.type === 'sql' ? 'text/x-sql' : 'javascript');
             cm.setValue(q._studentDraft !== undefined ? q._studentDraft : (q.type === 'sql' ? 'SELECT * FROM users LIMIT 10;' : `// Question ${idx + 1}\ndb.`));
+            cm.clearHistory();
           }
 
           // Reset console
@@ -3247,6 +3408,7 @@ const ExamPortal = (() => {
             if (q.language === 'java') cmMode = 'text/x-java';
             cm.setOption('mode', cmMode);
             cm.setValue(currentCode);
+            cm.clearHistory();
           }
 
           // Reset console
@@ -3417,6 +3579,7 @@ const ExamPortal = (() => {
         if (newLang === 'java') cmMode = 'text/x-java';
         cm.setOption('mode', cmMode);
         cm.setValue(nextCode);
+        cm.clearHistory();
       }
       
       // Auto-save the new draft immediately
@@ -4254,6 +4417,7 @@ const ExamPortal = (() => {
       if (cm) {
         cm.setOption('mode', cmMode);
         cm.setValue(newCode);
+        cm.clearHistory();
         setTimeout(() => cm.refresh(), 50);
       }
 

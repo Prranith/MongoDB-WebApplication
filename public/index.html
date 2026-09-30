@@ -876,7 +876,7 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.1.8 1.97 1.9 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
         Participants
       </button>
-      <button class="exam-btn exam-btn-secondary" id="btn-view-removed" onclick="ExamPortal.mentor.viewRemoved()">
+      <button class="exam-btn exam-btn-secondary" id="btn-view-removed" onclick="ExamPortal.mentor.viewRemoved()" style="display:none">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         Removed Students
       </button>
@@ -963,9 +963,14 @@
           <div class="exam-qlist">
             <div class="exam-qlist-hdr">
               <span class="exam-qlist-hdr-title">Questions <span class="exam-question-summary" id="mentor-questions-summary"></span></span>
-              <button class="phbtn" title="Add Query Question" onclick="ExamPortal.mentor.addQuestion('query')" id="btn-add-query-q">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-              </button>
+              <div style="display:flex;gap:4px">
+                <button class="phbtn" title="Export Paper (.json) — includes datasets, all question types and media" onclick="ExamPortal.mentor.exportPaper()" id="btn-export-paper-qtab">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 9l-5 5-5-5h3V3h4v6h3z"/></svg>
+                </button>
+                <button class="phbtn" title="Add Query Question" onclick="ExamPortal.mentor.addQuestion('query')" id="btn-add-query-q">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                </button>
+              </div>
             </div>
             <div class="exam-qlist-body" id="mentor-qlist-body">
               <div class="exam-qlist-empty" id="mentor-qlist-empty">
