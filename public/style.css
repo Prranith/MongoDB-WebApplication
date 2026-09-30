@@ -7200,3 +7200,127 @@ li.CodeMirror-hint-active {
   }
 }
 
+
+/* ── Exam Modal (themed alert/confirm) ─────────────────────────────── */
+.exam-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.exam-modal {
+  width: min(480px, calc(100vw - 40px));
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  animation: exam-modal-in 140ms ease-out;
+}
+
+@keyframes exam-modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+.exam-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+  border-radius: 8px 8px 0 0;
+}
+
+.exam-modal-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--green2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exam-modal-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green2);
+  flex: 0 0 auto;
+}
+
+.exam-modal.danger .exam-modal-title { color: var(--red); }
+.exam-modal.danger .exam-modal-title::before { background: var(--red); }
+
+.exam-modal-close {
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.exam-modal-close:hover { color: var(--text); background: var(--bg4); }
+
+.exam-modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.exam-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg3);
+  border-radius: 0 0 8px 8px;
+}
+
+.exam-modal-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  padding: 7px 16px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
+  background: var(--bg4);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+.exam-modal-btn:hover { background: var(--bg5); border-color: var(--text3); }
+
+.exam-modal-btn.primary {
+  background: var(--green2);
+  border-color: var(--green2);
+  color: #000;
+}
+.exam-modal-btn.primary:hover { filter: brightness(1.1); }
+
+.exam-modal-btn.danger {
+  background: var(--red);
+  border-color: var(--red);
+  color: #000;
+}
+.exam-modal-btn.danger:hover { filter: brightness(1.08); }

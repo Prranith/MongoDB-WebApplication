@@ -406,7 +406,7 @@ class SubmissionService:
                     pass
 
             if template_type == "solve_function" and driver_code:
-                code = code + "\n\n" + driver_code
+                code = CompilerService.merge_driver_code(language, code, driver_code)
 
             passed_count = 0
             total_count = len(test_cases)
@@ -688,7 +688,7 @@ class SubmissionService:
                             if q.get("templateType") == "solve_function":
                                 driver = q.get("templates", {}).get(language, {}).get("driverCode", "")
                                 if driver:
-                                    code = code + "\n\n" + driver
+                                    code = CompilerService.merge_driver_code(language, code, driver)
                             break
                 except Exception:
                     pass
@@ -729,7 +729,7 @@ class SubmissionService:
     @staticmethod
     def generate_test_cases(language: str, code: str, inputs: list, template_type: str, driver_code: str) -> list:
         if template_type == "solve_function" and driver_code:
-            code = code + "\n\n" + driver_code
+            code = CompilerService.merge_driver_code(language, code, driver_code)
 
         from concurrent.futures import ThreadPoolExecutor
 

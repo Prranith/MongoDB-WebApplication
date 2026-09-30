@@ -58,6 +58,85 @@ const ExamPortal = (() => {
 
   function el(id) { return document.getElementById(id); }
 
+  function langCommentPrefix(lang) {
+    if (lang === 'python') return '#';
+    if (lang === 'sql') return '--';
+    return '//';
+  }
+
+  // ── Themed modal (replaces native alert/confirm) ─────────────────────────
+  let examModalChain = Promise.resolve();
+
+  function showExamModal({ title = 'Notice', message = '', buttons = [], danger = false }) {
+    const run = examModalChain.then(() => new Promise(resolve => {
+      const overlay = el('exam-modal-overlay');
+      const box = el('exam-modal');
+      const titleEl = el('exam-modal-title');
+      const bodyEl = el('exam-modal-body');
+      const actionsEl = el('exam-modal-actions');
+      const closeBtn = el('exam-modal-close');
+      if (!overlay || !box || !titleEl || !bodyEl || !actionsEl) { resolve(null); return; }
+
+      titleEl.textContent = title;
+      bodyEl.textContent = message;
+      box.classList.toggle('danger', danger);
+      actionsEl.innerHTML = '';
+
+      const finish = value => {
+        document.removeEventListener('keydown', onKey);
+        overlay.style.display = 'none';
+        resolve(value);
+      };
+
+      const cancelValue = () => {
+        const cancelBtn = buttons.find(b => !b.primary && !b.danger);
+        return cancelBtn ? cancelBtn.value : null;
+      };
+
+      const onKey = e => {
+        if (e.key === 'Escape') {
+          finish(cancelValue());
+        } else if (e.key === 'Enter') {
+          const primaryBtn = buttons.find(b => b.primary || b.danger);
+          if (primaryBtn) finish(primaryBtn.value);
+        }
+      };
+
+      buttons.forEach(cfg => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'exam-modal-btn' + (cfg.primary ? ' primary' : '') + (cfg.danger ? ' danger' : '');
+        btn.textContent = cfg.label;
+        btn.addEventListener('click', () => finish(cfg.value));
+        actionsEl.appendChild(btn);
+      });
+
+      closeBtn.onclick = () => finish(cancelValue());
+      overlay.onclick = e => { if (e.target === overlay) finish(cancelValue()); };
+      document.addEventListener('keydown', onKey);
+
+      overlay.style.display = 'flex';
+      const focusTarget = actionsEl.querySelector('.primary, .danger') || actionsEl.querySelector('button');
+      if (focusTarget) focusTarget.focus();
+    }));
+    examModalChain = run.then(() => {}, () => {});
+    return run;
+  }
+
+  function showExamAlert(message, { title = 'Notice', danger = false } = {}) {
+    return showExamModal({ title, message, danger, buttons: [{ label: 'OK', value: true, primary: !danger, danger }] });
+  }
+
+  function showExamConfirm(message, { title = 'Please Confirm', danger = false, confirmText = 'Confirm', cancelText = 'Cancel' } = {}) {
+    return showExamModal({
+      title, message, danger,
+      buttons: [
+        { label: cancelText, value: false },
+        { label: confirmText, value: true, primary: !danger, danger },
+      ]
+    });
+  }
+
   // CodeMirror is loaded from a CDN, so mentor editors may render before the
   // library has finished loading. Retry briefly instead of leaving a raw
   // textarea behind when that race occurs.
@@ -148,9 +227,9 @@ const ExamPortal = (() => {
     });
   }
 
-  function renderExamSqlResult(result, emptyMessage = '// No rows returned') {
+  function renderExamSqlResult(result, emptyMessage = '-- No rows returned') {
     if (!result || result.status !== 'ok') {
-      return `<span style="color:var(--red)">${escapeExamHtml((result && result.error) || '// SQL execution failed')}</span>`;
+      return `<span style="color:var(--red)">${escapeExamHtml((result && result.error) || '-- SQL execution failed')}</span>`;
     }
     if (!Array.isArray(result.columns) || result.columns.length === 0) {
       return `<span style="color:var(--green2)">${escapeExamHtml(emptyMessage)}</span>`;
@@ -595,7 +674,7 @@ const ExamPortal = (() => {
         try {
           const paper = JSON.parse(e.target.result);
           if (!paper.questions) {
-            alert('Invalid quiz paper template file.');
+            showExamAlert('Invalid quiz paper template file.', { title: 'Invalid Template', danger: true });
             return;
           }
 
@@ -620,10 +699,10 @@ const ExamPortal = (() => {
           const blockCopy = paper.blockCopyPaste === '1' || paper.blockCopyPaste === true;
           if (el('mentor-block-copypaste-toggle')) el('mentor-block-copypaste-toggle').checked = blockCopy;
 
-          alert(`Successfully pre-loaded quiz template: "${paper.title || 'Imported'}" (${paper.questions.length} questions, ${paper.datasets ? paper.datasets.length : 0} datasets).\n\nClick "Create Room" to instantiate the test.`);
+          showExamAlert(`Successfully pre-loaded quiz template: "${paper.title || 'Imported'}" (${paper.questions.length} questions, ${paper.datasets ? paper.datasets.length : 0} datasets).\n\nClick "Create Room" to instantiate the test.`, { title: 'Template Loaded' });
 
         } catch (err) {
-          alert('Failed to parse quiz template JSON: ' + err.message);
+          showExamAlert('Failed to parse quiz template JSON: ' + err.message, { title: 'Parse Error', danger: true });
         }
       };
       reader.readAsText(file);
@@ -724,7 +803,7 @@ const ExamPortal = (() => {
 
       } catch (err) {
         console.error("Error loading paper data:", err);
-        alert("Failed to load paper questions completely: " + err.message);
+        showExamAlert("Failed to load paper questions completely: " + err.message, { title: 'Load Error', danger: true });
       }
     },
 
@@ -766,10 +845,10 @@ const ExamPortal = (() => {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
         } else {
-          alert(res.error || 'Failed to export question paper');
+          showExamAlert(res.error || 'Failed to export question paper', { title: 'Export Failed', danger: true });
         }
       } catch (e) {
-        alert('Failed to connect to export question paper');
+        showExamAlert('Failed to connect to export question paper', { title: 'Export Failed', danger: true });
       }
     },
 
@@ -1574,7 +1653,7 @@ const ExamPortal = (() => {
         if (q.allowedLanguages.length > 1) {
           q.allowedLanguages.splice(idx, 1);
         } else {
-          alert("At least one language must be allowed.");
+          showExamAlert("At least one language must be allowed.", { title: 'Language Required', danger: true });
           return;
         }
       } else {
@@ -1635,11 +1714,11 @@ const ExamPortal = (() => {
       if (!q || !file) return;
       event.target.value = '';
       if (!(file.type || '').startsWith('image/') && !(file.type || '').startsWith('video/')) {
-        alert('Only image and video files are allowed.');
+        showExamAlert('Only image and video files are allowed.', { title: 'Invalid File', danger: true });
         return;
       }
       if (file.size > 30 * 1024 * 1024) {
-        alert('Media files must be 30 MB or smaller.');
+        showExamAlert('Media files must be 30 MB or smaller.', { title: 'File Too Large', danger: true });
         return;
       }
       const form = new FormData();
@@ -1649,13 +1728,13 @@ const ExamPortal = (() => {
       try {
         response = await fetch(`/api/exam/room/${state.mentor.roomId}/question/${qId}/media`, { method: 'POST', body: form });
       } catch (error) {
-        alert('Unable to upload media. Please try again.');
+        showExamAlert('Unable to upload media. Please try again.', { title: 'Upload Failed', danger: true });
         return;
       }
       let result = {};
       try { result = await response.json(); } catch (error) {}
       if (!response.ok || result.status !== 'ok' || !result.media) {
-        alert(result.error || 'Unable to upload media.');
+        showExamAlert(result.error || 'Unable to upload media.', { title: 'Upload Failed', danger: true });
         return;
       }
       q.media = Array.isArray(q.media) ? q.media : [];
@@ -1693,18 +1772,18 @@ const ExamPortal = (() => {
       const outputEl = el(`freeze-output-${qId}`);
 
       if (!datasetIds.length) {
-        showMsg(`freeze-status-${qId}`, '// Select at least one dataset first', true);
+        showMsg(`freeze-status-${qId}`, '-- Select at least one dataset first', true);
         if (statusEl) statusEl.style.display = 'block';
         return;
       }
       if (!query.trim()) {
-        showMsg(`freeze-status-${qId}`, '// Write the SQL query first', true);
+        showMsg(`freeze-status-${qId}`, '-- Write the SQL query first', true);
         if (statusEl) statusEl.style.display = 'block';
         return;
       }
 
       if (statusEl) {
-        statusEl.textContent = '// Running SQL with the exam sandbox...';
+        statusEl.textContent = '-- Running SQL with the exam sandbox...';
         statusEl.style.display = 'block';
         statusEl.style.color = 'var(--text3)';
       }
@@ -1714,16 +1793,16 @@ const ExamPortal = (() => {
         q.lastOutputPreview = (res.rows || []).slice(0, 20);
         q.lastOutputError = null;
         if (statusEl) {
-          statusEl.textContent = `// SQL executed — ${(res.rows || []).length} row(s) returned`;
+          statusEl.textContent = `-- SQL executed — ${(res.rows || []).length} row(s) returned`;
           statusEl.style.color = 'var(--green3)';
         }
         if (outputEl) {
           outputEl.style.display = 'block';
           outputEl.style.borderColor = 'var(--border2)';
-          outputEl.innerHTML = `<span style="color:var(--green2)">// Preview output</span>${renderExamSqlResult(res)}`;
+          outputEl.innerHTML = `<span style="color:var(--green2)">-- Preview output</span>${renderExamSqlResult(res)}`;
         }
       } else {
-        q.lastOutputError = res.error || '// SQL execution failed';
+        q.lastOutputError = res.error || '-- SQL execution failed';
         if (statusEl) {
           statusEl.textContent = q.lastOutputError;
           statusEl.style.color = 'var(--red)';
@@ -1731,7 +1810,7 @@ const ExamPortal = (() => {
         if (outputEl) {
           outputEl.style.display = 'block';
           outputEl.style.borderColor = 'var(--red)';
-          outputEl.innerHTML = `<span style="color:var(--red)">// SQL execution failed</span>\n${escapeExamHtml(q.lastOutputError)}`;
+          outputEl.innerHTML = `<span style="color:var(--red)">-- SQL execution failed</span>\n${escapeExamHtml(q.lastOutputError)}`;
         }
       }
     },
@@ -1740,23 +1819,25 @@ const ExamPortal = (() => {
       const q = state.mentor.questions.find(x => x.id === qId);
       if (!q) return;
 
+      const cmt = q.type === 'sql' ? '--' : '//';
+
       const cm = state.mentor.miniEditors[qId];
       const query = cm ? cm.getValue() : q.expectedQuery;
 
       const datasetIds = q.datasetIds || (q.datasetId ? [q.datasetId] : []);
 
       if (datasetIds.length === 0) {
-        showMsg(`freeze-status-${qId}`, '// Select at least one dataset first', true);
+        showMsg(`freeze-status-${qId}`, `${cmt} Select at least one dataset first`, true);
         el(`freeze-status-${qId}`).style.display = 'block';
         return;
       }
       if (!query || !query.trim()) {
-        showMsg(`freeze-status-${qId}`, '// Write the expected query first', true);
+        showMsg(`freeze-status-${qId}`, `${cmt} Write the expected query first`, true);
         el(`freeze-status-${qId}`).style.display = 'block';
         return;
       }
 
-      showMsg(`freeze-status-${qId}`, '// Running query...', false);
+      showMsg(`freeze-status-${qId}`, `${cmt} Running query...`, false);
       el(`freeze-status-${qId}`).style.display = 'block';
 
       const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/freeze`, 'POST', {
@@ -1778,9 +1859,9 @@ const ExamPortal = (() => {
         mentor._renderQList();
         mentor._renderQEditor(qId);
       } else {
-        q.lastOutputError = res.error || '// Error running query';
+        q.lastOutputError = res.error || `${cmt} Error running query`;
         q.lastOutputPreview = null;
-        showMsg(`freeze-status-${qId}`, res.error || '// Error running query', true);
+        showMsg(`freeze-status-${qId}`, res.error || `${cmt} Error running query`, true);
         mentor._renderQEditor(qId);
       }
     },
@@ -1790,23 +1871,24 @@ const ExamPortal = (() => {
       if (!q) return;
 
       const activeLang = state.mentor.activeConfigLang || q.allowedLanguages[0] || 'python';
+      const cmt = langCommentPrefix(activeLang);
       const cmE = state.mentor.miniEditors[`editorial-${qId}`];
       const editorialCode = cmE ? cmE.getValue() : (((q.templates && q.templates[activeLang]) ? q.templates[activeLang].editorialCode : null) || '');
 
       if (!editorialCode || !editorialCode.trim()) {
-        alert("Please write the editorial correct solution code first.");
+        showExamAlert("Please write the editorial correct solution code first.", { title: 'Editorial Required', danger: true });
         return;
       }
 
       if (!q.testCases || q.testCases.length === 0) {
-        alert("Please add at least one testcase first.");
+        showExamAlert("Please add at least one testcase first.", { title: 'Test Cases Required', danger: true });
         return;
       }
 
       const statusEl = el(`gen-status-${qId}`);
       const btn = el(`btn-gen-outputs-${qId}`);
       if (statusEl) {
-        statusEl.textContent = '// Running editorial code against inputs...';
+        statusEl.textContent = `${cmt} Running editorial code against inputs...`;
         statusEl.style.color = 'var(--text3)';
         statusEl.style.display = 'block';
       }
@@ -1827,7 +1909,7 @@ const ExamPortal = (() => {
 
       if (res.status === 'ok' && res.outputs) {
         if (statusEl) {
-          statusEl.textContent = '// Expected outputs generated and frozen successfully!';
+          statusEl.textContent = `${cmt} Expected outputs generated and frozen successfully!`;
           statusEl.style.color = 'var(--green3)';
         }
         res.outputs.forEach((out, idx) => {
@@ -1840,7 +1922,7 @@ const ExamPortal = (() => {
         mentor._renderQEditor(qId);
       } else {
         if (statusEl) {
-          statusEl.textContent = `// Error: ${res.error || 'Failed to execute solution'}`;
+          statusEl.textContent = `${cmt} Error: ${res.error || 'Failed to execute solution'}`;
           statusEl.style.color = 'var(--red)';
         }
       }
@@ -1943,7 +2025,7 @@ const ExamPortal = (() => {
 
     async startExam() {
       if (state.mentor.questions.length === 0) {
-        alert('Add at least one question before starting the exam.');
+        showExamAlert('Add at least one question before starting the exam.', { title: 'No Questions', danger: true });
         return;
       }
 
@@ -1985,7 +2067,7 @@ const ExamPortal = (() => {
                 q.lastOutputPreview = res.preview || [];
                 q.lastOutputError = null;
               } else {
-                q.lastOutputError = res.error || '// Error running query';
+                q.lastOutputError = res.error || `${q.type === 'sql' ? '--' : '//'} Error running query`;
                 freezeFailures.push(`${qLabel(q)} — ${res.error || 'freeze failed'}`);
               }
             } catch (freezeErr) {
@@ -2042,7 +2124,12 @@ const ExamPortal = (() => {
         const lines = [];
         if (unfrozen.length > 0) lines.push(`${unfrozen.length} query question(s) still have no frozen answer — students will get 0 marks for those.`);
         if (freezeFailures.length > 0) lines.push('Freeze issues:\n' + freezeFailures.map(f => '• ' + f).join('\n'));
-        if (!confirm(`${lines.join('\n\n')}\n\nContinue starting the exam?`)) return;
+        const proceed = await showExamConfirm(`${lines.join('\n\n')}\n\nContinue starting the exam?`, {
+          title: 'Freeze Warnings',
+          confirmText: 'Continue',
+          cancelText: 'Go Back'
+        });
+        if (!proceed) return;
       }
 
       const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/start`, 'POST', {
@@ -2055,7 +2142,7 @@ const ExamPortal = (() => {
     },
 
     async endExam() {
-      if (!confirm('End the exam? Students will no longer be able to submit answers.')) return;
+      if (!(await showExamConfirm('End the exam? Students will no longer be able to submit answers.', { title: 'End Exam', danger: true, confirmText: 'End Exam', cancelText: 'Cancel' }))) return;
       const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/end`, 'POST', {
         mentorId: state.mentor.mentorId,
       });
@@ -2067,7 +2154,7 @@ const ExamPortal = (() => {
     },
 
     async deleteRoom() {
-      if (!confirm('Are you sure you want to completely close and delete this exam room?\n\nAll room data and student submissions will be permanently wiped from the database.')) return;
+      if (!(await showExamConfirm('Are you sure you want to completely close and delete this exam room?\n\nAll room data and student submissions will be permanently wiped from the database.', { title: 'Delete Exam Room', danger: true, confirmText: 'Delete Room', cancelText: 'Cancel' }))) return;
       const res = await apiCall(`/api/exam/room/${state.mentor.roomId}?mentorId=${state.mentor.mentorId}`, 'DELETE');
       if (res.status === 'ok') {
         clearInterval(state.mentor.participantInterval);
@@ -2077,7 +2164,7 @@ const ExamPortal = (() => {
         localStorage.removeItem('exam_mentor_id');
         showPanel('exam-mentor-create-panel');
       } else {
-        alert(res.error || 'Failed to delete room');
+        showExamAlert(res.error || 'Failed to delete room', { title: 'Delete Failed', danger: true });
       }
     },
 
@@ -2239,7 +2326,7 @@ const ExamPortal = (() => {
       }
 
       if (typeof XLSX === 'undefined') {
-        alert('SheetJS not loaded. Please check your internet connection.');
+        showExamAlert('SheetJS not loaded. Please check your internet connection.', { title: 'Export Unavailable', danger: true });
         return;
       }
 
@@ -2264,7 +2351,7 @@ const ExamPortal = (() => {
         showRoleSelection();
         return;
       }
-      if (!confirm('Delete all room data from Redis? This cannot be undone.')) return;
+      if (!(await showExamConfirm('Delete all room data from Redis? This cannot be undone.', { title: 'Clear Room Data', danger: true, confirmText: 'Delete Data', cancelText: 'Cancel' }))) return;
       await apiCall(`/api/exam/room/${state.mentor.roomId}/cleanup`, 'DELETE', {
         mentorId: state.mentor.mentorId,
       });
@@ -2288,10 +2375,10 @@ const ExamPortal = (() => {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
         } else {
-          alert(res.error || 'Failed to download playback archive');
+          showExamAlert(res.error || 'Failed to download playback archive', { title: 'Export Failed', danger: true });
         }
       } catch (e) {
-        alert('Failed to connect to export playback archive');
+        showExamAlert('Failed to connect to export playback archive', { title: 'Export Failed', danger: true });
       }
     },
 
@@ -2303,7 +2390,7 @@ const ExamPortal = (() => {
         try {
           const archive = JSON.parse(e.target.result);
           if (!archive.roomId || !archive.meta || !archive.questions) {
-            alert('Invalid session archive file');
+            showExamAlert('Invalid session archive file', { title: 'Invalid Archive', danger: true });
             return;
           }
 
@@ -2469,7 +2556,7 @@ const ExamPortal = (() => {
           mentor.fetchLeaderboard();
 
         } catch (err) {
-          alert('Failed to parse session archive JSON: ' + err.message);
+          showExamAlert('Failed to parse session archive JSON: ' + err.message, { title: 'Parse Error', danger: true });
         }
       };
       reader.readAsText(file);
@@ -2482,9 +2569,9 @@ const ExamPortal = (() => {
         const found = (state.mentor.leaderboardData || []).find(x => x.studentId === studentId);
         studentName = found ? found.name : 'this student';
       }
-      if (!confirm(`Are you sure you want to remove ${studentName} from the test?\n\nThey will be blocked and notified immediately.`)) return;
+      if (!(await showExamConfirm(`Are you sure you want to remove ${studentName} from the test?\n\nThey will be blocked and notified immediately.`, { title: 'Remove Student', danger: true, confirmText: 'Remove', cancelText: 'Cancel' }))) return;
 
-      const keepInLeaderboard = confirm(`Do you want to KEEP ${studentName}'s score on the leaderboard after removing them?\n\nClick "OK" to keep their score.\nClick "Cancel" to remove their score completely.`);
+      const keepInLeaderboard = await showExamConfirm(`Do you want to KEEP ${studentName}'s score on the leaderboard after removing them?`, { title: 'Leaderboard Score', confirmText: 'Keep Score', cancelText: 'Remove Score' });
       const keepVal = keepInLeaderboard ? '1' : '0';
 
       const roomId = state.mentor.roomId;
@@ -2494,7 +2581,7 @@ const ExamPortal = (() => {
         mentor._fetchParticipants();
         mentor.fetchLeaderboard();
       } else {
-        alert(res.error || 'Failed to remove student');
+        showExamAlert(res.error || 'Failed to remove student', { title: 'Remove Failed', danger: true });
       }
     },
 
@@ -2531,7 +2618,7 @@ const ExamPortal = (() => {
     },
 
     async reallowStudent(studentId, studentName) {
-      if (!confirm(`Are you sure you want to re-allow ${studentName} to join the test?`)) return;
+      if (!(await showExamConfirm(`Are you sure you want to re-allow ${studentName} to join the test?`, { title: 'Re-allow Student', confirmText: 'Re-allow', cancelText: 'Cancel' }))) return;
       const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/student/${studentId}/reallow`, 'POST', {
         mentorId: state.mentor.mentorId
       });
@@ -2539,7 +2626,7 @@ const ExamPortal = (() => {
         mentor.viewRemoved();
         mentor.fetchLeaderboard();
       } else {
-        alert(res.error || 'Failed to re-allow student');
+        showExamAlert(res.error || 'Failed to re-allow student', { title: 'Action Failed', danger: true });
       }
     },
 
@@ -2557,7 +2644,7 @@ const ExamPortal = (() => {
         const mentorId = state.mentor.mentorId;
         const res = await apiCall(`/api/exam/room/${roomId}/student/${studentId}/submissions?mentorId=${mentorId}`);
         if (res.status !== 'ok') {
-          alert(res.error || 'Failed to load submissions');
+          showExamAlert(res.error || 'Failed to load submissions', { title: 'Load Failed', danger: true });
           return;
         }
         submissions = res.submissions || {};
@@ -3716,7 +3803,7 @@ const ExamPortal = (() => {
           const tabId = state.student.activeConsoleTab || 'case-0';
           studentNS.selectConsoleTab(tabId);
         } else {
-          alert('Failed to run: ' + (res.error || 'Unknown error'));
+          showExamAlert('Failed to run: ' + (res.error || 'Unknown error'), { title: 'Run Failed', danger: true });
         }
         return;
       }
@@ -4222,7 +4309,7 @@ const ExamPortal = (() => {
           el('student-fullscreen-overlay').style.display = 'none';
         }).catch(err => {
           console.error("Fullscreen request failed:", err);
-          alert("Fullscreen mode is required to start the exam. Please click the button again or allow browser fullscreen permissions.");
+          showExamAlert("Fullscreen mode is required to start the exam. Please click the button again or allow browser fullscreen permissions.", { title: 'Fullscreen Required', danger: true });
         });
       } else {
         el('student-fullscreen-overlay').style.display = 'none';
@@ -4340,7 +4427,7 @@ const ExamPortal = (() => {
       if (res.status === 'ok') {
         studentNS._lockExam();
       } else {
-        alert(res.error || 'Failed to submit final exam. Please try again.');
+        showExamAlert(res.error || 'Failed to submit final exam. Please try again.', { title: 'Submission Failed', danger: true });
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = 'Review &amp; submit <span>↗</span>';
@@ -4533,6 +4620,8 @@ const ExamPortal = (() => {
       const q = state.student.questions[state.student.currentQIdx];
       if (!q) return;
 
+      const cmt = langCommentPrefix(q.language || 'python');
+
       const cached = state.student.runResults && state.student.runResults[`${q.id}-${tabId}`];
       
       const statusEl = el('student-console-status');
@@ -4584,11 +4673,11 @@ const ExamPortal = (() => {
             const expected = tc ? (tc.expectedOutput || '').trim() : '';
             outputArea.innerHTML = `
               <div class="exam-console-preview-label">Expected output</div>
-              <pre class="exam-console-preview-value">${expected || '// No expected output configured'}</pre>
-              <div class="exam-console-hint">// Run the sample to compare your output</div>
+              <pre class="exam-console-preview-value">${expected || `${cmt} No expected output configured`}</pre>
+              <div class="exam-console-hint">${cmt} Run the sample to compare your output</div>
             `;
           } else {
-            outputArea.innerHTML = '<span style="color:var(--text3)">// Run the program to see console output</span>';
+            outputArea.innerHTML = `<span style="color:var(--text3)">${cmt} Run the program to see console output</span>`;
           }
         }
       }
@@ -4597,6 +4686,9 @@ const ExamPortal = (() => {
     renderRunResult(res, tabId) {
       const outputArea = el('student-pane-expected');
       if (!outputArea) return;
+
+      const curQ = state.student.questions[state.student.currentQIdx];
+      const cmt = langCommentPrefix((curQ && curQ.language) || 'python');
 
       const stderr = (res.stderr || '').trim();
       const stdout = (res.stdout || '').trim();
@@ -4632,8 +4724,8 @@ const ExamPortal = (() => {
             </div>
           ` : ''}
 
-          <div style="margin-bottom:6px"><strong>Expected Output:</strong><pre style="background:var(--bg3);padding:6px;border-radius:4px;font-family:monospace;margin:4px 0">${expected || '// No output'}</pre></div>
-          <div style="margin-bottom:6px"><strong>Your Output:</strong><pre style="background:var(--bg3);padding:6px;border-radius:4px;font-family:monospace;margin:4px 0;color:${isError ? 'var(--red)' : matched ? 'var(--green2)' : 'var(--red)'}">${stdout || '// No output'}</pre></div>
+          <div style="margin-bottom:6px"><strong>Expected Output:</strong><pre style="background:var(--bg3);padding:6px;border-radius:4px;font-family:monospace;margin:4px 0">${expected || `${cmt} No output`}</pre></div>
+          <div style="margin-bottom:6px"><strong>Your Output:</strong><pre style="background:var(--bg3);padding:6px;border-radius:4px;font-family:monospace;margin:4px 0;color:${isError ? 'var(--red)' : matched ? 'var(--green2)' : 'var(--red)'}">${stdout || `${cmt} No output`}</pre></div>
         `;
       } else {
         if (isError) {
@@ -4647,7 +4739,7 @@ const ExamPortal = (() => {
           `;
         } else {
           outputArea.innerHTML = `
-            <div style="margin-bottom:6px"><strong>Stdout:</strong><pre style="background:var(--bg3);padding:6px;border-radius:4px;font-family:monospace;margin:4px 0">${stdout || '// No output'}</pre></div>
+            <div style="margin-bottom:6px"><strong>Stdout:</strong><pre style="background:var(--bg3);padding:6px;border-radius:4px;font-family:monospace;margin:4px 0">${stdout || `${cmt} No output`}</pre></div>
           `;
         }
       }

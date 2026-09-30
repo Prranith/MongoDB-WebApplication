@@ -10,6 +10,8 @@ sys.path.insert(0, str(ROOT))
 class CompilerService:
     @staticmethod
     def _sanitize_java_code(code: str) -> str:
+        if re.search(r"\bclass\s+Main\b", code):
+            return code
         class_match = re.search(r"\b(?:public\s+)?class\s+(\w+)", code)
         if class_match:
             original_class_name = class_match.group(1)
@@ -17,6 +19,54 @@ class CompilerService:
                 code = re.sub(r"\bclass\s+" + re.escape(original_class_name) + r"\b", "class Main", code)
                 code = re.sub(r"\b(public|private|protected)?\s*" + re.escape(original_class_name) + r"\s*\(", r"\1 Main(", code)
         return code
+
+    @staticmethod
+    def merge_driver_code(language: str, code: str, driver_code: str) -> str:
+        if not driver_code:
+            return code
+        if language != "java":
+            return code + "\n\n" + driver_code
+
+        import_re = re.compile(r"^\s*import\s+[\w.\*]+\s*;")
+
+        def split_imports(src):
+            imports, body = [], []
+            for line in src.splitlines():
+                if import_re.match(line):
+                    stmt = line.strip()
+                    if stmt not in imports:
+                        imports.append(stmt)
+                else:
+                    body.append(line)
+            return imports, "\n".join(body).strip("\n")
+
+        user_imports, user_body = split_imports(code)
+        driver_imports, driver_body = split_imports(driver_code)
+        all_imports = user_imports + [s for s in driver_imports if s not in user_imports]
+
+        user_body = re.sub(r"\bpublic\s+(?=(?:class|interface|enum)\s+\w+)", "", user_body)
+
+        user_cls_m = re.search(r"\b(?:class|interface|enum)\s+(\w+)", user_body)
+        driver_classes = set(re.findall(r"\b(?:class|interface|enum)\s+(\w+)", driver_body))
+        if user_cls_m:
+            user_cls = user_cls_m.group(1)
+            if (user_cls == "Main" and "Main" in driver_classes) or (user_cls != "Main" and user_cls in driver_classes):
+                new_cls = "UserSolution"
+                n = 2
+                while new_cls in driver_classes:
+                    new_cls = f"UserSolution{n}"
+                    n += 1
+                user_body = re.sub(r"\b(class|interface|enum)\s+" + re.escape(user_cls) + r"\b", r"\1 " + new_cls, user_body)
+                user_body = re.sub(r"\b(public|private|protected)?\s*" + re.escape(user_cls) + r"\s*\(", lambda m: (m.group(1) or "") + " " + new_cls + "(", user_body)
+
+        parts = []
+        if all_imports:
+            parts.append("\n".join(all_imports))
+        if user_body:
+            parts.append(user_body)
+        if driver_body:
+            parts.append(driver_body)
+        return "\n\n".join(parts)
 
     @classmethod
     def run_piston_api(cls, language: str, code: str, stdin: str = ""):
