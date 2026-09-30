@@ -14702,7 +14702,12 @@ const ExamPortal = (() => {
       const btn = el('btn-start-exam');
       const btnOriginal = btn ? btn.innerHTML : '';
       const freezeFailures = [];
-      const qLabel = (q) => q.title || q.text || q.id;
+      const qLabel = (q) => {
+        const n = state.mentor.questions.indexOf(q);
+        const title = (q.title || '').replace(/\\s+/g, ' ').trim();
+        const short = title.length > 40 ? title.slice(0, 40) + '…' : title;
+        return `Q${n >= 0 ? n + 1 : '?'} (${q.type})${short ? ' — ' + short : ''}`;
+      };
 
       // Auto-generate and freeze expected outputs for every question type
       try {
