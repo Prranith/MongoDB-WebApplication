@@ -3271,7 +3271,8 @@ const ExamPortal = (() => {
         return q && q.type === 'sql' ? 'sql' : (q && q.type === 'query' ? 'mongodb' : ((q && q.language) || 'python'));
       });
       
-      // Initialize styling settings
+      // Initialize styling settings (restore saved preferences first)
+      studentNS.loadEditorSettings();
       studentNS.updateEditorSettings();
 
       // If a question was selected before editor initialization, load its value now
@@ -4755,20 +4756,42 @@ const ExamPortal = (() => {
       const size = sizeEl.value;
       const theme = themeEl.value;
 
+      try {
+        localStorage.setItem('codexa.editor.font', font);
+        localStorage.setItem('codexa.editor.fontSize', size);
+        localStorage.setItem('codexa.editor.theme', theme);
+      } catch (err) { /* storage unavailable */ }
+
       const cm = state.student.examEditor;
       if (cm) {
         const wrapper = cm.getWrapperElement();
         wrapper.className = wrapper.className.replace(/\bcm-theme-\S+/g, '');
         wrapper.classList.add(`cm-theme-${theme}`);
-        const fontTargets = [wrapper, cm.getScrollerElement(), cm.getCodeMirrorElement && cm.getCodeMirrorElement(), cm.getInputField && cm.getInputField()];
-        fontTargets.filter(Boolean).forEach(target => {
-          target.style.setProperty('font-family', font, 'important');
-          target.style.setProperty('font-size', size, 'important');
+        wrapper.style.setProperty('font-family', font, 'important');
+        wrapper.style.setProperty('font-size', size, 'important');
+        wrapper.querySelectorAll('.CodeMirror-line, .CodeMirror-line span, .CodeMirror-linenumber').forEach(node => {
+          node.style.setProperty('font-family', 'inherit', 'important');
+          node.style.setProperty('font-size', 'inherit', 'important');
         });
         wrapper.dataset.editorFont = font;
         wrapper.dataset.editorFontSize = size;
         cm.refresh();
       }
+    },
+
+    loadEditorSettings() {
+      const fontEl = el('editor-font-family');
+      const sizeEl = el('editor-font-size');
+      const themeEl = el('editor-theme');
+      if (!fontEl || !sizeEl || !themeEl) return;
+      try {
+        const font = localStorage.getItem('codexa.editor.font');
+        const size = localStorage.getItem('codexa.editor.fontSize');
+        const theme = localStorage.getItem('codexa.editor.theme');
+        if (font && [...fontEl.options].some(o => o.value === font)) fontEl.value = font;
+        if (size && [...sizeEl.options].some(o => o.value === size)) sizeEl.value = size;
+        if (theme && [...themeEl.options].some(o => o.value === theme)) themeEl.value = theme;
+      } catch (err) { /* storage unavailable */ }
     },
 
     toggleEditorSettingsPopover(event) {
@@ -4781,6 +4804,7 @@ const ExamPortal = (() => {
         popover.style.display = isHidden ? 'flex' : 'none';
 
         if (isHidden) {
+          studentNS.loadEditorSettings();
           const hidePopover = () => {
             popover.style.display = 'none';
             document.removeEventListener('click', hidePopover);
@@ -5025,16 +5049,13 @@ const ExamPortal = (() => {
       if (state.student.fullscreenExitCount >= limit) {
         studentNS.forceSubmitAndBlock(`You crossed the fullscreen exits threshold (${state.student.fullscreenExitCount}/${limit}). Your assessment has been auto-submitted and access has been terminated.`);
       } else {
-        // Show in-app warning modal instead of native alert
-        showAppWarningModal(
-          "Fullscreen Alert",
-          `You exited fullscreen mode! Exits count: ${state.student.fullscreenExitCount} of ${limit}. You must return to fullscreen immediately or access will be terminated.`,
-          () => {
-            studentNS.requestFullscreen();
-          }
-        );
-        const overlay = el('student-fullscreen-overlay');
-        if (overlay) overlay.style.display = 'flex';
+        // Themed acknowledgement modal (blocks the whole screen until the student returns)
+        showExamModal({
+          title: 'Fullscreen Mode Required',
+          message: `You exited fullscreen mode! Exit ${state.student.fullscreenExitCount} of ${limit}. You must return to fullscreen immediately or your access will be terminated.`,
+          danger: true,
+          buttons: [{ label: 'Return to Fullscreen', value: true, danger: true }],
+        }).then(() => studentNS.requestFullscreen());
       }
     }
   }

@@ -1,3 +1,5 @@
+
+
 # Codexa Labs: Technical Architecture & Scaling Brief
 *Prepared for the Founder & CEO*
 

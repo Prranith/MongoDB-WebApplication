@@ -131,7 +131,7 @@
 }
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
@@ -1217,18 +1217,18 @@
 </div>
 
 <!-- Student: Enforce Fullscreen Glassmorphic Overlay -->
-<div class="exam-overlay" id="student-fullscreen-overlay" style="display:none; z-index:99999; background:rgba(10, 10, 12, 0.96); backdrop-filter: blur(12px);">
+<div class="exam-overlay" id="student-fullscreen-overlay" style="display:none; z-index:99999; background:rgba(0, 0, 0, 0.65); backdrop-filter: blur(12px); font-family:'JetBrains Mono', monospace;">
   <div class="exam-body" style="display:flex; justify-content:center; align-items:center; height:100vh;">
-    <div class="exam-form-card" style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; max-width:480px; padding:40px 30px; border:1px solid rgba(255,255,255,0.1); background: rgba(30, 30, 35, 0.8);">
+    <div class="exam-form-card" style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; width:min(480px, calc(100vw - 40px)); padding:32px 28px; border:1px solid var(--border2); border-radius:8px; background:var(--bg2); box-shadow:0 12px 40px rgba(0, 0, 0, 0.6);">
       <div style="width:64px; height:64px; background:rgba(0, 237, 100, 0.1); border:2px solid var(--green2); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--green2)">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 20v-4m0 4h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
       </div>
-      <div class="exam-section-title" style="font-size:20px; margin:0; color:#ffffff; font-weight:700;">Fullscreen Mode Required</div>
-      <div class="exam-section-sub" style="font-size:13px; line-height:1.5; color:var(--text2);">
+      <div class="exam-section-title" style="font-size:20px; margin:0; color:var(--text); font-weight:700; letter-spacing:.4px;">Fullscreen Mode Required</div>
+      <div class="exam-section-sub" style="font-size:13px; line-height:1.6; color:var(--text2);">
         This assessment is configured with strict proctoring rules. You must enter fullscreen mode to proceed with the exam. Exiting fullscreen will flag your assessment.
       </div>
       <button class="exam-btn exam-btn-green exam-btn-full" onclick="ExamPortal.student.requestFullscreen()" style="padding:10px 24px; font-weight:600; font-size:13px;">
-        Enter Fullscreen & Begin
+        Enter Fullscreen &amp; Begin
       </button>
     </div>
   </div>
