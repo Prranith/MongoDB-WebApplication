@@ -648,15 +648,23 @@ class SubmissionService:
         return True
 
     @staticmethod
-    def get_dataset_schema(room_id: str, dataset_id: str) -> dict:
+    def get_dataset_details(room_id: str, dataset_id: str) -> dict:
         docs_json = redis_one(["HGET", f"room:{room_id}", f"dataset_docs:{dataset_id}"])
         if not docs_json:
             raise KeyError("Dataset not found")
-
         try:
             docs = json.loads(docs_json)
-        except Exception:
-            raise ValueError("Parse error")
+        except Exception as exc:
+            raise ValueError("Parse error") from exc
+
+        meta_json = redis_one(["HGET", f"room:{room_id}", f"dataset_meta:{dataset_id}"])
+        meta = json.loads(meta_json) if meta_json else {}
+        return {"docs": docs if isinstance(docs, list) else [docs], "meta": meta if isinstance(meta, dict) else {}}
+
+    @staticmethod
+    def get_dataset_schema(room_id: str, dataset_id: str) -> dict:
+        dataset = SubmissionService.get_dataset_details(room_id, dataset_id)
+        docs = dataset["docs"]
 
         schema = {}
         sample = docs[:50]
@@ -666,8 +674,7 @@ class SubmissionService:
                     if k not in schema:
                         schema[k] = type(v).__name__
 
-        meta_json = redis_one(["HGET", f"room:{room_id}", f"dataset_meta:{dataset_id}"])
-        meta = json.loads(meta_json) if meta_json else {}
+        meta = dataset["meta"]
 
         return {
             "schema": schema,

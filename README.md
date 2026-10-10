@@ -18,6 +18,7 @@
 - **Single Page Application (SPA)**: Custom-built lightweight vanilla JavaScript framework avoiding heavy frontend dependencies.
 - **Database Engine Simulator**: Compiles JS-based MongoDB queries on the backend directly into secure `pymongo` aggregations for dataset evaluation.
 - **Excel Results Export**: Mentors can export the leaderboard to an `.xlsx` sheet for official records.
+- **Dataset Q&A (Gemini-ready)**: Ask natural-language questions against uploaded room datasets through a deployable API endpoint.
 
 ---
 
@@ -118,9 +119,26 @@ cd practice-mongodb
 # Install dependencies
 pip install -r api/requirements.txt
 
+# Optional: enable Gemini-powered dataset Q&A
+export GEMINI_API_KEY=your_google_gemini_api_key
+export GEMINI_MODEL=gemini-1.5-flash
+
 # Run the local vercel development server
 vercel dev
 ```
+
+### Dataset Q&A API
+
+After uploading a dataset to an exam room, ask questions with:
+
+`POST /api/exam/room/<room_id>/dataset/<dataset_id>/ask`
+
+Body:
+```json
+{"question":"List the available columns"}
+```
+
+If `GEMINI_API_KEY` is configured, the response uses Gemini; otherwise it falls back to deterministic local answers from dataset metadata and rows.
 
 ### Build the Frontend
 To bundle the frontend JavaScript, CSS, and SVG components into the deployable `index.html`:

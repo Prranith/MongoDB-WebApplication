@@ -17,6 +17,7 @@ from services.proctoring.proctoring_service import ProctoringService
 from services.leaderboard.leaderboard_service import LeaderboardService
 from services.compiler.compiler_service import CompilerService
 from services.sql.sql_service import SqlService
+from services.ai.dataset_ai_service import DatasetAIService
 from services.exam.media_service import QuestionMediaService
 from services.shared.redis_client import redis_one
 from utils.logger import get_logger, bind_component
@@ -426,6 +427,37 @@ def api_exam_dataset_schema(room_id: str, dataset_id: str):
     except Exception as e:
         log.error("dataset_schema_failed", room_id=room_id, dataset_id=dataset_id, error=str(e), correlation_id=g.get("correlation_id"))
         return _json_response({"status": "error", "error": str(e)}, status=500)
+
+
+@exam_bp.route("/api/exam/room/<room_id>/dataset/<dataset_id>/ask", methods=["POST"])
+def api_exam_dataset_ask(room_id: str, dataset_id: str):
+    """Answer a natural-language question against one uploaded dataset."""
+    body = request.get_json(force=True, silent=True) or {}
+    question = body.get("question", "")
+    try:
+        dataset = SubmissionService.get_dataset_details(room_id, dataset_id)
+        meta = dataset["meta"]
+        dataset_name = meta.get("name") or meta.get("collection") or dataset_id
+        answered = DatasetAIService.answer_question(dataset_name, dataset["docs"], question)
+        if answered.get("status") != "ok":
+            return _json_response(answered, status=400)
+        return _json_response(
+            {
+                "status": "ok",
+                "datasetId": dataset_id,
+                "datasetName": dataset_name,
+                "columns": answered.get("columns", []),
+                "answer": answered.get("answer", ""),
+                "model": answered.get("model", "fallback"),
+            }
+        )
+    except KeyError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=404)
+    except ValueError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=500)
+    except Exception as e:
+        log.error("dataset_ask_failed", room_id=room_id, dataset_id=dataset_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": "Unable to answer dataset question"}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/query", methods=["POST"])
@@ -847,5 +879,3 @@ def api_exam_delete_room(room_id: str):
     except Exception as e:
         log.error("room_delete_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
         return _json_response({"status": "error", "error": str(e)}, status=500)
-
-

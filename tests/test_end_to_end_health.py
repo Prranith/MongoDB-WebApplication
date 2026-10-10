@@ -79,3 +79,35 @@ def test_correlation_id_propagation():
     c = _client()
     resp = c.get("/api/collections", headers={"X-Correlation-ID": "test-corr-123"})
     assert resp.headers.get("X-Correlation-ID") == "test-corr-123"
+
+
+def test_dataset_question_answer_fallback():
+    c = _client()
+    created = c.post(
+        "/api/exam/room/create",
+        json={"title": "Dataset AI", "mentorId": "mentor_ai"},
+    ).get_json()
+    room_id = created["roomId"]
+
+    uploaded = c.post(
+        f"/api/exam/room/{room_id}/dataset",
+        json={
+            "mentorId": "mentor_ai",
+            "name": "customers 1000",
+            "docs": [
+                {"Customer Id": "A1", "Country": "India"},
+                {"Customer Id": "A2", "Country": "India"},
+                {"Customer Id": "A3", "Country": "USA"},
+            ],
+        },
+    ).get_json()
+    dataset_id = uploaded["datasetId"]
+
+    answered = c.post(
+        f"/api/exam/room/{room_id}/dataset/{dataset_id}/ask",
+        json={"question": "What columns are available in this dataset?"},
+    ).get_json()
+
+    assert answered["status"] == "ok"
+    assert "Customer Id" in answered["columns"]
+    assert "out of dataset scope" not in answered["answer"].lower()
