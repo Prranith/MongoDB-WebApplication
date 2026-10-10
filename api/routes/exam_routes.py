@@ -421,9 +421,11 @@ def api_exam_dataset_schema(room_id: str, dataset_id: str):
             "sampleDocs": res["sampleDocs"]
         })
     except KeyError as e:
-        return _json_response({"status": "error", "error": str(e)}, status=404)
-    except ValueError as e:
-        return _json_response({"status": "error", "error": str(e)}, status=500)
+        if str(e) == "'Dataset not found'" or str(e) == "Dataset not found":
+            return _json_response({"status": "error", "error": "Dataset not found"}, status=404)
+        return _json_response({"status": "error", "error": "Dataset lookup failed"}, status=404)
+    except ValueError:
+        return _json_response({"status": "error", "error": "Dataset parse error"}, status=500)
     except Exception as e:
         log.error("dataset_schema_failed", room_id=room_id, dataset_id=dataset_id, error=str(e), correlation_id=g.get("correlation_id"))
         return _json_response({"status": "error", "error": str(e)}, status=500)
