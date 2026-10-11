@@ -19,13 +19,18 @@ const WorkspaceAIAssistant = (() => {
     const p = panel();
     if (!p) return;
     p.hidden = !p.hidden;
+    p.parentElement?.classList.toggle('workspace-ai-open', !p.hidden);
+    byId('workspace-ai-launch')?.setAttribute('aria-expanded', String(!p.hidden));
     if (!p.hidden) {
       syncContext();
       byId('workspace-ai-request')?.focus();
     }
   }
 
-  function close() { const p = panel(); if (p) p.hidden = true; }
+  function close() {
+    const p = panel();
+    if (p) { p.hidden = true; p.parentElement?.classList.remove('workspace-ai-open'); byId('workspace-ai-launch')?.setAttribute('aria-expanded', 'false'); }
+  }
 
   function preset(text) {
     const input = byId('workspace-ai-request');
@@ -79,7 +84,10 @@ const WorkspaceAIAssistant = (() => {
     if (!corrected || typeof editor === 'undefined' || !editor) return;
     editor.operation(() => editor.setValue(corrected));
     const target = byId('workspace-ai-result');
-    if (target) target.insertAdjacentHTML('afterbegin', '<div class="workspace-ai-applied">✓ Correction applied · undo remains available</div>');
+    if (target) {
+      target.querySelector('.workspace-ai-applied')?.remove();
+      target.insertAdjacentHTML('afterbegin', '<div class="workspace-ai-applied">✓ Correction applied · undo remains available</div>');
+    }
   }
 
   window.addEventListener('DOMContentLoaded', () => {

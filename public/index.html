@@ -486,9 +486,7 @@
             <div class="insp-empty">Select a collection<br/>to see its schema</div>
           </div>
         </div>
-      </div>
-
-      <aside id="workspace-ai-panel" aria-label="Codexa AI editor assistant" hidden>
+        <aside id="workspace-ai-panel" aria-label="Codexa AI editor assistant" hidden>
         <div class="workspace-ai-header">
           <div class="workspace-ai-brand"><span class="workspace-ai-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14 8l5.2 2-5.2 2-2 5.2-2-5.2-5.2-2L10 8l2-5.2Z"/></svg></span><span><strong>Codexa AI</strong><small>Editor intelligence</small></span></div>
           <button type="button" class="workspace-ai-close" onclick="WorkspaceAIAssistant.close()" aria-label="Close AI assistant">×</button>
@@ -503,7 +501,8 @@
         <label class="workspace-ai-autofill"><input id="workspace-ai-autofill" type="checkbox"/><span><strong>Safe autofill</strong><small>Apply a complete corrected file when the fix is unambiguous</small></span><span class="workspace-ai-toggle"></span></label>
         <button type="button" id="workspace-ai-send" class="workspace-ai-send" onclick="WorkspaceAIAssistant.ask()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Zm4.7 7h6.7L8.7 8.1 10 11Z"/></svg><span>Ask Codexa AI</span></button>
         <div id="workspace-ai-result" class="workspace-ai-result" aria-live="polite"><div class="workspace-ai-empty">Your full editor context stays private to this request.<br/>Ask for a review, explanation, or safe correction.</div></div>
-      </aside>
+        </aside>
+      </div>
 
       <!-- Horizontal resizer for console -->
       <div id="console-resizer" style="height: 4px; background: var(--border); cursor: ns-resize; flex-shrink: 0;"></div>
