@@ -999,6 +999,57 @@ body {
 .workspace-ai-correction button { border-color: #3794ff; background: #252526; color: #d7ebff; }
 .workspace-ai-error { border-color: #6b3a3a; background: #2a1f1f; }
 
+/* VS Code-style resize handle and change preview */
+#workspace-ai-resizer {
+  display: block;
+  flex: 0 0 4px;
+  width: 4px;
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
+  background: #252526;
+  cursor: col-resize;
+  z-index: 5;
+}
+#workspace-ai-resizer[hidden] { display: none; }
+#workspace-ai-resizer:hover,
+body.workspace-ai-resizing #workspace-ai-resizer { background: #3794ff; }
+body.workspace-ai-resizing,
+body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none !important; }
+.workspace-ai-diff {
+  margin-top: 10px;
+  border: 1px solid #303031;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+.workspace-ai-diff summary {
+  display: flex;
+  align-items: center;
+  padding: 7px 9px;
+  color: #d4d4d4;
+  font-size: 11px;
+  cursor: pointer;
+  list-style: none;
+}
+.workspace-ai-diff summary::-webkit-details-marker { display: none; }
+.workspace-ai-diff summary::before { content: '›'; margin-right: 7px; color: #858585; }
+.workspace-ai-diff[open] summary::before { content: '⌄'; }
+.workspace-ai-diff summary small { margin-left: auto; color: #858585; font-size: 10px; }
+.workspace-ai-diff-code {
+  max-height: 300px;
+  overflow: auto;
+  border-top: 1px solid #303031;
+  font: 10px/1.55 'JetBrains Mono', Consolas, monospace;
+}
+.workspace-ai-diff-row { display: flex; min-height: 17px; color: #bdbdbd; white-space: pre; }
+.workspace-ai-diff-row code { flex: 1; padding: 0 8px; overflow: hidden; }
+.workspace-ai-diff-gutter { width: 18px; flex: none; text-align: center; color: #858585; }
+.workspace-ai-diff-row.is-added { background: rgba(46,160,67,.22); color: #b7e3bd; }
+.workspace-ai-diff-row.is-added .workspace-ai-diff-gutter { color: #6fce7b; }
+.workspace-ai-diff-row.is-removed { background: rgba(248,81,73,.20); color: #f2b4b0; }
+.workspace-ai-diff-row.is-removed .workspace-ai-diff-gutter { color: #ff8c87; }
+.workspace-ai-diff-summary { padding: 10px; color: #a8a8a8; line-height: 1.5; font: 10px/1.5 'Segoe UI', sans-serif; }
+
 .tab {
   min-width: 120px;
   max-width: 220px;

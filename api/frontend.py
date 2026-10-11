@@ -1154,6 +1154,57 @@ body {
 .workspace-ai-correction button { border-color: #3794ff; background: #252526; color: #d7ebff; }
 .workspace-ai-error { border-color: #6b3a3a; background: #2a1f1f; }
 
+/* VS Code-style resize handle and change preview */
+#workspace-ai-resizer {
+  display: block;
+  flex: 0 0 4px;
+  width: 4px;
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
+  background: #252526;
+  cursor: col-resize;
+  z-index: 5;
+}
+#workspace-ai-resizer[hidden] { display: none; }
+#workspace-ai-resizer:hover,
+body.workspace-ai-resizing #workspace-ai-resizer { background: #3794ff; }
+body.workspace-ai-resizing,
+body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none !important; }
+.workspace-ai-diff {
+  margin-top: 10px;
+  border: 1px solid #303031;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+.workspace-ai-diff summary {
+  display: flex;
+  align-items: center;
+  padding: 7px 9px;
+  color: #d4d4d4;
+  font-size: 11px;
+  cursor: pointer;
+  list-style: none;
+}
+.workspace-ai-diff summary::-webkit-details-marker { display: none; }
+.workspace-ai-diff summary::before { content: '›'; margin-right: 7px; color: #858585; }
+.workspace-ai-diff[open] summary::before { content: '⌄'; }
+.workspace-ai-diff summary small { margin-left: auto; color: #858585; font-size: 10px; }
+.workspace-ai-diff-code {
+  max-height: 300px;
+  overflow: auto;
+  border-top: 1px solid #303031;
+  font: 10px/1.55 'JetBrains Mono', Consolas, monospace;
+}
+.workspace-ai-diff-row { display: flex; min-height: 17px; color: #bdbdbd; white-space: pre; }
+.workspace-ai-diff-row code { flex: 1; padding: 0 8px; overflow: hidden; }
+.workspace-ai-diff-gutter { width: 18px; flex: none; text-align: center; color: #858585; }
+.workspace-ai-diff-row.is-added { background: rgba(46,160,67,.22); color: #b7e3bd; }
+.workspace-ai-diff-row.is-added .workspace-ai-diff-gutter { color: #6fce7b; }
+.workspace-ai-diff-row.is-removed { background: rgba(248,81,73,.20); color: #f2b4b0; }
+.workspace-ai-diff-row.is-removed .workspace-ai-diff-gutter { color: #ff8c87; }
+.workspace-ai-diff-summary { padding: 10px; color: #a8a8a8; line-height: 1.5; font: 10px/1.5 'Segoe UI', sans-serif; }
+
 .tab {
   min-width: 120px;
   max-width: 220px;
@@ -8094,6 +8145,7 @@ li.CodeMirror-hint-active {
             <div class="insp-empty">Select a collection<br/>to see its schema</div>
           </div>
         </div>
+        <div id="workspace-ai-resizer" role="separator" aria-orientation="vertical" aria-label="Resize Codexa AI panel" hidden></div>
         <aside id="workspace-ai-panel" aria-label="Codexa AI editor assistant" hidden>
         <div class="workspace-ai-header">
           <div class="workspace-ai-brand"><span class="workspace-ai-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14 8l5.2 2-5.2 2-2 5.2-2-5.2-5.2-2L10 8l2-5.2Z"/></svg></span><strong>Codexa AI</strong><span class="workspace-ai-title-divider">·</span><small>Editor intelligence</small></div>
@@ -12250,6 +12302,7 @@ function applyEditorTheme() {
 /* Codexa AI — normal workspace editor assistant. */
 const WorkspaceAIAssistant = (() => {
   let busy = false;
+  let resizing = false;
 
   const byId = id => document.getElementById(id);
   const escapeHtml = value => String(value == null ? '' : value)
@@ -12257,6 +12310,7 @@ const WorkspaceAIAssistant = (() => {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
   function panel() { return byId('workspace-ai-panel'); }
+  function resizer() { return byId('workspace-ai-resizer'); }
   function launchButtons() {
     return [byId('workspace-ai-launch-toolbar'), byId('workspace-ai-launch')].filter(Boolean);
   }
@@ -12267,13 +12321,72 @@ const WorkspaceAIAssistant = (() => {
     if (file) file.textContent = `${active} · entire file context`;
   }
 
+  function setPanelWidth(width) {
+    const value = Math.max(300, Math.min(560, Math.round(width)));
+    const p = panel();
+    if (p) { p.style.flexBasis = value + 'px'; p.style.width = value + 'px'; }
+    try { localStorage.setItem('codexa-ai-panel-width', String(value)); } catch (_) {}
+  }
+
+  function restorePanelWidth() {
+    try {
+      const saved = Number(localStorage.getItem('codexa-ai-panel-width'));
+      if (Number.isFinite(saved) && saved >= 300) setPanelWidth(saved);
+    } catch (_) {}
+  }
+
+  function startResize(event) {
+    const frame = byId('editor-inspector');
+    if (!frame || !panel()) return;
+    resizing = true;
+    event.preventDefault();
+    resizer()?.setPointerCapture?.(event.pointerId);
+    const move = moveEvent => {
+      if (!resizing) return;
+      const bounds = frame.getBoundingClientRect();
+      setPanelWidth(bounds.right - moveEvent.clientX);
+    };
+    const stop = () => {
+      resizing = false;
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', stop);
+      document.body.classList.remove('workspace-ai-resizing');
+    };
+    document.body.classList.add('workspace-ai-resizing');
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', stop, { once: true });
+  }
+
+  function diffPreview(before, after) {
+    const oldLines = String(before || '').split('\\n');
+    const newLines = String(after || '').split('\\n');
+    if (oldLines.length > 240 || newLines.length > 240) {
+      return '<div class="workspace-ai-diff-summary">Updated file preview is ready. Apply correction to review it with editor undo.</div>';
+    }
+    const rows = [];
+    const limit = Math.max(oldLines.length, newLines.length);
+    for (let i = 0; i < limit; i += 1) {
+      const oldLine = oldLines[i];
+      const newLine = newLines[i];
+      if (oldLine === newLine) {
+        rows.push('<div class="workspace-ai-diff-row"><span class="workspace-ai-diff-gutter"> </span><code>  ' + escapeHtml(oldLine || '') + '</code></div>');
+      } else {
+        if (oldLine !== undefined) rows.push('<div class="workspace-ai-diff-row is-removed"><span class="workspace-ai-diff-gutter">−</span><code>- ' + escapeHtml(oldLine) + '</code></div>');
+        if (newLine !== undefined) rows.push('<div class="workspace-ai-diff-row is-added"><span class="workspace-ai-diff-gutter">+</span><code>+ ' + escapeHtml(newLine) + '</code></div>');
+      }
+    }
+    return rows.join('');
+  }
+
   function toggle() {
     const p = panel();
     if (!p) return;
     p.hidden = !p.hidden;
     p.parentElement?.classList.toggle('workspace-ai-open', !p.hidden);
+    if (resizer()) resizer().hidden = p.hidden;
     launchButtons().forEach(button => button.setAttribute('aria-expanded', String(!p.hidden)));
     if (!p.hidden) {
+      restorePanelWidth();
       syncContext();
       byId('workspace-ai-request')?.focus();
     }
@@ -12281,7 +12394,7 @@ const WorkspaceAIAssistant = (() => {
 
   function close() {
     const p = panel();
-    if (p) { p.hidden = true; p.parentElement?.classList.remove('workspace-ai-open'); launchButtons().forEach(button => button.setAttribute('aria-expanded', 'false')); }
+    if (p) { p.hidden = true; p.parentElement?.classList.remove('workspace-ai-open'); if (resizer()) resizer().hidden = true; launchButtons().forEach(button => button.setAttribute('aria-expanded', 'false')); }
   }
 
   function preset(text) {
@@ -12297,7 +12410,8 @@ const WorkspaceAIAssistant = (() => {
     const target = byId('workspace-ai-result');
     if (!target) return;
     const notes = Array.isArray(data.line_notes) ? data.line_notes : [];
-    target.innerHTML = `<div class="workspace-ai-success"><span class="workspace-ai-result-icon">✓</span><div><strong>${escapeHtml(data.summary || 'Review complete')}</strong><p>${escapeHtml(data.suggestion || 'No additional suggestion.')}</p></div></div>${notes.length ? `<div class="workspace-ai-notes">${notes.map(note => `<div>• ${escapeHtml(note)}</div>`).join('')}</div>` : ''}${data.corrected_code ? `<div class="workspace-ai-correction"><span>Corrected version ready</span><button type="button" onclick="WorkspaceAIAssistant.applyCorrection()">Apply correction</button></div>` : ''}`;
+    const currentCode = typeof editor !== 'undefined' && editor ? editor.getValue() : '';
+    target.innerHTML = `<div class="workspace-ai-success"><span class="workspace-ai-result-icon">✓</span><div><strong>${escapeHtml(data.summary || 'Review complete')}</strong><p>${escapeHtml(data.suggestion || 'No additional suggestion.')}</p></div></div>${notes.length ? `<div class="workspace-ai-notes">${notes.map(note => `<div>• ${escapeHtml(note)}</div>`).join('')}</div>` : ''}${data.corrected_code ? `<div class="workspace-ai-correction"><span>Suggested changes</span><button type="button" onclick="WorkspaceAIAssistant.applyCorrection()">Keep changes</button></div><details class="workspace-ai-diff" open><summary><span>Changes</span><small>Review before applying</small></summary><div class="workspace-ai-diff-code">${diffPreview(currentCode, data.corrected_code)}</div></details>` : ''}`;
     window.__codexaAiCorrection = data.corrected_code || '';
   }
 
@@ -12343,6 +12457,8 @@ const WorkspaceAIAssistant = (() => {
   }
 
   window.addEventListener('DOMContentLoaded', () => {
+    resizer()?.addEventListener('pointerdown', startResize);
+    restorePanelWidth();
     byId('workspace-ai-request')?.addEventListener('keydown', event => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); ask(); }
     });
