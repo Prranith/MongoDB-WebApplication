@@ -1205,6 +1205,106 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
 .workspace-ai-diff-row.is-removed .workspace-ai-diff-gutter { color: #ff8c87; }
 .workspace-ai-diff-summary { padding: 10px; color: #a8a8a8; line-height: 1.5; font: 10px/1.5 'Segoe UI', sans-serif; }
 
+/* VS Code chat composition: transcript scrolls, composer stays docked at the bottom. */
+#workspace-ai-panel { gap: 0; background: #181818; }
+.workspace-ai-context { flex: none; }
+.workspace-ai-result {
+  order: 2;
+  margin: 10px 0 0;
+  padding: 12px;
+  min-height: 0;
+  border-top: 1px solid #303030;
+}
+.workspace-ai-composer {
+  order: 3;
+  flex: none;
+  padding: 10px;
+  border-top: 1px solid #303030;
+  background: #1e1e1e;
+}
+.workspace-ai-presets { padding: 0 0 8px; }
+.workspace-ai-input-shell { position: relative; }
+#workspace-ai-request {
+  width: 100%;
+  min-height: 76px;
+  max-height: 180px;
+  margin: 0;
+  padding: 10px 42px 30px 10px;
+  box-sizing: border-box;
+  resize: vertical;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  background: #181818;
+  color: #d4d4d4;
+}
+.workspace-ai-send {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 29px;
+  height: 25px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #505050;
+  border-radius: 3px;
+  background: #2b2b2b;
+  color: #d4d4d4;
+}
+.workspace-ai-send:hover:not(:disabled) { background: #3a3a3a; border-color: #707070; }
+.workspace-ai-send span { display: none; }
+.workspace-ai-send svg { width: 13px; height: 13px; fill: currentColor; }
+.workspace-ai-autofill { margin: 8px 0 0; padding: 7px 8px; background: #181818; }
+.workspace-ai-toggle { background: #4a4a4a; }
+.workspace-ai-autofill input:checked ~ .workspace-ai-toggle { background: #707070; }
+.workspace-ai-autofill input:checked ~ .workspace-ai-toggle::after { background: #ededed; }
+.workspace-ai-live-dot { background: #999; box-shadow: 0 0 7px #999; }
+.workspace-ai-thinking { color: #a0a0a0; }
+.workspace-ai-thinking span { background: #a0a0a0; }
+.workspace-ai-correction button { border-color: #666; background: #2b2b2b; color: #e0e0e0; }
+.workspace-ai-user-message {
+  align-self: flex-end;
+  max-width: 92%;
+  margin: 0 0 14px auto;
+  padding: 8px 10px;
+  border: 1px solid #353535;
+  border-radius: 4px;
+  background: #252525;
+  color: #d4d4d4;
+  line-height: 1.45;
+}
+.workspace-ai-message { padding-bottom: 12px; border-bottom: 1px solid #2a2a2a; }
+.workspace-ai-editor-suggestion {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(620px, calc(100% - 24px));
+  padding: 7px 8px;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  background: #252525;
+  color: #cfcfcf;
+  box-shadow: 0 8px 20px rgba(0,0,0,.35);
+  font: 11px 'Segoe UI', sans-serif;
+}
+.workspace-ai-editor-suggestion[hidden] { display: none; }
+.workspace-ai-editor-suggestion-icon { color: #bdbdbd; }
+.workspace-ai-editor-suggestion-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-ai-editor-suggestion button {
+  flex: none;
+  padding: 4px 9px;
+  border: 1px solid #5a5a5a;
+  border-radius: 3px;
+  background: #333;
+  color: #f0f0f0;
+  cursor: pointer;
+}
+.workspace-ai-editor-suggestion button:hover { background: #444; }
+#cm-wrap { position: relative; }
+
 .tab {
   min-width: 120px;
   max-width: 220px;
@@ -8152,15 +8252,21 @@ li.CodeMirror-hint-active {
           <div class="workspace-ai-actions"><button type="button" class="workspace-ai-action" onclick="WorkspaceAIAssistant.preset('Review this code for bugs and explain the highest-impact fixes.')" aria-label="Start a new AI request" title="New request">＋</button><button type="button" class="workspace-ai-close" onclick="WorkspaceAIAssistant.close()" aria-label="Close AI assistant" title="Close">×</button></div>
         </div>
         <div class="workspace-ai-context"><span class="workspace-ai-live-dot"></span><span id="workspace-ai-file">Entire active file context</span></div>
-        <div class="workspace-ai-presets" role="group" aria-label="AI actions">
-          <button type="button" onclick="WorkspaceAIAssistant.preset('Review this code for bugs and explain the highest-impact fixes.')">Review</button>
-          <button type="button" onclick="WorkspaceAIAssistant.preset('Explain this code clearly and suggest a simpler implementation.')">Explain</button>
-          <button type="button" onclick="WorkspaceAIAssistant.preset('Optimize this code for correctness, clarity, and performance.')">Optimize</button>
-        </div>
-        <textarea id="workspace-ai-request" placeholder="Ask about the entire file… e.g. Fix the query and explain the issue." rows="3"></textarea>
-        <label class="workspace-ai-autofill"><input id="workspace-ai-autofill" type="checkbox"/><span><strong>Safe autofill</strong><small>Apply a complete corrected file when the fix is unambiguous</small></span><span class="workspace-ai-toggle"></span></label>
-        <button type="button" id="workspace-ai-send" class="workspace-ai-send" onclick="WorkspaceAIAssistant.ask()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Zm4.7 7h6.7L8.7 8.1 10 11Z"/></svg><span>Ask Codexa AI</span></button>
         <div id="workspace-ai-result" class="workspace-ai-result" aria-live="polite"><div class="workspace-ai-empty">Your full editor context stays private to this request.<br/>Ask for a review, explanation, or safe correction.</div></div>
+        <div class="workspace-ai-composer">
+          <div class="workspace-ai-presets" role="group" aria-label="AI actions">
+            <button type="button" onclick="WorkspaceAIAssistant.preset('Review this code for bugs and explain the highest-impact fixes.')">Review</button>
+            <button type="button" onclick="WorkspaceAIAssistant.preset('Explain this code clearly and suggest a simpler implementation.')">Explain</button>
+            <button type="button" onclick="WorkspaceAIAssistant.preset('Optimize this code for correctness, clarity, and performance.')">Optimize</button>
+          </div>
+          <div class="workspace-ai-input-shell">
+            <textarea id="workspace-ai-request" placeholder="Ask Codexa AI about the active file…" rows="3"></textarea>
+            <button type="button" id="workspace-ai-send" class="workspace-ai-send" onclick="WorkspaceAIAssistant.ask()" aria-label="Send message" title="Send message">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Zm4.7 7h6.7L8.7 8.1 10 11Z"/></svg><span>Ask</span>
+            </button>
+          </div>
+          <label class="workspace-ai-autofill"><input id="workspace-ai-autofill" type="checkbox"/><span><strong>Safe autofill</strong><small>Suggest editor changes only when the fix is unambiguous</small></span><span class="workspace-ai-toggle"></span></label>
+        </div>
         </aside>
       </div>
 
@@ -12378,6 +12484,40 @@ const WorkspaceAIAssistant = (() => {
     return rows.join('');
   }
 
+  function typeAnswer(node, text) {
+    if (!node) return;
+    const value = String(text || '');
+    node.textContent = '';
+    let index = 0;
+    const tick = () => {
+      if (!node.isConnected) return;
+      node.textContent = value.slice(0, index);
+      if (index < value.length) {
+        index += 1;
+        window.setTimeout(tick, 10);
+      }
+    };
+    tick();
+  }
+
+  function showEditorSuggestion(corrected) {
+    let bar = byId('workspace-ai-editor-suggestion');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'workspace-ai-editor-suggestion';
+      bar.innerHTML = '<span class="workspace-ai-editor-suggestion-icon">✦</span><span class="workspace-ai-editor-suggestion-text"></span><button type="button" class="workspace-ai-editor-keep">Keep</button><button type="button" class="workspace-ai-editor-undo" hidden>Undo</button>';
+      byId('cm-wrap')?.appendChild(bar);
+      bar.querySelector('.workspace-ai-editor-keep')?.addEventListener('click', applyCorrection);
+      bar.querySelector('.workspace-ai-editor-undo')?.addEventListener('click', undoCorrection);
+    }
+    window.__codexaAiCorrection = corrected || '';
+    bar.hidden = !corrected;
+    bar.dataset.state = 'suggested';
+    bar.querySelector('.workspace-ai-editor-suggestion-text').textContent = corrected ? 'Codexa AI prepared a change for the active editor' : '';
+    bar.querySelector('.workspace-ai-editor-keep').hidden = false;
+    bar.querySelector('.workspace-ai-editor-undo').hidden = true;
+  }
+
   function toggle() {
     const p = panel();
     if (!p) return;
@@ -12406,30 +12546,32 @@ const WorkspaceAIAssistant = (() => {
     return byId('workspace-lang-select')?.value || 'mongodb';
   }
 
-  function renderResult(data) {
+  function renderResult(data, requestText) {
     const target = byId('workspace-ai-result');
     if (!target) return;
     const notes = Array.isArray(data.line_notes) ? data.line_notes : [];
-    const currentCode = typeof editor !== 'undefined' && editor ? editor.getValue() : '';
-    target.innerHTML = `<div class="workspace-ai-success"><span class="workspace-ai-result-icon">✓</span><div><strong>${escapeHtml(data.summary || 'Review complete')}</strong><p>${escapeHtml(data.suggestion || 'No additional suggestion.')}</p></div></div>${notes.length ? `<div class="workspace-ai-notes">${notes.map(note => `<div>• ${escapeHtml(note)}</div>`).join('')}</div>` : ''}${data.corrected_code ? `<div class="workspace-ai-correction"><span>Suggested changes</span><button type="button" onclick="WorkspaceAIAssistant.applyCorrection()">Keep changes</button></div><details class="workspace-ai-diff" open><summary><span>Changes</span><small>Review before applying</small></summary><div class="workspace-ai-diff-code">${diffPreview(currentCode, data.corrected_code)}</div></details>` : ''}`;
+    target.innerHTML = `<div class="workspace-ai-user-message">${escapeHtml(requestText || 'Review this file')}</div><div class="workspace-ai-message"><div class="workspace-ai-success"><span class="workspace-ai-result-icon">✓</span><div><strong>${escapeHtml(data.summary || 'Review complete')}</strong><p class="workspace-ai-answer"></p></div></div>${notes.length ? `<div class="workspace-ai-notes">${notes.map(note => `<div>• ${escapeHtml(note)}</div>`).join('')}</div>` : ''}</div>`;
+    typeAnswer(target.querySelector('.workspace-ai-answer'), data.suggestion || 'No additional suggestion.');
     window.__codexaAiCorrection = data.corrected_code || '';
+    showEditorSuggestion(data.corrected_code || '');
   }
 
-  function setBusy(value) {
+  function setBusy(value, requestText) {
     busy = value;
     const button = byId('workspace-ai-send');
-    if (button) { button.disabled = value; button.querySelector('span').textContent = value ? 'Thinking…' : 'Ask Codexa AI'; }
+    if (button) { button.disabled = value; button.querySelector('span').textContent = value ? 'Thinking…' : 'Ask'; }
     const target = byId('workspace-ai-result');
-    if (value && target) target.innerHTML = '<div class="workspace-ai-thinking"><span></span><span></span><span></span>Reading the entire file…</div>';
+    if (value && target) target.innerHTML = `<div class="workspace-ai-user-message">${escapeHtml(requestText || 'Review this file')}</div><div class="workspace-ai-thinking"><span></span><span></span><span></span>Thinking…</div>`;
   }
 
   async function ask() {
     if (busy || typeof editor === 'undefined' || !editor) return;
     const code = editor.getValue();
-    const requestText = byId('workspace-ai-request')?.value.trim() || 'Review this code for bugs and suggest improvements.';
+    const input = byId('workspace-ai-request');
+    const requestText = input?.value.trim() || 'Review this code for bugs and suggest improvements.';
     const autoFill = Boolean(byId('workspace-ai-autofill')?.checked);
     const active = typeof S !== 'undefined' && S.activeFile ? S.activeFile : 'Untitled';
-    setBusy(true);
+    setBusy(true, requestText);
     try {
       const response = await fetch('/api/ai/editor-assist', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -12437,8 +12579,8 @@ const WorkspaceAIAssistant = (() => {
       });
       const data = await response.json();
       if (!response.ok || data.status !== 'ok') throw new Error(data.error || 'AI request failed');
-      renderResult(data);
-      if (autoFill && data.corrected_code && data.corrected_code !== code) applyCorrection();
+      renderResult(data, requestText);
+      if (input) input.value = '';
     } catch (error) {
       const target = byId('workspace-ai-result');
       if (target) target.innerHTML = `<div class="workspace-ai-error"><strong>Assistant unavailable</strong><p>${escapeHtml(error.message)}</p></div>`;
@@ -12451,9 +12593,22 @@ const WorkspaceAIAssistant = (() => {
     editor.operation(() => editor.setValue(corrected));
     const target = byId('workspace-ai-result');
     if (target) {
-      target.querySelector('.workspace-ai-applied')?.remove();
-      target.insertAdjacentHTML('afterbegin', '<div class="workspace-ai-applied">✓ Correction applied · undo remains available</div>');
+      target.insertAdjacentHTML('afterbegin', '<div class="workspace-ai-applied">✓ Change kept in the editor · undo remains available</div>');
     }
+    const bar = byId('workspace-ai-editor-suggestion');
+    if (bar) {
+      bar.dataset.state = 'applied';
+      bar.querySelector('.workspace-ai-editor-suggestion-text').textContent = 'Change kept in the active editor';
+      bar.querySelector('.workspace-ai-keep').hidden = true;
+      bar.querySelector('.workspace-ai-undo').hidden = false;
+    }
+  }
+
+  function undoCorrection() {
+    if (typeof editor === 'undefined' || !editor) return;
+    editor.undo();
+    const bar = byId('workspace-ai-editor-suggestion');
+    if (bar) bar.hidden = true;
   }
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -12464,7 +12619,7 @@ const WorkspaceAIAssistant = (() => {
     });
   });
 
-  return { toggle, close, preset, ask, applyCorrection };
+  return { toggle, close, preset, ask, applyCorrection, undoCorrection };
 })();
 
 </script>

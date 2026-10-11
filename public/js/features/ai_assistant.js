@@ -77,6 +77,40 @@ const WorkspaceAIAssistant = (() => {
     return rows.join('');
   }
 
+  function typeAnswer(node, text) {
+    if (!node) return;
+    const value = String(text || '');
+    node.textContent = '';
+    let index = 0;
+    const tick = () => {
+      if (!node.isConnected) return;
+      node.textContent = value.slice(0, index);
+      if (index < value.length) {
+        index += 1;
+        window.setTimeout(tick, 10);
+      }
+    };
+    tick();
+  }
+
+  function showEditorSuggestion(corrected) {
+    let bar = byId('workspace-ai-editor-suggestion');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'workspace-ai-editor-suggestion';
+      bar.innerHTML = '<span class="workspace-ai-editor-suggestion-icon">✦</span><span class="workspace-ai-editor-suggestion-text"></span><button type="button" class="workspace-ai-editor-keep">Keep</button><button type="button" class="workspace-ai-editor-undo" hidden>Undo</button>';
+      byId('cm-wrap')?.appendChild(bar);
+      bar.querySelector('.workspace-ai-editor-keep')?.addEventListener('click', applyCorrection);
+      bar.querySelector('.workspace-ai-editor-undo')?.addEventListener('click', undoCorrection);
+    }
+    window.__codexaAiCorrection = corrected || '';
+    bar.hidden = !corrected;
+    bar.dataset.state = 'suggested';
+    bar.querySelector('.workspace-ai-editor-suggestion-text').textContent = corrected ? 'Codexa AI prepared a change for the active editor' : '';
+    bar.querySelector('.workspace-ai-editor-keep').hidden = false;
+    bar.querySelector('.workspace-ai-editor-undo').hidden = true;
+  }
+
   function toggle() {
     const p = panel();
     if (!p) return;
@@ -105,30 +139,32 @@ const WorkspaceAIAssistant = (() => {
     return byId('workspace-lang-select')?.value || 'mongodb';
   }
 
-  function renderResult(data) {
+  function renderResult(data, requestText) {
     const target = byId('workspace-ai-result');
     if (!target) return;
     const notes = Array.isArray(data.line_notes) ? data.line_notes : [];
-    const currentCode = typeof editor !== 'undefined' && editor ? editor.getValue() : '';
-    target.innerHTML = `<div class="workspace-ai-success"><span class="workspace-ai-result-icon">✓</span><div><strong>${escapeHtml(data.summary || 'Review complete')}</strong><p>${escapeHtml(data.suggestion || 'No additional suggestion.')}</p></div></div>${notes.length ? `<div class="workspace-ai-notes">${notes.map(note => `<div>• ${escapeHtml(note)}</div>`).join('')}</div>` : ''}${data.corrected_code ? `<div class="workspace-ai-correction"><span>Suggested changes</span><button type="button" onclick="WorkspaceAIAssistant.applyCorrection()">Keep changes</button></div><details class="workspace-ai-diff" open><summary><span>Changes</span><small>Review before applying</small></summary><div class="workspace-ai-diff-code">${diffPreview(currentCode, data.corrected_code)}</div></details>` : ''}`;
+    target.innerHTML = `<div class="workspace-ai-user-message">${escapeHtml(requestText || 'Review this file')}</div><div class="workspace-ai-message"><div class="workspace-ai-success"><span class="workspace-ai-result-icon">✓</span><div><strong>${escapeHtml(data.summary || 'Review complete')}</strong><p class="workspace-ai-answer"></p></div></div>${notes.length ? `<div class="workspace-ai-notes">${notes.map(note => `<div>• ${escapeHtml(note)}</div>`).join('')}</div>` : ''}</div>`;
+    typeAnswer(target.querySelector('.workspace-ai-answer'), data.suggestion || 'No additional suggestion.');
     window.__codexaAiCorrection = data.corrected_code || '';
+    showEditorSuggestion(data.corrected_code || '');
   }
 
-  function setBusy(value) {
+  function setBusy(value, requestText) {
     busy = value;
     const button = byId('workspace-ai-send');
-    if (button) { button.disabled = value; button.querySelector('span').textContent = value ? 'Thinking…' : 'Ask Codexa AI'; }
+    if (button) { button.disabled = value; button.querySelector('span').textContent = value ? 'Thinking…' : 'Ask'; }
     const target = byId('workspace-ai-result');
-    if (value && target) target.innerHTML = '<div class="workspace-ai-thinking"><span></span><span></span><span></span>Reading the entire file…</div>';
+    if (value && target) target.innerHTML = `<div class="workspace-ai-user-message">${escapeHtml(requestText || 'Review this file')}</div><div class="workspace-ai-thinking"><span></span><span></span><span></span>Thinking…</div>`;
   }
 
   async function ask() {
     if (busy || typeof editor === 'undefined' || !editor) return;
     const code = editor.getValue();
-    const requestText = byId('workspace-ai-request')?.value.trim() || 'Review this code for bugs and suggest improvements.';
+    const input = byId('workspace-ai-request');
+    const requestText = input?.value.trim() || 'Review this code for bugs and suggest improvements.';
     const autoFill = Boolean(byId('workspace-ai-autofill')?.checked);
     const active = typeof S !== 'undefined' && S.activeFile ? S.activeFile : 'Untitled';
-    setBusy(true);
+    setBusy(true, requestText);
     try {
       const response = await fetch('/api/ai/editor-assist', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -136,8 +172,8 @@ const WorkspaceAIAssistant = (() => {
       });
       const data = await response.json();
       if (!response.ok || data.status !== 'ok') throw new Error(data.error || 'AI request failed');
-      renderResult(data);
-      if (autoFill && data.corrected_code && data.corrected_code !== code) applyCorrection();
+      renderResult(data, requestText);
+      if (input) input.value = '';
     } catch (error) {
       const target = byId('workspace-ai-result');
       if (target) target.innerHTML = `<div class="workspace-ai-error"><strong>Assistant unavailable</strong><p>${escapeHtml(error.message)}</p></div>`;
@@ -150,9 +186,22 @@ const WorkspaceAIAssistant = (() => {
     editor.operation(() => editor.setValue(corrected));
     const target = byId('workspace-ai-result');
     if (target) {
-      target.querySelector('.workspace-ai-applied')?.remove();
-      target.insertAdjacentHTML('afterbegin', '<div class="workspace-ai-applied">✓ Correction applied · undo remains available</div>');
+      target.insertAdjacentHTML('afterbegin', '<div class="workspace-ai-applied">✓ Change kept in the editor · undo remains available</div>');
     }
+    const bar = byId('workspace-ai-editor-suggestion');
+    if (bar) {
+      bar.dataset.state = 'applied';
+      bar.querySelector('.workspace-ai-editor-suggestion-text').textContent = 'Change kept in the active editor';
+      bar.querySelector('.workspace-ai-keep').hidden = true;
+      bar.querySelector('.workspace-ai-undo').hidden = false;
+    }
+  }
+
+  function undoCorrection() {
+    if (typeof editor === 'undefined' || !editor) return;
+    editor.undo();
+    const bar = byId('workspace-ai-editor-suggestion');
+    if (bar) bar.hidden = true;
   }
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -163,5 +212,5 @@ const WorkspaceAIAssistant = (() => {
     });
   });
 
-  return { toggle, close, preset, ask, applyCorrection };
+  return { toggle, close, preset, ask, applyCorrection, undoCorrection };
 })();

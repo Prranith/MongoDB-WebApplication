@@ -498,15 +498,21 @@
           <div class="workspace-ai-actions"><button type="button" class="workspace-ai-action" onclick="WorkspaceAIAssistant.preset('Review this code for bugs and explain the highest-impact fixes.')" aria-label="Start a new AI request" title="New request">＋</button><button type="button" class="workspace-ai-close" onclick="WorkspaceAIAssistant.close()" aria-label="Close AI assistant" title="Close">×</button></div>
         </div>
         <div class="workspace-ai-context"><span class="workspace-ai-live-dot"></span><span id="workspace-ai-file">Entire active file context</span></div>
-        <div class="workspace-ai-presets" role="group" aria-label="AI actions">
-          <button type="button" onclick="WorkspaceAIAssistant.preset('Review this code for bugs and explain the highest-impact fixes.')">Review</button>
-          <button type="button" onclick="WorkspaceAIAssistant.preset('Explain this code clearly and suggest a simpler implementation.')">Explain</button>
-          <button type="button" onclick="WorkspaceAIAssistant.preset('Optimize this code for correctness, clarity, and performance.')">Optimize</button>
-        </div>
-        <textarea id="workspace-ai-request" placeholder="Ask about the entire file… e.g. Fix the query and explain the issue." rows="3"></textarea>
-        <label class="workspace-ai-autofill"><input id="workspace-ai-autofill" type="checkbox"/><span><strong>Safe autofill</strong><small>Apply a complete corrected file when the fix is unambiguous</small></span><span class="workspace-ai-toggle"></span></label>
-        <button type="button" id="workspace-ai-send" class="workspace-ai-send" onclick="WorkspaceAIAssistant.ask()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Zm4.7 7h6.7L8.7 8.1 10 11Z"/></svg><span>Ask Codexa AI</span></button>
         <div id="workspace-ai-result" class="workspace-ai-result" aria-live="polite"><div class="workspace-ai-empty">Your full editor context stays private to this request.<br/>Ask for a review, explanation, or safe correction.</div></div>
+        <div class="workspace-ai-composer">
+          <div class="workspace-ai-presets" role="group" aria-label="AI actions">
+            <button type="button" onclick="WorkspaceAIAssistant.preset('Review this code for bugs and explain the highest-impact fixes.')">Review</button>
+            <button type="button" onclick="WorkspaceAIAssistant.preset('Explain this code clearly and suggest a simpler implementation.')">Explain</button>
+            <button type="button" onclick="WorkspaceAIAssistant.preset('Optimize this code for correctness, clarity, and performance.')">Optimize</button>
+          </div>
+          <div class="workspace-ai-input-shell">
+            <textarea id="workspace-ai-request" placeholder="Ask Codexa AI about the active file…" rows="3"></textarea>
+            <button type="button" id="workspace-ai-send" class="workspace-ai-send" onclick="WorkspaceAIAssistant.ask()" aria-label="Send message" title="Send message">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Zm4.7 7h6.7L8.7 8.1 10 11Z"/></svg><span>Ask</span>
+            </button>
+          </div>
+          <label class="workspace-ai-autofill"><input id="workspace-ai-autofill" type="checkbox"/><span><strong>Safe autofill</strong><small>Suggest editor changes only when the fix is unambiguous</small></span><span class="workspace-ai-toggle"></span></label>
+        </div>
         </aside>
       </div>
 
