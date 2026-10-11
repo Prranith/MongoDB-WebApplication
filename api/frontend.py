@@ -981,6 +981,67 @@ body {
 #tabbar::-webkit-scrollbar-track { background: transparent; }
 #tabbar::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 6px; }
 
+/* ── Codexa AI editor assistant ─────────────────────────── */
+#editor-inspector { position: relative; }
+#workspace-ai-launch {
+  position: absolute; top: 9px; right: 14px; z-index: 8;
+  display: inline-flex; align-items: center; gap: 6px; height: 28px;
+  padding: 0 10px; border: 1px solid rgba(77,170,242,.38); border-radius: 5px;
+  background: linear-gradient(135deg, rgba(0,120,212,.22), rgba(77,170,242,.08));
+  color: #b9ddff; font: 600 11px 'Segoe UI', sans-serif; cursor: pointer;
+  box-shadow: 0 5px 18px rgba(0,0,0,.2); transition: .16s ease;
+}
+#workspace-ai-launch:hover { border-color: #4daaf2; background: rgba(0,120,212,.3); color: #fff; transform: translateY(-1px); }
+#workspace-ai-launch svg { width: 15px; height: 15px; fill: #6fc3ff; }
+#workspace-ai-panel {
+  position: absolute; top: 12px; right: 16px; z-index: 30; width: 334px;
+  display: flex; flex-direction: column; gap: 12px; padding: 15px;
+  border: 1px solid #34485a; border-radius: 10px; background: #171b20;
+  color: #dbe7f2; box-shadow: 0 18px 48px rgba(0,0,0,.65), 0 0 0 1px rgba(77,170,242,.05);
+}
+#workspace-ai-panel[hidden] { display: none; }
+.workspace-ai-header, .workspace-ai-brand, .workspace-ai-context, .workspace-ai-autofill { display:flex; align-items:center; }
+.workspace-ai-header { justify-content:space-between; }
+.workspace-ai-brand { gap:9px; }
+.workspace-ai-mark { display:grid; place-items:center; width:27px; height:27px; border-radius:7px; background:linear-gradient(135deg,#0078d4,#4daaf2); color:#07121d; }
+.workspace-ai-mark svg { width:16px; height:16px; fill:currentColor; }
+.workspace-ai-brand strong { display:block; font-size:13px; letter-spacing:.01em; }
+.workspace-ai-brand small { display:block; margin-top:2px; color:#7f94a8; font-size:10px; }
+.workspace-ai-close { border:0; background:transparent; color:#7790a4; font-size:20px; line-height:1; cursor:pointer; }
+.workspace-ai-close:hover { color:#fff; }
+.workspace-ai-context { gap:7px; padding:7px 9px; border:1px solid #293744; border-radius:5px; color:#90a8bc; font:10px 'JetBrains Mono',monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.workspace-ai-live-dot { width:6px; height:6px; flex:none; border-radius:50%; background:#55c2ff; box-shadow:0 0 8px #55c2ff; }
+.workspace-ai-presets { display:flex; gap:5px; flex-wrap:wrap; }
+.workspace-ai-presets button { padding:5px 8px; border:1px solid #304252; border-radius:4px; background:#1e2831; color:#a9c2d8; font-size:10px; cursor:pointer; }
+.workspace-ai-presets button:hover { border-color:#4daaf2; color:#e9f5ff; }
+#workspace-ai-request { width:100%; resize:vertical; min-height:68px; padding:9px; border:1px solid #344554; border-radius:6px; outline:0; background:#101419; color:#dbe7f2; font:11px/1.5 'JetBrains Mono',monospace; }
+#workspace-ai-request:focus { border-color:#4daaf2; box-shadow:0 0 0 2px rgba(77,170,242,.12); }
+.workspace-ai-autofill { justify-content:space-between; gap:10px; padding:9px; border:1px solid #293744; border-radius:6px; cursor:pointer; }
+.workspace-ai-autofill input { position:absolute; opacity:0; }
+.workspace-ai-autofill span:nth-child(2) { flex:1; }
+.workspace-ai-autofill strong, .workspace-ai-autofill small { display:block; }
+.workspace-ai-autofill strong { color:#cde5f8; font-size:11px; }
+.workspace-ai-autofill small { margin-top:3px; color:#7890a3; font-size:9px; line-height:1.3; }
+.workspace-ai-toggle { width:29px; height:16px; flex:none; border-radius:10px; background:#2c3b48; position:relative; }
+.workspace-ai-toggle::after { content:''; position:absolute; top:3px; left:3px; width:10px; height:10px; border-radius:50%; background:#7b91a1; transition:.16s; }
+.workspace-ai-autofill input:checked ~ .workspace-ai-toggle { background:#075d9d; }
+.workspace-ai-autofill input:checked ~ .workspace-ai-toggle::after { left:16px; background:#9bd6ff; }
+.workspace-ai-send { display:flex; align-items:center; justify-content:center; gap:7px; height:32px; border:1px solid #2387d1; border-radius:5px; background:#0878c9; color:#fff; font:600 11px 'Segoe UI',sans-serif; cursor:pointer; }
+.workspace-ai-send:hover:not(:disabled) { background:#168ad9; }
+.workspace-ai-send:disabled { opacity:.65; cursor:wait; }
+.workspace-ai-send svg { width:14px; height:14px; fill:currentColor; }
+.workspace-ai-result { max-height:245px; overflow:auto; border-top:1px solid #293744; padding-top:11px; font-size:11px; }
+.workspace-ai-empty, .workspace-ai-thinking { color:#71879a; line-height:1.55; text-align:center; padding:13px 5px; }
+.workspace-ai-thinking { display:flex; justify-content:center; gap:4px; align-items:center; }
+.workspace-ai-thinking span { width:5px; height:5px; border-radius:50%; background:#4daaf2; animation:codexa-ai-pulse 1s infinite; }
+.workspace-ai-thinking span:nth-child(2) { animation-delay:.15s; }.workspace-ai-thinking span:nth-child(3) { animation-delay:.3s; }
+@keyframes codexa-ai-pulse { 0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)} }
+.workspace-ai-success { display:flex; gap:8px; color:#cfe9d2; }.workspace-ai-result-icon { color:#6fd18b; font-size:16px; }.workspace-ai-success strong { color:#dceeff; }.workspace-ai-success p { margin:4px 0 0; color:#9bb0c0; line-height:1.45; }
+.workspace-ai-notes { margin-top:9px; padding:8px; border-left:2px solid #3e91c9; color:#a6bdcd; line-height:1.5; background:#121a21; }
+.workspace-ai-correction { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; padding-top:9px; border-top:1px solid #293744; color:#9bc9e7; font-size:10px; }.workspace-ai-correction button { padding:5px 8px; border:1px solid #3e91c9; border-radius:4px; background:#153b59; color:#d8efff; cursor:pointer; font-size:10px; }
+.workspace-ai-applied { margin-bottom:8px; padding:6px 8px; border-radius:4px; background:rgba(71,162,72,.14); color:#8ee09c; font-size:10px; }.workspace-ai-error { padding:9px; border:1px solid #673b42; border-radius:5px; background:#24171b; }.workspace-ai-error strong { color:#ff9a9a; }.workspace-ai-error p { margin:5px 0 0; color:#d3a5a5; line-height:1.4; }
+@media (max-width: 700px) { #workspace-ai-panel { left:10px; right:10px; width:auto; } #workspace-ai-launch span { display:none; } }
+
 .tab {
   min-width: 120px;
   max-width: 220px;
@@ -7893,6 +7954,10 @@ li.CodeMirror-hint-active {
 
       <!-- Editor + Inspector -->
       <div id="editor-inspector">
+        <button id="workspace-ai-launch" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open Codexa AI editor assistant" aria-label="Open Codexa AI editor assistant">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14 8l5.2 2-5.2 2-2 5.2-2-5.2-5.2-2L10 8l2-5.2Zm7.2 12.7.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9.9-2.4-.9Z"/></svg>
+          <span>Codexa AI</span>
+        </button>
         <div id="cm-wrap">
           <textarea id="raw-editor">// Open a workspace file to write queries</textarea>
           <div id="sql-notebook" aria-label="SQL notebook"></div>
@@ -7913,6 +7978,23 @@ li.CodeMirror-hint-active {
           </div>
         </div>
       </div>
+
+      <aside id="workspace-ai-panel" aria-label="Codexa AI editor assistant" hidden>
+        <div class="workspace-ai-header">
+          <div class="workspace-ai-brand"><span class="workspace-ai-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14 8l5.2 2-5.2 2-2 5.2-2-5.2-5.2-2L10 8l2-5.2Z"/></svg></span><span><strong>Codexa AI</strong><small>Editor intelligence</small></span></div>
+          <button type="button" class="workspace-ai-close" onclick="WorkspaceAIAssistant.close()" aria-label="Close AI assistant">×</button>
+        </div>
+        <div class="workspace-ai-context"><span class="workspace-ai-live-dot"></span><span id="workspace-ai-file">Entire active file context</span></div>
+        <div class="workspace-ai-presets" role="group" aria-label="AI actions">
+          <button type="button" onclick="WorkspaceAIAssistant.preset('Review this code for bugs and explain the highest-impact fixes.')">Review</button>
+          <button type="button" onclick="WorkspaceAIAssistant.preset('Explain this code clearly and suggest a simpler implementation.')">Explain</button>
+          <button type="button" onclick="WorkspaceAIAssistant.preset('Optimize this code for correctness, clarity, and performance.')">Optimize</button>
+        </div>
+        <textarea id="workspace-ai-request" placeholder="Ask about the entire file… e.g. Fix the query and explain the issue." rows="3"></textarea>
+        <label class="workspace-ai-autofill"><input id="workspace-ai-autofill" type="checkbox"/><span><strong>Safe autofill</strong><small>Apply a complete corrected file when the fix is unambiguous</small></span><span class="workspace-ai-toggle"></span></label>
+        <button type="button" id="workspace-ai-send" class="workspace-ai-send" onclick="WorkspaceAIAssistant.ask()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Zm4.7 7h6.7L8.7 8.1 10 11Z"/></svg><span>Ask Codexa AI</span></button>
+        <div id="workspace-ai-result" class="workspace-ai-result" aria-live="polite"><div class="workspace-ai-empty">Your full editor context stays private to this request.<br/>Ask for a review, explanation, or safe correction.</div></div>
+      </aside>
 
       <!-- Horizontal resizer for console -->
       <div id="console-resizer" style="height: 4px; background: var(--border); cursor: ns-resize; flex-shrink: 0;"></div>
@@ -12046,6 +12128,101 @@ function applyEditorTheme() {
   `;
   document.head.appendChild(style);
 }
+
+</script>
+<script>
+/* Codexa AI — normal workspace editor assistant. */
+const WorkspaceAIAssistant = (() => {
+  let busy = false;
+
+  const byId = id => document.getElementById(id);
+  const escapeHtml = value => String(value == null ? '' : value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  function panel() { return byId('workspace-ai-panel'); }
+
+  function syncContext() {
+    const file = byId('workspace-ai-file');
+    const active = typeof S !== 'undefined' && S.activeFile ? S.activeFile : 'Untitled editor';
+    if (file) file.textContent = `${active} · entire file context`;
+  }
+
+  function toggle() {
+    const p = panel();
+    if (!p) return;
+    p.hidden = !p.hidden;
+    if (!p.hidden) {
+      syncContext();
+      byId('workspace-ai-request')?.focus();
+    }
+  }
+
+  function close() { const p = panel(); if (p) p.hidden = true; }
+
+  function preset(text) {
+    const input = byId('workspace-ai-request');
+    if (input) { input.value = text; input.focus(); }
+  }
+
+  function language() {
+    return byId('workspace-lang-select')?.value || 'mongodb';
+  }
+
+  function renderResult(data) {
+    const target = byId('workspace-ai-result');
+    if (!target) return;
+    const notes = Array.isArray(data.line_notes) ? data.line_notes : [];
+    target.innerHTML = `<div class="workspace-ai-success"><span class="workspace-ai-result-icon">✓</span><div><strong>${escapeHtml(data.summary || 'Review complete')}</strong><p>${escapeHtml(data.suggestion || 'No additional suggestion.')}</p></div></div>${notes.length ? `<div class="workspace-ai-notes">${notes.map(note => `<div>• ${escapeHtml(note)}</div>`).join('')}</div>` : ''}${data.corrected_code ? `<div class="workspace-ai-correction"><span>Corrected version ready</span><button type="button" onclick="WorkspaceAIAssistant.applyCorrection()">Apply correction</button></div>` : ''}`;
+    window.__codexaAiCorrection = data.corrected_code || '';
+  }
+
+  function setBusy(value) {
+    busy = value;
+    const button = byId('workspace-ai-send');
+    if (button) { button.disabled = value; button.querySelector('span').textContent = value ? 'Thinking…' : 'Ask Codexa AI'; }
+    const target = byId('workspace-ai-result');
+    if (value && target) target.innerHTML = '<div class="workspace-ai-thinking"><span></span><span></span><span></span>Reading the entire file…</div>';
+  }
+
+  async function ask() {
+    if (busy || typeof editor === 'undefined' || !editor) return;
+    const code = editor.getValue();
+    const requestText = byId('workspace-ai-request')?.value.trim() || 'Review this code for bugs and suggest improvements.';
+    const autoFill = Boolean(byId('workspace-ai-autofill')?.checked);
+    const active = typeof S !== 'undefined' && S.activeFile ? S.activeFile : 'Untitled';
+    setBusy(true);
+    try {
+      const response = await fetch('/api/ai/editor-assist', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, language: language(), filename: active, request: requestText, autoFill })
+      });
+      const data = await response.json();
+      if (!response.ok || data.status !== 'ok') throw new Error(data.error || 'AI request failed');
+      renderResult(data);
+      if (autoFill && data.corrected_code && data.corrected_code !== code) applyCorrection();
+    } catch (error) {
+      const target = byId('workspace-ai-result');
+      if (target) target.innerHTML = `<div class="workspace-ai-error"><strong>Assistant unavailable</strong><p>${escapeHtml(error.message)}</p></div>`;
+    } finally { setBusy(false); }
+  }
+
+  function applyCorrection() {
+    const corrected = window.__codexaAiCorrection;
+    if (!corrected || typeof editor === 'undefined' || !editor) return;
+    editor.operation(() => editor.setValue(corrected));
+    const target = byId('workspace-ai-result');
+    if (target) target.insertAdjacentHTML('afterbegin', '<div class="workspace-ai-applied">✓ Correction applied · undo remains available</div>');
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    byId('workspace-ai-request')?.addEventListener('keydown', event => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); ask(); }
+    });
+  });
+
+  return { toggle, close, preset, ask, applyCorrection };
+})();
 
 </script>
 
