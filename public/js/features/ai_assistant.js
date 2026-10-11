@@ -8,6 +8,9 @@ const WorkspaceAIAssistant = (() => {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
   function panel() { return byId('workspace-ai-panel'); }
+  function launchButtons() {
+    return [byId('workspace-ai-launch-toolbar'), byId('workspace-ai-launch')].filter(Boolean);
+  }
 
   function syncContext() {
     const file = byId('workspace-ai-file');
@@ -20,7 +23,7 @@ const WorkspaceAIAssistant = (() => {
     if (!p) return;
     p.hidden = !p.hidden;
     p.parentElement?.classList.toggle('workspace-ai-open', !p.hidden);
-    byId('workspace-ai-launch')?.setAttribute('aria-expanded', String(!p.hidden));
+    launchButtons().forEach(button => button.setAttribute('aria-expanded', String(!p.hidden)));
     if (!p.hidden) {
       syncContext();
       byId('workspace-ai-request')?.focus();
@@ -29,7 +32,7 @@ const WorkspaceAIAssistant = (() => {
 
   function close() {
     const p = panel();
-    if (p) { p.hidden = true; p.parentElement?.classList.remove('workspace-ai-open'); byId('workspace-ai-launch')?.setAttribute('aria-expanded', 'false'); }
+    if (p) { p.hidden = true; p.parentElement?.classList.remove('workspace-ai-open'); launchButtons().forEach(button => button.setAttribute('aria-expanded', 'false')); }
   }
 
   function preset(text) {

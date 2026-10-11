@@ -1044,6 +1044,116 @@ body {
 @media (max-width: 900px) { #workspace-ai-panel { flex-basis:320px; width:320px; min-width:280px; } }
 @media (max-width: 700px) { #workspace-ai-panel { position:absolute; inset:0; width:auto; min-width:0; } #workspace-ai-launch span { display:none; } }
 
+/* VS Code-style Codexa AI dock */
+#workspace-ai-launch-toolbar {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #3c3c3c;
+  border-radius: 3px;
+  background: #252526;
+  color: #c5c5c5;
+  cursor: pointer;
+}
+#workspace-ai-launch-toolbar:hover,
+#workspace-ai-launch-toolbar[aria-expanded="true"] {
+  border-color: #3794ff;
+  background: #2a2d2e;
+  color: #fff;
+}
+#workspace-ai-launch-toolbar svg { width: 14px; height: 14px; fill: #75beff; }
+#workspace-ai-legacy-launch { display: none !important; }
+#workspace-ai-panel {
+  flex-basis: 354px;
+  width: 354px;
+  min-width: 320px;
+  gap: 10px;
+  padding: 0;
+  border-left: 1px solid #303031;
+  background: #181818;
+  box-shadow: -10px 0 22px rgba(0,0,0,.12);
+}
+.workspace-ai-header {
+  min-height: 39px;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid #303031;
+  background: #1f1f1f;
+}
+.workspace-ai-brand { gap: 7px; min-width: 0; }
+.workspace-ai-mark {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: #3794ff;
+  color: #101010;
+}
+.workspace-ai-mark svg { width: 13px; height: 13px; }
+.workspace-ai-brand strong { font-size: 12px; color: #e7e7e7; }
+.workspace-ai-brand small { margin: 0; font-size: 10px; color: #858585; }
+.workspace-ai-title-divider { color: #555; }
+.workspace-ai-actions { display: flex; align-items: center; gap: 2px; }
+.workspace-ai-action,
+.workspace-ai-close {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #bdbdbd;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.workspace-ai-action:hover,
+.workspace-ai-close:hover { background: #2a2d2e; color: #fff; }
+.workspace-ai-context { margin: 10px 10px 0; padding: 6px 8px; border-color: #303031; border-radius: 3px; background: #1f1f1f; }
+.workspace-ai-presets { padding: 0 10px; }
+.workspace-ai-presets button {
+  padding: 4px 9px;
+  border-color: #454545;
+  border-radius: 3px;
+  background: #252526;
+  color: #c8c8c8;
+}
+.workspace-ai-presets button:hover { border-color: #3794ff; color: #fff; background: #2a2d2e; }
+#workspace-ai-request {
+  width: auto;
+  margin: 0 10px;
+  min-height: 76px;
+  padding: 8px;
+  border-color: #454545;
+  border-radius: 3px;
+  background: #1f1f1f;
+  color: #d4d4d4;
+  font-family: 'Segoe UI', sans-serif;
+}
+#workspace-ai-request:focus { border-color: #3794ff; box-shadow: 0 0 0 1px #3794ff; }
+.workspace-ai-autofill { margin: 0 10px; padding: 8px; border-color: #303031; border-radius: 3px; background: #1f1f1f; }
+.workspace-ai-send {
+  margin: 0 10px;
+  height: 30px;
+  border: 1px solid #3794ff;
+  border-radius: 3px;
+  background: #0e639c;
+}
+.workspace-ai-send:hover:not(:disabled) { background: #1177bb; }
+.workspace-ai-result {
+  margin-top: 2px;
+  padding: 10px;
+  border-top-color: #303031;
+  background: #181818;
+}
+.workspace-ai-empty, .workspace-ai-thinking { color: #858585; }
+.workspace-ai-notes { background: #1f1f1f; border-left-color: #3794ff; color: #c8c8c8; }
+.workspace-ai-success strong { color: #e7e7e7; }
+.workspace-ai-success p { color: #b8b8b8; }
+.workspace-ai-correction { border-top-color: #303031; color: #75beff; }
+.workspace-ai-correction button { border-color: #3794ff; background: #252526; color: #d7ebff; }
+.workspace-ai-error { border-color: #6b3a3a; background: #2a1f1f; }
+
 .tab {
   min-width: 120px;
   max-width: 220px;
@@ -7728,6 +7838,11 @@ li.CodeMirror-hint-active {
       Console
     </button>
 
+    <!-- Codexa AI Toggle -->
+    <button id="workspace-ai-launch-toolbar" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open Codexa AI assistant" aria-label="Open Codexa AI assistant" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14 8l5.2 2-5.2 2-2 5.2-2-5.2-5.2-2L10 8l2-5.2Zm7.2 12.7.9 2.4 2.4.9-2.4.9-.9 2.4-2.4-.9 2.4-.9 2.4-.9Z"/></svg>
+    </button>
+
     <!-- Inspector Toggle Button -->
     <button class="tbtn tbtn-secondary" id="btn-toggle-inspector" onclick="toggleInspector()" style="padding: 2px 8px; font-size: 11px; height: 22px; border-radius: 3px; display: flex; align-items: center; gap: 4px; border: 1px solid #3c3c3c; background: transparent; color: #ccc; cursor: pointer;">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
@@ -7956,7 +8071,7 @@ li.CodeMirror-hint-active {
 
       <!-- Editor + Inspector -->
       <div id="editor-inspector">
-        <button id="workspace-ai-launch" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open Codexa AI editor assistant" aria-label="Open Codexa AI editor assistant">
+        <button id="workspace-ai-legacy-launch" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open Codexa AI editor assistant" aria-label="Open Codexa AI editor assistant">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14 8l5.2 2-5.2 2-2 5.2-2-5.2-5.2-2L10 8l2-5.2Zm7.2 12.7.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9.9-2.4-.9Z"/></svg>
           <span>Codexa AI</span>
         </button>
@@ -7981,8 +8096,8 @@ li.CodeMirror-hint-active {
         </div>
         <aside id="workspace-ai-panel" aria-label="Codexa AI editor assistant" hidden>
         <div class="workspace-ai-header">
-          <div class="workspace-ai-brand"><span class="workspace-ai-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14 8l5.2 2-5.2 2-2 5.2-2-5.2-5.2-2L10 8l2-5.2Z"/></svg></span><span><strong>Codexa AI</strong><small>Editor intelligence</small></span></div>
-          <button type="button" class="workspace-ai-close" onclick="WorkspaceAIAssistant.close()" aria-label="Close AI assistant">×</button>
+          <div class="workspace-ai-brand"><span class="workspace-ai-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14 8l5.2 2-5.2 2-2 5.2-2-5.2-5.2-2L10 8l2-5.2Z"/></svg></span><strong>Codexa AI</strong><span class="workspace-ai-title-divider">·</span><small>Editor intelligence</small></div>
+          <div class="workspace-ai-actions"><button type="button" class="workspace-ai-action" onclick="WorkspaceAIAssistant.preset('Review this code for bugs and explain the highest-impact fixes.')" aria-label="Start a new AI request" title="New request">＋</button><button type="button" class="workspace-ai-close" onclick="WorkspaceAIAssistant.close()" aria-label="Close AI assistant" title="Close">×</button></div>
         </div>
         <div class="workspace-ai-context"><span class="workspace-ai-live-dot"></span><span id="workspace-ai-file">Entire active file context</span></div>
         <div class="workspace-ai-presets" role="group" aria-label="AI actions">
@@ -12142,6 +12257,9 @@ const WorkspaceAIAssistant = (() => {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
   function panel() { return byId('workspace-ai-panel'); }
+  function launchButtons() {
+    return [byId('workspace-ai-launch-toolbar'), byId('workspace-ai-launch')].filter(Boolean);
+  }
 
   function syncContext() {
     const file = byId('workspace-ai-file');
@@ -12154,7 +12272,7 @@ const WorkspaceAIAssistant = (() => {
     if (!p) return;
     p.hidden = !p.hidden;
     p.parentElement?.classList.toggle('workspace-ai-open', !p.hidden);
-    byId('workspace-ai-launch')?.setAttribute('aria-expanded', String(!p.hidden));
+    launchButtons().forEach(button => button.setAttribute('aria-expanded', String(!p.hidden)));
     if (!p.hidden) {
       syncContext();
       byId('workspace-ai-request')?.focus();
@@ -12163,7 +12281,7 @@ const WorkspaceAIAssistant = (() => {
 
   function close() {
     const p = panel();
-    if (p) { p.hidden = true; p.parentElement?.classList.remove('workspace-ai-open'); byId('workspace-ai-launch')?.setAttribute('aria-expanded', 'false'); }
+    if (p) { p.hidden = true; p.parentElement?.classList.remove('workspace-ai-open'); launchButtons().forEach(button => button.setAttribute('aria-expanded', 'false')); }
   }
 
   function preset(text) {
