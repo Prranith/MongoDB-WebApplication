@@ -133,6 +133,25 @@ python embed_frontend.py
 vercel --prod
 ```
 
+### Codexa AI provider configuration
+
+Codexa AI supports Groq as the fast primary provider and Gemini as a fallback. Keep API keys server-side; do not put them in frontend files or commit them.
+
+```bash
+# Recommended: use Groq first, then Gemini if Groq is unavailable
+AI_PROVIDER=auto
+AI_PROVIDER_FALLBACKS=groq,gemini
+GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=llama-3.3-70b-versatile
+
+# Optional tuning for concurrent requests and slow provider responses
+AI_TIMEOUT_SECONDS=30
+GEMINI_MAX_CONCURRENT=2
+GEMINI_MIN_INTERVAL_SECONDS=1.5
+```
+
+To use only one provider, set `AI_PROVIDER=groq` or `AI_PROVIDER=gemini`. Configure these variables in the local server environment or the Vercel project settings, then restart the server.
+
 ---
 
 ## 🗄 Supported Query Syntax
