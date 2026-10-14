@@ -12,6 +12,23 @@ const WORKSPACE_HANDLE_STORE = 'handles';
 const WORKSPACE_HANDLE_KEY = 'primary';
 const WORKSPACE_MAX_TEXT_FILE_BYTES = 2 * 1024 * 1024;
 const WORKSPACE_SKIP_DIRECTORIES = new Set(['.git', 'node_modules', '.venv', 'venv', '__pycache__', 'dist', 'build', '.next']);
+// The workspace reuses one CodeMirror instance for every tab. Keep its undo
+// history outside the editor and restore the matching snapshot per file so
+// Ctrl/Cmd+Z can never cross a tab boundary.
+const WORKSPACE_EDITOR_HISTORIES = new Map();
+
+function rememberWorkspaceEditorHistory() {
+  if (!editor || !S.activeFile || typeof editor.getHistory !== 'function') return;
+  WORKSPACE_EDITOR_HISTORIES.set(S.activeFile, editor.getHistory());
+}
+
+function restoreWorkspaceEditorHistory(path, content) {
+  if (!editor) return;
+  editor.setValue(content || '');
+  if (typeof editor.clearHistory === 'function') editor.clearHistory();
+  const history = WORKSPACE_EDITOR_HISTORIES.get(path);
+  if (history && typeof editor.setHistory === 'function') editor.setHistory(history);
+}
 
 function hasNativeWorkspaceSupport() {
   return !!(window.showDirectoryPicker && window.indexedDB);
@@ -438,6 +455,7 @@ async function readWorkspaceDirectory(directoryHandle, prefix = '', result = [])
 async function loadDirectoryWorkspace(handle) {
   const oldExpanded = new Map(S.files.filter(f => f.type === 'folder').map(f => [f.path, f.expanded]));
   const files = await readWorkspaceDirectory(handle);
+  WORKSPACE_EDITOR_HISTORIES.clear();
   files.forEach(file => {
     if (file.type === 'folder' && oldExpanded.has(file.path)) file.expanded = oldExpanded.get(file.path);
   });
@@ -727,6 +745,10 @@ function renderFileTree() {
 function openFileInTab(path) {
   const file = S.files.find(f => f.path === path);
   if (!file || file.type === 'folder') return;
+
+  // Save the outgoing tab's undo stack before changing activeFile. CodeMirror
+  // itself is shared by all tabs, so its default history is shared as well.
+  rememberWorkspaceEditorHistory();
   
   S.activeFile = path;
   // New items are created in the selected file's containing folder.
@@ -739,11 +761,11 @@ function openFileInTab(path) {
   
   const previewKind = getWorkspacePreviewKind(file.name);
   if (previewKind) {
-    editor.setValue('');
+    restoreWorkspaceEditorHistory(path, '');
     showWorkspaceFilePreview(file, previewKind);
   } else {
     clearWorkspaceFilePreview();
-    editor.setValue(file.content);
+    restoreWorkspaceEditorHistory(path, file.content);
   }
   
   // Dynamically update workspace language and views based on file extension
@@ -844,6 +866,9 @@ function createTabElement(file) {
 
 function closeTab(path, event) {
   if (event) event.stopPropagation();
+
+  if (S.activeFile === path) rememberWorkspaceEditorHistory();
+  WORKSPACE_EDITOR_HISTORIES.delete(path);
   
   const tabEl = document.getElementById(`tab-${escId(path)}`);
   if (tabEl) tabEl.remove();
@@ -855,7 +880,7 @@ function closeTab(path, event) {
       openFileInTab(S.tabs[S.tabs.length - 1]);
     } else {
       S.activeFile = null;
-      editor.setValue('');
+      restoreWorkspaceEditorHistory('', '');
       if (typeof setSqlNotebookMode === 'function') setSqlNotebookMode(false);
     }
   }
