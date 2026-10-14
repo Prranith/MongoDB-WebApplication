@@ -205,13 +205,8 @@ const ExamPortal = (() => {
   }
 
   function formatSqlTable(result) {
-    const columns = Array.isArray(result && result.columns) ? result.columns : [];
-    const rows = Array.isArray(result && result.rows) ? result.rows : [];
-    if (!columns.length) return '<span style="color:var(--text3)">// Query returned no columns</span>';
-    const widths = columns.map(col => Math.min(32, Math.max(String(col).length, ...rows.map(row => String(row && row[col] != null ? row[col] : '').length))));
-    const line = `+${widths.map(w => '-'.repeat(w + 2)).join('+')}+`;
-    const row = values => `| ${values.map((value, i) => escapeExamHtml(String(value == null ? '' : value).slice(0, widths[i])).padEnd(widths[i], ' ')).join(' | ')} |`;
-    return `<pre style="color:var(--text);font-size:11px;white-space:pre;overflow:auto">${escapeExamHtml(line)}\n${escapeExamHtml(row(columns))}\n${escapeExamHtml(line)}\n${rows.map(item => escapeExamHtml(row(columns.map(col => item && item[col])))).join('\n') || ''}\n${escapeExamHtml(line)}</pre>`;
+    if (typeof renderSqlResultTable === 'function') return renderSqlResultTable(result, 'exam-sql-result');
+    return '<span style="color:var(--text3)">// SQL table renderer unavailable</span>';
   }
 
   // One execution path for SQL questions in both mentor and student views.
@@ -4900,16 +4895,25 @@ const ExamPortal = (() => {
         const wrapper = cm.getWrapperElement();
         wrapper.className = wrapper.className.replace(/\bcm-theme-\S+/g, '');
         wrapper.classList.add(`cm-theme-${theme}`);
-        wrapper.style.setProperty('font-family', font, 'important');
-        wrapper.style.setProperty('font-size', size, 'important');
-        wrapper.querySelectorAll('.CodeMirror-line, .CodeMirror-line span, .CodeMirror-linenumber').forEach(node => {
-          node.style.setProperty('font-family', 'inherit', 'important');
-          node.style.setProperty('font-size', 'inherit', 'important');
-        });
+        studentNS._applyEditorTypography(cm, font, size);
         wrapper.dataset.editorFont = font;
         wrapper.dataset.editorFontSize = size;
         cm.refresh();
       }
+    },
+
+    _applyEditorTypography(cm, font, size) {
+      if (!cm) return;
+      const wrapper = cm.getWrapperElement();
+      const targets = [wrapper, ...wrapper.querySelectorAll(
+        '.CodeMirror-lines, .CodeMirror-code, .CodeMirror-line, .CodeMirror-line span, .CodeMirror-linenumber, .CodeMirror pre'
+      )];
+      targets.forEach(node => {
+        node.style.setProperty('font-family', font, 'important');
+        node.style.setProperty('font-size', size, 'important');
+      });
+      wrapper.dataset.editorFont = font;
+      wrapper.dataset.editorFontSize = size;
     },
 
     applySharedEditorSettings() {
@@ -4919,15 +4923,7 @@ const ExamPortal = (() => {
 
       const font = settings.fontFamily || 'Consolas';
       const size = `${settings.fontSizeVal || 11}${settings.fontSizeUnit || 'pt'}`;
-      const wrapper = cm.getWrapperElement();
-      wrapper.style.setProperty('font-family', font, 'important');
-      wrapper.style.setProperty('font-size', size, 'important');
-      wrapper.querySelectorAll('.CodeMirror-line, .CodeMirror-line span, .CodeMirror-linenumber').forEach(node => {
-        node.style.setProperty('font-family', 'inherit', 'important');
-        node.style.setProperty('font-size', 'inherit', 'important');
-      });
-      wrapper.dataset.editorFont = font;
-      wrapper.dataset.editorFontSize = size;
+      studentNS._applyEditorTypography(cm, font, size);
       cm.refresh();
     },
 
@@ -4948,8 +4944,14 @@ const ExamPortal = (() => {
         const theme = localStorage.getItem('codexa.editor.theme');
         if (font) {
           const normalizeFont = value => String(value).split(',')[0].trim().replace(/^['"]|['"]$/g, '').toLowerCase();
-          const match = [...fontEl.options].find(o => normalizeFont(o.value) === normalizeFont(font));
-          if (match) fontEl.value = match.value;
+          let match = [...fontEl.options].find(o => normalizeFont(o.value) === normalizeFont(font));
+          if (!match) {
+            match = document.createElement('option');
+            match.value = font;
+            match.textContent = normalizeFont(font).replace(/\b\w/g, char => char.toUpperCase());
+            fontEl.appendChild(match);
+          }
+          fontEl.value = match.value;
         }
         if (size) {
           let match = [...sizeEl.options].find(o => o.value === size);

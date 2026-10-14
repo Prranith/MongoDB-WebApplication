@@ -1546,6 +1546,19 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
 .sql-cell-output { display:none; border-top:1px solid var(--border); padding:10px 13px; background:#181818; color:var(--text2); font:12px/1.55 'JetBrains Mono',Consolas,monospace; white-space:pre-wrap; overflow:auto; }
 .sql-cell-output.has-result { display:block; }
 .sql-cell-output.error { color:#f48771; }
+.sql-result-table-wrap { width:100%; overflow:auto; color:var(--text2); font:12px/1.45 'JetBrains Mono','Consolas',monospace; }
+.sql-result-table { width:100%; min-width:max-content; border-collapse:separate; border-spacing:0; background:#111512; }
+.sql-result-table th, .sql-result-table td { padding:7px 10px; border-right:1px solid #293329; border-bottom:1px solid #293329; text-align:left; white-space:nowrap; }
+.sql-result-table th { position:sticky; top:0; z-index:1; color:#d8e8d4; background:#1b241d; font:600 11px/1.3 'Segoe UI',sans-serif; letter-spacing:.02em; }
+.sql-result-table th:first-child, .sql-result-table td:first-child { border-left:1px solid #293329; }
+.sql-result-table tbody tr:nth-child(even) td { background:rgba(255,255,255,.018); }
+.sql-result-table tbody tr:hover td { background:rgba(168,207,120,.07); }
+.sql-result-table td { color:#cbd5ca; }
+.sql-result-table td:empty, .sql-result-table td.sql-result-null { color:#758174; font-style:italic; }
+.sql-result-no-rows { color:var(--text3) !important; text-align:center !important; padding:14px !important; }
+.sql-result-meta { padding:7px 2px 1px; color:var(--text3); font:10px/1.4 'Segoe UI',sans-serif; }
+.sql-result-empty { padding:10px 2px; color:var(--text3); font:11px/1.5 'JetBrains Mono',monospace; }
+.sql-notebook-result { padding:2px 0; }
 .sql-notebook-insert { height:18px; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .12s ease; }
 .sql-notebook-insert:hover, .sql-notebook-cell:hover + .sql-notebook-insert { opacity:1; }
 .sql-notebook-insert button { padding:2px 10px; border:1px solid var(--border2); border-radius:12px; background:var(--bg3); color:var(--text3); cursor:pointer; font-size:10px; }
@@ -9017,6 +9030,7 @@ function applySettings() {
   }
   
   const sizeVal = (S.settings.fontSizeVal || 11) + (S.settings.fontSizeUnit || 'pt');
+  const fontFamily = S.settings.fontFamily || 'Consolas';
   
   styleEl.textContent = `
     .CodeMirror,
@@ -9024,7 +9038,16 @@ function applySettings() {
     .CodeMirror pre.CodeMirror-line-like,
     .CodeMirror-linenumber,
     .CodeMirror-lines * {
-      font-family: ${S.settings.fontFamily || 'Consolas'}, 'JetBrains Mono', monospace !important;
+      font-family: ${fontFamily}, 'JetBrains Mono', monospace !important;
+      font-size: ${sizeVal} !important;
+    }
+    /* Exam CodeMirror uses a more specific inherited typography rule. Keep
+       the shared workspace preference authoritative for every rendered line. */
+    #exam-student-exam-panel .exam-editor-wrap .CodeMirror,
+    #exam-student-exam-panel .exam-editor-wrap .CodeMirror *,
+    #exam-student-exam-panel .exam-editor-wrap .CodeMirror pre,
+    #exam-student-exam-panel .exam-editor-wrap .CodeMirror-line span {
+      font-family: ${fontFamily}, 'JetBrains Mono', monospace !important;
       font-size: ${sizeVal} !important;
     }
   `;
@@ -11114,6 +11137,22 @@ function formatSqlCellResult(result) {
   return [line, format(columns), line, ...rows.map(row => format(columns.map(column => row[column]))), line, `${result.rowCount} row(s) returned`].join('\\n');
 }
 
+function renderSqlResultTable(result, extraClass = '') {
+  const columns = Array.isArray(result && result.columns) ? result.columns : [];
+  const rows = Array.isArray(result && result.rows) ? result.rows : [];
+  if (!columns.length) {
+    const affected = result && result.affectedRows != null ? result.affectedRows : 0;
+    return `<div class="sql-result-empty">${esc(result && result.operation ? `${String(result.operation).toUpperCase()} completed · ${affected} row(s) affected` : 'Query returned no columns')}</div>`;
+  }
+  const header = columns.map(column => `<th scope="col">${esc(column)}</th>`).join('');
+  const body = rows.map(row => `<tr>${columns.map(column => {
+    const value = row && row[column] != null ? row[column] : 'NULL';
+    return `<td>${esc(value)}</td>`;
+  }).join('')}</tr>`).join('');
+  const count = result && result.rowCount != null ? result.rowCount : rows.length;
+  return `<div class="sql-result-table-wrap ${extraClass}"><table class="sql-result-table"><thead><tr>${header}</tr></thead><tbody>${body || `<tr><td class="sql-result-no-rows" colspan="${columns.length}">No rows returned</td></tr>`}</tbody></table><div class="sql-result-meta">${count} row${count === 1 ? '' : 's'} returned</div></div>`;
+}
+
 function renderSqlNotebook(source) {
   const notebook = document.getElementById('sql-notebook');
   if (!notebook) return;
@@ -11205,7 +11244,12 @@ function renderSqlNotebook(source) {
     input.spellcheck = false;
     const output = document.createElement('pre');
     output.className = 'sql-cell-output';
-    if (saved[index]) { output.textContent = saved[index].text; output.classList.add('has-result'); if (saved[index].error) output.classList.add('error'); }
+    if (saved[index]) {
+      if (saved[index].html) output.innerHTML = saved[index].html;
+      else output.textContent = saved[index].text || '';
+      output.classList.add('has-result');
+      if (saved[index].error) output.classList.add('error');
+    }
     cell.append(cellHeader, input, output);
     notebook.appendChild(cell);
     const editorInstance = CodeMirror.fromTextArea(input, {
@@ -11281,9 +11325,9 @@ async function runSqlNotebookCell(index) {
     const result = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody) });
     if (result.status !== 'ok') throw new Error(result.error || 'SQL execution failed');
     if (result.tables) SQL_SANDBOXES.set(runtimeKey, result.tables);
-    const text = formatSqlCellResult(result);
-    output.textContent = text;
-    SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, { ...(SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {}), [index]: { text } });
+    const html = renderSqlResultTable(result, 'sql-notebook-result');
+    output.innerHTML = html;
+    SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, { ...(SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {}), [index]: { html } });
   } catch (error) {
     output.classList.add('error');
     output.textContent = `[error] ${error.message}`;
@@ -11574,11 +11618,7 @@ function renderRawJsonView(data) {
 function renderSqlTable(result) {
   const container = document.getElementById('output-text');
   if (!container || !result || !Array.isArray(result.columns)) return;
-  const cols = result.columns, rows = result.rows || [];
-  const widths = cols.map(c => Math.max(String(c).length, ...rows.map(r => String(r[c] ?? '').length), 3));
-  const line = '+' + widths.map(w => '-'.repeat(w + 2)).join('+') + '+';
-  const format = vals => '| ' + vals.map((v, i) => String(v ?? '').padEnd(widths[i])).join(' | ') + ' |';
-  container.textContent = [line, format(cols), line, ...rows.map(r => format(cols.map(c => r[c]))), line, `${result.rowCount} row(s) returned`].join('\\n');
+  container.innerHTML = renderSqlResultTable(result);
 }
 
 function syntaxHighlightJSON(str) {
@@ -13316,9 +13356,11 @@ const WorkspaceAIAssistant = (() => {
               <div style="display:flex;flex-direction:column;gap:3px">
                 <span style="font-size:10px;color:var(--text3)">Font Family</span>
                 <select id="editor-font-family" onchange="ExamPortal.student.updateEditorSettings()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:11px;padding:4px 8px;outline:none;width:100%">
+                  <option value="Consolas">Consolas</option>
                   <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
                   <option value="'Fira Code', monospace">Fira Code</option>
                   <option value="'Courier New', monospace">Courier New</option>
+                  <option value="Monaco">Monaco</option>
                   <option value="monospace">Monospace</option>
                 </select>
               </div>
@@ -13852,13 +13894,8 @@ const ExamPortal = (() => {
   }
 
   function formatSqlTable(result) {
-    const columns = Array.isArray(result && result.columns) ? result.columns : [];
-    const rows = Array.isArray(result && result.rows) ? result.rows : [];
-    if (!columns.length) return '<span style="color:var(--text3)">// Query returned no columns</span>';
-    const widths = columns.map(col => Math.min(32, Math.max(String(col).length, ...rows.map(row => String(row && row[col] != null ? row[col] : '').length))));
-    const line = `+${widths.map(w => '-'.repeat(w + 2)).join('+')}+`;
-    const row = values => `| ${values.map((value, i) => escapeExamHtml(String(value == null ? '' : value).slice(0, widths[i])).padEnd(widths[i], ' ')).join(' | ')} |`;
-    return `<pre style="color:var(--text);font-size:11px;white-space:pre;overflow:auto">${escapeExamHtml(line)}\\n${escapeExamHtml(row(columns))}\\n${escapeExamHtml(line)}\\n${rows.map(item => escapeExamHtml(row(columns.map(col => item && item[col])))).join('\\n') || ''}\\n${escapeExamHtml(line)}</pre>`;
+    if (typeof renderSqlResultTable === 'function') return renderSqlResultTable(result, 'exam-sql-result');
+    return '<span style="color:var(--text3)">// SQL table renderer unavailable</span>';
   }
 
   // One execution path for SQL questions in both mentor and student views.
@@ -18547,16 +18584,25 @@ const ExamPortal = (() => {
         const wrapper = cm.getWrapperElement();
         wrapper.className = wrapper.className.replace(/\\bcm-theme-\\S+/g, '');
         wrapper.classList.add(`cm-theme-${theme}`);
-        wrapper.style.setProperty('font-family', font, 'important');
-        wrapper.style.setProperty('font-size', size, 'important');
-        wrapper.querySelectorAll('.CodeMirror-line, .CodeMirror-line span, .CodeMirror-linenumber').forEach(node => {
-          node.style.setProperty('font-family', 'inherit', 'important');
-          node.style.setProperty('font-size', 'inherit', 'important');
-        });
+        studentNS._applyEditorTypography(cm, font, size);
         wrapper.dataset.editorFont = font;
         wrapper.dataset.editorFontSize = size;
         cm.refresh();
       }
+    },
+
+    _applyEditorTypography(cm, font, size) {
+      if (!cm) return;
+      const wrapper = cm.getWrapperElement();
+      const targets = [wrapper, ...wrapper.querySelectorAll(
+        '.CodeMirror-lines, .CodeMirror-code, .CodeMirror-line, .CodeMirror-line span, .CodeMirror-linenumber, .CodeMirror pre'
+      )];
+      targets.forEach(node => {
+        node.style.setProperty('font-family', font, 'important');
+        node.style.setProperty('font-size', size, 'important');
+      });
+      wrapper.dataset.editorFont = font;
+      wrapper.dataset.editorFontSize = size;
     },
 
     applySharedEditorSettings() {
@@ -18566,15 +18612,7 @@ const ExamPortal = (() => {
 
       const font = settings.fontFamily || 'Consolas';
       const size = `${settings.fontSizeVal || 11}${settings.fontSizeUnit || 'pt'}`;
-      const wrapper = cm.getWrapperElement();
-      wrapper.style.setProperty('font-family', font, 'important');
-      wrapper.style.setProperty('font-size', size, 'important');
-      wrapper.querySelectorAll('.CodeMirror-line, .CodeMirror-line span, .CodeMirror-linenumber').forEach(node => {
-        node.style.setProperty('font-family', 'inherit', 'important');
-        node.style.setProperty('font-size', 'inherit', 'important');
-      });
-      wrapper.dataset.editorFont = font;
-      wrapper.dataset.editorFontSize = size;
+      studentNS._applyEditorTypography(cm, font, size);
       cm.refresh();
     },
 
@@ -18595,8 +18633,14 @@ const ExamPortal = (() => {
         const theme = localStorage.getItem('codexa.editor.theme');
         if (font) {
           const normalizeFont = value => String(value).split(',')[0].trim().replace(/^['"]|['"]$/g, '').toLowerCase();
-          const match = [...fontEl.options].find(o => normalizeFont(o.value) === normalizeFont(font));
-          if (match) fontEl.value = match.value;
+          let match = [...fontEl.options].find(o => normalizeFont(o.value) === normalizeFont(font));
+          if (!match) {
+            match = document.createElement('option');
+            match.value = font;
+            match.textContent = normalizeFont(font).replace(/\\b\\w/g, char => char.toUpperCase());
+            fontEl.appendChild(match);
+          }
+          fontEl.value = match.value;
         }
         if (size) {
           let match = [...sizeEl.options].find(o => o.value === size);

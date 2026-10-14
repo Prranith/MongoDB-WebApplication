@@ -76,6 +76,7 @@ function applySettings() {
   }
   
   const sizeVal = (S.settings.fontSizeVal || 11) + (S.settings.fontSizeUnit || 'pt');
+  const fontFamily = S.settings.fontFamily || 'Consolas';
   
   styleEl.textContent = `
     .CodeMirror,
@@ -83,7 +84,16 @@ function applySettings() {
     .CodeMirror pre.CodeMirror-line-like,
     .CodeMirror-linenumber,
     .CodeMirror-lines * {
-      font-family: ${S.settings.fontFamily || 'Consolas'}, 'JetBrains Mono', monospace !important;
+      font-family: ${fontFamily}, 'JetBrains Mono', monospace !important;
+      font-size: ${sizeVal} !important;
+    }
+    /* Exam CodeMirror uses a more specific inherited typography rule. Keep
+       the shared workspace preference authoritative for every rendered line. */
+    #exam-student-exam-panel .exam-editor-wrap .CodeMirror,
+    #exam-student-exam-panel .exam-editor-wrap .CodeMirror *,
+    #exam-student-exam-panel .exam-editor-wrap .CodeMirror pre,
+    #exam-student-exam-panel .exam-editor-wrap .CodeMirror-line span {
+      font-family: ${fontFamily}, 'JetBrains Mono', monospace !important;
       font-size: ${sizeVal} !important;
     }
   `;

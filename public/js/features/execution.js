@@ -108,6 +108,22 @@ function formatSqlCellResult(result) {
   return [line, format(columns), line, ...rows.map(row => format(columns.map(column => row[column]))), line, `${result.rowCount} row(s) returned`].join('\n');
 }
 
+function renderSqlResultTable(result, extraClass = '') {
+  const columns = Array.isArray(result && result.columns) ? result.columns : [];
+  const rows = Array.isArray(result && result.rows) ? result.rows : [];
+  if (!columns.length) {
+    const affected = result && result.affectedRows != null ? result.affectedRows : 0;
+    return `<div class="sql-result-empty">${esc(result && result.operation ? `${String(result.operation).toUpperCase()} completed · ${affected} row(s) affected` : 'Query returned no columns')}</div>`;
+  }
+  const header = columns.map(column => `<th scope="col">${esc(column)}</th>`).join('');
+  const body = rows.map(row => `<tr>${columns.map(column => {
+    const value = row && row[column] != null ? row[column] : 'NULL';
+    return `<td>${esc(value)}</td>`;
+  }).join('')}</tr>`).join('');
+  const count = result && result.rowCount != null ? result.rowCount : rows.length;
+  return `<div class="sql-result-table-wrap ${extraClass}"><table class="sql-result-table"><thead><tr>${header}</tr></thead><tbody>${body || `<tr><td class="sql-result-no-rows" colspan="${columns.length}">No rows returned</td></tr>`}</tbody></table><div class="sql-result-meta">${count} row${count === 1 ? '' : 's'} returned</div></div>`;
+}
+
 function renderSqlNotebook(source) {
   const notebook = document.getElementById('sql-notebook');
   if (!notebook) return;
@@ -199,7 +215,12 @@ function renderSqlNotebook(source) {
     input.spellcheck = false;
     const output = document.createElement('pre');
     output.className = 'sql-cell-output';
-    if (saved[index]) { output.textContent = saved[index].text; output.classList.add('has-result'); if (saved[index].error) output.classList.add('error'); }
+    if (saved[index]) {
+      if (saved[index].html) output.innerHTML = saved[index].html;
+      else output.textContent = saved[index].text || '';
+      output.classList.add('has-result');
+      if (saved[index].error) output.classList.add('error');
+    }
     cell.append(cellHeader, input, output);
     notebook.appendChild(cell);
     const editorInstance = CodeMirror.fromTextArea(input, {
@@ -275,9 +296,9 @@ async function runSqlNotebookCell(index) {
     const result = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody) });
     if (result.status !== 'ok') throw new Error(result.error || 'SQL execution failed');
     if (result.tables) SQL_SANDBOXES.set(runtimeKey, result.tables);
-    const text = formatSqlCellResult(result);
-    output.textContent = text;
-    SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, { ...(SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {}), [index]: { text } });
+    const html = renderSqlResultTable(result, 'sql-notebook-result');
+    output.innerHTML = html;
+    SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, { ...(SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {}), [index]: { html } });
   } catch (error) {
     output.classList.add('error');
     output.textContent = `[error] ${error.message}`;
@@ -568,11 +589,7 @@ function renderRawJsonView(data) {
 function renderSqlTable(result) {
   const container = document.getElementById('output-text');
   if (!container || !result || !Array.isArray(result.columns)) return;
-  const cols = result.columns, rows = result.rows || [];
-  const widths = cols.map(c => Math.max(String(c).length, ...rows.map(r => String(r[c] ?? '').length), 3));
-  const line = '+' + widths.map(w => '-'.repeat(w + 2)).join('+') + '+';
-  const format = vals => '| ' + vals.map((v, i) => String(v ?? '').padEnd(widths[i])).join(' | ') + ' |';
-  container.textContent = [line, format(cols), line, ...rows.map(r => format(cols.map(c => r[c]))), line, `${result.rowCount} row(s) returned`].join('\n');
+  container.innerHTML = renderSqlResultTable(result);
 }
 
 function syntaxHighlightJSON(str) {
