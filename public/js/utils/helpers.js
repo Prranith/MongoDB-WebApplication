@@ -59,13 +59,13 @@ function saveSettings() {
 }
 
 function applySettings() {
-  if (!editor) return;
-  
   // Extract number from tabWidth (e.g. "4 spaces" -> 4)
   const tabMatch = String(S.settings.tabWidth || '4').match(/\d+/);
   const tabVal = tabMatch ? parseInt(tabMatch[0]) : 4;
-  editor.setOption('tabSize', tabVal);
-  editor.setOption('indentUnit', tabVal);
+  if (editor) {
+    editor.setOption('tabSize', tabVal);
+    editor.setOption('indentUnit', tabVal);
+  }
   
   // Apply styling dynamically (fontFamily, fontSize)
   let styleEl = document.getElementById('cm-dyn-settings-style');
@@ -87,5 +87,11 @@ function applySettings() {
       font-size: ${sizeVal} !important;
     }
   `;
-  editor.refresh();
+  if (editor) editor.refresh();
+
+  // The exam editor is a separate CodeMirror instance, so apply the same
+  // workspace preference when an active assessment is open.
+  if (window.ExamPortal && ExamPortal.student && typeof ExamPortal.student.applySharedEditorSettings === 'function') {
+    ExamPortal.student.applySharedEditorSettings();
+  }
 }

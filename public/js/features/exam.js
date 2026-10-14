@@ -1607,7 +1607,7 @@ const ExamPortal = (() => {
         } else if (lang === 'c') {
           q.starterCode = "#include <stdio.h>\n\nint main() {\n    int n;\n    while (scanf(\"%d\", &n) != EOF) {\n        printf(\"%d\\n\", n * 2);\n    }\n    return 0;\n}\n";
         } else if (lang === 'java') {
-          q.starterCode = "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        while (sc.hasNextInt()) {\n            int n = sc.nextInt();\n            System.out.println(n * 2);\n        }\n    }\n}\n";
+          q.starterCode = "import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        while (sc.hasNextInt()) {\n            int n = sc.nextInt();\n            System.out.println(n * 2);\n        }\n    }\n}\n";
         }
       }
 
@@ -3392,6 +3392,7 @@ const ExamPortal = (() => {
       // Initialize styling settings (restore saved preferences first)
       studentNS.loadEditorSettings();
       studentNS.updateEditorSettings();
+      studentNS.applySharedEditorSettings();
 
       // If a question was selected before editor initialization, load its value now
       if (state.student.currentQIdx !== null) {
@@ -4874,6 +4875,20 @@ const ExamPortal = (() => {
       const size = sizeEl.value;
       const theme = themeEl.value;
 
+      // Keep the exam controls and the normal workspace settings in sync.
+      // This also means a preference chosen in the main Settings dialog is
+      // reflected by the exam editor on its next refresh.
+      const numericSize = parseInt(size, 10);
+      if (window.S && S.settings && font) {
+        S.settings.fontFamily = font;
+        if (Number.isFinite(numericSize)) {
+          S.settings.fontSizeVal = numericSize;
+          S.settings.fontSizeUnit = 'px';
+          S.settings.fontSize = `${numericSize}px`;
+        }
+        try { localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings)); } catch (err) { /* storage unavailable */ }
+      }
+
       try {
         localStorage.setItem('codexa.editor.font', font);
         localStorage.setItem('codexa.editor.fontSize', size);
@@ -4897,17 +4912,55 @@ const ExamPortal = (() => {
       }
     },
 
+    applySharedEditorSettings() {
+      const cm = state.student.examEditor;
+      const settings = window.S && S.settings;
+      if (!cm || !settings) return;
+
+      const font = settings.fontFamily || 'Consolas';
+      const size = `${settings.fontSizeVal || 11}${settings.fontSizeUnit || 'pt'}`;
+      const wrapper = cm.getWrapperElement();
+      wrapper.style.setProperty('font-family', font, 'important');
+      wrapper.style.setProperty('font-size', size, 'important');
+      wrapper.querySelectorAll('.CodeMirror-line, .CodeMirror-line span, .CodeMirror-linenumber').forEach(node => {
+        node.style.setProperty('font-family', 'inherit', 'important');
+        node.style.setProperty('font-size', 'inherit', 'important');
+      });
+      wrapper.dataset.editorFont = font;
+      wrapper.dataset.editorFontSize = size;
+      cm.refresh();
+    },
+
     loadEditorSettings() {
       const fontEl = el('editor-font-family');
       const sizeEl = el('editor-font-size');
       const themeEl = el('editor-theme');
       if (!fontEl || !sizeEl || !themeEl) return;
       try {
-        const font = localStorage.getItem('codexa.editor.font');
-        const size = localStorage.getItem('codexa.editor.fontSize');
+        // Prefer the canonical normal-workspace preference so opening an exam
+        // never resets the exam editor back to its own control defaults.
+        const sharedSettings = window.S && S.settings ? S.settings : {};
+        const font = sharedSettings.fontFamily || localStorage.getItem('codexa.editor.font');
+        const sharedSize = sharedSettings.fontSizeVal && sharedSettings.fontSizeUnit
+          ? `${sharedSettings.fontSizeVal}${sharedSettings.fontSizeUnit}`
+          : '';
+        const size = sharedSize || localStorage.getItem('codexa.editor.fontSize');
         const theme = localStorage.getItem('codexa.editor.theme');
-        if (font && [...fontEl.options].some(o => o.value === font)) fontEl.value = font;
-        if (size && [...sizeEl.options].some(o => o.value === size)) sizeEl.value = size;
+        if (font) {
+          const normalizeFont = value => String(value).split(',')[0].trim().replace(/^['"]|['"]$/g, '').toLowerCase();
+          const match = [...fontEl.options].find(o => normalizeFont(o.value) === normalizeFont(font));
+          if (match) fontEl.value = match.value;
+        }
+        if (size) {
+          let match = [...sizeEl.options].find(o => o.value === size);
+          if (!match) {
+            match = document.createElement('option');
+            match.value = size;
+            match.textContent = size;
+            sizeEl.appendChild(match);
+          }
+          sizeEl.value = size;
+        }
         if (theme && [...themeEl.options].some(o => o.value === theme)) themeEl.value = theme;
       } catch (err) { /* storage unavailable */ }
     },

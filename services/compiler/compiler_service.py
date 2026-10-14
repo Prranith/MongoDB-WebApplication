@@ -10,15 +10,35 @@ sys.path.insert(0, str(ROOT))
 class CompilerService:
     @staticmethod
     def _sanitize_java_code(code: str) -> str:
-        if re.search(r"\bclass\s+Main\b", code):
-            return code
-        class_match = re.search(r"\b(?:public\s+)?class\s+(\w+)", code)
-        if class_match:
-            original_class_name = class_match.group(1)
-            if original_class_name != "Main":
-                code = re.sub(r"\bclass\s+" + re.escape(original_class_name) + r"\b", "class Main", code)
-                code = re.sub(r"\b(public|private|protected)?\s*" + re.escape(original_class_name) + r"\s*\(", r"\1 Main(", code)
+        # Kept as a compatibility shim for callers that used the old helper.
+        # Java source must be executed exactly as submitted; renaming classes
+        # breaks constructors, references, and public-class/file-name rules.
         return code
+
+    @staticmethod
+    def _java_entry_class(code: str) -> str:
+        """Return the submitted Java class containing ``main``.
+
+        The execution service uses this name for the temporary ``.java``
+        filename. Java requires that filename to match a public class, so the
+        source must not be rewritten to ``Main`` or another fixed name.
+        """
+        # Ignore comments so a commented example such as ``class Main`` does
+        # not get selected over the actual submitted class.
+        source = re.sub(r"/\*.*?\*/|//[^\n]*", "", code, flags=re.DOTALL)
+        declarations = list(re.finditer(
+            r"\b(?:public\s+)?(?:abstract\s+|final\s+)?class\s+(\w+)",
+            source,
+        ))
+        if not declarations:
+            return ""
+
+        for index, match in enumerate(declarations):
+            end = declarations[index + 1].start() if index + 1 < len(declarations) else len(source)
+            body = source[match.end():end]
+            if re.search(r"\bstatic\s+void\s+main\s*\(", body):
+                return match.group(1)
+        return declarations[0].group(1)
 
     @staticmethod
     def merge_driver_code(language: str, code: str, driver_code: str) -> str:
@@ -80,8 +100,15 @@ class CompilerService:
         
         filename = "main.py"
         if piston_lang == "java":
-            filename = "Main.java"
-            code = cls._sanitize_java_code(code)
+            entry_class = cls._java_entry_class(code)
+            if not entry_class:
+                return {
+                    "stdout": "",
+                    "stderr": "No Java class declaration was found in the submitted source.",
+                    "code": 1,
+                    "output": "No Java class declaration was found in the submitted source.",
+                }
+            filename = f"{entry_class}.java"
         elif piston_lang == "cpp":
             filename = "main.cpp"
         elif piston_lang == "c":
@@ -142,7 +169,8 @@ class CompilerService:
         paiza_lang = lang_map.get(language, "python3")
 
         if paiza_lang == "java":
-            code = cls._sanitize_java_code(code)
+            # Paiza accepts the source directly; preserve the user's class.
+            pass
 
         payload = {
             "source_code": code,

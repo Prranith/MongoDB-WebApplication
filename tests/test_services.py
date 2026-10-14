@@ -23,8 +23,18 @@ class TestServices(unittest.TestCase):
     def test_java_sanitizer(self):
         code = "public class Solution { public Solution() {} public void solve() {} }"
         sanitized = CompilerService._sanitize_java_code(code)
-        self.assertIn("class Main", sanitized)
-        self.assertIn("public Main(", sanitized)
+        self.assertEqual(sanitized, code)
+
+    def test_java_entry_class_preserves_submitted_name(self):
+        code = "public class Solution { public static void main(String[] args) {} }"
+        self.assertEqual(CompilerService._java_entry_class(code), "Solution")
+
+    def test_java_entry_class_uses_main_method_class(self):
+        code = "class Solution {} public class Runner { public static void main(String[] args) {} }"
+        self.assertEqual(CompilerService._java_entry_class(code), "Runner")
+
+    def test_java_entry_class_does_not_fallback_to_main(self):
+        self.assertEqual(CompilerService._java_entry_class("System.out.println(1);"), "")
 
     def test_extract_sub_metrics(self):
         subs = {

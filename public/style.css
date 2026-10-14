@@ -4819,7 +4819,11 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel .CodeMirror,
 #exam-student-exam-panel .CodeMirror pre,
 #exam-student-exam-panel .CodeMirror-lines,
-#exam-student-exam-panel .CodeMirror-code { font-family: inherit; font-size: inherit; }
+#exam-student-exam-panel .CodeMirror-code,
+#exam-student-exam-panel .CodeMirror pre.CodeMirror-line,
+#exam-student-exam-panel .CodeMirror pre.CodeMirror-line-like,
+#exam-student-exam-panel .CodeMirror-linenumber,
+#exam-student-exam-panel .CodeMirror-line span { font-family: inherit; font-size: inherit; }
 
 @media (max-width: 900px) {
   #exam-student-exam-panel .exam-qnav { width: 54px; }
