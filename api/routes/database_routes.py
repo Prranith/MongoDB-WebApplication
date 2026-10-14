@@ -195,8 +195,9 @@ def api_sandbox_run():
     language = body.get("language", "python")
     code = body.get("code", "")
     stdin = body.get("stdin", "")
+    filename = body.get("filename", "")
     
-    res = run_piston_code(language, code, stdin)
+    res = run_piston_code(language, code, stdin, filename)
     try:
         code_val = int(res.get("code", 0))
     except (ValueError, TypeError):

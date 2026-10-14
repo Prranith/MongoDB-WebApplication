@@ -934,7 +934,8 @@ async function runPlaygroundCode(language, code, stdin) {
       body: JSON.stringify({
         language: language,
         code: code,
-        stdin: stdin
+        stdin: stdin,
+        filename: S.activeFile || ''
       })
     });
     const duration = (performance.now() - start).toFixed(2);

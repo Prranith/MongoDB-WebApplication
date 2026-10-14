@@ -16,13 +16,17 @@ class CompilerService:
         return code
 
     @staticmethod
-    def _java_entry_class(code: str) -> str:
+    def _java_entry_class(code: str, filename: str = "") -> str:
         """Return the submitted Java class containing ``main``.
 
-        The execution service uses this name for the temporary ``.java``
-        filename. Java requires that filename to match a public class, so the
-        source must not be rewritten to ``Main`` or another fixed name.
+        A real workspace filename is authoritative, so ``Test.java`` runs as
+        ``Test`` without inspecting or rewriting the source. The source scan
+        is only a fallback for exam submissions, which historically did not
+        include a filename in their execution request.
         """
+        stem = Path(str(filename or "")).stem
+        if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", stem or ""):
+            return stem
         # Ignore comments so a commented example such as ``class Main`` does
         # not get selected over the actual submitted class.
         source = re.sub(r"/\*.*?\*/|//[^\n]*", "", code, flags=re.DOTALL)
@@ -39,6 +43,40 @@ class CompilerService:
             if re.search(r"\bstatic\s+void\s+main\s*\(", body):
                 return match.group(1)
         return declarations[0].group(1)
+
+    @staticmethod
+    def _java_launcher_source(code: str, entry_class: str) -> str:
+        """Prepare source for providers whose Java runtime launches Main.
+
+        The user's class and its name remain unchanged. Only a package-local
+        launcher is added, and a matching public modifier is relaxed when the
+        provider compiles the combined source as ``Main.java``.
+        """
+        if not entry_class or entry_class == "Main":
+            return code
+        source = re.sub(
+            r"\bpublic\s+(?=(?:class|interface|enum)\s+" + re.escape(entry_class) + r"\b)",
+            "",
+            code,
+            count=1,
+        )
+        launcher = (
+            "class Main {\n"
+            "    public static void main(String[] args) {\n"
+            f"        {entry_class}.main(args);\n"
+            "    }\n"
+            "}\n"
+        )
+        lines = source.splitlines()
+        insert_at = 0
+        for index, line in enumerate(lines):
+            stripped = line.strip()
+            if stripped.startswith("package ") or stripped.startswith("import ") or not stripped:
+                insert_at = index + 1
+                continue
+            break
+        lines.insert(insert_at, launcher.rstrip("\n"))
+        return "\n".join(lines)
 
     @staticmethod
     def merge_driver_code(language: str, code: str, driver_code: str) -> str:
@@ -89,7 +127,7 @@ class CompilerService:
         return "\n\n".join(parts)
 
     @classmethod
-    def run_piston_api(cls, language: str, code: str, stdin: str = ""):
+    def run_piston_api(cls, language: str, code: str, stdin: str = "", filename: str = ""):
         lang_map = {
             "python": "python",
             "cpp": "cpp",
@@ -98,9 +136,9 @@ class CompilerService:
         }
         piston_lang = lang_map.get(language, "python")
         
-        filename = "main.py"
+        upload_filename = "main.py"
         if piston_lang == "java":
-            entry_class = cls._java_entry_class(code)
+            entry_class = cls._java_entry_class(code, filename)
             if not entry_class:
                 return {
                     "stdout": "",
@@ -108,21 +146,25 @@ class CompilerService:
                     "code": 1,
                     "output": "No Java class declaration was found in the submitted source.",
                 }
-            filename = f"{entry_class}.java"
+            source_filename = f"{entry_class}.java"
+            if entry_class == "Main":
+                files = [{"name": "Main.java", "content": code}]
+            else:
+                files = [
+                    {"name": "Main.java", "content": cls._java_launcher_source(code, entry_class)},
+                    {"name": source_filename, "content": code},
+                ]
         elif piston_lang == "cpp":
-            filename = "main.cpp"
+            upload_filename = "main.cpp"
         elif piston_lang == "c":
-            filename = "main.c"
+            upload_filename = "main.c"
 
+        if piston_lang != "java":
+            files = [{"name": upload_filename, "content": code}]
         payload = {
             "language": piston_lang,
             "version": "*",
-            "files": [
-                {
-                    "name": filename,
-                    "content": code
-                }
-            ],
+            "files": files,
             "stdin": stdin
         }
 
@@ -159,7 +201,7 @@ class CompilerService:
         return None
 
     @classmethod
-    def run_paiza_api(cls, language: str, code: str, stdin: str = ""):
+    def run_paiza_api(cls, language: str, code: str, stdin: str = "", filename: str = ""):
         lang_map = {
             "python": "python3",
             "cpp": "cpp",
@@ -169,8 +211,10 @@ class CompilerService:
         paiza_lang = lang_map.get(language, "python3")
 
         if paiza_lang == "java":
-            # Paiza accepts the source directly; preserve the user's class.
-            pass
+            entry_class = cls._java_entry_class(code, filename)
+            if not entry_class:
+                return {"stdout": "", "stderr": "No Java class declaration was found in the submitted source.", "code": 1, "output": ""}
+            code = cls._java_launcher_source(code, entry_class)
 
         payload = {
             "source_code": code,
@@ -234,8 +278,8 @@ class CompilerService:
             return {"error": str(e), "stdout": "", "stderr": f"Execution failed: {e}", "code": 1, "output": ""}
 
     @classmethod
-    def run_piston_code(cls, language: str, code: str, stdin: str = ""):
-        res = cls.run_piston_api(language, code, stdin)
+    def run_piston_code(cls, language: str, code: str, stdin: str = "", filename: str = ""):
+        res = cls.run_piston_api(language, code, stdin, filename)
         if res is not None:
             return res
-        return cls.run_paiza_api(language, code, stdin)
+        return cls.run_paiza_api(language, code, stdin, filename)

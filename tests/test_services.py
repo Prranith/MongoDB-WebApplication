@@ -33,6 +33,18 @@ class TestServices(unittest.TestCase):
         code = "class Solution {} public class Runner { public static void main(String[] args) {} }"
         self.assertEqual(CompilerService._java_entry_class(code), "Runner")
 
+    def test_java_entry_class_preserves_arbitrary_submitted_class(self):
+        code = "public class ContestEntry { public static void main(String[] args) {} }"
+        self.assertEqual(CompilerService._java_entry_class(code), "ContestEntry")
+
+    def test_java_entry_class_uses_workspace_filename_without_source_rewrite(self):
+        code = "public class Test { public static void main(String[] args) {} }"
+        self.assertEqual(CompilerService._java_entry_class(code, "Dynamic Programming/Test.java"), "Test")
+        launcher = CompilerService._java_launcher_source(code, "Test")
+        self.assertIn("class Test", launcher)
+        self.assertIn("Test.main(args)", launcher)
+        self.assertNotIn("public class Test", launcher)
+
     def test_java_entry_class_does_not_fallback_to_main(self):
         self.assertEqual(CompilerService._java_entry_class("System.out.println(1);"), "")
 
