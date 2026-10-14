@@ -649,6 +649,85 @@ body {
   display: none;
 }
 
+/* Workspace connection row and empty state. Keep these as real explorer
+   surfaces instead of letting plain text/button content collapse together in
+   the narrow sidebar. */
+.workspace-folder-status {
+  min-height: 30px;
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  color: var(--text2);
+  background: rgba(255,255,255,.018);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.workspace-folder-status.connected {
+  color: var(--text);
+  background: rgba(255,255,255,.028);
+}
+.workspace-folder-status-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 14px;
+  color: var(--text3);
+}
+.workspace-folder-status.connected .workspace-folder-status-icon { color: #dcb67a; }
+.workspace-folder-status-icon svg { width: 14px; height: 14px; display: block; }
+.workspace-folder-status-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.workspace-empty-state {
+  margin: 12px 10px;
+  padding: 20px 12px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: rgba(255,255,255,.018);
+  color: var(--text3);
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: center;
+}
+.workspace-empty-state strong { color: var(--text2); font-size: 12px; font-weight: 600; }
+.workspace-empty-state > span:not(.workspace-empty-icon) { max-width: 190px; }
+.workspace-empty-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: var(--text3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  background: var(--bg3);
+}
+.workspace-empty-icon svg { width: 17px; height: 17px; }
+.workspace-empty-state button {
+  width: 100%;
+  min-height: 28px;
+  margin-top: 5px;
+  padding: 5px 9px;
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  background: var(--bg3);
+  color: var(--text2);
+  cursor: pointer;
+  font: 11px 'Segoe UI', sans-serif;
+}
+.workspace-empty-state button:hover { background: var(--hl2); color: var(--text); border-color: var(--blue); }
+
 .file-item {
   padding: 4px 12px 4px 28px;
   font-size: 12px;
@@ -8079,7 +8158,10 @@ li.CodeMirror-hint-active {
             </button>
           </div>
         </div>
-        <div id="workspace-folder-status" class="workspace-folder-status" title="Browser workspace">Browser workspace · choose a local folder</div>
+        <div id="workspace-folder-status" class="workspace-folder-status" title="Browser workspace">
+          <span class="workspace-folder-status-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 3.5h4l1.2 1.4h7.8v7.6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-9z"/></svg></span>
+          <span class="workspace-folder-status-text">Browser workspace · choose a local folder</span>
+        </div>
         <div class="file-list-container" onclick="selectWorkspaceRoot(event)" title="Click empty space to create in the workspace root">
           <div id="q-list"></div>
         </div>
@@ -9618,7 +9700,12 @@ async function storeWorkspaceHandle(handle) {
 function updateWorkspaceStatus(text, connected = false) {
   const status = document.getElementById('workspace-folder-status');
   if (!status) return;
-  status.textContent = text;
+  let textNode = status.querySelector('.workspace-folder-status-text');
+  if (!textNode) {
+    status.innerHTML = '<span class="workspace-folder-status-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 3.5h4l1.2 1.4h7.8v7.6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-9z"/></svg></span><span class="workspace-folder-status-text"></span>';
+    textNode = status.querySelector('.workspace-folder-status-text');
+  }
+  textNode.textContent = text;
   status.classList.toggle('connected', connected);
   status.title = text;
 }
@@ -10255,7 +10342,7 @@ function isFileVisible(path) {
 function renderFileTree() {
   const container = document.getElementById('q-list');
   if (!S.files.length) {
-    container.innerHTML = `<div class="workspace-empty-state"><span>No files in this workspace.</span><button type="button" onclick="chooseWorkspaceFolder(event)">${localWorkspaceHandle ? 'Change folder' : 'Choose local folder'}</button></div>`;
+    container.innerHTML = `<div class="workspace-empty-state"><div class="workspace-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3.5 6.5h6l2 2h9v9a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-10z"/><path d="M8 13h8M12 10v6"/></svg></div><strong>${localWorkspaceHandle ? 'Folder is empty' : 'No workspace folder selected'}</strong><span>${localWorkspaceHandle ? 'Create a file or choose another folder to get started.' : 'Open a local folder to browse and edit its files.'}</span><button type="button" onclick="chooseWorkspaceFolder(event)">${localWorkspaceHandle ? 'Change folder' : 'Choose local folder'}</button></div>`;
     return;
   }
   

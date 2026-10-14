@@ -49,7 +49,12 @@ async function storeWorkspaceHandle(handle) {
 function updateWorkspaceStatus(text, connected = false) {
   const status = document.getElementById('workspace-folder-status');
   if (!status) return;
-  status.textContent = text;
+  let textNode = status.querySelector('.workspace-folder-status-text');
+  if (!textNode) {
+    status.innerHTML = '<span class="workspace-folder-status-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 3.5h4l1.2 1.4h7.8v7.6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-9z"/></svg></span><span class="workspace-folder-status-text"></span>';
+    textNode = status.querySelector('.workspace-folder-status-text');
+  }
+  textNode.textContent = text;
   status.classList.toggle('connected', connected);
   status.title = text;
 }
@@ -686,7 +691,7 @@ function isFileVisible(path) {
 function renderFileTree() {
   const container = document.getElementById('q-list');
   if (!S.files.length) {
-    container.innerHTML = `<div class="workspace-empty-state"><span>No files in this workspace.</span><button type="button" onclick="chooseWorkspaceFolder(event)">${localWorkspaceHandle ? 'Change folder' : 'Choose local folder'}</button></div>`;
+    container.innerHTML = `<div class="workspace-empty-state"><div class="workspace-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3.5 6.5h6l2 2h9v9a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-10z"/><path d="M8 13h8M12 10v6"/></svg></div><strong>${localWorkspaceHandle ? 'Folder is empty' : 'No workspace folder selected'}</strong><span>${localWorkspaceHandle ? 'Create a file or choose another folder to get started.' : 'Open a local folder to browse and edit its files.'}</span><button type="button" onclick="chooseWorkspaceFolder(event)">${localWorkspaceHandle ? 'Change folder' : 'Choose local folder'}</button></div>`;
     return;
   }
   
