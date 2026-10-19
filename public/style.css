@@ -2122,29 +2122,6 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
   border-bottom-color: #ffffff;
 }
 
-.intro-support-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 30px;
-  padding: 0 14px;
-  border: 1px solid rgba(116, 224, 231, 0.28);
-  border-radius: 7px;
-  color: #a9c7b6;
-  background: rgba(9, 35, 27, 0.42);
-  text-decoration: none;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.02em;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.intro-support-link:hover {
-  color: #e8fff3;
-  border-color: rgba(116, 224, 231, 0.72);
-  background: rgba(17, 100, 99, 0.5);
-}
-
 /* ═══════════════════════════════════════════════════════════════
    SCHEMA DETAILS MODAL
 ═══════════════════════════════════════════════════════════════ */
