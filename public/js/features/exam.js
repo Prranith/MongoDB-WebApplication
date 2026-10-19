@@ -58,6 +58,17 @@ const ExamPortal = (() => {
 
   function el(id) { return document.getElementById(id); }
 
+  function setExamExecutionOrigin(origin, running = true) {
+    const status = el('student-console-status');
+    if (!status) return;
+    const local = origin === 'local';
+    const label = local ? 'Local execution' : 'Remote execution';
+    const detail = local
+      ? 'CodeLeaf is running this program on your device.'
+      : 'CodeLeaf is running this program on a dedicated execution worker.';
+    status.innerHTML = `<span class="execution-origin ${local ? 'execution-origin-local' : 'execution-origin-remote'}"><span class="execution-origin-dot"></span>${label}</span>${running ? ' <span class="execution-phase">· Running…</span>' : ` <span class="execution-phase">· ${detail}</span>`}`;
+  }
+
   function langCommentPrefix(lang) {
     if (lang === 'python') return '#';
     if (lang === 'sql') return '--';
@@ -3817,7 +3828,7 @@ const ExamPortal = (() => {
         }
         el('student-run-btn').textContent = 'Running...';
         el('student-run-btn').disabled = true;
-        el('student-console-status').textContent = '— Running...';
+        setExamExecutionOrigin('remote');
         const res = await runExamSql(state.student.roomId, datasetIds, query);
         el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
         el('student-run-btn').disabled = false;
@@ -3849,7 +3860,7 @@ const ExamPortal = (() => {
 
         el('student-run-btn').textContent = 'Running...';
         el('student-run-btn').disabled = true;
-        el('student-console-status').textContent = '— Running...';
+        setExamExecutionOrigin(q.language === 'python' && typeof Sk !== 'undefined' ? 'local' : 'remote');
         el('student-console-status').style.color = 'var(--text3)';
 
         let codeToExecute = query;
@@ -3895,6 +3906,7 @@ const ExamPortal = (() => {
           return;
         }
 
+        setExamExecutionOrigin('remote');
         const res = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
           questionId: q.id,
           language: q.language,
@@ -3931,7 +3943,7 @@ const ExamPortal = (() => {
 
       el('student-run-btn').textContent = 'Running...';
       el('student-run-btn').disabled = true;
-      el('student-console-status').textContent = '— Running...';
+      setExamExecutionOrigin('remote');
       el('student-console-status').style.color = 'var(--text3)';
 
       const res = await apiCall(`/api/exam/room/${state.student.roomId}/query`, 'POST', {

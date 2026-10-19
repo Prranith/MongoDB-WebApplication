@@ -1644,6 +1644,71 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
   gap: 8px;
 }
 
+.execution-origin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: .01em;
+}
+
+.execution-phase {
+  color: var(--text3);
+  font-size: 11px;
+}
+
+.execution-origin-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(110, 120, 130, .24);
+  border-radius: 7px;
+  background: rgba(24, 28, 31, .72);
+  color: var(--text2);
+  font: 11px/1.45 'Segoe UI', sans-serif;
+}
+
+.execution-origin-banner strong {
+  display: block;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.execution-origin-banner span:last-child {
+  display: block;
+  margin-top: 2px;
+  color: var(--text3);
+}
+
+.execution-origin-local {
+  border-color: rgba(95, 208, 133, .28);
+  background: rgba(41, 112, 69, .13);
+}
+
+.execution-origin-remote {
+  border-color: rgba(115, 169, 231, .28);
+  background: rgba(42, 83, 135, .13);
+}
+
+.execution-origin-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #71e39a;
+  box-shadow: 0 0 0 3px rgba(113, 227, 154, .12);
+  flex: 0 0 auto;
+}
+
+.execution-origin-remote .execution-origin-dot {
+  background: #78b7ff;
+  box-shadow: 0 0 0 3px rgba(120, 183, 255, .12);
+}
+
 .con-badge {
   font-size: 11px;
   padding: 2px 8px;

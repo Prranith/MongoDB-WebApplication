@@ -852,6 +852,34 @@ function runPythonLocally(code, stdin, onFinish) {
   );
 }
 
+function setExecutionOrigin(origin, language, running) {
+  const isLocal = origin === 'local';
+  const label = isLocal ? 'Local execution' : 'Remote execution';
+  const message = isLocal
+    ? 'CodeLeaf is executing this program on your device.'
+    : 'CodeLeaf is executing this program on a dedicated CodeLeaf execution worker.';
+  const statEl = document.getElementById('console-status');
+  const outView = document.getElementById('output-text');
+  const stateClass = isLocal ? 'execution-origin-local' : 'execution-origin-remote';
+
+  if (statEl) {
+    statEl.innerHTML = `<span class="execution-origin ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>${running ? ' <span class="execution-phase">· Running…</span>' : ''}`;
+  }
+  if (outView && running) {
+    outView.innerHTML = `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div><strong>${label}</strong><span>${message}</span></div></div><span class="out-info">[info] Preparing ${esc(language)} execution…</span>`;
+  }
+}
+
+function executionOriginBanner(origin) {
+  const isLocal = origin === 'local';
+  const label = isLocal ? 'Local execution' : 'Remote execution';
+  const message = isLocal
+    ? 'CodeLeaf executed this program on your device.'
+    : 'CodeLeaf executed this program on a dedicated CodeLeaf execution worker.';
+  const stateClass = isLocal ? 'execution-origin-local' : 'execution-origin-remote';
+  return `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div><strong>${label}</strong><span>${message}</span></div></div>`;
+}
+
 async function runPlaygroundCode(language, code, stdin) {
   const allowed = ['c', 'cpp', 'java', 'python', 'mongodb'];
   if (!allowed.includes(language)) {
@@ -862,7 +890,6 @@ async function runPlaygroundCode(language, code, stdin) {
     return;
   }
   const statEl = document.getElementById('console-status');
-  if (statEl) statEl.innerHTML = `⟳ Compiling & Running...`;
 
   const timeEl = document.getElementById('console-time');
   const countEl = document.getElementById('console-count');
@@ -871,9 +898,7 @@ async function runPlaygroundCode(language, code, stdin) {
 
   setConTab('output');
   const outView = document.getElementById('output-text');
-  if (outView) {
-    outView.innerHTML = `<span class="out-info">[info] Compiling and executing ${language} code...</span>`;
-  }
+  if (outView) outView.innerHTML = `<span class="out-info">[info] Selecting the safest available execution runtime…</span>`;
 
   const runBtn = document.querySelector('.tbtn-run');
   if (runBtn) {
@@ -887,6 +912,7 @@ async function runPlaygroundCode(language, code, stdin) {
       runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
     }
 
+    const origin = d.executionOrigin || 'remote';
     if (d.status === 'ok') {
       const exitCode = d.code !== undefined ? d.code : 0;
       const stderr = (d.stderr || '').trim();
@@ -894,12 +920,14 @@ async function runPlaygroundCode(language, code, stdin) {
       const isError = exitCode !== 0 || stderr.length > 0;
 
       if (statEl) {
-        statEl.innerHTML = isError ? `<span style="color:var(--red)">✗ Execution Failed</span>` : `✓ Success`;
+        statEl.innerHTML = isError
+          ? `<span style="color:var(--red)">✗ Execution Failed</span>`
+          : `<span style="color:var(--green3)">✓ Success</span>`;
       }
       if (timeEl) timeEl.textContent = `${duration}ms`;
 
       if (outView) {
-        let outputHTML = '';
+        let outputHTML = executionOriginBanner(origin);
         if (stdout) {
           outputHTML += `<pre style="margin: 0; font-family: inherit; color: #d4d4d4; white-space: pre-wrap; word-break: break-all;">${esc(stdout)}</pre>`;
         }
@@ -915,9 +943,9 @@ async function runPlaygroundCode(language, code, stdin) {
 
       saveToHistory(`${language.toUpperCase()} Code Run`, isError ? 'error' : 'ok', 0, duration);
     } else {
-      if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ Server Error</span>`;
+      if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ ${origin === 'local' ? 'Local runtime error' : 'Remote execution error'}</span>`;
       if (outView) {
-        outView.innerHTML = `<div class="out-err"><b>[Error] Failed to execute code:</b> ${esc(d.error || 'Server error')}</div>`;
+        outView.innerHTML = `${executionOriginBanner(origin)}<div class="out-err"><b>[Error] Failed to execute code:</b> ${esc(d.error || 'Execution error')}</div>`;
       }
       saveToHistory(`${language.toUpperCase()} Code Run`, 'error', 0, 0);
     }
@@ -926,14 +954,17 @@ async function runPlaygroundCode(language, code, stdin) {
   // Normal workspace Python runs use a dedicated Pyodide Web Worker. Exams
   // intentionally use their server-side authoritative path in exam.js.
   if (typeof ClientExecution !== 'undefined' && ClientExecution.supports(language)) {
+    setExecutionOrigin('local', language, true);
     const clientResult = await ClientExecution.run(language, code, stdin, { timeoutMs: 8000 });
     if (clientResult) {
+      clientResult.executionOrigin = 'local';
       handleOutput(clientResult, clientResult.duration);
       return;
     }
   }
 
   try {
+    setExecutionOrigin('remote', language, true);
     const start = performance.now();
     const d = await fetchAPI('/api/sandbox/run', {
       method: 'POST',
@@ -945,15 +976,16 @@ async function runPlaygroundCode(language, code, stdin) {
       })
     });
     const duration = (performance.now() - start).toFixed(2);
+    d.executionOrigin = 'remote';
     handleOutput(d, duration);
   } catch (err) {
     if (runBtn) {
       runBtn.classList.remove('running');
       runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
     }
-    if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ Request Failed</span>`;
+    if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ Remote request failed</span>`;
     if (outView) {
-      outView.innerHTML = `<div class="out-err"><b>[Error] Request failed:</b> ${esc(err.message || err)}</div>`;
+      outView.innerHTML = `${executionOriginBanner('remote')}<div class="out-err"><b>[Error] Request failed:</b> ${esc(err.message || err)}</div>`;
     }
     saveToHistory(`${language.toUpperCase()} Code Run`, 'error', 0, 0);
   }
