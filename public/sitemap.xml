@@ -3,12 +3,12 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://codexa-labs.vercel.app/</loc>
-    <lastmod>2026-08-30</lastmod>
+    <lastmod>2026-10-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://codexa-labs.vercel.app/image.png</image:loc>
-      <image:title>Codexa Labs Cloud IDE &amp; MongoDB Sandbox</image:title>
+      <image:title>CodeLeaf Multilingual Coding IDE, Assessments, Exams &amp; Meetings</image:title>
     </image:image>
   </url>
 </urlset>

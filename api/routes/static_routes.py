@@ -46,7 +46,7 @@ def serve_sitemap():
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         '  <url>\n'
         '    <loc>https://codexa-labs.vercel.app/</loc>\n'
-        '    <lastmod>2026-08-30</lastmod>\n'
+        '    <lastmod>2026-10-19</lastmod>\n'
         '    <changefreq>daily</changefreq>\n'
         '    <priority>1.0</priority>\n'
         '  </url>\n'

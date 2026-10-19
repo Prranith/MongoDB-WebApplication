@@ -1,6 +1,6 @@
-# Codexa Labs - MongoDB Web Portal 🚀
+# CodeLeaf - MongoDB Web Portal 🚀
 
-> **A professional, robust web application for evaluating and practicing MongoDB querying in a proctored environment.**
+> **A multilingual coding, assessment, examination, and collaboration platform for developers, mentors, and students.**
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-API-green.svg)](https://flask.palletsprojects.com/)
@@ -11,12 +11,14 @@
 
 ## ✨ Features
 
-- **Proctored Examination Environment**: Prevent external copy-pasting and track full-screen exits.
-- **Mentor Real-time Dashboard**: Live view of participant leaderboards, copy-paste violations, kicked users, and active submissions.
-- **CodeMirror Integration**: In-browser code editing with syntax highlighting for MongoDB queries.
+- **Multilingual Coding Workspace**: Edit and execute MongoDB, SQL, Python, C, C++, and Java with CodeMirror-based tooling.
+- **AI Coding Assistance**: Review the full active file, explain issues, suggest corrections, and optionally apply safe changes.
+- **Proctored Examination Environment**: Prevent external copy-pasting, track full-screen exits, grade submissions, and manage question papers.
+- **Mentor Real-time Dashboard**: Live view of participant leaderboards, violations, kicked users, and active submissions.
+- **Coding Meetings**: Collaborate through meeting rooms, chat, reactions, workspace sharing, and editor-follow mode.
 - **Robust Multi-line Copy-Paste Enforcement**: Intelligently allows copying within the application editor but heavily restricts and reports external pastes.
 - **Single Page Application (SPA)**: Custom-built lightweight vanilla JavaScript framework avoiding heavy frontend dependencies.
-- **Database Engine Simulator**: Compiles JS-based MongoDB queries on the backend directly into secure `pymongo` aggregations for dataset evaluation.
+- **Database Practice Sandboxes**: Run MongoDB queries and SQL against datasets with schema inspection and formatted output.
 - **Excel Results Export**: Mentors can export the leaderboard to an `.xlsx` sheet for official records.
 
 ---
@@ -133,9 +135,9 @@ python embed_frontend.py
 vercel --prod
 ```
 
-### Codexa AI provider configuration
+### CodeLeaf AI provider configuration
 
-Codexa AI supports Groq as the fast primary provider and Gemini as a fallback. Keep API keys server-side; do not put them in frontend files or commit them.
+CodeLeaf AI supports Groq as the fast primary provider and Gemini as a fallback. Keep API keys server-side; do not put them in frontend files or commit them.
 
 ```bash
 # Recommended: use Groq first, then Gemini if Groq is unavailable
