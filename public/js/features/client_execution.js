@@ -19,6 +19,7 @@ const ClientExecution = (() => {
     return `
       let pyodide = null;
       let clangWasm = null;
+      let clangBundleLoaded = false;
       const clangCompilers = new Map();
       const base = ${JSON.stringify(PYODIDE_BASE)};
       const clangScript = ${JSON.stringify(CLANG_WASM_SCRIPT)};
@@ -34,7 +35,22 @@ const ClientExecution = (() => {
 
       async function clangRuntime(language) {
         if (!clangWasm) {
-          importScripts(clangScript);
+          // Blob workers can reject a direct cross-origin importScripts call
+          // even when the CDN sends permissive CORS headers. Fetching the
+          // bundle first, then importing a same-worker blob, keeps the
+          // compiler client-side while avoiding that browser restriction.
+          if (!clangBundleLoaded) {
+            const response = await fetch(clangScript, { mode: 'cors', cache: 'force-cache' });
+            if (!response.ok) throw new Error('Clang runtime download failed (' + response.status + ')');
+            const source = await response.text();
+            const bundle = URL.createObjectURL(new Blob([source], { type: 'application/javascript' }));
+            try {
+              importScripts(bundle);
+              clangBundleLoaded = true;
+            } finally {
+              URL.revokeObjectURL(bundle);
+            }
+          }
           clangWasm = self.clangWasm;
         }
         const key = language === 'c' ? 'c' : 'cpp';
