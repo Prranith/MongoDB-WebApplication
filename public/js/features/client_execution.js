@@ -39,6 +39,14 @@ const ClientExecution = (() => {
       const javaRuntimeScript = ${JSON.stringify(TEAVM_RUNTIME)};
       const javaSdkUrl = ${JSON.stringify(TEAVM_SDK)};
       const javaClasslibUrl = ${JSON.stringify(TEAVM_CLASSLIB)};
+      const importAnnotationShim = 'package org.teavm.interop;\\n' +
+        'import java.lang.annotation.ElementType;\\n' +
+        'import java.lang.annotation.Retention;\\n' +
+        'import java.lang.annotation.RetentionPolicy;\\n' +
+        'import java.lang.annotation.Target;\\n' +
+        '@Retention(RetentionPolicy.RUNTIME)\\n' +
+        '@Target(ElementType.METHOD)\\n' +
+        'public @interface Import { String module(); String name(); }';
       const scannerShim = 'import java.io.InputStream;\\n' +
         'import org.teavm.interop.Import;\\n' +
         'public final class Scanner {\\n' +
@@ -139,6 +147,7 @@ const ClientExecution = (() => {
           // source's default package. Remove only an explicit Scanner import;
           // wildcard imports remain harmless and existing code stays intact.
           sourceText = sourceText.replace(/^\\s*import\\s+java\\.util\\.Scanner\\s*;\\s*$/gm, '');
+          compiler.addSourceFile('org/teavm/interop/Import.java', importAnnotationShim);
           compiler.addSourceFile('Scanner.java', scannerShim);
         }
         compiler.addSourceFile(sourceName, sourceText);
