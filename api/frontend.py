@@ -11703,8 +11703,7 @@ const ClientExecution = (() => {
       const javaRuntimeScript = ${JSON.stringify(TEAVM_RUNTIME)};
       const javaSdkUrl = ${JSON.stringify(TEAVM_SDK)};
       const javaClasslibUrl = ${JSON.stringify(TEAVM_CLASSLIB)};
-      const scannerShim = 'package java.util;\\\\n' +
-        'import java.io.InputStream;\\\\n' +
+      const scannerShim = 'import java.io.InputStream;\\\\n' +
         'public final class Scanner {\\\\n' +
         '  private final InputStream input;\\\\n' +
         '  public Scanner(InputStream input) { this.input = input; }\\\\n' +
@@ -11795,10 +11794,15 @@ const ClientExecution = (() => {
           if (diagnostic && diagnostic.message) diagnostics.push(diagnostic.message);
         });
         const sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
-        if (/\\\\bScanner\\\\b/.test(String(code || ''))) {
-          compiler.addSourceFile('java/util/Scanner.java', scannerShim);
+        let sourceText = String(code || '');
+        if (/\\\\bScanner\\\\b/.test(sourceText)) {
+          // TeaVM cannot add classes to java.base, so provide Scanner in the
+          // source's default package. Remove only an explicit Scanner import;
+          // wildcard imports remain harmless and existing code stays intact.
+          sourceText = sourceText.replace(/^\\\\s*import\\\\s+java\\\\.util\\\\.Scanner\\\\s*;\\\\s*$/gm, '');
+          compiler.addSourceFile('Scanner.java', scannerShim);
         }
-        compiler.addSourceFile(sourceName, String(code || ''));
+        compiler.addSourceFile(sourceName, sourceText);
         const compiled = compiler.compile();
         if (registration && registration.destroy) registration.destroy();
         if (!compiled) {
