@@ -923,12 +923,14 @@ async function runPlaygroundCode(language, code, stdin) {
     }
   };
 
-  // Run client-side Python if Skulpt is available
-  if (language === 'python' && typeof Sk !== 'undefined') {
-    runPythonLocally(code, stdin, function(res) {
-      handleOutput(res, res.duration);
-    });
-    return;
+  // Normal workspace Python runs use a dedicated Pyodide Web Worker. Exams
+  // intentionally use their server-side authoritative path in exam.js.
+  if (typeof ClientExecution !== 'undefined' && ClientExecution.supports(language)) {
+    const clientResult = await ClientExecution.run(language, code, stdin, { timeoutMs: 8000 });
+    if (clientResult) {
+      handleOutput(clientResult, clientResult.duration);
+      return;
+    }
   }
 
   try {
