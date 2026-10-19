@@ -39,6 +39,16 @@ const ClientExecution = (() => {
       const javaRuntimeScript = ${JSON.stringify(TEAVM_RUNTIME)};
       const javaSdkUrl = ${JSON.stringify(TEAVM_SDK)};
       const javaClasslibUrl = ${JSON.stringify(TEAVM_CLASSLIB)};
+      const scannerShim = 'package java.util;\\n' +
+        'import java.io.InputStream;\\n' +
+        'public final class Scanner {\\n' +
+        '  private final InputStream input;\\n' +
+        '  public Scanner(InputStream input) { this.input = input; }\\n' +
+        '  private int readChar() { try { return input.read(); } catch (Exception e) { return -1; } }\\n' +
+        '  public String nextLine() { StringBuilder value = new StringBuilder(); int ch; while ((ch = readChar()) != -1 && ch != 10) { if (ch != 13) value.append((char) ch); } return value.toString(); }\\n' +
+        '  public String next() { StringBuilder value = new StringBuilder(); int ch; do { ch = readChar(); } while (ch != -1 && ch <= 32); while (ch != -1 && ch > 32) { value.append((char) ch); ch = readChar(); } return value.toString(); }\\n' +
+        '  public int nextInt() { return Integer.parseInt(next()); }\\n' +
+        '}';
 
       async function runtime() {
         if (!pyodide) {
@@ -121,6 +131,9 @@ const ClientExecution = (() => {
           if (diagnostic && diagnostic.message) diagnostics.push(diagnostic.message);
         });
         const sourceName = String(fileName || 'Main.java').split(/[\\/]/).pop() || 'Main.java';
+        if (/\\bScanner\\b/.test(String(code || ''))) {
+          compiler.addSourceFile('java/util/Scanner.java', scannerShim);
+        }
         compiler.addSourceFile(sourceName, String(code || ''));
         const compiled = compiler.compile();
         if (registration && registration.destroy) registration.destroy();
