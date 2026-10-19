@@ -3910,7 +3910,7 @@ const ExamPortal = (() => {
         // compiler as the normal workspace. Submission/grading still uses
         // the authoritative server path below, so local execution cannot
         // affect the exam verdict.
-        if ((q.language === 'c' || q.language === 'cpp') &&
+        if ((q.language === 'c' || q.language === 'cpp' || q.language === 'java') &&
             typeof ClientExecution !== 'undefined' && ClientExecution.supports(q.language)) {
           const localResults = [];
           let localRuntimeAvailable = true;

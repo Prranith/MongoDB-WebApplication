@@ -11670,13 +11670,17 @@ const ClientExecution = (() => {
   const CLANG_WASM_VERSION = '0.3.0';
   const CLANG_WASM_SCRIPT = `https://cdn.jsdelivr.net/npm/@live-codes/clang-wasm@${CLANG_WASM_VERSION}/dist/clang-wasm.global.js`;
   const CLANG_WASM_ASSETS = `https://cdn.jsdelivr.net/npm/@live-codes/clang-wasm@${CLANG_WASM_VERSION}/assets/`;
+  const TEAVM_COMPILER = 'https://teavm.org/playground/compiler.wasm';
+  const TEAVM_RUNTIME = 'https://teavm.org/playground/compiler.wasm-runtime.js';
+  const TEAVM_SDK = 'https://teavm.org/playground/compile-classlib-teavm.bin';
+  const TEAVM_CLASSLIB = 'https://teavm.org/playground/runtime-classlib-teavm.bin';
   const DEFAULT_TIMEOUT_MS = 30000;
   let worker = null;
   let sequence = 0;
   const pending = new Map();
 
   function supports(language) {
-    return ['python', 'c', 'cpp'].includes(String(language || '').toLowerCase());
+    return ['python', 'c', 'cpp', 'java'].includes(String(language || '').toLowerCase());
   }
 
   function workerSource() {
@@ -11685,9 +11689,17 @@ const ClientExecution = (() => {
       let codeleafClangRuntime = null;
       let codeleafClangBundleLoaded = false;
       const codeleafClangCompilers = new Map();
+      let javaRuntime = null;
+      let javaCompiler = null;
+      let javaSdk = null;
+      let javaClasslib = null;
       const base = ${JSON.stringify(PYODIDE_BASE)};
       const clangScript = ${JSON.stringify(CLANG_WASM_SCRIPT)};
       const clangAssets = ${JSON.stringify(CLANG_WASM_ASSETS)};
+      const javaCompilerWasm = ${JSON.stringify(TEAVM_COMPILER)};
+      const javaRuntimeScript = ${JSON.stringify(TEAVM_RUNTIME)};
+      const javaSdkUrl = ${JSON.stringify(TEAVM_SDK)};
+      const javaClasslibUrl = ${JSON.stringify(TEAVM_CLASSLIB)};
 
       async function runtime() {
         if (!pyodide) {
@@ -11727,6 +11739,67 @@ const ClientExecution = (() => {
         return codeleafClangCompilers.get(key);
       }
 
+      async function javaRuntimeReady() {
+        if (javaCompiler) return javaCompiler;
+        javaRuntime = await import(javaRuntimeScript);
+        const compilerModule = await javaRuntime.load(javaCompilerWasm);
+        javaCompiler = compilerModule.exports.createCompiler();
+        javaSdk = new Int8Array(await (await fetch(javaSdkUrl, { mode: 'cors', cache: 'force-cache' })).arrayBuffer());
+        javaClasslib = new Int8Array(await (await fetch(javaClasslibUrl, { mode: 'cors', cache: 'force-cache' })).arrayBuffer());
+        javaCompiler.setSdk(javaSdk);
+        javaCompiler.setTeaVMClasslib(javaClasslib);
+        return javaCompiler;
+      }
+
+      async function runJava(code, stdin, fileName) {
+        const compiler = await javaRuntimeReady();
+        if (compiler.clearSourceFiles) compiler.clearSourceFiles();
+        if (compiler.clearInputClassFiles) compiler.clearInputClassFiles();
+        if (compiler.clearOutputFiles) compiler.clearOutputFiles();
+
+        const diagnostics = [];
+        const registration = compiler.onDiagnostic(diagnostic => {
+          if (diagnostic && diagnostic.message) diagnostics.push(diagnostic.message);
+        });
+        const sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
+        compiler.addSourceFile(sourceName, String(code || ''));
+        const compiled = compiler.compile();
+        if (registration && registration.destroy) registration.destroy();
+        if (!compiled) {
+          return { status: 'ok', code: 1, stdout: '', stderr: diagnostics.join('\\\\n') || 'Java compilation failed.', runtime: 'teavm-javac' };
+        }
+
+        const mainClasses = compiler.detectMainClasses();
+        if (!mainClasses || !mainClasses.length) {
+          return { status: 'ok', code: 1, stdout: '', stderr: 'No public static void main(String[] args) method was found.', runtime: 'teavm-javac' };
+        }
+        const outputName = 'codeleaf-java';
+        if (!compiler.generateWebAssembly({ outputName, mainClass: mainClasses[0] })) {
+          return { status: 'ok', code: 1, stdout: '', stderr: diagnostics.join('\\\\n') || 'Java WebAssembly generation failed.', runtime: 'teavm-javac' };
+        }
+        const generated = compiler.getWebAssemblyOutputFile(outputName + '.wasm');
+        let stdout = '';
+        let stderr = '';
+        const input = String(stdin || '').split(/\\\\r?\\\\n/);
+        let inputIndex = 0;
+        let inputBuffer = '';
+        const module = await javaRuntime.load(generated, {
+          installImports(imports) {
+            imports.teavmConsole.putcharStdout = ch => { stdout += String.fromCharCode(ch); };
+            imports.teavmConsole.putcharStderr = ch => { stderr += String.fromCharCode(ch); };
+            imports.teavmConsole.getcharStdin = () => {
+              if (!inputBuffer && inputIndex < input.length) inputBuffer = input[inputIndex++] + '\\\\n';
+              if (!inputBuffer) return -1;
+              const character = inputBuffer.charCodeAt(0);
+              inputBuffer = inputBuffer.slice(1);
+              return character;
+            };
+          }
+        });
+        await module.exports.main([]);
+        return { status: 'ok', code: 0, stdout, stderr, runtime: 'teavm-javac' };
+      }
+
       self.onmessage = async event => {
         const request = event.data || {};
         try {
@@ -11746,6 +11819,11 @@ const ClientExecution = (() => {
               compileMs: result.compileMs,
               runMs: result.runMs
             }});
+            return;
+          }
+          if (request.language === 'java') {
+            const result = await runJava(request.code, request.stdin, request.fileName);
+            self.postMessage({ id: request.id, ok: true, result });
             return;
           }
           const python = await runtime();
@@ -11814,7 +11892,7 @@ const ClientExecution = (() => {
           reject(new Error(`Client execution timed out after ${timeout}ms`));
         }, timeout);
         pending.set(id, { resolve, reject, timer });
-        getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin });
+        getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin, fileName: options.fileName || '' });
       });
       result.duration = (performance.now() - started).toFixed(2);
       return result;
@@ -12784,12 +12862,12 @@ async function runPlaygroundCode(language, code, stdin) {
     }
   };
 
-  // Normal workspace Python, C and C++ runs use browser WebAssembly workers.
+  // Normal workspace Python, C, C++ and Java runs use browser WebAssembly workers.
   // Exams intentionally use their server-side authoritative path in exam.js.
   if (typeof ClientExecution !== 'undefined' && ClientExecution.supports(language)) {
     setExecutionOrigin('local', language, true);
-    const clientTimeout = language === 'c' || language === 'cpp' ? 30000 : 8000;
-    const clientResult = await ClientExecution.run(language, code, stdin, { timeoutMs: clientTimeout });
+    const clientTimeout = language === 'java' || language === 'c' || language === 'cpp' ? 60000 : 8000;
+    const clientResult = await ClientExecution.run(language, code, stdin, { timeoutMs: clientTimeout, fileName: S.activeFile || 'Main.java' });
     if (clientResult) {
       clientResult.executionOrigin = 'local';
       handleOutput(clientResult, clientResult.duration);
@@ -18444,7 +18522,7 @@ const ExamPortal = (() => {
         // compiler as the normal workspace. Submission/grading still uses
         // the authoritative server path below, so local execution cannot
         // affect the exam verdict.
-        if ((q.language === 'c' || q.language === 'cpp') &&
+        if ((q.language === 'c' || q.language === 'cpp' || q.language === 'java') &&
             typeof ClientExecution !== 'undefined' && ClientExecution.supports(q.language)) {
           const localResults = [];
           let localRuntimeAvailable = true;
