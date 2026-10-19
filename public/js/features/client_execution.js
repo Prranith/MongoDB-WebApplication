@@ -6,10 +6,11 @@ const ClientExecution = (() => {
   const CLANG_WASM_VERSION = '0.3.0';
   const CLANG_WASM_SCRIPT = `https://cdn.jsdelivr.net/npm/@live-codes/clang-wasm@${CLANG_WASM_VERSION}/dist/clang-wasm.global.js`;
   const CLANG_WASM_ASSETS = `https://cdn.jsdelivr.net/npm/@live-codes/clang-wasm@${CLANG_WASM_VERSION}/assets/`;
-  const TEAVM_COMPILER = 'https://teavm.org/playground/compiler.wasm';
-  const TEAVM_RUNTIME = 'https://teavm.org/playground/compiler.wasm-runtime.js';
-  const TEAVM_SDK = 'https://teavm.org/playground/compile-classlib-teavm.bin';
-  const TEAVM_CLASSLIB = 'https://teavm.org/playground/runtime-classlib-teavm.bin';
+  const TEAVM_ASSET_BASE = '/assets/teavm/';
+  const TEAVM_COMPILER = `${TEAVM_ASSET_BASE}compiler.wasm`;
+  const TEAVM_RUNTIME = `${TEAVM_ASSET_BASE}compiler.wasm-runtime.js`;
+  const TEAVM_SDK = `${TEAVM_ASSET_BASE}compile-classlib-teavm.bin`;
+  const TEAVM_CLASSLIB = `${TEAVM_ASSET_BASE}runtime-classlib-teavm.bin`;
   const DEFAULT_TIMEOUT_MS = 30000;
   let worker = null;
   let sequence = 0;
@@ -91,8 +92,17 @@ const ClientExecution = (() => {
         }
         const compilerModule = await javaRuntime.load(javaCompilerWasm);
         javaCompiler = compilerModule.exports.createCompiler();
-        javaSdk = new Int8Array(await (await fetch(javaSdkUrl, { mode: 'cors', cache: 'force-cache' })).arrayBuffer());
-        javaClasslib = new Int8Array(await (await fetch(javaClasslibUrl, { mode: 'cors', cache: 'force-cache' })).arrayBuffer());
+        const fetchBinaryAsset = async (url, label) => {
+          try {
+            const response = await fetch(url, { mode: 'same-origin', cache: 'force-cache' });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return new Int8Array(await response.arrayBuffer());
+          } catch (error) {
+            throw new Error(label + ' unavailable: ' + (error && error.message || error));
+          }
+        };
+        javaSdk = await fetchBinaryAsset(javaSdkUrl, 'Java compiler library');
+        javaClasslib = await fetchBinaryAsset(javaClasslibUrl, 'Java runtime library');
         javaCompiler.setSdk(javaSdk);
         javaCompiler.setTeaVMClasslib(javaClasslib);
         return javaCompiler;
