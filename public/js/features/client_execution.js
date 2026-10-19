@@ -18,9 +18,9 @@ const ClientExecution = (() => {
   function workerSource() {
     return `
       let pyodide = null;
-      let clangWasm = null;
-      let clangBundleLoaded = false;
-      const clangCompilers = new Map();
+      let codeleafClangRuntime = null;
+      let codeleafClangBundleLoaded = false;
+      const codeleafClangCompilers = new Map();
       const base = ${JSON.stringify(PYODIDE_BASE)};
       const clangScript = ${JSON.stringify(CLANG_WASM_SCRIPT)};
       const clangAssets = ${JSON.stringify(CLANG_WASM_ASSETS)};
@@ -34,33 +34,33 @@ const ClientExecution = (() => {
       }
 
       async function clangRuntime(language) {
-        if (!clangWasm) {
+        if (!codeleafClangRuntime) {
           // Blob workers can reject a direct cross-origin importScripts call
           // even when the CDN sends permissive CORS headers. Fetching the
           // bundle first, then importing a same-worker blob, keeps the
           // compiler client-side while avoiding that browser restriction.
-          if (!clangBundleLoaded) {
+          if (!codeleafClangBundleLoaded) {
             const response = await fetch(clangScript, { mode: 'cors', cache: 'force-cache' });
             if (!response.ok) throw new Error('Clang runtime download failed (' + response.status + ')');
             const source = await response.text();
             const bundle = URL.createObjectURL(new Blob([source], { type: 'application/javascript' }));
             try {
               importScripts(bundle);
-              clangBundleLoaded = true;
+              codeleafClangBundleLoaded = true;
             } finally {
               URL.revokeObjectURL(bundle);
             }
           }
-          clangWasm = self.clangWasm;
+          codeleafClangRuntime = self.clangWasm;
         }
         const key = language === 'c' ? 'c' : 'cpp';
-        if (!clangCompilers.has(key)) {
-          clangCompilers.set(key, clangWasm.createCompiler(key, {
+        if (!codeleafClangCompilers.has(key)) {
+          codeleafClangCompilers.set(key, codeleafClangRuntime.createCompiler(key, {
             baseUrl: clangAssets,
             std: key === 'c' ? 'gnu17' : 'gnu++17'
           }));
         }
-        return clangCompilers.get(key);
+        return codeleafClangCompilers.get(key);
       }
 
       self.onmessage = async event => {
