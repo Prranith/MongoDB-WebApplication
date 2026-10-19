@@ -40,10 +40,13 @@ const ClientExecution = (() => {
       const javaSdkUrl = ${JSON.stringify(TEAVM_SDK)};
       const javaClasslibUrl = ${JSON.stringify(TEAVM_CLASSLIB)};
       const scannerShim = 'import java.io.InputStream;\\n' +
+        'import org.teavm.interop.Import;\\n' +
         'public final class Scanner {\\n' +
         '  private final InputStream input;\\n' +
         '  public Scanner(InputStream input) { this.input = input; }\\n' +
-        '  private int readChar() { try { return input.read(); } catch (Exception e) { return -1; } }\\n' +
+        '  @Import(module = "codeleafStdin", name = "read")\\n' +
+        '  private static native int readInput();\\n' +
+        '  private int readChar() { return readInput(); }\\n' +
         '  public String nextLine() { StringBuilder value = new StringBuilder(); int ch; while ((ch = readChar()) != -1 && ch != 10) { if (ch != 13) value.append((char) ch); } return value.toString(); }\\n' +
         '  public String next() { StringBuilder value = new StringBuilder(); int ch; do { ch = readChar(); } while (ch != -1 && ch <= 32); while (ch != -1 && ch > 32) { value.append((char) ch); ch = readChar(); } return value.toString(); }\\n' +
         '  public int nextInt() { return Integer.parseInt(next()); }\\n' +
@@ -163,13 +166,17 @@ const ClientExecution = (() => {
           installImports(imports) {
             imports.teavmConsole.putcharStdout = ch => { stdout += String.fromCharCode(ch); };
             imports.teavmConsole.putcharStderr = ch => { stderr += String.fromCharCode(ch); };
-            imports.teavmConsole.getcharStdin = () => {
+            const readInput = () => {
               if (!inputBuffer && inputIndex < input.length) inputBuffer = input[inputIndex++] + '\\n';
               if (!inputBuffer) return -1;
               const character = inputBuffer.charCodeAt(0);
               inputBuffer = inputBuffer.slice(1);
               return character;
             };
+            // TeaVM's standard console imports cover output, but stdin is
+            // provided here as an explicit native import for Scanner.
+            imports.codeleafStdin = { read: readInput };
+            imports.teavmConsole.getcharStdin = readInput;
           }
         });
         await module.exports.main([]);
