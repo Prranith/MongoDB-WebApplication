@@ -77,7 +77,18 @@ const ClientExecution = (() => {
 
       async function javaRuntimeReady() {
         if (javaCompiler) return javaCompiler;
-        javaRuntime = await import(javaRuntimeScript);
+        // Blob workers may reject a direct cross-origin dynamic import even
+        // when the CDN permits CORS. Fetch the ES module first and import a
+        // same-worker Blob URL instead.
+        const runtimeResponse = await fetch(javaRuntimeScript, { mode: 'cors', cache: 'force-cache' });
+        if (!runtimeResponse.ok) throw new Error('TeaVM runtime download failed (' + runtimeResponse.status + ')');
+        const runtimeSource = await runtimeResponse.text();
+        const runtimeBlob = URL.createObjectURL(new Blob([runtimeSource], { type: 'application/javascript' }));
+        try {
+          javaRuntime = await import(runtimeBlob);
+        } finally {
+          URL.revokeObjectURL(runtimeBlob);
+        }
         const compilerModule = await javaRuntime.load(javaCompilerWasm);
         javaCompiler = compilerModule.exports.createCompiler();
         javaSdk = new Int8Array(await (await fetch(javaSdkUrl, { mode: 'cors', cache: 'force-cache' })).arrayBuffer());
