@@ -1,4 +1,4 @@
-# Codexa web/API runtime dependencies.
+# CodeLeaf web/API runtime dependencies.
 # Install: pip install -r requirements.txt
 #
 # Keep desktop GUI and test dependencies in requirements-desktop.txt. Vercel

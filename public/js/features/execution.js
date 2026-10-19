@@ -307,6 +307,10 @@ async function runSqlNotebookCell(index) {
 }
 
 async function runQuery() {
+  const consoleEl = document.getElementById('console');
+  if (consoleEl && (consoleEl.style.display === 'none' || consoleEl.offsetHeight <= 10)) {
+    toggleConsole();
+  }
   const langSelect = document.getElementById('workspace-lang-select');
   const lang = langSelect ? langSelect.value : 'mongodb';
   const source = editor.getValue();
@@ -955,18 +959,19 @@ async function runPlaygroundCode(language, code, stdin) {
 
 function updateWorkspaceConsoleLayout(newLang) {
   const isMongo = newLang === 'mongodb';
+  const isInspectorFile = /\.(sql|mongo)$/i.test(String(S.activeFile || ''));
   const inspectorEl = document.getElementById('inspector');
   const btnToggleInspector = document.getElementById('btn-toggle-inspector');
-  const btnSchemaEr = document.getElementById('btn-schema-er');
+  const menuToggleInspector = document.getElementById('menu-toggle-inspector');
   
-  if (isMongo) {
+  if (isInspectorFile) {
     if (inspectorEl) inspectorEl.style.display = S.inspectorOpen ? 'flex' : 'none';
     if (btnToggleInspector) btnToggleInspector.style.display = 'flex';
-    if (btnSchemaEr) btnSchemaEr.style.display = 'flex';
+    if (menuToggleInspector) menuToggleInspector.style.display = 'flex';
   } else {
     if (inspectorEl) inspectorEl.style.display = 'none';
     if (btnToggleInspector) btnToggleInspector.style.display = 'none';
-    if (btnSchemaEr) btnSchemaEr.style.display = 'none';
+    if (menuToggleInspector) menuToggleInspector.style.display = 'none';
   }
 
   // Toggle console views

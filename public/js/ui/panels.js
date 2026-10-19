@@ -47,6 +47,7 @@ function toggleSidebar() {
 }
 
 function toggleInspector() {
+  if (!/\.(sql|mongo)$/i.test(String(S.activeFile || ''))) return;
   S.inspectorOpen = !S.inspectorOpen;
   const inspector = document.getElementById('inspector');
   if (inspector) inspector.style.display = S.inspectorOpen ? 'flex' : 'none';

@@ -714,7 +714,7 @@ function renderFileTree() {
   }
   
   // Sort: folders first, then files
-  const sorted = [...S.files].sort((a,b) => a.path.localeCompare(b.path, undefined, {numeric:true}));
+  const sorted = S.files.filter(f => !f.isDatabasePreview).sort((a,b) => a.path.localeCompare(b.path, undefined, {numeric:true}));
   
   container.innerHTML = sorted.map(f => {
     let icon = f.type === 'folder'
@@ -816,6 +816,7 @@ function openFileInTab(path) {
 
   if (editor) {
     editor.setOption('mode', cmMode);
+    editor.setOption('readOnly', Boolean(file.isDatabasePreview));
     setTimeout(() => editor.refresh(), 50);
   }
 
@@ -823,9 +824,11 @@ function openFileInTab(path) {
   // inspector behavior when the user returns to a text/code file.
   if (previewKind) setWorkspacePreviewLayout(true);
 
-  S.activeCollection = inferCollectionFromQuery(file.content) || S.activeCollection;
-  document.getElementById('sb-coll').textContent = S.activeCollection;
-  loadSchema(S.activeCollection);
+  const inferredCollection = inferCollectionFromQuery(file.content);
+  if (inferredCollection) S.activeCollection = inferredCollection;
+  const collectionLabel = document.getElementById('sb-coll');
+  if (collectionLabel) collectionLabel.textContent = S.activeCollection || 'practice_db';
+  if (S.activeCollection) loadSchema(S.activeCollection);
   
   // Update active states
   renderFileTree();
@@ -874,6 +877,10 @@ function closeTab(path, event) {
   if (tabEl) tabEl.remove();
   
   S.tabs = S.tabs.filter(t => t !== path);
+  const closedFile = S.files.find(f => f.path === path);
+  if (closedFile && closedFile.isDatabasePreview) {
+    S.files = S.files.filter(f => f.path !== path);
+  }
   
   if (S.activeFile === path) {
     if (S.tabs.length) {

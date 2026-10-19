@@ -10,6 +10,13 @@ function showView(name) {
   if (name === 'intro') {
     ide.style.display = 'none';
     intro.classList.add('active');
+    // The welcome page is a focused landing screen; keep workspace panels
+    // closed so the explorer never remains visible beside it.
+    S.sidebarOpen = false;
+    const sidebar = document.getElementById('sidebar');
+    const resizer = document.getElementById('resizer');
+    if (sidebar) sidebar.style.display = 'none';
+    if (resizer) resizer.style.display = 'none';
     if (titlebar) titlebar.style.display = 'none';
     if (statusbar) statusbar.style.display = 'none';
     

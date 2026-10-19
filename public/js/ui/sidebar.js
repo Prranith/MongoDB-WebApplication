@@ -21,6 +21,28 @@ function renderDbTree() {
     </div>
   `).join('');
   container.style.display = S.dbRootOpen ? 'block' : 'none';
+  renderInspectorCollectionSelector();
+}
+
+function renderInspectorCollectionSelector() {
+  const select = document.getElementById('insp-collection-select');
+  if (!select) return;
+  const selected = S.activeCollection || '';
+  select.innerHTML = `<option value="">Select collection</option>` + S.collections
+    .map(collection => `<option value="${esc(collection.name)}">${esc(collection.name)}${collection.isCustom ? ' · custom' : ''}</option>`)
+    .join('');
+  select.value = selected;
+}
+
+function selectInspectorCollection(name) {
+  if (!name) return;
+  const collection = S.collections.find(item => item.name === name);
+  if (!collection) return;
+  S.activeCollection = name;
+  const collectionLabel = document.getElementById('sb-coll');
+  if (collectionLabel) collectionLabel.textContent = name;
+  renderDbTree();
+  loadSchema(name);
 }
 
 function deleteCustomCollection(event, name) {
@@ -138,19 +160,96 @@ function filterCollections(q) {
 function setActiveCollection(name) {
   S.activeCollection = name;
   document.getElementById('sb-coll').textContent = name;
-  
-  if (editor) {
-    editor.setValue(`db.${name}.find({})`);
-  }
-  
+
   renderDbTree();
   loadSchema(name);
+  openCollectionPreview(name);
+}
+
+function selectDatabaseRoot() {
+  S.activeCollection = null;
+  S.dbRootOpen = true;
+  const rootArrow = document.getElementById('db-root-arrow');
+  if (rootArrow) rootArrow.textContent = '▼';
+  const collectionLabel = document.getElementById('sb-coll');
+  if (collectionLabel) collectionLabel.textContent = 'practice_db';
+  renderDbTree();
+  openDatabasePreview();
+}
+
+function openDatabasePreview() {
+  const previewPath = '.codeleaf/database/practice_db.json';
+  let previewFile = S.files.find(file => file.path === previewPath);
+  if (!previewFile) {
+    previewFile = {
+      name: 'practice_db.json',
+      path: previewPath,
+      type: 'file',
+      content: '',
+      isDatabasePreview: true,
+    };
+    S.files.push(previewFile);
+  }
+
+  previewFile.content = JSON.stringify({
+    database: 'practice_db',
+    collectionCount: S.collections.length,
+    collections: S.collections.map(collection => ({
+      name: collection.name,
+      documentCount: collection.count,
+      custom: Boolean(collection.isCustom),
+    })),
+  }, null, 2);
+
+  openFileInTab(previewPath);
+}
+
+async function openCollectionPreview(name) {
+  let documents = [];
+  const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+
+  if (Object.prototype.hasOwnProperty.call(customCollsMap, name)) {
+    documents = Array.isArray(customCollsMap[name]) ? customCollsMap[name] : [];
+  } else {
+    try {
+      const response = await fetchAPI(`/api/sample/${encodeURIComponent(name)}?limit=100`);
+      documents = Array.isArray(response.documents) ? response.documents : [];
+    } catch (error) {
+      logOutput(`[error] Could not load ${name}: ${error.message || error}`);
+      return;
+    }
+  }
+
+  if (S.activeCollection !== name) return;
+
+  const previewPath = `.codeleaf/database/${name}.json`;
+  let previewFile = S.files.find(file => file.path === previewPath);
+  if (!previewFile) {
+    previewFile = {
+      name: `${name}.json`,
+      path: previewPath,
+      type: 'file',
+      content: '',
+      isDatabasePreview: true,
+    };
+    S.files.push(previewFile);
+  }
+
+  previewFile.content = JSON.stringify({
+    database: 'practice_db',
+    collection: name,
+    documentCount: documents.length,
+    documents,
+  }, null, 2);
+
+  openFileInTab(previewPath);
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // SCHEMA INSPECTOR
 // ═══════════════════════════════════════════════════════════════════
 function loadSchema(coll) {
+  if (!coll) return;
   const collObj = S.collections.find(c => c.name === coll);
   if (collObj && collObj.isCustom) {
     const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');

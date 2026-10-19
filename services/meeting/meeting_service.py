@@ -104,7 +104,7 @@ class MeetingService:
         if cls._load(room_id):
             raise ValueError(f"Meeting room '{room_id}' already exists")
         now = _now_iso()
-        room_title = " ".join((room_title or "").split())[:120] or "Codexa Meeting"
+        room_title = " ".join((room_title or "").split())[:120] or "CodeLeaf Meeting"
         room = {
             "roomId": room_id,
             "roomTitle": room_title,
@@ -195,7 +195,7 @@ class MeetingService:
             "roomId": room_id,
             "participantName": participant_name,
             "participantCount": len(participants),
-            "roomTitle": room.get("roomTitle", "Codexa Meeting"),
+            "roomTitle": room.get("roomTitle", "CodeLeaf Meeting"),
             "hostPeerId": room.get("hostPeerId", ""),
             "isHost": room.get("hostPeerId") == peer_id,
             "isOpen": True,
@@ -354,7 +354,7 @@ class MeetingService:
             raise KeyError(f"Meeting room '{room_id}' not found")
         return {
             "roomId": room_id,
-            "roomTitle": room.get("roomTitle", "Codexa Meeting"),
+            "roomTitle": room.get("roomTitle", "CodeLeaf Meeting"),
             "participantCount": len(room.get("_activePeers", set())),
             "isOpen": room.get("isOpen", True),
             "createdAt": room.get("createdAt", ""),

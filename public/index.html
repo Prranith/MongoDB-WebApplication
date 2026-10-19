@@ -13,6 +13,8 @@
 <meta name="author" content="Prranith Swargam"/>
 <meta name="theme-color" content="#00ed64"/>
 <link rel="canonical" href="https://codexa-labs.vercel.app/"/>
+<link rel="icon" type="image/png" href="image.png"/>
+<link rel="apple-touch-icon" href="image.png"/>
 
 <!-- Open Graph / Facebook / Social Cards -->
 <meta property="og:site_name" content="CodeLeaf"/>
@@ -155,7 +157,7 @@
 <!-- ══ TITLE BAR ══════════════════════════════════════════════════════ -->
 <div id="titlebar" style="display: none;">
   <div id="win-icon">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="#73c991"><path d="M8 1C4.13 1 1 4.13 1 8c0 3.87 3.13 7 7 7s7-3.13 7-7c0-3.87-3.13-7-7-7zm0 12.5c-3.03 0-5.5-2.47-5.5-5.5S4.97 2.5 8 2.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5zm-.5-7V4h1v2.5H11v1H7.5z"/></svg>
+    <img class="app-shell-emblem" src="assets/branding/codeleaf-emblem.png?v=20261019-header" alt="CodeLeaf" />
   </div>
   <div id="win-menu">
     <div class="wmenu" onclick="toggleMenu(this)">File
@@ -184,7 +186,7 @@
         <div class="wmenu-item" onclick="setSidePanel('snippets')">Snippets Registry</div>
         <div class="wmenu-sep"></div>
         <div class="wmenu-item" onclick="toggleSidebar()">Toggle Sidebar<span>Ctrl+B</span></div>
-        <div class="wmenu-item" onclick="toggleInspector()">Toggle Inspector</div>
+        <div class="wmenu-item" id="menu-toggle-inspector" onclick="toggleInspector()">Toggle Inspector</div>
       </div>
     </div>
     <div class="wmenu" onclick="toggleMenu(this)">Run
@@ -208,7 +210,9 @@
       </div>
     </div>
   </div>
-  <div id="win-title">CodeLeaf — Polyglot IDE & Database Playground</div>
+  <div id="win-title" class="app-title-lockup" aria-label="CodeLeaf">
+    <img src="assets/branding/codeleaf-wordmark.png?v=20261019-header" alt="CodeLeaf" class="app-title-wordmark" />
+  </div>
   <div id="win-controls" style="display: flex; align-items: center; padding-right: 12px; gap: 8px; height: 100%;">
     <!-- Workspace Language Selector -->
     <div style="display:flex;align-items:center;gap:6px">
@@ -241,7 +245,7 @@
     </button>
 
     <!-- Inspector Toggle Button -->
-    <button class="tbtn tbtn-secondary" id="btn-toggle-inspector" onclick="toggleInspector()" style="padding: 2px 8px; font-size: 11px; height: 22px; border-radius: 3px; display: flex; align-items: center; gap: 4px; border: 1px solid #3c3c3c; background: transparent; color: #ccc; cursor: pointer;">
+    <button class="tbtn tbtn-secondary" id="btn-toggle-inspector" onclick="toggleInspector()" style="padding: 2px 8px; font-size: 11px; height: 22px; border-radius: 3px; display: none; align-items: center; gap: 4px; border: 1px solid #3c3c3c; background: transparent; color: #ccc; cursor: pointer;">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
       Inspector
     </button>
@@ -355,7 +359,7 @@
       </div>
 
       <div class="panel-body" id="db-tree">
-        <div class="db-root" onclick="toggleDbRoot()">
+        <div class="db-root" onclick="selectDatabaseRoot()">
           <span id="db-root-arrow">▼</span>
           <span class="tree-icon">⛁</span>
           <span style="color:#9cdcfe">practice_db</span>
@@ -412,39 +416,28 @@
       <canvas id="particle-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></canvas>
 
       <div class="intro-wrap" style="position: relative; z-index: 2; background: transparent;">
-      <h1 class="intro-title">Welcome to <span class="gradient-text">CodeLeaf</span></h1>
-        <h2 class="intro-subtitle">Interactive Cloud IDE & Polyglot Sandbox</h2>
-        <p class="intro-tagline">A premium, highly interactive environment to execute databases & code</p>
-        
-      <img class="intro-logo" id="logo-img" src="image.png" alt="CodeLeaf logo" onclick="showView('ide')"/>
-        
-        <!-- Glassmorphic Stats Counters -->
-        <div class="intro-stats-grid">
-          <div class="intro-stat-card">
-            <div class="intro-stat-icon-wrapper">
-              <span class="pulse-dot"></span>
-            </div>
-            <div class="intro-stat-value" id="stat-active">—</div>
-            <div class="intro-stat-label">Active Users</div>
-          </div>
-          <div class="intro-stat-card">
-            <div class="intro-stat-icon-wrapper">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--mongo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            </div>
-            <div class="intro-stat-value" id="stat-visited">—</div>
-            <div class="intro-stat-label">Total Visited</div>
-          </div>
+        <div class="intro-brand-lockup">
+          <img class="intro-logo" id="logo-img" src="assets/branding/codeleaf-emblem.png?v=20261019-home" alt="CodeLeaf leaf circuit emblem" onclick="showView('ide')"/>
+          <img class="intro-wordmark" src="assets/branding/codeleaf-wordmark.png?v=20261019-home" alt="CodeLeaf" />
         </div>
 
-        <button class="intro-enter" onclick="showView('ide')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-          Enter Workspace
-        </button>
+        <p class="intro-tagline">Code. Assess. Collaborate.</p>
+        <div class="intro-actions">
+          <button class="intro-enter" onclick="showView('ide')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+            Enter Workspace
+          </button>
 
-        <button class="intro-exam-btn" id="btn-exam-portal" onclick="ExamPortal.showRoleSelection()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
-          Exam Portal
-        </button>
+          <button class="intro-meet-btn" id="btn-home-meet" onclick="MeetingRoom.toggleMeeting()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"></rect><path d="m17 10 5-3v10l-5-3z"></path></svg>
+            Meet
+          </button>
+
+          <button class="intro-exam-btn" id="btn-exam-portal" onclick="ExamPortal.showRoleSelection()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+            Exam Portal
+          </button>
+        </div>
       </div>
 
       <div class="intro-footer-row" style="position: relative; z-index: 2; background: transparent; border-top: 1px solid var(--border);">
@@ -482,10 +475,13 @@
         </div>
 
         <!-- Inspector -->
-        <div id="inspector" style="display:flex;flex-direction:column">
+        <div id="inspector" style="display:none;flex-direction:column">
           <div class="insp-toolbar">
             <span class="insp-title">INSPECTOR</span>
-            <div style="margin-left:auto;display:flex;gap:6px">
+            <select id="insp-collection-select" class="insp-collection-select" aria-label="Select collection to inspect" onchange="selectInspectorCollection(this.value)">
+              <option value="">Select collection</option>
+            </select>
+            <div class="insp-tabs">
               <span class="insp-tab active" id="insp-tab-schema">Schema</span>
               <span class="insp-tab" onclick="openModal('schema-modal')">ER Details</span>
             </div>
