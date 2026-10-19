@@ -2279,6 +2279,29 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
   border-bottom-color: #ffffff;
 }
 
+.intro-support-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 14px;
+  border: 1px solid rgba(116, 224, 231, 0.28);
+  border-radius: 7px;
+  color: #a9c7b6;
+  background: rgba(9, 35, 27, 0.42);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.intro-support-link:hover {
+  color: #e8fff3;
+  border-color: rgba(116, 224, 231, 0.72);
+  background: rgba(17, 100, 99, 0.5);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SCHEMA DETAILS MODAL
 ═══════════════════════════════════════════════════════════════ */
@@ -8580,9 +8603,7 @@ li.CodeMirror-hint-active {
       </div>
 
       <div class="intro-footer-row" style="position: relative; z-index: 2; background: transparent; border-top: 1px solid var(--border);">
-        <div class="intro-dev">
-          Developed by <a href="https://www.linkedin.com/in/prranith-swargam-a620a6334/" target="_blank">Prranith Swargam</a>
-        </div>
+        <a class="intro-support-link" href="mailto:prranithorg@gmail.com?subject=CodeLeaf%20Support%20Request">Contact Support</a>
       </div>
     </div>
 
