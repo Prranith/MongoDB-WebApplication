@@ -3906,6 +3906,44 @@ const ExamPortal = (() => {
           return;
         }
 
+        // C/C++ sample runs can use the same browser-side WebAssembly
+        // compiler as the normal workspace. Submission/grading still uses
+        // the authoritative server path below, so local execution cannot
+        // affect the exam verdict.
+        if ((q.language === 'c' || q.language === 'cpp') &&
+            typeof ClientExecution !== 'undefined' && ClientExecution.supports(q.language)) {
+          const localResults = [];
+          let localRuntimeAvailable = true;
+          for (const inp of stdins) {
+            const local = await ClientExecution.run(q.language, codeToExecute, inp, { timeoutMs: 30000 });
+            if (!local) {
+              localRuntimeAvailable = false;
+              break;
+            }
+            localResults.push({
+              stdout: local.stdout || '',
+              stderr: local.stderr || '',
+              code: local.code,
+              output: local.stdout || local.stderr || ''
+            });
+          }
+
+          if (localRuntimeAvailable) {
+            el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
+            el('student-run-btn').disabled = false;
+            setExamExecutionOrigin('local', false);
+            state.student.runResults = state.student.runResults || {};
+            sampleCases.forEach((tc, i) => {
+              state.student.runResults[`${q.id}-case-${i}`] = localResults[i];
+            });
+            state.student.runResults[`${q.id}-custom`] = localResults[localResults.length - 1];
+            studentNS.initConsoleTabs();
+            const tabId = state.student.activeConsoleTab || 'case-0';
+            studentNS.selectConsoleTab(tabId);
+            return;
+          }
+        }
+
         setExamExecutionOrigin('remote');
         const res = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
           questionId: q.id,

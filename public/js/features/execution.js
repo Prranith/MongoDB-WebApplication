@@ -951,11 +951,12 @@ async function runPlaygroundCode(language, code, stdin) {
     }
   };
 
-  // Normal workspace Python runs use a dedicated Pyodide Web Worker. Exams
-  // intentionally use their server-side authoritative path in exam.js.
+  // Normal workspace Python, C and C++ runs use browser WebAssembly workers.
+  // Exams intentionally use their server-side authoritative path in exam.js.
   if (typeof ClientExecution !== 'undefined' && ClientExecution.supports(language)) {
     setExecutionOrigin('local', language, true);
-    const clientResult = await ClientExecution.run(language, code, stdin, { timeoutMs: 8000 });
+    const clientTimeout = language === 'c' || language === 'cpp' ? 30000 : 8000;
+    const clientResult = await ClientExecution.run(language, code, stdin, { timeoutMs: clientTimeout });
     if (clientResult) {
       clientResult.executionOrigin = 'local';
       handleOutput(clientResult, clientResult.duration);

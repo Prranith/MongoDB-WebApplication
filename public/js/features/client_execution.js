@@ -3,19 +3,26 @@
 const ClientExecution = (() => {
   const PYODIDE_VERSION = '0.27.7';
   const PYODIDE_BASE = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
-  const DEFAULT_TIMEOUT_MS = 8000;
+  const CLANG_WASM_VERSION = '0.3.0';
+  const CLANG_WASM_SCRIPT = `https://cdn.jsdelivr.net/npm/@live-codes/clang-wasm@${CLANG_WASM_VERSION}/dist/clang-wasm.global.js`;
+  const CLANG_WASM_ASSETS = `https://cdn.jsdelivr.net/npm/@live-codes/clang-wasm@${CLANG_WASM_VERSION}/assets/`;
+  const DEFAULT_TIMEOUT_MS = 30000;
   let worker = null;
   let sequence = 0;
   const pending = new Map();
 
   function supports(language) {
-    return String(language || '').toLowerCase() === 'python';
+    return ['python', 'c', 'cpp'].includes(String(language || '').toLowerCase());
   }
 
   function workerSource() {
     return `
       let pyodide = null;
+      let clangWasm = null;
+      const clangCompilers = new Map();
       const base = ${JSON.stringify(PYODIDE_BASE)};
+      const clangScript = ${JSON.stringify(CLANG_WASM_SCRIPT)};
+      const clangAssets = ${JSON.stringify(CLANG_WASM_ASSETS)};
 
       async function runtime() {
         if (!pyodide) {
@@ -25,9 +32,42 @@ const ClientExecution = (() => {
         return pyodide;
       }
 
+      async function clangRuntime(language) {
+        if (!clangWasm) {
+          importScripts(clangScript);
+          clangWasm = self.clangWasm;
+        }
+        const key = language === 'c' ? 'c' : 'cpp';
+        if (!clangCompilers.has(key)) {
+          clangCompilers.set(key, clangWasm.createCompiler(key, {
+            baseUrl: clangAssets,
+            std: key === 'c' ? 'gnu17' : 'gnu++17'
+          }));
+        }
+        return clangCompilers.get(key);
+      }
+
       self.onmessage = async event => {
         const request = event.data || {};
         try {
+          if (request.language === 'c' || request.language === 'cpp') {
+            const compiler = await clangRuntime(request.language);
+            const result = await compiler.run(String(request.code || ''), String(request.stdin || ''), {
+              fileName: request.language === 'c' ? 'main.c' : 'main.cpp'
+            });
+            const diagnostics = Array.isArray(result.errors) ? result.errors.join('\\n') : '';
+            const failedToCompile = result.exitCode === null || result.exitCode === undefined;
+            self.postMessage({ id: request.id, ok: true, result: {
+              status: 'ok',
+              code: failedToCompile ? 1 : result.exitCode,
+              stdout: result.stdout || '',
+              stderr: diagnostics || result.stderr || '',
+              runtime: 'clang-wasm',
+              compileMs: result.compileMs,
+              runMs: result.runMs
+            }});
+            return;
+          }
           const python = await runtime();
           const input = String(request.stdin || '').split(/\\r?\\n/);
           let inputIndex = 0;
@@ -59,7 +99,7 @@ const ClientExecution = (() => {
   function getWorker() {
     if (worker) return worker;
     const source = new Blob([workerSource()], { type: 'application/javascript' });
-    worker = new Worker(URL.createObjectURL(source), { name: 'codeleaf-python-runtime' });
+    worker = new Worker(URL.createObjectURL(source), { name: 'codeleaf-client-runtime' });
     worker.onmessage = event => {
       const message = event.data || {};
       const item = pending.get(message.id);
@@ -94,7 +134,7 @@ const ClientExecution = (() => {
           reject(new Error(`Client execution timed out after ${timeout}ms`));
         }, timeout);
         pending.set(id, { resolve, reject, timer });
-        getWorker().postMessage({ id, code, stdin });
+        getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin });
       });
       result.duration = (performance.now() - started).toFixed(2);
       return result;

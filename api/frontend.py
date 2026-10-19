@@ -11667,19 +11667,26 @@ window.clearWorkspaceSearch = clearWorkspaceSearch;
 const ClientExecution = (() => {
   const PYODIDE_VERSION = '0.27.7';
   const PYODIDE_BASE = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
-  const DEFAULT_TIMEOUT_MS = 8000;
+  const CLANG_WASM_VERSION = '0.3.0';
+  const CLANG_WASM_SCRIPT = `https://cdn.jsdelivr.net/npm/@live-codes/clang-wasm@${CLANG_WASM_VERSION}/dist/clang-wasm.global.js`;
+  const CLANG_WASM_ASSETS = `https://cdn.jsdelivr.net/npm/@live-codes/clang-wasm@${CLANG_WASM_VERSION}/assets/`;
+  const DEFAULT_TIMEOUT_MS = 30000;
   let worker = null;
   let sequence = 0;
   const pending = new Map();
 
   function supports(language) {
-    return String(language || '').toLowerCase() === 'python';
+    return ['python', 'c', 'cpp'].includes(String(language || '').toLowerCase());
   }
 
   function workerSource() {
     return `
       let pyodide = null;
+      let clangWasm = null;
+      const clangCompilers = new Map();
       const base = ${JSON.stringify(PYODIDE_BASE)};
+      const clangScript = ${JSON.stringify(CLANG_WASM_SCRIPT)};
+      const clangAssets = ${JSON.stringify(CLANG_WASM_ASSETS)};
 
       async function runtime() {
         if (!pyodide) {
@@ -11689,9 +11696,42 @@ const ClientExecution = (() => {
         return pyodide;
       }
 
+      async function clangRuntime(language) {
+        if (!clangWasm) {
+          importScripts(clangScript);
+          clangWasm = self.clangWasm;
+        }
+        const key = language === 'c' ? 'c' : 'cpp';
+        if (!clangCompilers.has(key)) {
+          clangCompilers.set(key, clangWasm.createCompiler(key, {
+            baseUrl: clangAssets,
+            std: key === 'c' ? 'gnu17' : 'gnu++17'
+          }));
+        }
+        return clangCompilers.get(key);
+      }
+
       self.onmessage = async event => {
         const request = event.data || {};
         try {
+          if (request.language === 'c' || request.language === 'cpp') {
+            const compiler = await clangRuntime(request.language);
+            const result = await compiler.run(String(request.code || ''), String(request.stdin || ''), {
+              fileName: request.language === 'c' ? 'main.c' : 'main.cpp'
+            });
+            const diagnostics = Array.isArray(result.errors) ? result.errors.join('\\\\n') : '';
+            const failedToCompile = result.exitCode === null || result.exitCode === undefined;
+            self.postMessage({ id: request.id, ok: true, result: {
+              status: 'ok',
+              code: failedToCompile ? 1 : result.exitCode,
+              stdout: result.stdout || '',
+              stderr: diagnostics || result.stderr || '',
+              runtime: 'clang-wasm',
+              compileMs: result.compileMs,
+              runMs: result.runMs
+            }});
+            return;
+          }
           const python = await runtime();
           const input = String(request.stdin || '').split(/\\\\r?\\\\n/);
           let inputIndex = 0;
@@ -11723,7 +11763,7 @@ const ClientExecution = (() => {
   function getWorker() {
     if (worker) return worker;
     const source = new Blob([workerSource()], { type: 'application/javascript' });
-    worker = new Worker(URL.createObjectURL(source), { name: 'codeleaf-python-runtime' });
+    worker = new Worker(URL.createObjectURL(source), { name: 'codeleaf-client-runtime' });
     worker.onmessage = event => {
       const message = event.data || {};
       const item = pending.get(message.id);
@@ -11758,7 +11798,7 @@ const ClientExecution = (() => {
           reject(new Error(`Client execution timed out after ${timeout}ms`));
         }, timeout);
         pending.set(id, { resolve, reject, timer });
-        getWorker().postMessage({ id, code, stdin });
+        getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin });
       });
       result.duration = (performance.now() - started).toFixed(2);
       return result;
@@ -12728,11 +12768,12 @@ async function runPlaygroundCode(language, code, stdin) {
     }
   };
 
-  // Normal workspace Python runs use a dedicated Pyodide Web Worker. Exams
-  // intentionally use their server-side authoritative path in exam.js.
+  // Normal workspace Python, C and C++ runs use browser WebAssembly workers.
+  // Exams intentionally use their server-side authoritative path in exam.js.
   if (typeof ClientExecution !== 'undefined' && ClientExecution.supports(language)) {
     setExecutionOrigin('local', language, true);
-    const clientResult = await ClientExecution.run(language, code, stdin, { timeoutMs: 8000 });
+    const clientTimeout = language === 'c' || language === 'cpp' ? 30000 : 8000;
+    const clientResult = await ClientExecution.run(language, code, stdin, { timeoutMs: clientTimeout });
     if (clientResult) {
       clientResult.executionOrigin = 'local';
       handleOutput(clientResult, clientResult.duration);
@@ -18381,6 +18422,44 @@ const ExamPortal = (() => {
             studentNS.selectConsoleTab(tabId);
           });
           return;
+        }
+
+        // C/C++ sample runs can use the same browser-side WebAssembly
+        // compiler as the normal workspace. Submission/grading still uses
+        // the authoritative server path below, so local execution cannot
+        // affect the exam verdict.
+        if ((q.language === 'c' || q.language === 'cpp') &&
+            typeof ClientExecution !== 'undefined' && ClientExecution.supports(q.language)) {
+          const localResults = [];
+          let localRuntimeAvailable = true;
+          for (const inp of stdins) {
+            const local = await ClientExecution.run(q.language, codeToExecute, inp, { timeoutMs: 30000 });
+            if (!local) {
+              localRuntimeAvailable = false;
+              break;
+            }
+            localResults.push({
+              stdout: local.stdout || '',
+              stderr: local.stderr || '',
+              code: local.code,
+              output: local.stdout || local.stderr || ''
+            });
+          }
+
+          if (localRuntimeAvailable) {
+            el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
+            el('student-run-btn').disabled = false;
+            setExamExecutionOrigin('local', false);
+            state.student.runResults = state.student.runResults || {};
+            sampleCases.forEach((tc, i) => {
+              state.student.runResults[`${q.id}-case-${i}`] = localResults[i];
+            });
+            state.student.runResults[`${q.id}-custom`] = localResults[localResults.length - 1];
+            studentNS.initConsoleTabs();
+            const tabId = state.student.activeConsoleTab || 'case-0';
+            studentNS.selectConsoleTab(tabId);
+            return;
+          }
         }
 
         setExamExecutionOrigin('remote');
