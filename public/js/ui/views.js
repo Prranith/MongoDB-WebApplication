@@ -38,10 +38,12 @@ function showView(name) {
     if (actWelcome2) actWelcome2.classList.remove('active');
     const actSide = document.getElementById(`act-${S.sidePanel}`);
     if (actSide) actSide.classList.add('active');
+
+    if (typeof updateWorkspaceEmptyState === 'function') updateWorkspaceEmptyState();
     
     setTimeout(() => {
-      editor.refresh();
-      editor.focus();
+      if (editor) editor.refresh();
+      if (S.activeFile && editor) editor.focus();
     }, 50);
   }
 }

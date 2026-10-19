@@ -295,6 +295,7 @@ function initConsoleResizer() {
 }
 
 function toggleConsole() {
+  if (!S.activeFile) return;
   const consoleEl = document.getElementById('console');
   const resizer = document.getElementById('console-resizer');
   if (!consoleEl) return;

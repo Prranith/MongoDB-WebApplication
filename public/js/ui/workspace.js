@@ -16,6 +16,75 @@ const WORKSPACE_SKIP_DIRECTORIES = new Set(['.git', 'node_modules', '.venv', 've
 // history outside the editor and restore the matching snapshot per file so
 // Ctrl/Cmd+Z can never cross a tab boundary.
 const WORKSPACE_EDITOR_HISTORIES = new Map();
+let workspaceEmptyLayoutState = null;
+
+function updateWorkspaceEmptyState() {
+  const emptyState = document.getElementById('workspace-editor-empty');
+  const idePanel = document.getElementById('ide-panel');
+  const editorWrap = editor && typeof editor.getWrapperElement === 'function' ? editor.getWrapperElement() : null;
+  const notebook = document.getElementById('sql-notebook');
+  const preview = document.getElementById('workspace-file-preview');
+  const consoleEl = document.getElementById('console');
+  const consoleResizer = document.getElementById('console-resizer');
+  const inspector = document.getElementById('inspector');
+  const consoleButton = document.getElementById('btn-toggle-console');
+  const inspectorButton = document.getElementById('btn-toggle-inspector');
+  if (!emptyState) return;
+
+  // The initial DOM is intentionally file-less. Keep this function as the
+  // single source of truth when a file is opened or its last tab is closed.
+  // This also prevents the editor/console default styles from flashing while
+  // the workspace and persisted folder handle are loading.
+
+  // Keep the empty workspace layout deterministic even when the stylesheet
+  // has a default flex display for the editor and console. The class is also
+  // present in the initial markup, so there is no flash of an empty editor
+  // while the workspace is loading.
+  if (idePanel) idePanel.classList.toggle('workspace-no-file', !S.activeFile);
+
+  if (!S.activeFile) {
+    if (!workspaceEmptyLayoutState) {
+      workspaceEmptyLayoutState = {
+        consoleDisplay: consoleEl ? consoleEl.style.display : '',
+        consoleHeight: consoleEl ? consoleEl.style.height : '',
+        resizerDisplay: consoleResizer ? consoleResizer.style.display : '',
+        inspectorDisplay: inspector ? inspector.style.display : '',
+      };
+    }
+    emptyState.hidden = false;
+    if (editorWrap) editorWrap.style.display = 'none';
+    if (notebook) notebook.style.display = 'none';
+    if (preview) preview.style.display = 'none';
+    if (consoleEl) consoleEl.style.display = 'none';
+    if (consoleResizer) consoleResizer.style.display = 'none';
+    if (inspector) inspector.style.display = 'none';
+    if (consoleButton) consoleButton.classList.remove('active');
+    if (inspectorButton) inspectorButton.classList.remove('active');
+
+    const title = document.getElementById('workspace-editor-empty-title');
+    const copy = document.getElementById('workspace-editor-empty-copy');
+    if (title) title.textContent = localWorkspaceHandle ? 'Open a workspace file' : 'Choose a workspace folder';
+    if (copy) copy.textContent = localWorkspaceHandle
+      ? 'Choose a file from Explorer to open it in the editor.'
+      : 'Open or choose a local folder to browse and edit its files.';
+    return;
+  }
+
+  emptyState.hidden = true;
+  if (editorWrap) editorWrap.style.display = '';
+  if (notebook) notebook.style.display = '';
+  if (preview) preview.style.display = '';
+  if (workspaceEmptyLayoutState) {
+    const state = workspaceEmptyLayoutState;
+    if (consoleEl) { consoleEl.style.display = state.consoleDisplay; consoleEl.style.height = state.consoleHeight; }
+    if (consoleResizer) consoleResizer.style.display = state.resizerDisplay;
+    if (inspector) inspector.style.display = state.inspectorDisplay;
+    if (consoleButton) consoleButton.classList.toggle('active', state.consoleDisplay !== 'none');
+    if (inspectorButton) inspectorButton.classList.toggle('active', state.inspectorDisplay !== 'none');
+    workspaceEmptyLayoutState = null;
+  }
+  setTimeout(() => { if (editor) editor.refresh(); }, 50);
+}
 
 function rememberWorkspaceEditorHistory() {
   if (!editor || !S.activeFile || typeof editor.getHistory !== 'function') return;
@@ -707,6 +776,7 @@ function isFileVisible(path) {
 }
 
 function renderFileTree() {
+  updateWorkspaceEmptyState();
   const container = document.getElementById('q-list');
   if (!S.files.length) {
     container.innerHTML = `<div class="workspace-empty-state"><div class="workspace-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3.5 6.5h6l2 2h9v9a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-10z"/><path d="M8 13h8M12 10v6"/></svg></div><strong>${localWorkspaceHandle ? 'Folder is empty' : 'No workspace folder selected'}</strong><span>${localWorkspaceHandle ? 'Create a file or choose another folder to get started.' : 'Open a local folder to browse and edit its files.'}</span><button type="button" onclick="chooseWorkspaceFolder(event)">${localWorkspaceHandle ? 'Change folder' : 'Choose local folder'}</button></div>`;
@@ -892,6 +962,7 @@ function closeTab(path, event) {
     }
   }
   renderFileTree();
+  updateWorkspaceEmptyState();
 }
 
 function updateActiveTabStyle() {

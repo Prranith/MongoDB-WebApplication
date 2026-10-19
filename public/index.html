@@ -448,7 +448,7 @@
     </div>
 
     <!-- IDE panel (tab bar + editor + console) -->
-    <div id="ide-panel" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div id="ide-panel" class="workspace-no-file" style="display:none;flex-direction:column;flex:1;overflow:hidden">
 
       <div id="meeting-editor-follow-banner" class="meeting-editor-follow-banner" style="display:none" role="status">
         <span class="meeting-editor-follow-dot" aria-hidden="true"></span>
@@ -472,6 +472,18 @@
           <textarea id="raw-editor">// Open a workspace file to write queries</textarea>
           <div id="sql-notebook" aria-label="SQL notebook"></div>
           <div id="workspace-file-preview" aria-live="polite"></div>
+          <div id="workspace-editor-empty" class="workspace-editor-empty" hidden>
+            <div class="workspace-editor-empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3.5 6.5h6l2 2h9v9a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-10z"/>
+                <path d="M12 11v5M9.5 13.5h5"/>
+              </svg>
+            </div>
+            <strong id="workspace-editor-empty-title">Open a workspace file</strong>
+            <span id="workspace-editor-empty-copy">Choose a local folder, then open a file from Explorer to start working.</span>
+            <button type="button" onclick="chooseWorkspaceFolder(event)">Open or choose a folder</button>
+            <small>Files you open will appear here in tabs.</small>
+          </div>
         </div>
 
         <!-- Inspector -->
@@ -516,10 +528,10 @@
       </div>
 
       <!-- Horizontal resizer for console -->
-      <div id="console-resizer" style="height: 4px; background: var(--border); cursor: ns-resize; flex-shrink: 0;"></div>
+      <div id="console-resizer" style="display:none;height: 4px; background: var(--border); cursor: ns-resize; flex-shrink: 0;"></div>
 
       <!-- Console -->
-      <div id="console">
+      <div id="console" style="display:none">
         <!-- Console Header (Row 1) -->
         <div id="console-header" style="height: 35px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; gap: 12px; flex-shrink: 0;">
           <div style="font-size: 11px; font-weight: 700; color: #bbbbbb; letter-spacing: 0.5px;">CONSOLE</div>

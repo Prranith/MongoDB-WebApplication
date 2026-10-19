@@ -6972,6 +6972,62 @@ li.CodeMirror-hint-active {
 .workspace-file-preview { display:none; position:absolute; inset:0; overflow:hidden; background:var(--bg); flex-direction:column; }
 #cm-wrap { position:relative; }
 #cm-wrap.preview-active .CodeMirror { display:none; }
+
+/* The IDE starts as a file-picker surface. Do not expose an editable
+   placeholder or an empty console until a real workspace file is open. */
+#ide-panel.workspace-no-file #cm-wrap > .CodeMirror,
+#ide-panel.workspace-no-file #sql-notebook,
+#ide-panel.workspace-no-file #workspace-file-preview,
+#ide-panel.workspace-no-file #console,
+#ide-panel.workspace-no-file #console-resizer {
+  display: none !important;
+}
+#ide-panel.workspace-no-file #workspace-editor-empty {
+  display: flex !important;
+}
+.workspace-editor-empty {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 32px 24px;
+  color: var(--text3);
+  text-align: center;
+  background: radial-gradient(circle at 50% 42%, rgba(73, 112, 88, .07), transparent 38%), var(--bg);
+}
+.workspace-editor-empty[hidden] { display: none; }
+.workspace-editor-empty-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 3px;
+  border: 1px solid rgba(134, 178, 146, .3);
+  border-radius: 13px;
+  color: #9fbea8;
+  background: linear-gradient(145deg, rgba(57, 91, 67, .3), rgba(21, 28, 23, .72));
+  box-shadow: 0 14px 35px rgba(0, 0, 0, .2);
+}
+.workspace-editor-empty-icon svg { width: 25px; height: 25px; }
+.workspace-editor-empty strong { color: var(--text); font-size: 15px; font-weight: 600; letter-spacing: .01em; }
+.workspace-editor-empty span { max-width: 390px; color: var(--text3); font-size: 12px; line-height: 1.55; }
+.workspace-editor-empty button {
+  min-height: 32px;
+  margin-top: 7px;
+  padding: 0 14px;
+  border: 1px solid rgba(116, 159, 135, .5);
+  border-radius: 5px;
+  color: #d3eadb;
+  background: rgba(44, 77, 55, .42);
+  cursor: pointer;
+  font: 600 11px 'Segoe UI', sans-serif;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+.workspace-editor-empty button:hover { border-color: #9ac7a7; background: rgba(61, 105, 75, .58); transform: translateY(-1px); }
+.workspace-editor-empty small { color: #68786d; font-size: 10px; }
 .workspace-file-preview.active { display:flex; }
 .workspace-preview-toolbar { min-height:30px; display:flex; align-items:center; gap:12px; padding:2px 10px; border-bottom:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
 .workspace-preview-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text2); font-size:11px; flex:1; }
@@ -8587,7 +8643,7 @@ li.CodeMirror-hint-active {
     </div>
 
     <!-- IDE panel (tab bar + editor + console) -->
-    <div id="ide-panel" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div id="ide-panel" class="workspace-no-file" style="display:none;flex-direction:column;flex:1;overflow:hidden">
 
       <div id="meeting-editor-follow-banner" class="meeting-editor-follow-banner" style="display:none" role="status">
         <span class="meeting-editor-follow-dot" aria-hidden="true"></span>
@@ -8611,6 +8667,18 @@ li.CodeMirror-hint-active {
           <textarea id="raw-editor">// Open a workspace file to write queries</textarea>
           <div id="sql-notebook" aria-label="SQL notebook"></div>
           <div id="workspace-file-preview" aria-live="polite"></div>
+          <div id="workspace-editor-empty" class="workspace-editor-empty" hidden>
+            <div class="workspace-editor-empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3.5 6.5h6l2 2h9v9a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-10z"/>
+                <path d="M12 11v5M9.5 13.5h5"/>
+              </svg>
+            </div>
+            <strong id="workspace-editor-empty-title">Open a workspace file</strong>
+            <span id="workspace-editor-empty-copy">Choose a local folder, then open a file from Explorer to start working.</span>
+            <button type="button" onclick="chooseWorkspaceFolder(event)">Open or choose a folder</button>
+            <small>Files you open will appear here in tabs.</small>
+          </div>
         </div>
 
         <!-- Inspector -->
@@ -8655,10 +8723,10 @@ li.CodeMirror-hint-active {
       </div>
 
       <!-- Horizontal resizer for console -->
-      <div id="console-resizer" style="height: 4px; background: var(--border); cursor: ns-resize; flex-shrink: 0;"></div>
+      <div id="console-resizer" style="display:none;height: 4px; background: var(--border); cursor: ns-resize; flex-shrink: 0;"></div>
 
       <!-- Console -->
-      <div id="console">
+      <div id="console" style="display:none">
         <!-- Console Header (Row 1) -->
         <div id="console-header" style="height: 35px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; gap: 12px; flex-shrink: 0;">
           <div style="font-size: 11px; font-weight: 700; color: #bbbbbb; letter-spacing: 0.5px;">CONSOLE</div>
@@ -9644,6 +9712,7 @@ function initConsoleResizer() {
 }
 
 function toggleConsole() {
+  if (!S.activeFile) return;
   const consoleEl = document.getElementById('console');
   const resizer = document.getElementById('console-resizer');
   if (!consoleEl) return;
@@ -10058,10 +10127,12 @@ function showView(name) {
     if (actWelcome2) actWelcome2.classList.remove('active');
     const actSide = document.getElementById(`act-${S.sidePanel}`);
     if (actSide) actSide.classList.add('active');
+
+    if (typeof updateWorkspaceEmptyState === 'function') updateWorkspaceEmptyState();
     
     setTimeout(() => {
-      editor.refresh();
-      editor.focus();
+      if (editor) editor.refresh();
+      if (S.activeFile && editor) editor.focus();
     }, 50);
   }
 }
@@ -10092,6 +10163,75 @@ const WORKSPACE_SKIP_DIRECTORIES = new Set(['.git', 'node_modules', '.venv', 've
 // history outside the editor and restore the matching snapshot per file so
 // Ctrl/Cmd+Z can never cross a tab boundary.
 const WORKSPACE_EDITOR_HISTORIES = new Map();
+let workspaceEmptyLayoutState = null;
+
+function updateWorkspaceEmptyState() {
+  const emptyState = document.getElementById('workspace-editor-empty');
+  const idePanel = document.getElementById('ide-panel');
+  const editorWrap = editor && typeof editor.getWrapperElement === 'function' ? editor.getWrapperElement() : null;
+  const notebook = document.getElementById('sql-notebook');
+  const preview = document.getElementById('workspace-file-preview');
+  const consoleEl = document.getElementById('console');
+  const consoleResizer = document.getElementById('console-resizer');
+  const inspector = document.getElementById('inspector');
+  const consoleButton = document.getElementById('btn-toggle-console');
+  const inspectorButton = document.getElementById('btn-toggle-inspector');
+  if (!emptyState) return;
+
+  // The initial DOM is intentionally file-less. Keep this function as the
+  // single source of truth when a file is opened or its last tab is closed.
+  // This also prevents the editor/console default styles from flashing while
+  // the workspace and persisted folder handle are loading.
+
+  // Keep the empty workspace layout deterministic even when the stylesheet
+  // has a default flex display for the editor and console. The class is also
+  // present in the initial markup, so there is no flash of an empty editor
+  // while the workspace is loading.
+  if (idePanel) idePanel.classList.toggle('workspace-no-file', !S.activeFile);
+
+  if (!S.activeFile) {
+    if (!workspaceEmptyLayoutState) {
+      workspaceEmptyLayoutState = {
+        consoleDisplay: consoleEl ? consoleEl.style.display : '',
+        consoleHeight: consoleEl ? consoleEl.style.height : '',
+        resizerDisplay: consoleResizer ? consoleResizer.style.display : '',
+        inspectorDisplay: inspector ? inspector.style.display : '',
+      };
+    }
+    emptyState.hidden = false;
+    if (editorWrap) editorWrap.style.display = 'none';
+    if (notebook) notebook.style.display = 'none';
+    if (preview) preview.style.display = 'none';
+    if (consoleEl) consoleEl.style.display = 'none';
+    if (consoleResizer) consoleResizer.style.display = 'none';
+    if (inspector) inspector.style.display = 'none';
+    if (consoleButton) consoleButton.classList.remove('active');
+    if (inspectorButton) inspectorButton.classList.remove('active');
+
+    const title = document.getElementById('workspace-editor-empty-title');
+    const copy = document.getElementById('workspace-editor-empty-copy');
+    if (title) title.textContent = localWorkspaceHandle ? 'Open a workspace file' : 'Choose a workspace folder';
+    if (copy) copy.textContent = localWorkspaceHandle
+      ? 'Choose a file from Explorer to open it in the editor.'
+      : 'Open or choose a local folder to browse and edit its files.';
+    return;
+  }
+
+  emptyState.hidden = true;
+  if (editorWrap) editorWrap.style.display = '';
+  if (notebook) notebook.style.display = '';
+  if (preview) preview.style.display = '';
+  if (workspaceEmptyLayoutState) {
+    const state = workspaceEmptyLayoutState;
+    if (consoleEl) { consoleEl.style.display = state.consoleDisplay; consoleEl.style.height = state.consoleHeight; }
+    if (consoleResizer) consoleResizer.style.display = state.resizerDisplay;
+    if (inspector) inspector.style.display = state.inspectorDisplay;
+    if (consoleButton) consoleButton.classList.toggle('active', state.consoleDisplay !== 'none');
+    if (inspectorButton) inspectorButton.classList.toggle('active', state.inspectorDisplay !== 'none');
+    workspaceEmptyLayoutState = null;
+  }
+  setTimeout(() => { if (editor) editor.refresh(); }, 50);
+}
 
 function rememberWorkspaceEditorHistory() {
   if (!editor || !S.activeFile || typeof editor.getHistory !== 'function') return;
@@ -10783,6 +10923,7 @@ function isFileVisible(path) {
 }
 
 function renderFileTree() {
+  updateWorkspaceEmptyState();
   const container = document.getElementById('q-list');
   if (!S.files.length) {
     container.innerHTML = `<div class="workspace-empty-state"><div class="workspace-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3.5 6.5h6l2 2h9v9a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-10z"/><path d="M8 13h8M12 10v6"/></svg></div><strong>${localWorkspaceHandle ? 'Folder is empty' : 'No workspace folder selected'}</strong><span>${localWorkspaceHandle ? 'Create a file or choose another folder to get started.' : 'Open a local folder to browse and edit its files.'}</span><button type="button" onclick="chooseWorkspaceFolder(event)">${localWorkspaceHandle ? 'Change folder' : 'Choose local folder'}</button></div>`;
@@ -10968,6 +11109,7 @@ function closeTab(path, event) {
     }
   }
   renderFileTree();
+  updateWorkspaceEmptyState();
 }
 
 function updateActiveTabStyle() {
