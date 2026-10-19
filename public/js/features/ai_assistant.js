@@ -1,4 +1,4 @@
-/* Codexa AI — normal workspace editor assistant. */
+/* CodeLeaf AI — normal workspace editor assistant. */
 const WorkspaceAIAssistant = (() => {
   let busy = false;
   let resizing = false;
@@ -106,7 +106,7 @@ const WorkspaceAIAssistant = (() => {
     window.__codexaAiCorrection = corrected || '';
     bar.hidden = !corrected;
     bar.dataset.state = 'suggested';
-    bar.querySelector('.workspace-ai-editor-suggestion-text').textContent = corrected ? 'Codexa AI prepared a change for the active editor' : '';
+    bar.querySelector('.workspace-ai-editor-suggestion-text').textContent = corrected ? 'CodeLeaf AI prepared a change for the active editor' : '';
     bar.querySelector('.workspace-ai-editor-keep').hidden = false;
     bar.querySelector('.workspace-ai-editor-undo').hidden = true;
   }

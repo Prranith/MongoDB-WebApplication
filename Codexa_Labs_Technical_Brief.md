@@ -1,14 +1,14 @@
 
 
-# Codexa Labs: Technical Architecture & Scaling Brief
+# CodeLeaf: Technical Architecture & Scaling Brief
 *Prepared for the Founder & CEO*
 
 ---
 
 ## 1. Executive Summary & Core Story
-This document outlines the technical architecture, evolution, trade-offs, and scaling roadmap of **Codexa Labs**—a multi-language coding, database assessment, and proctoring platform. 
+This document outlines the technical architecture, evolution, trade-offs, and scaling roadmap of **CodeLeaf**—a multi-language coding, database assessment, and proctoring platform.
 
-Codexa was engineered iteratively to solve real-world testing bottlenecks, starting from a localized database practice sandbox and evolving into a fully-proctored multi-language exam suite.
+CodeLeaf was engineered iteratively to solve real-world testing bottlenecks, starting from a localized database practice sandbox and evolving into a fully-proctored multi-language exam suite.
 
 ```
 +--------------------------+     +--------------------------+
@@ -26,7 +26,7 @@ Codexa was engineered iteratively to solve real-world testing bottlenecks, start
 ```
 
 ### Phase 1: The Original Problem
-Developers lacked a simple, zero-setup platform to practice MongoDB queries against custom or remote datasets. Codexa was initialized as a lightweight query practice sandbox. Users wrote JavaScript-style MongoDB queries in a browser editor, which were evaluated on the fly against an ephemeral, in-memory MongoDB interface.
+Developers lacked a simple, zero-setup platform to practice MongoDB queries against custom or remote datasets. CodeLeaf was initialized as a lightweight query practice sandbox. Users wrote JavaScript-style MongoDB queries in a browser editor, which were evaluated on the fly against an ephemeral, in-memory MongoDB interface.
 
 ### Phase 2: Transition to MongoDB Exam Portal
 The practice model was extended to support educational assessments. Mentors needed to run structured, secure examinations. The platform introduced rooms, enabling mentors to control student registration, distribute questions, and aggregate results in real time.
@@ -35,13 +35,13 @@ The practice model was extended to support educational assessments. Mentors need
 To eliminate the single-database limitation, the compiler pipeline was expanded to execute general-purpose programming languages: **C, C++, Java, and Python**. The backend integrated third-party compilation and execution engines (Piston and Paiza APIs), enabling these languages in both practice workspaces and active exam rooms.
 
 ### Phase 4: Full-Scale Assessment & Proctoring System
-Today, Codexa stands as a unified assessment portal. It combines database query evaluations, multi-language code compilation, automated test case generation, active proctoring (tab-switch tracking, clipboard isolation), real-time monitoring, and complete visual/state playbacks for post-exam auditing.
+Today, CodeLeaf stands as a unified assessment portal. It combines database query evaluations, multi-language code compilation, automated test case generation, active proctoring (tab-switch tracking, clipboard isolation), real-time monitoring, and complete visual/state playbacks for post-exam auditing.
 
 ---
 
 ## 2. Product Capabilities & Technical Workflow
 
-Codexa implements a streamlined interface for two primary user classes: **Mentors** and **Students**.
+CodeLeaf implements a streamlined interface for two primary user classes: **Mentors** and **Students**.
 
 ### Mentor Operations
 *   **Room Lifecycle:** Mentors create rooms with unique IDs (e.g., `MNG-XXX` format) stored in MongoDB Atlas. Each room acts as a distinct tenant namespace.

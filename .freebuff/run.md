@@ -1,4 +1,4 @@
-# Running the Codexa Labs dev server
+# Running the CodeLeaf dev server
 
 ## Reproduce the artifacts
 

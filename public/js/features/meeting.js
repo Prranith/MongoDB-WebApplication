@@ -13,10 +13,10 @@ const MeetingRoom = (() => {
   // ─── State ────────────────────────────────────────────────────────────
   const state = {
     roomId: "",
-    roomTitle: "Codexa Meeting",
+  roomTitle: "CodeLeaf Meeting",
     peerId: "",
     peer: null,
-    userName: "Codexa User",
+  userName: "CodeLeaf User",
     localStream: null,       // camera+audio
     screenStream: null,      // screen share
     screenCalls: {},         // peerId -> dedicated screen-share MediaConnection (no-camera fallback)
@@ -31,7 +31,7 @@ const MeetingRoom = (() => {
     editorSnapshotSignature: "",
     editorShareSeq: 0,
     editorFollowMuted: false,
-    editorScreenStream: null, // dedicated capture of the sharer's Codexa tab
+    editorScreenStream: null, // dedicated capture of the sharer's CodeLeaf tab
     editorScreenCalls: {},     // peerId -> editor presentation MediaConnection
     screenPeerId: "",          // peerId whose stream is in the screen stage
     isConnected: false,
@@ -341,9 +341,9 @@ const MeetingRoom = (() => {
     }
   }
 
-  // ─── Codexa editor sharing ───────────────────────────────────────────
+  // ─── CodeLeaf editor sharing ──────────────────────────────────────────
   // Editor sharing is intentionally data-channel based. It shares only the
-  // active Codexa editor state; it never requests browser display capture.
+  // active CodeLeaf editor state; it never requests browser display capture.
   function editorHash(value) {
     let hash = 2166136261;
     const text = String(value || "");
@@ -441,7 +441,7 @@ const MeetingRoom = (() => {
         document.body.classList.remove("meeting-editor-following");
       }
     } else if (data.type === "editor-share-request") {
-      // Editor mode now shares the real Codexa tab as a media stream. Keep
+      // Editor mode now shares the real CodeLeaf tab as a media stream. Keep
       // this message type reserved for compatibility with older clients.
     }
   }
@@ -577,8 +577,8 @@ const MeetingRoom = (() => {
     if (!snapshot || !els.editorStage) return;
     if (els.editorShareTitle) {
       els.editorShareTitle.textContent = local
-        ? "You're sharing the Codexa editor"
-        : (name || "Participant") + " is sharing the Codexa editor";
+        ? "You're sharing the CodeLeaf editor"
+        : (name || "Participant") + " is sharing the CodeLeaf editor";
     }
     if (els.editorShareMeta) {
       const path = snapshot.path || snapshot.fileName || "Untitled";
@@ -670,8 +670,8 @@ const MeetingRoom = (() => {
     if (!active) return;
     if (els.editorFollowLabel) {
       els.editorFollowLabel.textContent = remote
-        ? "Following " + (snapshot && snapshot.senderName ? snapshot.senderName : "shared Codexa workspace")
-        : "Sharing your Codexa workspace with participants";
+        ? "Following " + (snapshot && snapshot.senderName ? snapshot.senderName : "shared CodeLeaf workspace")
+        : "Sharing your CodeLeaf workspace with participants";
     }
     if (els.editorFollowFile) {
       els.editorFollowFile.textContent = snapshot && (snapshot.path || snapshot.fileName)
@@ -825,7 +825,7 @@ const MeetingRoom = (() => {
     }
     if (state.isScreenSharing) stopScreenShare();
     try {
-      toast("Choose this Codexa browser tab in the sharing dialog to share the complete workspace.", "success");
+      toast("Choose this CodeLeaf browser tab in the sharing dialog to share the complete workspace.", "success");
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           cursor: "always",
@@ -858,10 +858,10 @@ const MeetingRoom = (() => {
       Object.keys(state.participants).forEach(openEditorScreenCall);
       connectEditorPeers();
       updateControlUI();
-      toast("Complete Codexa workspace sharing started", "success");
+      toast("Complete CodeLeaf workspace sharing started", "success");
     } catch (err) {
       if (err && (err.name === "NotAllowedError" || err.name === "PermissionDeniedError")) {
-        toast("Workspace sharing was cancelled. Choose the current Codexa tab to continue.", "error");
+        toast("Workspace sharing was cancelled. Choose the current CodeLeaf tab to continue.", "error");
       } else {
         toast("Workspace sharing failed: " + ((err && err.message) || "browser capture is unavailable"), "error");
       }
@@ -1002,7 +1002,7 @@ const MeetingRoom = (() => {
   async function createMeeting() {
     if (state.joining) return;
     const name = (els.createNameInput.value || "").trim() || "Developer";
-    const roomTitle = (els.createTitleInput && els.createTitleInput.value || "").trim() || "Codexa Meeting";
+    const roomTitle = (els.createTitleInput && els.createTitleInput.value || "").trim() || "CodeLeaf Meeting";
     state.userName = name;
     state.roomTitle = roomTitle;
     state.hostToken = (window.crypto && crypto.randomUUID)
@@ -1313,7 +1313,7 @@ const MeetingRoom = (() => {
       if (els.modal) els.modal.classList.remove("active");
       els.container.style.display = "flex";
       els.roomLabel.textContent = "Room: " + state.roomId;
-      if (els.roomTitle) els.roomTitle.textContent = state.roomTitle || "Codexa Meeting";
+      if (els.roomTitle) els.roomTitle.textContent = state.roomTitle || "CodeLeaf Meeting";
       updateLocalInitials();
       updateParticipantCount();
       updateControlUI();
@@ -1340,7 +1340,7 @@ const MeetingRoom = (() => {
           return;
         }
         state.isHost = !!data.isHost;
-        state.roomTitle = data.roomTitle || state.roomTitle || "Codexa Meeting";
+        state.roomTitle = data.roomTitle || state.roomTitle || "CodeLeaf Meeting";
         if (els.roomTitle) els.roomTitle.textContent = state.roomTitle;
         if (data && data.hostPeerId && data.hostPeerId !== state.peerId) {
           connectToPeer(data.hostPeerId);
@@ -3368,7 +3368,7 @@ const MeetingRoom = (() => {
       els.container.style.display = "none";
     }
     state.meetingMinimized = false;
-    // Return to the actual Codexa welcome view instead of leaving the user
+    // Return to the actual CodeLeaf welcome view instead of leaving the user
     // behind an empty meeting layer after the overlay is dismissed.
     if (typeof window.showView === "function") window.showView("intro");
     const welcomeButton = document.getElementById("act-welcome");
@@ -3393,7 +3393,7 @@ const MeetingRoom = (() => {
     if (!state.callActive) return;
     completeMeetingExit(
       "Meeting ended by the host",
-      "The host ended this meeting for everyone. Thanks for joining Codexa Meeting."
+      "The host ended this meeting for everyone. Thanks for joining CodeLeaf Meeting."
     );
     toast("Meeting ended by " + (endedBy || "the host"), "success");
   }
@@ -3424,7 +3424,7 @@ const MeetingRoom = (() => {
         broadcastChatMessage(null, { type: "meeting-ended", endedBy: state.userName });
         completeMeetingExit(
           "Meeting ended by the host",
-          "Thanks for joining Codexa Meeting. The meeting has ended for everyone."
+      "Thanks for joining CodeLeaf Meeting. The meeting has ended for everyone."
         );
       } catch (_) {
         toast("Unable to end the meeting. Please try again.", "error");
@@ -3434,7 +3434,7 @@ const MeetingRoom = (() => {
 
     notifyMeetingLeave();
     completeMeetingExit(
-      "Thanks for joining Codexa Meeting",
+      "Thanks for joining CodeLeaf Meeting",
       "You have left the meeting. We hope to see you again soon."
     );
     toast("You left the meeting", "success");

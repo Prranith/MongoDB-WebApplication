@@ -1,5 +1,5 @@
 // Unified in-app alert surface. This keeps informational errors and notices
-// inside Codexa instead of opening browser-native alert dialogs.
+// inside CodeLeaf instead of opening browser-native alert dialogs.
 (function () {
   'use strict';
 
@@ -11,7 +11,7 @@
   function showAppAlert(text, heading) {
     const root = overlay();
     if (!root) return;
-    if (title()) title().textContent = heading || 'Codexa Labs';
+    if (title()) title().textContent = heading || 'CodeLeaf';
     if (message()) message().textContent = String(text || '');
     root.hidden = false;
     document.body.classList.add('app-alert-open');

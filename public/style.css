@@ -905,7 +905,7 @@ body {
 #tabbar::-webkit-scrollbar-track { background: transparent; }
 #tabbar::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 6px; }
 
-/* ── Codexa AI editor assistant ─────────────────────────── */
+/* ── CodeLeaf AI editor assistant ─────────────────────────── */
 #editor-inspector { position: relative; display: flex; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
 #workspace-ai-launch {
   position: absolute; top: 9px; right: 14px; z-index: 8;
@@ -968,7 +968,7 @@ body {
 @media (max-width: 900px) { #workspace-ai-panel { flex-basis:320px; width:320px; min-width:280px; } }
 @media (max-width: 700px) { #workspace-ai-panel { position:absolute; inset:0; width:auto; min-width:0; } #workspace-ai-launch span { display:none; } }
 
-/* VS Code-style Codexa AI dock */
+/* VS Code-style CodeLeaf AI dock */
 #workspace-ai-launch-toolbar {
   display: inline-grid;
   place-items: center;
@@ -7328,7 +7328,7 @@ body.meeting-active > .toast-container {
   pointer-events: auto;
 }
 
-/* Codexa editor sharing is an application-level read-only collaboration view.
+/* CodeLeaf editor sharing is an application-level read-only collaboration view.
    It deliberately does not use browser display capture, so other tabs and
    desktop content can never leak into the meeting. */
 .meeting-container.editor-share-active .meeting-video-area {
@@ -7520,7 +7520,7 @@ body.meeting-active > .toast-container {
   }
 }
 
-/* When editor sharing is active, participants use the real Codexa workspace
+/* When editor sharing is active, participants use the real CodeLeaf workspace
    instead of a second meeting-only editor surface. */
 .meeting-editor-follow-banner {
   min-height: 46px;

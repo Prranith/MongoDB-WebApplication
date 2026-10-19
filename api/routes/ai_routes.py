@@ -139,7 +139,7 @@ def editor_assist():
     auto_fill = bool(body.get("autoFill", False))
 
     if not code.strip():
-        return jsonify({"status": "error", "error": "Open a file or write code before asking Codexa AI."}), 400
+        return jsonify({"status": "error", "error": "Open a file or write code before asking CodeLeaf AI."}), 400
     if len(code) > 120000:
         return jsonify({"status": "error", "error": "This file is too large for one AI context window."}), 413
     attempts = _provider_attempts()
@@ -153,7 +153,7 @@ def editor_assist():
         '{"summary":"short explanation","suggestion":"actionable advice",'
         '"corrected_code":"full corrected file or empty string","line_notes":["line-specific note"]}'
     )
-    prompt = f"""You are Codexa AI, a careful coding assistant inside a dark professional IDE.
+    prompt = f"""You are CodeLeaf AI, a careful coding assistant inside a dark professional IDE.
 Review the complete file below. The user request is: {request_text}
 Language: {language}
 Filename: {filename}

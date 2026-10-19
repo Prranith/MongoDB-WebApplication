@@ -29,7 +29,7 @@ class NumberedCanvas(canvas.Canvas):
         if self._pageNumber > 1:
             self.setFont("Helvetica-Bold", 8)
             self.setFillColor(colors.HexColor("#0F766E"))
-            self.drawString(54, 750, "Codexa Labs: Technical Architecture & Scaling Brief")
+            self.drawString(54, 750, "CodeLeaf: Technical Architecture & Scaling Brief")
             self.setStrokeColor(colors.HexColor("#E2E8F0"))
             self.setLineWidth(0.5)
             self.line(54, 742, 558, 742)
@@ -181,7 +181,7 @@ def generate_brief():
 
     # --- PAGE 1: TITLE BLOCK & CORE STORY ---
     # Dark Title Header Block
-    title_p = Paragraph("CODEXA LABS:<br/>TECHNICAL ARCHITECTURE & SCALING BRIEF", title_style)
+    title_p = Paragraph("CODELEAF:<br/>TECHNICAL ARCHITECTURE & SCALING BRIEF", title_style)
     subtitle_p = Paragraph("Prepared for the Founder & CEO | August 2026", subtitle_style)
     title_table = Table([[title_p], [Spacer(1, 6)], [subtitle_p]], colWidths=[504])
     title_table.setStyle(TableStyle([
@@ -195,10 +195,10 @@ def generate_brief():
     story.append(Spacer(1, 15))
 
     add_h1("1. Executive Summary & Core Story")
-    add_p("Codexa Labs is a multi-language coding, database assessment, and proctoring platform. The architecture was engineered iteratively to transition from a localized query practice environment to a high-concurrency multi-tenant exam engine.")
+    add_p("CodeLeaf is a multi-language coding, database assessment, and proctoring platform. The architecture was engineered iteratively to transition from a localized query practice environment to a high-concurrency multi-tenant exam engine.")
     
     add_h2("Phase 1: The Original Problem (Query Practice)")
-    add_p("I noticed there was no lightweight, zero-setup platform allowing developers to practice MongoDB queries against custom or remote datasets. I built Codexa's initial version as a sandboxed web playground where users executed JavaScript-style MongoDB query commands directly against custom JSON schemas, evaluated in-memory on the fly.")
+    add_p("I noticed there was no lightweight, zero-setup platform allowing developers to practice MongoDB queries against custom or remote datasets. I built CodeLeaf's initial version as a sandboxed web playground where users executed JavaScript-style MongoDB query commands directly against custom JSON schemas, evaluated in-memory on the fly.")
 
     add_h2("Phase 2: Transition to MongoDB Exam Portal")
     add_p("I then extended this practice platform to accommodate educational assessments. Mentors needed to run structured, secure MongoDB examinations. We introduced room namespaces, student rosters, timers, and real-time score updates to support multi-student testing workflows.")
@@ -207,13 +207,13 @@ def generate_brief():
     add_p("I asked: 'If the platform translates and evaluates MongoDB query logic, why restrict it to databases?' I expanded the compiler pipeline to support general-purpose programming languages: C, C++, Java, and Python. We integrated external execution APIs (Piston and Paiza) to run code inside practice files and live exams.")
 
     add_h2("Phase 4: Full-Scale Assessment & Proctoring System")
-    add_p("Codexa today is a comprehensive testing portal combining database aggregations, language compilers, auto-grading, proctoring isolation (fullscreen change logging, copy-paste guards), and full-state event playback for review and auditing.")
+    add_p("CodeLeaf today is a comprehensive testing portal combining database aggregations, language compilers, auto-grading, proctoring isolation (fullscreen change logging, copy-paste guards), and full-state event playback for review and auditing.")
 
     story.append(PageBreak())
 
     # --- PAGE 2: PRODUCT CAPABILITIES & WORKFLOW ---
     add_h1("2. Product Capabilities & Technical Workflow")
-    add_p("Codexa separates operations into two distinct web spaces designed for speed, resilience, and exam security:")
+    add_p("CodeLeaf separates operations into two distinct web spaces designed for speed, resilience, and exam security:")
 
     add_h2("Mentor Workspace Operations")
     add_bullet("<b>Room Namespace:</b> Mentors generate rooms with unique IDs (e.g. <code>MNG-XXX</code> format). The rooms act as sandbox partition namespaces.")
@@ -282,7 +282,7 @@ def generate_brief():
 
     # --- PAGE 4: TECHNICAL DESIGN DECISIONS ---
     add_h1("4. Key Technical Design Decisions & Trade-Offs")
-    add_p("Every architectural element in Codexa was chosen to balance speed of delivery, cost constraints, and system reliability. Below are the five core decisions and their corresponding trade-offs:")
+    add_p("Every architectural element in CodeLeaf was chosen to balance speed of delivery, cost constraints, and system reliability. Below are the five core decisions and their corresponding trade-offs:")
 
     add_h2("1. Redis Command Facade mapped directly to MongoDB Atlas")
     add_bullet("<b>Decision:</b> Implemented a Redis command simulation layer (<code>redis_client.py</code>) converting HSET/HDEL/EXISTS commands into pymongo updates inside MongoDB Atlas.")
@@ -340,7 +340,7 @@ def generate_brief():
 
     # --- PAGE 6: NEXT ENGINEERING WORK & ROADMAP ---
     add_h1("6. Next Engineering Work & Scaling Roadmap")
-    add_p("Below is the planned engineering work required to harden Codexa for large-scale enterprise exam delivery:")
+    add_p("Below is the planned engineering work required to harden CodeLeaf for large-scale enterprise exam delivery:")
 
     add_h2("1. Multi-Device & Session Lockouts")
     add_bullet("<b>Problem:</b> Students can open multiple tabs or share workspace URLs to collaborate.")
