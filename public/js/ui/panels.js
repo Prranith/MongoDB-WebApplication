@@ -276,10 +276,12 @@ function initConsoleResizer() {
     
     if (h === 0) {
       consoleEl.style.display = 'none';
+      handle.style.display = 'none';
       const btn = document.getElementById('btn-toggle-console');
       if (btn) btn.classList.remove('active');
     } else {
       consoleEl.style.display = 'flex';
+      handle.style.display = 'block';
       const btn = document.getElementById('btn-toggle-console');
       if (btn) btn.classList.add('active');
     }
@@ -309,10 +311,12 @@ function toggleConsole() {
       S.consoleHeight = currentH;
     }
     consoleEl.style.display = 'none';
+    if (resizer) resizer.style.display = 'none';
     const btn = document.getElementById('btn-toggle-console');
     if (btn) btn.classList.remove('active');
   } else {
     consoleEl.style.display = 'flex';
+    if (resizer) resizer.style.display = 'block';
     const targetH = S.consoleHeight || 220;
     consoleEl.style.height = targetH + 'px';
     const btn = document.getElementById('btn-toggle-console');
