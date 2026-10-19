@@ -11670,7 +11670,9 @@ const ClientExecution = (() => {
   const CLANG_WASM_VERSION = '0.3.0';
   const CLANG_WASM_SCRIPT = `https://cdn.jsdelivr.net/npm/@live-codes/clang-wasm@${CLANG_WASM_VERSION}/dist/clang-wasm.global.js`;
   const CLANG_WASM_ASSETS = `https://cdn.jsdelivr.net/npm/@live-codes/clang-wasm@${CLANG_WASM_VERSION}/assets/`;
-  const TEAVM_ASSET_BASE = '/assets/teavm/';
+  // Blob workers do not have the application page as their URL base, so
+  // root-relative asset paths would fail to parse inside the worker.
+  const TEAVM_ASSET_BASE = new URL('/assets/teavm/', window.location.href).href;
   const TEAVM_COMPILER = `${TEAVM_ASSET_BASE}compiler.wasm`;
   const TEAVM_RUNTIME = `${TEAVM_ASSET_BASE}compiler.wasm-runtime.js`;
   const TEAVM_SDK = `${TEAVM_ASSET_BASE}compile-classlib-teavm.bin`;
