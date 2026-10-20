@@ -11788,6 +11788,15 @@ const ClientExecution = (() => {
       };
       const printfShim = 'public final class CodeLeafConsole {\\\\n' +
         '  private static String value(Object value) { return String.valueOf(value); }\\\\n' +
+        '  private static String fixed(double value, int precision) {\\\\n' +
+        '    long factor = 1; for (int i = 0; i < precision; i++) factor *= 10;\\\\n' +
+        '    long scaled = Math.round(value * factor); boolean negative = scaled < 0;\\\\n' +
+        '    long magnitude = negative ? -scaled : scaled; long whole = magnitude / factor;\\\\n' +
+        '    long fraction = magnitude % factor; String result = (negative ? "-" : "") + String.valueOf(whole);\\\\n' +
+        '    if (precision == 0) return result;\\\\n' +
+        '    String digits = String.valueOf(fraction); while (digits.length() < precision) digits = "0" + digits;\\\\n' +
+        '    return result + "." + digits;\\\\n' +
+        '  }\\\\n' +
         '  public static void printf(String format, Object... args) {\\\\n' +
         '    StringBuilder output = new StringBuilder(); int arg = 0;\\\\n' +
         '    for (int i = 0; i < format.length(); i++) {\\\\n' +
@@ -11799,7 +11808,7 @@ const ClientExecution = (() => {
         '      int precision = -1;\\\\n' +
         '      if (ch == 46) { precision = 0; i++; while (i < format.length() && format.charAt(i) >= 48 && format.charAt(i) <= 57) { precision = precision * 10 + format.charAt(i) - 48; i++; } if (i >= format.length()) break; ch = format.charAt(i); }\\\\n' +
         '      Object item = arg < args.length ? args[arg++] : null;\\\\n' +
-        '      if (ch == 102 && precision >= 0 && item instanceof Double) { output.append(((Double) item).doubleValue()); } else { output.append(value(item)); }\\\\n' +
+        '      if (ch == 102 && precision >= 0 && item instanceof Double) { output.append(fixed(((Double) item).doubleValue(), precision)); } else { output.append(value(item)); }\\\\n' +
         '    }\\\\n' +
         '    System.out.print(output.toString());\\\\n' +
         '  }\\\\n' +
