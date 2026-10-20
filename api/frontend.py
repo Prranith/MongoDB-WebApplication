@@ -11823,7 +11823,10 @@ const ClientExecution = (() => {
         if (!mainClasses || !mainClasses.length) {
           return { status: 'ok', code: 1, stdout: '', stderr: 'No public static void main(String[] args) method was found.', runtime: 'teavm-javac' };
         }
-        const outputName = 'codeleaf-java';
+        // TeaVM may retain an output artifact when a compiler instance is
+        // reused. A unique module name guarantees that changed stdin/source
+        // cannot execute a previous run's WebAssembly.
+        const outputName = 'codeleaf-java-' + Date.now().toString(36);
         if (!compiler.generateWebAssembly({ outputName, mainClass: mainClasses[0] })) {
           return { status: 'ok', code: 1, stdout: '', stderr: diagnostics.join('\\\\n') || 'Java WebAssembly generation failed.', runtime: 'teavm-javac' };
         }
