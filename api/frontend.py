@@ -11703,22 +11703,11 @@ const ClientExecution = (() => {
       const javaRuntimeScript = ${JSON.stringify(TEAVM_RUNTIME)};
       const javaSdkUrl = ${JSON.stringify(TEAVM_SDK)};
       const javaClasslibUrl = ${JSON.stringify(TEAVM_CLASSLIB)};
-      const importAnnotationShim = 'package org.teavm.interop;\\\\n' +
-        'import java.lang.annotation.ElementType;\\\\n' +
-        'import java.lang.annotation.Retention;\\\\n' +
-        'import java.lang.annotation.RetentionPolicy;\\\\n' +
-        'import java.lang.annotation.Target;\\\\n' +
-        '@Retention(RetentionPolicy.RUNTIME)\\\\n' +
-        '@Target(ElementType.METHOD)\\\\n' +
-        'public @interface Import { String module(); String name(); }';
       const scannerShim = 'import java.io.InputStream;\\\\n' +
-        'import org.teavm.interop.Import;\\\\n' +
         'public final class Scanner {\\\\n' +
         '  private final InputStream input;\\\\n' +
         '  public Scanner(InputStream input) { this.input = input; }\\\\n' +
-        '  @Import(module = "codeleafStdin", name = "read")\\\\n' +
-        '  private static native int readInput();\\\\n' +
-        '  private int readChar() { return readInput(); }\\\\n' +
+        '  private int readChar() { try { return input.read(); } catch (Exception e) { return -1; } }\\\\n' +
         '  public String nextLine() { StringBuilder value = new StringBuilder(); int ch; while ((ch = readChar()) != -1 && ch != 10) { if (ch != 13) value.append((char) ch); } return value.toString(); }\\\\n' +
         '  public String next() { StringBuilder value = new StringBuilder(); int ch; do { ch = readChar(); } while (ch != -1 && ch <= 32); while (ch != -1 && ch > 32) { value.append((char) ch); ch = readChar(); } return value.toString(); }\\\\n' +
         '  public int nextInt() { return Integer.parseInt(next()); }\\\\n' +
@@ -11811,7 +11800,6 @@ const ClientExecution = (() => {
           // source's default package. Remove only an explicit Scanner import;
           // wildcard imports remain harmless and existing code stays intact.
           sourceText = sourceText.replace(/^\\\\s*import\\\\s+java\\\\.util\\\\.Scanner\\\\s*;\\\\s*$/gm, '');
-          compiler.addSourceFile('org/teavm/interop/Import.java', importAnnotationShim);
           compiler.addSourceFile('Scanner.java', scannerShim);
         }
         compiler.addSourceFile(sourceName, sourceText);
@@ -11846,9 +11834,6 @@ const ClientExecution = (() => {
               inputBuffer = inputBuffer.slice(1);
               return character;
             };
-            // TeaVM's standard console imports cover output, but stdin is
-            // provided here as an explicit native import for Scanner.
-            imports.codeleafStdin = { read: readInput };
             imports.teavmConsole.getcharStdin = readInput;
           }
         });
