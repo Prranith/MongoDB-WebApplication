@@ -132,12 +132,13 @@ const ClientExecution = (() => {
         return javaCompiler;
       }
 
-      async function runJava(code, stdin, fileName) {
+      async function runJava(code, stdin, fileName, report) {
         // TeaVM can retain generated source/class state between compiler
         // invocations. Recreate only the compiler so Scanner gets the
         // current run's stdin literal; the downloaded runtime is reused.
         javaCompiler = null;
         const compiler = await javaRuntimeReady();
+        if (report) report('compiling', 'Compiling Java source…');
         if (compiler.clearSourceFiles) compiler.clearSourceFiles();
         if (compiler.clearInputClassFiles) compiler.clearInputClassFiles();
         if (compiler.clearOutputFiles) compiler.clearOutputFiles();
@@ -170,6 +171,7 @@ const ClientExecution = (() => {
         // reused. A unique module name guarantees that changed stdin/source
         // cannot execute a previous run's WebAssembly.
         const outputName = 'codeleaf-java-' + Date.now().toString(36);
+        if (report) report('generating', 'Generating WebAssembly…');
         if (!compiler.generateWebAssembly({ outputName, mainClass: mainClasses[0] })) {
           return { status: 'ok', code: 1, stdout: '', stderr: diagnostics.join('\\n') || 'Java WebAssembly generation failed.', runtime: 'teavm-javac' };
         }
@@ -179,6 +181,7 @@ const ClientExecution = (() => {
         const input = String(stdin || '').split(/\\r?\\n/);
         let inputIndex = 0;
         let inputBuffer = '';
+        if (report) report('running', 'Running Java program on this device…');
         const module = await javaRuntime.load(generated, {
           installImports(imports) {
             imports.teavmConsole.putcharStdout = ch => { stdout += String.fromCharCode(ch); };
@@ -197,17 +200,24 @@ const ClientExecution = (() => {
         return { status: 'ok', code: 0, stdout, stderr, runtime: 'teavm-javac' };
       }
 
+      function reportProgress(id, phase, detail) {
+        self.postMessage({ id, type: 'progress', progress: { phase, detail } });
+      }
+
       self.onmessage = async event => {
         const request = event.data || {};
         try {
+          reportProgress(request.id, 'loading', 'Loading ' + request.language + ' runtime…');
           if (request.language === 'c' || request.language === 'cpp') {
             // Keep each compilation isolated so a previous run cannot retain
             // its stdin or generated program state.
             codeleafClangCompilers.delete(request.language);
             const compiler = await clangRuntime(request.language);
+            reportProgress(request.id, 'compiling', 'Compiling ' + request.language.toUpperCase() + ' source…');
             const result = await compiler.run(String(request.code || ''), String(request.stdin || ''), {
               fileName: request.language === 'c' ? 'main.c' : 'main.cpp'
             });
+            reportProgress(request.id, 'completed', 'Program finished on this device.');
             const diagnostics = Array.isArray(result.errors) ? result.errors.join('\\n') : '';
             const failedToCompile = result.exitCode === null || result.exitCode === undefined;
             self.postMessage({ id: request.id, ok: true, result: {
@@ -222,11 +232,14 @@ const ClientExecution = (() => {
             return;
           }
           if (request.language === 'java') {
-            const result = await runJava(request.code, request.stdin, request.fileName);
+            const result = await runJava(request.code, request.stdin, request.fileName,
+              (phase, detail) => reportProgress(request.id, phase, detail));
+            reportProgress(request.id, 'completed', 'Program finished on this device.');
             self.postMessage({ id: request.id, ok: true, result });
             return;
           }
           const python = await runtime();
+          reportProgress(request.id, 'compiling', 'Preparing Python program…');
           const input = String(request.stdin || '').split(/\\r?\\n/);
           let inputIndex = 0;
           let stdout = '';
@@ -235,6 +248,7 @@ const ClientExecution = (() => {
           python.setStderr({ batched: value => { stderr += String(value) + '\\n'; } });
           python.setStdin({ stdin: () => inputIndex < input.length ? input[inputIndex++] : null });
           await python.runPythonAsync(String(request.code || ''));
+          reportProgress(request.id, 'completed', 'Program finished on this device.');
           self.postMessage({ id: request.id, ok: true, result: {
             status: 'ok', code: 0, stdout, stderr, runtime: 'pyodide'
           }});
@@ -262,6 +276,10 @@ const ClientExecution = (() => {
       const message = event.data || {};
       const item = pending.get(message.id);
       if (!item) return;
+      if (message.type === 'progress') {
+        if (item.onProgress) item.onProgress(message.progress || {});
+        return;
+      }
       pending.delete(message.id);
       clearTimeout(item.timer);
       if (message.ok) item.resolve(message.result);
@@ -301,7 +319,7 @@ const ClientExecution = (() => {
           destroyWorker();
           reject(new Error(`Client execution timed out after ${timeout}ms`));
         }, timeout);
-        pending.set(id, { resolve, reject, timer });
+        pending.set(id, { resolve, reject, timer, onProgress: options.onProgress });
         getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin, fileName: options.fileName || '' });
       });
       result.duration = (performance.now() - started).toFixed(2);

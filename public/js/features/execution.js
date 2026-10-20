@@ -878,20 +878,21 @@ function setExecutionOrigin(origin, language, running, detail) {
   if (outView && running) {
     outView.innerHTML = `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div class="execution-origin-content"><div class="execution-origin-heading"><strong>${label}</strong><span class="execution-origin-live">LIVE</span></div><span>${message}</span><div class="execution-progress"><span></span></div><small id="execution-progress-text">Preparing ${esc(language)} runtime…</small></div></div>`;
     const phases = isLocal
-      ? [`Preparing ${language} runtime…`, 'Loading the browser compiler…', 'Compiling your program…', 'Running on this device…']
-      : ['Connecting to a dedicated worker…', 'Submitting your program securely…', 'Compiling and running remotely…'];
-    let phaseIndex = 0;
-    executionProgressTimer = setInterval(() => {
-      phaseIndex = (phaseIndex + 1) % phases.length;
-      const phase = phases[phaseIndex];
-      const phaseEl = document.getElementById('execution-progress-text');
-      if (phaseEl) phaseEl.textContent = phase;
-      if (statEl) {
-        const live = statEl.querySelector('.execution-phase');
-        if (live) live.textContent = `· ${phase}`;
-      }
-    }, 850);
+      ? `Preparing ${language} runtime…`
+      : 'Connecting to a dedicated worker…';
+    const phaseEl = document.getElementById('execution-progress-text');
+    if (phaseEl) phaseEl.textContent = phases;
   }
+}
+
+function updateExecutionProgress(progress) {
+  const detail = progress && progress.detail ? progress.detail : '';
+  if (!detail) return;
+  const phaseEl = document.getElementById('execution-progress-text');
+  if (phaseEl) phaseEl.textContent = detail;
+  const statEl = document.getElementById('console-status');
+  const phase = statEl && statEl.querySelector('.execution-phase');
+  if (phase) phase.textContent = `· ${detail}`;
 }
 
 function executionOriginBanner(origin, fallbackNotice) {
@@ -982,7 +983,11 @@ async function runPlaygroundCode(language, code, stdin) {
   if (typeof ClientExecution !== 'undefined' && ClientExecution.supports(language)) {
     setExecutionOrigin('local', language, true);
     const clientTimeout = language === 'java' || language === 'c' || language === 'cpp' ? 60000 : 8000;
-    const clientResult = await ClientExecution.run(language, code, stdin, { timeoutMs: clientTimeout, fileName: S.activeFile || 'Main.java' });
+    const clientResult = await ClientExecution.run(language, code, stdin, {
+      timeoutMs: clientTimeout,
+      fileName: S.activeFile || 'Main.java',
+      onProgress: updateExecutionProgress
+    });
     if (clientResult) {
       if (clientResult.runtime !== 'codeleaf-browser') {
         clientResult.executionOrigin = 'local';
@@ -991,12 +996,14 @@ async function runPlaygroundCode(language, code, stdin) {
       }
       const localFailure = clientResult.stderr || 'The browser runtime could not execute this program.';
       setExecutionOrigin('remote', language, true, 'On-device runtime unavailable; switching to a dedicated worker.');
+      updateExecutionProgress({ detail: 'Submitting program to the remote worker…' });
       try {
         const start = performance.now();
         const d = await fetchAPI('/api/sandbox/run', {
           method: 'POST',
           body: JSON.stringify({ language, code, stdin, filename: S.activeFile || '' })
         });
+        updateExecutionProgress({ detail: 'Remote worker completed execution.' });
         d.executionOrigin = 'remote';
         handleOutput(d, (performance.now() - start).toFixed(2), `On-device attempt: ${localFailure}`);
         return;
