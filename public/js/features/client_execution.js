@@ -232,10 +232,24 @@ const ClientExecution = (() => {
             return;
           }
           if (request.language === 'java') {
-            const result = await runJava(request.code, request.stdin, request.fileName,
-              (phase, detail) => reportProgress(request.id, phase, detail));
-            reportProgress(request.id, 'completed', 'Program finished on this device.');
-            self.postMessage({ id: request.id, ok: true, result });
+            try {
+              const result = await runJava(request.code, request.stdin, request.fileName,
+                (phase, detail) => reportProgress(request.id, phase, detail));
+              reportProgress(request.id, 'completed', 'Program finished on this device.');
+              self.postMessage({ id: request.id, ok: true, result });
+            } catch (error) {
+              // A Java runtime exception (for example an unsupported TeaVM
+              // class-library path) means the device runtime failed. Mark it
+              // distinctly so the application can retry on the remote worker.
+              self.postMessage({ id: request.id, ok: true, result: {
+                status: 'ok',
+                code: 1,
+                stdout: '',
+                stderr: String(error && (error.message || error) || 'Java runtime failed'),
+                runtime: 'codeleaf-browser',
+                executionFailure: true
+              }});
+            }
             return;
           }
           const python = await runtime();
