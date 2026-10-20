@@ -11931,10 +11931,20 @@ const ClientExecution = (() => {
   }
 
   async function run(language, code, stdin, options = {}) {
-    if (!supports(language) || typeof Worker === 'undefined' || typeof Blob === 'undefined') return null;
+    const normalizedLanguage = String(language || '').toLowerCase();
+    if (!supports(normalizedLanguage)) return null;
     const id = ++sequence;
     const timeout = Number(options.timeoutMs || DEFAULT_TIMEOUT_MS);
     const started = performance.now();
+    if (typeof Worker === 'undefined' || typeof Blob === 'undefined') {
+      return {
+        status: 'ok',
+        code: 1,
+        stdout: '',
+        stderr: 'On-device execution is unavailable because this browser does not support Web Workers.',
+        runtime: 'codeleaf-browser'
+      };
+    }
     try {
       const result = await new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
@@ -11948,10 +11958,18 @@ const ClientExecution = (() => {
       result.duration = (performance.now() - started).toFixed(2);
       return result;
     } catch (error) {
-      // A failed browser runtime should not make the workspace unusable. The
-      // caller may safely fall back to the existing authenticated API runner.
-      console.warn('[CodeLeaf] Browser runtime unavailable:', error.message);
-      return null;
+      // Supported languages are intentionally device-only. Do not silently
+      // forward source code to the remote executor when a local runtime fails.
+      const message = error && error.message ? error.message : String(error || 'Client runtime failed');
+      console.error('[CodeLeaf] On-device runtime failed:', message);
+      return {
+        status: 'ok',
+        code: 1,
+        stdout: '',
+        stderr: `On-device ${normalizedLanguage} execution failed: ${message}`,
+        runtime: 'codeleaf-browser',
+        duration: (performance.now() - started).toFixed(2)
+      };
     }
   }
 
