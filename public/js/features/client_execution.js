@@ -40,13 +40,16 @@ const ClientExecution = (() => {
       const javaSdkUrl = ${JSON.stringify(TEAVM_SDK)};
       const javaClasslibUrl = ${JSON.stringify(TEAVM_CLASSLIB)};
       const scannerShim = stdinValue => {
-        const escapedInput = JSON.stringify(String(stdinValue || '')
+        // Build a Java string literal directly. JSON.stringify would escape
+        // the already-escaped newline a second time, making Scanner read the
+        // literal characters "\\n" instead of a line break.
+        const escapedInput = '"' + String(stdinValue || '')
           .split(String.fromCharCode(92)).join(String.fromCharCode(92, 92))
           .split(String.fromCharCode(34)).join(String.fromCharCode(92, 34))
           .split(String.fromCharCode(13)).join(String.fromCharCode(92, 114))
           .split(String.fromCharCode(10)).join(String.fromCharCode(92, 110))
           .split(String.fromCharCode(9)).join(String.fromCharCode(92, 116))
-          .split(String.fromCharCode(12)).join(String.fromCharCode(92, 102)));
+          .split(String.fromCharCode(12)).join(String.fromCharCode(92, 102)) + '"';
         return 'import java.io.InputStream;\\n' +
         'public final class Scanner {\\n' +
         '  private static final String CODELEAF_INPUT = ' + escapedInput + ';\\n' +
