@@ -11892,11 +11892,11 @@ const ClientExecution = (() => {
         });
         const sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
         let sourceText = String(code || '');
-        const usesPrintf = /System\\.out\\.printf\\s*\\(/.test(sourceText);
+        const usesPrintf = /System\\\\.out\\\\.printf\\\\s*\\\\(/.test(sourceText);
         if (usesPrintf) {
           // TeaVM's Formatter implementation is incomplete in the browser;
           // route common console formatting through a small local shim.
-          sourceText = sourceText.replace(/System\\.out\\.printf\\s*\\(/g, 'CodeLeafConsole.printf(');
+          sourceText = sourceText.replace(/System\\\\.out\\\\.printf\\\\s*\\\\(/g, 'CodeLeafConsole.printf(');
           compiler.addSourceFile('CodeLeafConsole.java', printfShim);
         }
         if (/\\\\bScanner\\\\b/.test(sourceText)) {
