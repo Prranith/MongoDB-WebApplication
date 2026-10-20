@@ -1660,24 +1660,45 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
 .execution-origin-banner {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  border: 1px solid rgba(110, 120, 130, .24);
-  border-radius: 7px;
-  background: rgba(24, 28, 31, .72);
+  gap: 9px;
+  margin: 0 0 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(110, 120, 130, .22);
+  border-radius: 6px;
+  background: rgba(24, 28, 31, .62);
   color: var(--text2);
-  font: 11px/1.45 'Segoe UI', sans-serif;
+  font: 11px/1.35 'Segoe UI', sans-serif;
+}
+
+.execution-origin-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.execution-origin-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .execution-origin-banner strong {
-  display: block;
   color: var(--text);
   font-size: 11px;
   font-weight: 600;
 }
 
-.execution-origin-banner span:last-child {
+.execution-origin-live {
+  padding: 2px 5px;
+  border: 1px solid rgba(145, 155, 165, .25);
+  border-radius: 3px;
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1;
+}
+
+.execution-origin-content > span {
   display: block;
   margin-top: 2px;
   color: var(--text3);
@@ -1707,6 +1728,46 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
 .execution-origin-remote .execution-origin-dot {
   background: #78b7ff;
   box-shadow: 0 0 0 3px rgba(120, 183, 255, .12);
+}
+
+.execution-progress {
+  height: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(120, 130, 140, .16);
+}
+
+.execution-progress span {
+  display: block;
+  width: 34%;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  color: #71e39a;
+  animation: execution-progress-slide 1.25s ease-in-out infinite;
+}
+
+.execution-origin-remote .execution-progress span {
+  color: #78b7ff;
+}
+
+.execution-origin-banner small,
+.execution-fallback-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--text3);
+  font-size: 10px;
+}
+
+.execution-fallback-note {
+  color: #d7b878;
+}
+
+@keyframes execution-progress-slide {
+  0% { transform: translateX(-115%); }
+  50% { transform: translateX(190%); }
+  100% { transform: translateX(330%); }
 }
 
 .con-badge {

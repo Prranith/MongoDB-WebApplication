@@ -1817,24 +1817,45 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
 .execution-origin-banner {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  border: 1px solid rgba(110, 120, 130, .24);
-  border-radius: 7px;
-  background: rgba(24, 28, 31, .72);
+  gap: 9px;
+  margin: 0 0 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(110, 120, 130, .22);
+  border-radius: 6px;
+  background: rgba(24, 28, 31, .62);
   color: var(--text2);
-  font: 11px/1.45 'Segoe UI', sans-serif;
+  font: 11px/1.35 'Segoe UI', sans-serif;
+}
+
+.execution-origin-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.execution-origin-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .execution-origin-banner strong {
-  display: block;
   color: var(--text);
   font-size: 11px;
   font-weight: 600;
 }
 
-.execution-origin-banner span:last-child {
+.execution-origin-live {
+  padding: 2px 5px;
+  border: 1px solid rgba(145, 155, 165, .25);
+  border-radius: 3px;
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1;
+}
+
+.execution-origin-content > span {
   display: block;
   margin-top: 2px;
   color: var(--text3);
@@ -1864,6 +1885,46 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
 .execution-origin-remote .execution-origin-dot {
   background: #78b7ff;
   box-shadow: 0 0 0 3px rgba(120, 183, 255, .12);
+}
+
+.execution-progress {
+  height: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(120, 130, 140, .16);
+}
+
+.execution-progress span {
+  display: block;
+  width: 34%;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  color: #71e39a;
+  animation: execution-progress-slide 1.25s ease-in-out infinite;
+}
+
+.execution-origin-remote .execution-progress span {
+  color: #78b7ff;
+}
+
+.execution-origin-banner small,
+.execution-fallback-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--text3);
+  font-size: 10px;
+}
+
+.execution-fallback-note {
+  color: #d7b878;
+}
+
+@keyframes execution-progress-slide {
+  0% { transform: translateX(-115%); }
+  50% { transform: translateX(190%); }
+  100% { transform: translateX(330%); }
 }
 
 .con-badge {
@@ -12845,32 +12906,57 @@ function runPythonLocally(code, stdin, onFinish) {
   );
 }
 
-function setExecutionOrigin(origin, language, running) {
+let executionProgressTimer = null;
+
+function stopExecutionProgress() {
+  if (executionProgressTimer) {
+    clearInterval(executionProgressTimer);
+    executionProgressTimer = null;
+  }
+}
+
+function setExecutionOrigin(origin, language, running, detail) {
+  stopExecutionProgress();
   const isLocal = origin === 'local';
   const label = isLocal ? 'Local execution' : 'Remote execution';
-  const message = isLocal
+  const message = detail || (isLocal
     ? 'CodeLeaf is executing this program on your device.'
-    : 'CodeLeaf is executing this program on a dedicated CodeLeaf execution worker.';
+    : 'CodeLeaf is executing this program on a dedicated CodeLeaf execution worker.');
   const statEl = document.getElementById('console-status');
   const outView = document.getElementById('output-text');
   const stateClass = isLocal ? 'execution-origin-local' : 'execution-origin-remote';
 
   if (statEl) {
-    statEl.innerHTML = `<span class="execution-origin ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>${running ? ' <span class="execution-phase">· Running…</span>' : ''}`;
+    statEl.innerHTML = `<span class="execution-origin ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>${running ? ' <span class="execution-phase">· Starting…</span>' : ''}`;
   }
   if (outView && running) {
-    outView.innerHTML = `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div><strong>${label}</strong><span>${message}</span></div></div><span class="out-info">[info] Preparing ${esc(language)} execution…</span>`;
+    outView.innerHTML = `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div class="execution-origin-content"><div class="execution-origin-heading"><strong>${label}</strong><span class="execution-origin-live">LIVE</span></div><span>${message}</span><div class="execution-progress"><span></span></div><small id="execution-progress-text">Preparing ${esc(language)} runtime…</small></div></div>`;
+    const phases = isLocal
+      ? [`Preparing ${language} runtime…`, 'Loading the browser compiler…', 'Compiling your program…', 'Running on this device…']
+      : ['Connecting to a dedicated worker…', 'Submitting your program securely…', 'Compiling and running remotely…'];
+    let phaseIndex = 0;
+    executionProgressTimer = setInterval(() => {
+      phaseIndex = (phaseIndex + 1) % phases.length;
+      const phase = phases[phaseIndex];
+      const phaseEl = document.getElementById('execution-progress-text');
+      if (phaseEl) phaseEl.textContent = phase;
+      if (statEl) {
+        const live = statEl.querySelector('.execution-phase');
+        if (live) live.textContent = `· ${phase}`;
+      }
+    }, 850);
   }
 }
 
-function executionOriginBanner(origin) {
+function executionOriginBanner(origin, fallbackNotice) {
   const isLocal = origin === 'local';
   const label = isLocal ? 'Local execution' : 'Remote execution';
   const message = isLocal
     ? 'CodeLeaf executed this program on your device.'
     : 'CodeLeaf executed this program on a dedicated CodeLeaf execution worker.';
   const stateClass = isLocal ? 'execution-origin-local' : 'execution-origin-remote';
-  return `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div><strong>${label}</strong><span>${message}</span></div></div>`;
+  const notice = fallbackNotice ? `<small class="execution-fallback-note">${esc(fallbackNotice)}</small>` : '';
+  return `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div class="execution-origin-content"><div class="execution-origin-heading"><strong>${label}</strong><span class="execution-origin-live">${isLocal ? 'DEVICE' : 'WORKER'}</span></div><span>${message}</span>${notice}</div></div>`;
 }
 
 async function runPlaygroundCode(language, code, stdin) {
@@ -12899,7 +12985,8 @@ async function runPlaygroundCode(language, code, stdin) {
     runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Stop`;
   }
 
-  const handleOutput = (d, duration) => {
+  const handleOutput = (d, duration, fallbackNotice) => {
+    stopExecutionProgress();
     if (runBtn) {
       runBtn.classList.remove('running');
       runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
@@ -12920,7 +13007,7 @@ async function runPlaygroundCode(language, code, stdin) {
       if (timeEl) timeEl.textContent = `${duration}ms`;
 
       if (outView) {
-        let outputHTML = executionOriginBanner(origin);
+        let outputHTML = executionOriginBanner(origin, fallbackNotice);
         if (stdout) {
           outputHTML += `<pre style="margin: 0; font-family: inherit; color: #d4d4d4; white-space: pre-wrap; word-break: break-all;">${esc(stdout)}</pre>`;
         }
@@ -12951,9 +13038,26 @@ async function runPlaygroundCode(language, code, stdin) {
     const clientTimeout = language === 'java' || language === 'c' || language === 'cpp' ? 60000 : 8000;
     const clientResult = await ClientExecution.run(language, code, stdin, { timeoutMs: clientTimeout, fileName: S.activeFile || 'Main.java' });
     if (clientResult) {
-      clientResult.executionOrigin = 'local';
-      handleOutput(clientResult, clientResult.duration);
-      return;
+      if (clientResult.runtime !== 'codeleaf-browser') {
+        clientResult.executionOrigin = 'local';
+        handleOutput(clientResult, clientResult.duration);
+        return;
+      }
+      const localFailure = clientResult.stderr || 'The browser runtime could not execute this program.';
+      setExecutionOrigin('remote', language, true, 'On-device runtime unavailable; switching to a dedicated worker.');
+      try {
+        const start = performance.now();
+        const d = await fetchAPI('/api/sandbox/run', {
+          method: 'POST',
+          body: JSON.stringify({ language, code, stdin, filename: S.activeFile || '' })
+        });
+        d.executionOrigin = 'remote';
+        handleOutput(d, (performance.now() - start).toFixed(2), `On-device attempt: ${localFailure}`);
+        return;
+      } catch (err) {
+        handleOutput({ status: 'ok', code: 1, stderr: `On-device attempt failed: ${localFailure}\\nRemote worker request failed: ${err.message || err}`, executionOrigin: 'remote' }, 0, localFailure);
+        return;
+      }
     }
   }
 
