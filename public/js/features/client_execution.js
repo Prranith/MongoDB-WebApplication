@@ -39,15 +39,25 @@ const ClientExecution = (() => {
       const javaRuntimeScript = ${JSON.stringify(TEAVM_RUNTIME)};
       const javaSdkUrl = ${JSON.stringify(TEAVM_SDK)};
       const javaClasslibUrl = ${JSON.stringify(TEAVM_CLASSLIB)};
-      const scannerShim = 'import java.io.InputStream;\\n' +
+      const scannerShim = stdinValue => {
+        const escapedInput = JSON.stringify(String(stdinValue || '')
+          .replace(/\\/g, '\\\\')
+          .replace(/"/g, '\\"')
+          .replace(/\r/g, '\\r')
+          .replace(/\n/g, '\\n')
+          .replace(/\t/g, '\\t')
+          .replace(/\f/g, '\\f'));
+        return 'import java.io.InputStream;\\n' +
         'public final class Scanner {\\n' +
-        '  private final InputStream input;\\n' +
-        '  public Scanner(InputStream input) { this.input = input; }\\n' +
-        '  private int readChar() { try { return input.read(); } catch (Exception e) { return -1; } }\\n' +
+        '  private static final String CODELEAF_INPUT = ' + escapedInput + ';\\n' +
+        '  private static int position = 0;\\n' +
+        '  public Scanner(InputStream input) { }\\n' +
+        '  private int readChar() { return position < CODELEAF_INPUT.length() ? CODELEAF_INPUT.charAt(position++) : -1; }\\n' +
         '  public String nextLine() { StringBuilder value = new StringBuilder(); int ch; while ((ch = readChar()) != -1 && ch != 10) { if (ch != 13) value.append((char) ch); } return value.toString(); }\\n' +
         '  public String next() { StringBuilder value = new StringBuilder(); int ch; do { ch = readChar(); } while (ch != -1 && ch <= 32); while (ch != -1 && ch > 32) { value.append((char) ch); ch = readChar(); } return value.toString(); }\\n' +
         '  public int nextInt() { return Integer.parseInt(next()); }\\n' +
         '}';
+      };
 
       async function runtime() {
         if (!pyodide) {
@@ -136,7 +146,7 @@ const ClientExecution = (() => {
           // source's default package. Remove only an explicit Scanner import;
           // wildcard imports remain harmless and existing code stays intact.
           sourceText = sourceText.replace(/^\\s*import\\s+java\\.util\\.Scanner\\s*;\\s*$/gm, '');
-          compiler.addSourceFile('Scanner.java', scannerShim);
+          compiler.addSourceFile('Scanner.java', scannerShim(stdin));
         }
         compiler.addSourceFile(sourceName, sourceText);
         const compiled = compiler.compile();
