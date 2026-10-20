@@ -11892,11 +11892,14 @@ const ClientExecution = (() => {
         });
         const sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
         let sourceText = String(code || '');
-        const usesPrintf = /System\\\\.out\\\\.printf\\\\s*\\\\(/.test(sourceText);
+        // Keep this detection regex-free: this file is embedded inside a
+        // worker template, where regex escaping can corrupt the worker code.
+        const usesPrintf = sourceText.indexOf('System.out.printf') !== -1;
         if (usesPrintf) {
           // TeaVM's Formatter implementation is incomplete in the browser;
           // route common console formatting through a small local shim.
-          sourceText = sourceText.replace(/System\\\\.out\\\\.printf\\\\s*\\\\(/g, 'CodeLeafConsole.printf(');
+          sourceText = sourceText.split('System.out.printf(').join('CodeLeafConsole.printf(');
+          sourceText = sourceText.split('System.out.printf (').join('CodeLeafConsole.printf(');
           compiler.addSourceFile('CodeLeafConsole.java', printfShim);
         }
         if (/\\\\bScanner\\\\b/.test(sourceText)) {
