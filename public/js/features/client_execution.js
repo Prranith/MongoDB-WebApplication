@@ -61,6 +61,24 @@ const ClientExecution = (() => {
         '  public int nextInt() { return Integer.parseInt(next()); }\\n' +
         '}';
       };
+      const printfShim = 'public final class CodeLeafConsole {\\n' +
+        '  private static String value(Object value) { return String.valueOf(value); }\\n' +
+        '  public static void printf(String format, Object... args) {\\n' +
+        '    StringBuilder output = new StringBuilder(); int arg = 0;\\n' +
+        '    for (int i = 0; i < format.length(); i++) {\\n' +
+        '      char ch = format.charAt(i);\\n' +
+        '      if (ch != 37 || i + 1 >= format.length()) { output.append(ch); continue; }\\n' +
+        '      i++; ch = format.charAt(i);\\n' +
+        '      if (ch == 37) { output.append(37); continue; }\\n' +
+        '      if (ch == 110) { output.append((char) 10); continue; }\\n' +
+        '      int precision = -1;\\n' +
+        '      if (ch == 46) { precision = 0; i++; while (i < format.length() && format.charAt(i) >= 48 && format.charAt(i) <= 57) { precision = precision * 10 + format.charAt(i) - 48; i++; } if (i >= format.length()) break; ch = format.charAt(i); }\\n' +
+        '      Object item = arg < args.length ? args[arg++] : null;\\n' +
+        '      if (ch == 102 && precision >= 0 && item instanceof Double) { output.append(((Double) item).doubleValue()); } else { output.append(value(item)); }\\n' +
+        '    }\\n' +
+        '    System.out.print(output.toString());\\n' +
+        '  }\\n' +
+        '}';
 
       async function runtime() {
         if (!pyodide) {
@@ -149,6 +167,13 @@ const ClientExecution = (() => {
         });
         const sourceName = String(fileName || 'Main.java').split(/[\\/]/).pop() || 'Main.java';
         let sourceText = String(code || '');
+        const usesPrintf = /System\.out\.printf\s*\(/.test(sourceText);
+        if (usesPrintf) {
+          // TeaVM's Formatter implementation is incomplete in the browser;
+          // route common console formatting through a small local shim.
+          sourceText = sourceText.replace(/System\.out\.printf\s*\(/g, 'CodeLeafConsole.printf(');
+          compiler.addSourceFile('CodeLeafConsole.java', printfShim);
+        }
         if (/\\bScanner\\b/.test(sourceText)) {
           // TeaVM cannot add classes to java.base, so provide Scanner in the
           // source's default package. Remove only an explicit Scanner import;
