@@ -11794,6 +11794,10 @@ const ClientExecution = (() => {
       }
 
       async function runJava(code, stdin, fileName) {
+        // TeaVM can retain generated source/class state between compiler
+        // invocations. Recreate only the compiler so Scanner gets the
+        // current run's stdin literal; the downloaded runtime is reused.
+        javaCompiler = null;
         const compiler = await javaRuntimeReady();
         if (compiler.clearSourceFiles) compiler.clearSourceFiles();
         if (compiler.clearInputClassFiles) compiler.clearInputClassFiles();
@@ -11858,6 +11862,9 @@ const ClientExecution = (() => {
         const request = event.data || {};
         try {
           if (request.language === 'c' || request.language === 'cpp') {
+            // Keep each compilation isolated so a previous run cannot retain
+            // its stdin or generated program state.
+            codeleafClangCompilers.delete(request.language);
             const compiler = await clangRuntime(request.language);
             const result = await compiler.run(String(request.code || ''), String(request.stdin || ''), {
               fileName: request.language === 'c' ? 'main.c' : 'main.cpp'
