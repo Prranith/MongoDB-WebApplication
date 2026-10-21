@@ -1151,26 +1151,6 @@ body {
 @media (max-width: 900px) { #workspace-ai-panel { flex-basis:320px; width:320px; min-width:280px; } }
 @media (max-width: 700px) { #workspace-ai-panel { position:absolute; inset:0; width:auto; min-width:0; } #workspace-ai-launch span { display:none; } }
 
-/* VS Code-style CodeLeaf AI dock */
-#workspace-ai-launch-toolbar {
-  display: inline-grid;
-  place-items: center;
-  width: 26px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid #3c3c3c;
-  border-radius: 3px;
-  background: #252526;
-  color: #c5c5c5;
-  cursor: pointer;
-}
-#workspace-ai-launch-toolbar:hover,
-#workspace-ai-launch-toolbar[aria-expanded="true"] {
-  border-color: #3794ff;
-  background: #2a2d2e;
-  color: #fff;
-}
-#workspace-ai-launch-toolbar svg { width: 14px; height: 14px; fill: #75beff; }
 #workspace-ai-legacy-launch { display: none !important; }
 #workspace-ai-panel {
   flex-basis: 354px;
@@ -8492,14 +8472,23 @@ li.CodeMirror-hint-active {
 .auth-message { min-height:18px; margin:13px 0 0; color:#98b1a0; text-align:center; font-size:12px; }
 .auth-message.error { color:#ff8f82; }
 .auth-name-field[hidden] { display:none !important; }
-.auth-account-button { display:inline-flex; align-items:center; gap:7px; min-width:150px; max-width:230px; min-height:30px; padding:3px 8px 3px 5px; border:1px solid rgba(0,237,100,.24); border-radius:7px; background:linear-gradient(180deg,rgba(22,42,30,.96),rgba(14,27,20,.96)); color:#d9e9dd; cursor:pointer; font:500 11px 'Segoe UI',sans-serif; text-align:left; box-shadow:inset 0 1px rgba(255,255,255,.05),0 2px 8px rgba(0,0,0,.18); transition:border-color .15s,background .15s,transform .15s; }
+.auth-account-button { display:inline-flex; align-items:center; gap:6px; min-width:138px; max-width:210px; min-height:26px; padding:2px 7px 2px 4px; border:1px solid rgba(0,237,100,.24); border-radius:6px; background:linear-gradient(180deg,rgba(22,42,30,.96),rgba(14,27,20,.96)); color:#d9e9dd; cursor:pointer; font:500 10px 'Segoe UI',sans-serif; text-align:left; box-shadow:inset 0 1px rgba(255,255,255,.05),0 2px 8px rgba(0,0,0,.18); transition:border-color .15s,background .15s,transform .15s; }
 .auth-account-button:hover { border-color:#00ed64; background:linear-gradient(180deg,rgba(29,59,39,.98),rgba(15,34,23,.98)); transform:translateY(-1px); }
-.auth-account-avatar { display:grid; place-items:center; flex:0 0 22px; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#00ed64,#08783d); color:#03140a; font-size:11px; font-weight:800; }
+.auth-account-avatar { display:grid; place-items:center; flex:0 0 20px; width:20px; height:20px; border-radius:50%; background:linear-gradient(135deg,#00ed64,#08783d); color:#03140a; font-size:10px; font-weight:800; }
 .auth-account-copy { display:grid; min-width:0; gap:1px; line-height:1.15; }
 .auth-account-name,.auth-account-action { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .auth-account-name { color:#eef8f0; font-weight:600; }
 .auth-account-action { color:#91aa99; font-size:10px; }
 .auth-account-chevron { margin-left:auto; color:#8fa394; font-size:15px; line-height:1; }
+.workspace-ai-floating-launch { position:fixed; right:20px; bottom:20px; z-index:4200; display:inline-flex; align-items:center; gap:9px; min-width:174px; padding:8px 12px 8px 8px; border:1px solid rgba(0,237,100,.42); border-radius:13px; background:linear-gradient(135deg,rgba(8,57,34,.98),rgba(7,32,23,.98)); color:#effff3; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,.38),0 0 24px rgba(0,237,100,.12),inset 0 1px rgba(255,255,255,.1); text-align:left; transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+.workspace-ai-floating-launch:hover { transform:translateY(-3px); border-color:#00ed64; box-shadow:0 14px 34px rgba(0,0,0,.45),0 0 30px rgba(0,237,100,.24),inset 0 1px rgba(255,255,255,.12); }
+.workspace-ai-floating-launch[aria-expanded="true"] { border-color:#00ed64; background:linear-gradient(135deg,rgba(12,94,51,.98),rgba(7,43,27,.98)); }
+.workspace-ai-floating-icon { display:grid; place-items:center; width:29px; height:29px; flex:none; border-radius:9px; background:linear-gradient(135deg,#00ed64,#6dffab); color:#06311b; box-shadow:0 0 14px rgba(0,237,100,.32); }
+.workspace-ai-floating-icon svg { width:17px; height:17px; fill:currentColor; }
+.workspace-ai-floating-label { display:grid; gap:2px; min-width:0; }
+.workspace-ai-floating-label strong { font-size:11px; letter-spacing:.02em; }
+.workspace-ai-floating-label small { color:#a4cbb0; font-size:9px; }
+@media (max-width:600px) { .workspace-ai-floating-launch { right:12px; bottom:12px; min-width:0; padding-right:9px; } .workspace-ai-floating-label small { display:none; } }
 
 </style>
 </head>
@@ -8565,19 +8554,6 @@ li.CodeMirror-hint-active {
     <img src="assets/branding/codeleaf-wordmark.png?v=20261019-header" alt="CodeLeaf" class="app-title-wordmark" />
   </div>
   <div id="win-controls" style="display: flex; align-items: center; padding-right: 12px; gap: 8px; height: 100%;">
-    <!-- Workspace Language Selector -->
-    <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:11px;color:var(--text3);font-family:sans-serif">Language:</span>
-      <select id="workspace-lang-select" onchange="changeWorkspaceLanguage(this.value)" style="background:#252526;color:#ccc;border:1px solid #3c3c3c;border-radius:3px;padding:2px 6px;font-size:11px;outline:none;cursor:pointer;height:22px">
-        <option value="mongodb">MongoDB / JS</option>
-        <option value="sql">SQL (Relational)</option>
-        <option value="python">Python 3</option>
-        <option value="cpp">C++</option>
-        <option value="c">C</option>
-        <option value="java">Java</option>
-      </select>
-    </div>
-
     <!-- Run Button -->
     <button class="tbtn tbtn-run" onclick="runQuery()" style="padding: 2px 8px; font-size: 11px; height: 22px; border-radius: 3px; display: flex; align-items: center; gap: 4px; border: none; cursor: pointer; background: #3a7d0a; color: white; font-weight: 600;">
       <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
@@ -8588,11 +8564,6 @@ li.CodeMirror-hint-active {
     <button class="tbtn tbtn-secondary active" id="btn-toggle-console" onclick="toggleConsole()" style="padding: 2px 8px; font-size: 11px; height: 22px; border-radius: 3px; display: flex; align-items: center; gap: 4px; border: 1px solid #3c3c3c; background: #252526; color: #ccc; cursor: pointer;">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="15" x2="21" y2="15"></line></svg>
       Console
-    </button>
-
-<!-- CodeLeaf AI Toggle -->
-    <button id="workspace-ai-launch-toolbar" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open CodeLeaf AI assistant" aria-label="Open CodeLeaf AI assistant" aria-expanded="false">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14 8l5.2 2-5.2 2-2 5.2-2-5.2-5.2-2L10 8l2-5.2Zm7.2 12.7.9 2.4 2.4.9-2.4.9-.9 2.4-2.4-.9 2.4-.9 2.4-.9Z"/></svg>
     </button>
 
     <!-- Inspector Toggle Button -->
@@ -8607,6 +8578,11 @@ li.CodeMirror-hint-active {
     </button>
   </div>
 </div>
+
+<button id="workspace-ai-launch-floating" class="workspace-ai-floating-launch" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open CodeLeaf AI assistant" aria-label="Open CodeLeaf AI assistant" aria-expanded="false">
+  <span class="workspace-ai-floating-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.7 14 8l5.3 2-5.3 2-2 5.3-2-5.3-5.3-2L10 8l2-5.3Zm7.2 13.1.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"/></svg></span>
+  <span class="workspace-ai-floating-label"><strong>CodeLeaf AI</strong><small>Ask about your code</small></span>
+</button>
 
 <!-- ══ SHELL ══════════════════════════════════════════════════════════ -->
 <div id="shell">
@@ -11339,11 +11315,6 @@ function openFileInTab(path) {
     lang = 'sql'; cmMode = 'text/x-sql'; langIndicator = 'SQL';
   }
   
-  const langSelect = document.getElementById('workspace-lang-select');
-  if (langSelect) {
-    langSelect.value = lang;
-  }
-  
   const langIndicatorEl = document.getElementById('sb-lang-indicator');
   if (langIndicatorEl) {
     langIndicatorEl.textContent = langIndicator;
@@ -12632,8 +12603,7 @@ async function runQuery() {
   if (consoleEl && (consoleEl.style.display === 'none' || consoleEl.offsetHeight <= 10)) {
     toggleConsole();
   }
-  const langSelect = document.getElementById('workspace-lang-select');
-  const lang = langSelect ? langSelect.value : 'mongodb';
+  const lang = getWorkspaceLanguage();
   const source = editor.getValue();
   const looksLikeSql = /^\\s*(?:(?:--[^\\r\\n]*(?:\\r?\\n|$))|(?:\\/\\*[\\s\\S]*?\\*\\/\\s*))*\\s*(?:select|with)\\b/i.test(source);
   // Treat an obvious SQL statement as SQL even if an older saved workspace
@@ -12941,8 +12911,7 @@ function logOutput(html) {
 
 function setConTab(tab) {
   S.conTab = tab;
-  const langSelect = document.getElementById('workspace-lang-select');
-  const lang = langSelect ? langSelect.value : 'mongodb';
+  const lang = getWorkspaceLanguage();
   const isMongo = lang === 'mongodb';
 
   ['output', 'logs', 'stdin'].forEach(function(t) {
@@ -13405,47 +13374,6 @@ function updateWorkspaceConsoleLayout(newLang) {
 // Make it globally accessible
 window.updateWorkspaceConsoleLayout = updateWorkspaceConsoleLayout;
 
-function changeWorkspaceLanguage(newLang) {
-  updateWorkspaceConsoleLayout(newLang);
-
-  let cmMode = 'javascript';
-  let placeholder = '// Write your MongoDB query here\\ndb.collection.find({})';
-  let langIndicator = 'Mongo Shell';
-  
-  if (newLang === 'python') {
-    cmMode = 'python';
-    placeholder = '# Write your Python 3 code here\\nprint("Hello World")\\n';
-    langIndicator = 'Python 3';
-  } else if (newLang === 'cpp') {
-    cmMode = 'text/x-c++src';
-    placeholder = '#include <iostream>\\nusing namespace std;\\n\\nint main() {\\n    cout << "Hello World" << endl;\\n    return 0;\\n}\\n';
-    langIndicator = 'C++';
-  } else if (newLang === 'c') {
-    cmMode = 'text/x-c++src';
-    placeholder = '#include <stdio.h>\\n\\nint main() {\\n    printf("Hello World\\\\n");\\n    return 0;\\n}\\n';
-    langIndicator = 'C';
-  } else if (newLang === 'java') {
-    cmMode = 'text/x-java';
-    placeholder = 'public class Solution {\\n    public static void main(String[] args) {\\n        System.out.println("Hello World");\\n    }\\n}\\n';
-    langIndicator = 'Java';
-  } else if (newLang === 'sql') {
-    cmMode = 'text/x-sql';
-    placeholder = '-- Safe in-memory SQL sandbox\\nCREATE TABLE users (id INTEGER, name TEXT);\\nINSERT INTO users VALUES (1, \\'Alice\\');\\nSELECT * FROM users;\\n';
-    langIndicator = 'SQL';
-  }
-  
-  const langIndicatorEl = document.getElementById('sb-lang-indicator');
-  if (langIndicatorEl) {
-    langIndicatorEl.textContent = langIndicator;
-  }
-
-  if (editor) {
-    editor.setOption('mode', cmMode);
-    editor.setValue(placeholder);
-    setTimeout(() => editor.refresh(), 50);
-  }
-}
-
 </script>
 <script>
 // ═══════════════════════════════════════════════════════════════════
@@ -13609,6 +13537,18 @@ function setupMongoIntelliSense() {
 </script>
 <script>
 // ═══════════════════════════════════════════════════════════════════
+// The active file is the single source of truth for workspace language.
+// There is intentionally no manual language selector in the toolbar.
+function getWorkspaceLanguage() {
+  const path = String(window.S?.activeFile || '').toLowerCase();
+  if (path.endsWith('.py')) return 'python';
+  if (path.endsWith('.cpp') || path.endsWith('.cc') || path.endsWith('.cxx')) return 'cpp';
+  if (path.endsWith('.c')) return 'c';
+  if (path.endsWith('.java')) return 'java';
+  if (path.endsWith('.sql')) return 'sql';
+  return 'mongodb';
+}
+
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
@@ -13649,14 +13589,11 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   editor.setSize('100%', '100%');
   initializeCodexaFolding(editor);
-  attachCodexaKeywordHints(editor, () => {
-    const select = document.getElementById('workspace-lang-select');
-    return select ? select.value : 'mongodb';
-  });
+  attachCodexaKeywordHints(editor, getWorkspaceLanguage);
 
   // Trigger IntelliSense autocompletion as user types
   editor.on('inputRead', (cm, change) => {
-    const lang = document.getElementById('workspace-lang-select')?.value || 'mongodb';
+    const lang = getWorkspaceLanguage();
     if (lang !== 'mongodb') return;
     if (change.text[0] === '.' || change.text[0] === '$' || (change.text[0].length === 1 && change.text[0].match(/[a-zA-Z]/))) {
       cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false });
@@ -13938,7 +13875,7 @@ const WorkspaceAIAssistant = (() => {
   function panel() { return byId('workspace-ai-panel'); }
   function resizer() { return byId('workspace-ai-resizer'); }
   function launchButtons() {
-    return [byId('workspace-ai-launch-toolbar'), byId('workspace-ai-launch')].filter(Boolean);
+    return [byId('workspace-ai-launch-floating'), byId('workspace-ai-launch')].filter(Boolean);
   }
 
   function syncContext() {
@@ -14063,7 +14000,7 @@ const WorkspaceAIAssistant = (() => {
   }
 
   function language() {
-    return byId('workspace-lang-select')?.value || 'mongodb';
+    return typeof getWorkspaceLanguage === 'function' ? getWorkspaceLanguage() : 'mongodb';
   }
 
   function renderResult(data, requestText) {
@@ -21147,8 +21084,7 @@ const MeetingRoom = (() => {
       }
     } catch (_) {}
 
-    const languageEl = document.getElementById("workspace-lang-select");
-    const language = languageEl ? languageEl.value : "mongodb";
+    const language = typeof getWorkspaceLanguage === "function" ? getWorkspaceLanguage() : "mongodb";
     let cursor = { line: 0, ch: 0 };
     let scroll = { top: 0, left: 0 };
     try {
@@ -21471,8 +21407,6 @@ const MeetingRoom = (() => {
     if (!remote || !snapshot || typeof editor === "undefined" || !editor) return;
     try {
       window.__codexaEditorShareApplying = true;
-      const languageEl = document.getElementById("workspace-lang-select");
-      if (languageEl) languageEl.value = snapshot.language || "mongodb";
       editor.setOption("mode", sharedLanguageMode(snapshot.language));
       editor.setOption("readOnly", true);
       editor.setValue(snapshot.content || "");

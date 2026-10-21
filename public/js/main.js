@@ -1,4 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
+// The active file is the single source of truth for workspace language.
+// There is intentionally no manual language selector in the toolbar.
+function getWorkspaceLanguage() {
+  const path = String(window.S?.activeFile || '').toLowerCase();
+  if (path.endsWith('.py')) return 'python';
+  if (path.endsWith('.cpp') || path.endsWith('.cc') || path.endsWith('.cxx')) return 'cpp';
+  if (path.endsWith('.c')) return 'c';
+  if (path.endsWith('.java')) return 'java';
+  if (path.endsWith('.sql')) return 'sql';
+  return 'mongodb';
+}
+
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
@@ -39,14 +51,11 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   editor.setSize('100%', '100%');
   initializeCodexaFolding(editor);
-  attachCodexaKeywordHints(editor, () => {
-    const select = document.getElementById('workspace-lang-select');
-    return select ? select.value : 'mongodb';
-  });
+  attachCodexaKeywordHints(editor, getWorkspaceLanguage);
 
   // Trigger IntelliSense autocompletion as user types
   editor.on('inputRead', (cm, change) => {
-    const lang = document.getElementById('workspace-lang-select')?.value || 'mongodb';
+    const lang = getWorkspaceLanguage();
     if (lang !== 'mongodb') return;
     if (change.text[0] === '.' || change.text[0] === '$' || (change.text[0].length === 1 && change.text[0].match(/[a-zA-Z]/))) {
       cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false });

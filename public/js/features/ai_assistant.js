@@ -11,7 +11,7 @@ const WorkspaceAIAssistant = (() => {
   function panel() { return byId('workspace-ai-panel'); }
   function resizer() { return byId('workspace-ai-resizer'); }
   function launchButtons() {
-    return [byId('workspace-ai-launch-toolbar'), byId('workspace-ai-launch')].filter(Boolean);
+    return [byId('workspace-ai-launch-floating'), byId('workspace-ai-launch')].filter(Boolean);
   }
 
   function syncContext() {
@@ -136,7 +136,7 @@ const WorkspaceAIAssistant = (() => {
   }
 
   function language() {
-    return byId('workspace-lang-select')?.value || 'mongodb';
+    return typeof getWorkspaceLanguage === 'function' ? getWorkspaceLanguage() : 'mongodb';
   }
 
   function renderResult(data, requestText) {

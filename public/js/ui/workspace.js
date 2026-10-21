@@ -864,11 +864,6 @@ function openFileInTab(path) {
     lang = 'sql'; cmMode = 'text/x-sql'; langIndicator = 'SQL';
   }
   
-  const langSelect = document.getElementById('workspace-lang-select');
-  if (langSelect) {
-    langSelect.value = lang;
-  }
-  
   const langIndicatorEl = document.getElementById('sb-lang-indicator');
   if (langIndicatorEl) {
     langIndicatorEl.textContent = langIndicator;

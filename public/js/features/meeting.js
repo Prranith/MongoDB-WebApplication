@@ -374,8 +374,7 @@ const MeetingRoom = (() => {
       }
     } catch (_) {}
 
-    const languageEl = document.getElementById("workspace-lang-select");
-    const language = languageEl ? languageEl.value : "mongodb";
+    const language = typeof getWorkspaceLanguage === "function" ? getWorkspaceLanguage() : "mongodb";
     let cursor = { line: 0, ch: 0 };
     let scroll = { top: 0, left: 0 };
     try {
@@ -698,8 +697,6 @@ const MeetingRoom = (() => {
     if (!remote || !snapshot || typeof editor === "undefined" || !editor) return;
     try {
       window.__codexaEditorShareApplying = true;
-      const languageEl = document.getElementById("workspace-lang-select");
-      if (languageEl) languageEl.value = snapshot.language || "mongodb";
       editor.setOption("mode", sharedLanguageMode(snapshot.language));
       editor.setOption("readOnly", true);
       editor.setValue(snapshot.content || "");
