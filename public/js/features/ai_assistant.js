@@ -10,6 +10,15 @@ const WorkspaceAIAssistant = (() => {
 
   function panel() { return byId('workspace-ai-panel'); }
   function resizer() { return byId('workspace-ai-resizer'); }
+  function syncLauncherVisibility() {
+    const button = byId('workspace-ai-launch-floating');
+    if (!button) return;
+    const intro = byId('intro-panel');
+    const auth = byId('auth-overlay');
+    const homeVisible = Boolean(intro?.classList.contains('active'));
+    const authVisible = Boolean(auth && !auth.hidden);
+    button.hidden = homeVisible || authVisible;
+  }
   function launchButtons() {
     return [byId('workspace-ai-launch-floating'), byId('workspace-ai-launch')].filter(Boolean);
   }
@@ -254,10 +263,16 @@ const WorkspaceAIAssistant = (() => {
     resizer()?.addEventListener('pointerdown', startResize);
     restorePanelWidth();
     initFloatingLauncher();
+    syncLauncherVisibility();
+    const visibilityObserver = new MutationObserver(syncLauncherVisibility);
+    ['intro-panel', 'auth-overlay'].forEach(id => {
+      const target = byId(id);
+      if (target) visibilityObserver.observe(target, { attributes: true, attributeFilter: ['class', 'hidden'] });
+    });
     byId('workspace-ai-request')?.addEventListener('keydown', event => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); ask(); }
     });
   });
 
-  return { toggle, close, preset, ask, applyCorrection, undoCorrection };
+  return { toggle, close, preset, ask, applyCorrection, undoCorrection, syncLauncherVisibility };
 })();

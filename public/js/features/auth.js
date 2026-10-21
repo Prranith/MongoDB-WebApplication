@@ -39,6 +39,7 @@ const Auth = (() => {
     setMode(mode);
     const node = overlay();
     if (node) { node.hidden = false; document.body.classList.add('auth-open'); }
+    window.WorkspaceAIAssistant?.syncLauncherVisibility?.();
     setMessage('');
     $('auth-email')?.focus();
   }
@@ -46,6 +47,7 @@ const Auth = (() => {
   function close() {
     const node = overlay();
     if (node) { node.hidden = true; document.body.classList.remove('auth-open'); }
+    window.WorkspaceAIAssistant?.syncLauncherVisibility?.();
   }
 
   function renderAccount() {
