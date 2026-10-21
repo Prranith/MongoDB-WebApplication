@@ -249,7 +249,11 @@
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
       Inspector
     </button>
-    <button class="auth-account-button" id="auth-account-button" type="button" hidden onclick="Auth.accountAction()"></button>
+    <button class="auth-account-button" id="auth-account-button" type="button" hidden onclick="Auth.accountAction()" aria-label="Account menu">
+      <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true"></span>
+      <span class="auth-account-copy"><span class="auth-account-name" id="auth-account-name"></span><span class="auth-account-action" id="auth-account-action">Sign out</span></span>
+      <span class="auth-account-chevron" aria-hidden="true">⌄</span>
+    </button>
   </div>
 </div>
 

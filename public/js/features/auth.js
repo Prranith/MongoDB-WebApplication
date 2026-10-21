@@ -22,6 +22,7 @@ const Auth = (() => {
     if (nameInput) {
       nameInput.required = signup;
       nameInput.disabled = !signup;
+      if (!signup) nameInput.value = '';
     }
     if (submit) {
       submit.textContent = signup ? 'Create account' : 'Sign in';
@@ -49,10 +50,16 @@ const Auth = (() => {
 
   function renderAccount() {
     const button = $('auth-account-button');
+    const avatar = $('auth-account-avatar');
+    const name = $('auth-account-name');
+    const action = $('auth-account-action');
     if (!button) return;
     button.hidden = !state.user;
     if (state.user) {
-      button.textContent = `${state.user.name || state.user.email} · Sign out`;
+      const displayName = state.user.name || state.user.email?.split('@')[0] || 'Account';
+      if (avatar) avatar.textContent = displayName.slice(0, 1).toUpperCase();
+      if (name) name.textContent = displayName;
+      if (action) action.textContent = state.user.email || 'Sign out';
       button.title = state.user.email || '';
     }
   }

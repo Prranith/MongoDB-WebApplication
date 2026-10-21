@@ -8491,8 +8491,15 @@ li.CodeMirror-hint-active {
 .auth-primary:hover { background:#09934c; }
 .auth-message { min-height:18px; margin:13px 0 0; color:#98b1a0; text-align:center; font-size:12px; }
 .auth-message.error { color:#ff8f82; }
-.auth-account-button { max-width:220px; min-height:22px; padding:2px 8px; border:1px solid #35443a; border-radius:5px; background:#17221c; color:#a9c3b0; cursor:pointer; font:11px 'Segoe UI',sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.auth-account-button:hover { color:#e7f5ea; border-color:#00ed64; }
+.auth-name-field[hidden] { display:none !important; }
+.auth-account-button { display:inline-flex; align-items:center; gap:7px; min-width:150px; max-width:230px; min-height:30px; padding:3px 8px 3px 5px; border:1px solid rgba(0,237,100,.24); border-radius:7px; background:linear-gradient(180deg,rgba(22,42,30,.96),rgba(14,27,20,.96)); color:#d9e9dd; cursor:pointer; font:500 11px 'Segoe UI',sans-serif; text-align:left; box-shadow:inset 0 1px rgba(255,255,255,.05),0 2px 8px rgba(0,0,0,.18); transition:border-color .15s,background .15s,transform .15s; }
+.auth-account-button:hover { border-color:#00ed64; background:linear-gradient(180deg,rgba(29,59,39,.98),rgba(15,34,23,.98)); transform:translateY(-1px); }
+.auth-account-avatar { display:grid; place-items:center; flex:0 0 22px; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#00ed64,#08783d); color:#03140a; font-size:11px; font-weight:800; }
+.auth-account-copy { display:grid; min-width:0; gap:1px; line-height:1.15; }
+.auth-account-name,.auth-account-action { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.auth-account-name { color:#eef8f0; font-weight:600; }
+.auth-account-action { color:#91aa99; font-size:10px; }
+.auth-account-chevron { margin-left:auto; color:#8fa394; font-size:15px; line-height:1; }
 
 </style>
 </head>
@@ -8593,7 +8600,11 @@ li.CodeMirror-hint-active {
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
       Inspector
     </button>
-    <button class="auth-account-button" id="auth-account-button" type="button" hidden onclick="Auth.accountAction()"></button>
+    <button class="auth-account-button" id="auth-account-button" type="button" hidden onclick="Auth.accountAction()" aria-label="Account menu">
+      <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true"></span>
+      <span class="auth-account-copy"><span class="auth-account-name" id="auth-account-name"></span><span class="auth-account-action" id="auth-account-action">Sign out</span></span>
+      <span class="auth-account-chevron" aria-hidden="true">⌄</span>
+    </button>
   </div>
 </div>
 
@@ -9261,9 +9272,6 @@ async function fetchAPI(url, opts = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...opts
   });
-  if (r.status === 401 && window.Auth) {
-    window.Auth.open();
-  }
   return r.json();
 }
 
@@ -9497,6 +9505,7 @@ const Auth = (() => {
     if (nameInput) {
       nameInput.required = signup;
       nameInput.disabled = !signup;
+      if (!signup) nameInput.value = '';
     }
     if (submit) {
       submit.textContent = signup ? 'Create account' : 'Sign in';
@@ -9524,10 +9533,16 @@ const Auth = (() => {
 
   function renderAccount() {
     const button = $('auth-account-button');
+    const avatar = $('auth-account-avatar');
+    const name = $('auth-account-name');
+    const action = $('auth-account-action');
     if (!button) return;
     button.hidden = !state.user;
     if (state.user) {
-      button.textContent = `${state.user.name || state.user.email} · Sign out`;
+      const displayName = state.user.name || state.user.email?.split('@')[0] || 'Account';
+      if (avatar) avatar.textContent = displayName.slice(0, 1).toUpperCase();
+      if (name) name.textContent = displayName;
+      if (action) action.textContent = state.user.email || 'Sign out';
       button.title = state.user.email || '';
     }
   }
