@@ -49,17 +49,18 @@ const Auth = (() => {
   }
 
   function renderAccount() {
+    const wrap = $('auth-account-wrap');
     const button = $('auth-account-button');
     const avatar = $('auth-account-avatar');
     const name = $('auth-account-name');
-    const action = $('auth-account-action');
-    if (!button) return;
-    button.hidden = !state.user;
+    const email = $('auth-account-email');
+    if (!button || !wrap) return;
+    wrap.hidden = !state.user;
     if (state.user) {
       const displayName = state.user.name || state.user.email?.split('@')[0] || 'Account';
       if (avatar) avatar.textContent = displayName.slice(0, 1).toUpperCase();
       if (name) name.textContent = displayName;
-      if (action) action.textContent = state.user.email || 'Sign out';
+      if (email) email.textContent = state.user.email || '';
       button.title = state.user.email || '';
     }
   }
@@ -120,7 +121,13 @@ const Auth = (() => {
     if (typeof showView === 'function') showView('intro');
   }
 
-  function accountAction() { if (state.user) signOut(); else open(); }
+  function accountAction() {
+    if (!state.user) return open();
+    const popover = $('auth-profile-popover');
+    const button = $('auth-account-button');
+    if (popover) popover.hidden = !popover.hidden;
+    if (button) button.setAttribute('aria-expanded', String(popover ? !popover.hidden : false));
+  }
 
   async function init() {
     try {
@@ -129,6 +136,28 @@ const Auth = (() => {
       state.user = data.user || null;
       state.required = !!data.required;
       renderAccount();
+      const accountWrap = $('auth-account-wrap');
+      const accountPopover = $('auth-profile-popover');
+      const accountButton = $('auth-account-button');
+      accountWrap?.addEventListener('mouseenter', () => {
+        if (state.user && accountPopover) {
+          accountPopover.hidden = false;
+          accountButton?.setAttribute('aria-expanded', 'true');
+        }
+      });
+      accountWrap?.addEventListener('mouseleave', () => {
+        if (accountPopover) accountPopover.hidden = true;
+        accountButton?.setAttribute('aria-expanded', 'false');
+      });
+      document.addEventListener('click', event => {
+        const wrap = $('auth-account-wrap');
+        const popover = $('auth-profile-popover');
+        const button = $('auth-account-button');
+        if (wrap && popover && !wrap.contains(event.target)) {
+          popover.hidden = true;
+          button?.setAttribute('aria-expanded', 'false');
+        }
+      });
       if (new URLSearchParams(location.search).get('auth') === 'error') open();
     } catch (_) { /* The app remains usable until an authenticated API is needed. */ }
   }

@@ -231,17 +231,22 @@
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
       Inspector
     </button>
-    <button class="auth-account-button" id="auth-account-button" type="button" hidden onclick="Auth.accountAction()" aria-label="Account menu">
-      <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true"></span>
-      <span class="auth-account-copy"><span class="auth-account-name" id="auth-account-name"></span><span class="auth-account-action" id="auth-account-action">Sign out</span></span>
-      <span class="auth-account-chevron" aria-hidden="true">⌄</span>
-    </button>
+    <div class="auth-account-wrap" id="auth-account-wrap" hidden>
+      <button class="auth-account-button" id="auth-account-button" type="button" onclick="Auth.accountAction()" aria-label="Open profile menu" aria-expanded="false">
+        <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true">P</span>
+      </button>
+      <div class="auth-profile-popover" id="auth-profile-popover" hidden>
+        <div class="auth-profile-heading">Signed in as</div>
+        <strong class="auth-profile-name" id="auth-account-name"></strong>
+        <span class="auth-profile-email" id="auth-account-email"></span>
+        <button class="auth-profile-logout" type="button" onclick="Auth.signOut()">Sign out</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<button id="workspace-ai-launch-floating" class="workspace-ai-floating-launch" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open CodeLeaf AI assistant" aria-label="Open CodeLeaf AI assistant" aria-expanded="false">
-  <span class="workspace-ai-floating-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.7 14 8l5.3 2-5.3 2-2 5.3-2-5.3-5.3-2L10 8l2-5.3Zm7.2 13.1.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"/></svg></span>
-  <span class="workspace-ai-floating-label"><strong>CodeLeaf AI</strong><small>Ask about your code</small></span>
+<button id="workspace-ai-launch-floating" class="workspace-ai-floating-launch" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open CodeLeaf AI" aria-label="Open CodeLeaf AI" aria-expanded="false">
+  <img class="workspace-ai-floating-logo" src="assets/branding/codeleaf-emblem.png?v=20261019-ai" alt="CodeLeaf AI" />
 </button>
 
 <!-- ══ SHELL ══════════════════════════════════════════════════════════ -->

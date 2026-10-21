@@ -204,9 +204,56 @@ const WorkspaceAIAssistant = (() => {
     if (bar) bar.hidden = true;
   }
 
+  function initFloatingLauncher() {
+    const button = byId('workspace-ai-launch-floating');
+    if (!button) return;
+    let drag = null;
+    let moved = false;
+    try {
+      const saved = JSON.parse(localStorage.getItem('codeleaf-ai-launcher-position') || 'null');
+      if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
+        button.style.left = `${saved.left}px`;
+        button.style.top = `${saved.top}px`;
+        button.style.right = 'auto';
+        button.style.bottom = 'auto';
+      }
+    } catch (_) {}
+    button.addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      const rect = button.getBoundingClientRect();
+      drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, left: rect.left, top: rect.top };
+      moved = false;
+      button.setPointerCapture?.(event.pointerId);
+    });
+    button.addEventListener('pointermove', event => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+      if (!moved) return;
+      const maxLeft = Math.max(8, window.innerWidth - button.offsetWidth - 8);
+      const maxTop = Math.max(8, window.innerHeight - button.offsetHeight - 8);
+      button.style.left = `${Math.min(maxLeft, Math.max(8, drag.left + dx))}px`;
+      button.style.top = `${Math.min(maxTop, Math.max(8, drag.top + dy))}px`;
+      button.style.right = 'auto';
+      button.style.bottom = 'auto';
+    });
+    button.addEventListener('pointerup', event => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      if (moved) {
+        try { localStorage.setItem('codeleaf-ai-launcher-position', JSON.stringify({ left: button.offsetLeft, top: button.offsetTop })); } catch (_) {}
+      }
+      drag = null;
+    });
+    button.addEventListener('click', event => {
+      if (moved) { event.preventDefault(); event.stopPropagation(); moved = false; }
+    }, true);
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
     resizer()?.addEventListener('pointerdown', startResize);
     restorePanelWidth();
+    initFloatingLauncher();
     byId('workspace-ai-request')?.addEventListener('keydown', event => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); ask(); }
     });

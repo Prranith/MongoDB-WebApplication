@@ -8472,23 +8472,23 @@ li.CodeMirror-hint-active {
 .auth-message { min-height:18px; margin:13px 0 0; color:#98b1a0; text-align:center; font-size:12px; }
 .auth-message.error { color:#ff8f82; }
 .auth-name-field[hidden] { display:none !important; }
-.auth-account-button { display:inline-flex; align-items:center; gap:6px; min-width:138px; max-width:210px; min-height:26px; padding:2px 7px 2px 4px; border:1px solid rgba(0,237,100,.24); border-radius:6px; background:linear-gradient(180deg,rgba(22,42,30,.96),rgba(14,27,20,.96)); color:#d9e9dd; cursor:pointer; font:500 10px 'Segoe UI',sans-serif; text-align:left; box-shadow:inset 0 1px rgba(255,255,255,.05),0 2px 8px rgba(0,0,0,.18); transition:border-color .15s,background .15s,transform .15s; }
-.auth-account-button:hover { border-color:#00ed64; background:linear-gradient(180deg,rgba(29,59,39,.98),rgba(15,34,23,.98)); transform:translateY(-1px); }
-.auth-account-avatar { display:grid; place-items:center; flex:0 0 20px; width:20px; height:20px; border-radius:50%; background:linear-gradient(135deg,#00ed64,#08783d); color:#03140a; font-size:10px; font-weight:800; }
-.auth-account-copy { display:grid; min-width:0; gap:1px; line-height:1.15; }
-.auth-account-name,.auth-account-action { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.auth-account-name { color:#eef8f0; font-weight:600; }
-.auth-account-action { color:#91aa99; font-size:10px; }
-.auth-account-chevron { margin-left:auto; color:#8fa394; font-size:15px; line-height:1; }
-.workspace-ai-floating-launch { position:fixed; right:20px; bottom:20px; z-index:4200; display:inline-flex; align-items:center; gap:9px; min-width:174px; padding:8px 12px 8px 8px; border:1px solid rgba(0,237,100,.42); border-radius:13px; background:linear-gradient(135deg,rgba(8,57,34,.98),rgba(7,32,23,.98)); color:#effff3; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,.38),0 0 24px rgba(0,237,100,.12),inset 0 1px rgba(255,255,255,.1); text-align:left; transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
-.workspace-ai-floating-launch:hover { transform:translateY(-3px); border-color:#00ed64; box-shadow:0 14px 34px rgba(0,0,0,.45),0 0 30px rgba(0,237,100,.24),inset 0 1px rgba(255,255,255,.12); }
-.workspace-ai-floating-launch[aria-expanded="true"] { border-color:#00ed64; background:linear-gradient(135deg,rgba(12,94,51,.98),rgba(7,43,27,.98)); }
-.workspace-ai-floating-icon { display:grid; place-items:center; width:29px; height:29px; flex:none; border-radius:9px; background:linear-gradient(135deg,#00ed64,#6dffab); color:#06311b; box-shadow:0 0 14px rgba(0,237,100,.32); }
-.workspace-ai-floating-icon svg { width:17px; height:17px; fill:currentColor; }
-.workspace-ai-floating-label { display:grid; gap:2px; min-width:0; }
-.workspace-ai-floating-label strong { font-size:11px; letter-spacing:.02em; }
-.workspace-ai-floating-label small { color:#a4cbb0; font-size:9px; }
-@media (max-width:600px) { .workspace-ai-floating-launch { right:12px; bottom:12px; min-width:0; padding-right:9px; } .workspace-ai-floating-label small { display:none; } }
+.auth-account-wrap { position:relative; display:inline-flex; }
+.auth-account-button { display:grid; place-items:center; width:30px; height:30px; padding:3px; border:1px solid rgba(0,237,100,.34); border-radius:50%; background:linear-gradient(145deg,#0d6f3c,#00ed64); color:#032012; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.22); transition:transform .16s,border-color .16s,box-shadow .16s; }
+.auth-account-button:hover { border-color:#b6ffd0; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,237,100,.25),inset 0 1px rgba(255,255,255,.3); }
+.auth-account-avatar { display:grid; place-items:center; width:100%; height:100%; border-radius:50%; color:#032012; font-size:12px; font-weight:800; }
+.auth-profile-popover { position:absolute; top:calc(100% + 9px); right:0; z-index:5000; display:grid; min-width:210px; gap:4px; padding:13px; border:1px solid rgba(0,237,100,.28); border-radius:10px; background:linear-gradient(145deg,#17221c,#0d1410); box-shadow:0 16px 38px rgba(0,0,0,.48); color:#e9f4ec; }
+.auth-profile-popover[hidden] { display:none; }
+.auth-profile-heading { color:#87a291; font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
+.auth-profile-name { margin-top:3px; color:#f1fff4; font-size:13px; }
+.auth-profile-email { overflow:hidden; color:#9db5a4; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+.auth-profile-logout { margin-top:8px; padding:7px 9px; border:1px solid rgba(255,128,112,.3); border-radius:6px; background:rgba(120,35,30,.18); color:#ffb2a8; cursor:pointer; font-size:11px; text-align:left; }
+.auth-profile-logout:hover { border-color:#ff8f82; background:rgba(150,43,35,.3); }
+.workspace-ai-floating-launch { position:fixed; right:20px; bottom:20px; z-index:4200; display:grid; place-items:center; width:52px; height:52px; padding:0; border:1px solid rgba(0,237,100,.5); border-radius:17px; background:linear-gradient(145deg,#0b6038,#062d1e); cursor:grab; box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 25px rgba(0,237,100,.16),inset 0 1px rgba(255,255,255,.14); transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; touch-action:none; user-select:none; }
+.workspace-ai-floating-launch:hover { transform:translateY(-3px) scale(1.04); border-color:#8bffb7; box-shadow:0 14px 34px rgba(0,0,0,.45),0 0 32px rgba(0,237,100,.3),inset 0 1px rgba(255,255,255,.18); }
+.workspace-ai-floating-launch:active { cursor:grabbing; transform:scale(.97); }
+.workspace-ai-floating-launch[aria-expanded="true"] { border-color:#00ed64; background:#08783d; }
+.workspace-ai-floating-logo { width:37px; height:37px; object-fit:contain; filter:drop-shadow(0 0 7px rgba(0,237,100,.3)); pointer-events:none; }
+@media (max-width:600px) { .workspace-ai-floating-launch { right:12px; bottom:12px; } }
 
 </style>
 </head>
@@ -8571,17 +8571,22 @@ li.CodeMirror-hint-active {
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
       Inspector
     </button>
-    <button class="auth-account-button" id="auth-account-button" type="button" hidden onclick="Auth.accountAction()" aria-label="Account menu">
-      <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true"></span>
-      <span class="auth-account-copy"><span class="auth-account-name" id="auth-account-name"></span><span class="auth-account-action" id="auth-account-action">Sign out</span></span>
-      <span class="auth-account-chevron" aria-hidden="true">⌄</span>
-    </button>
+    <div class="auth-account-wrap" id="auth-account-wrap" hidden>
+      <button class="auth-account-button" id="auth-account-button" type="button" onclick="Auth.accountAction()" aria-label="Open profile menu" aria-expanded="false">
+        <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true">P</span>
+      </button>
+      <div class="auth-profile-popover" id="auth-profile-popover" hidden>
+        <div class="auth-profile-heading">Signed in as</div>
+        <strong class="auth-profile-name" id="auth-account-name"></strong>
+        <span class="auth-profile-email" id="auth-account-email"></span>
+        <button class="auth-profile-logout" type="button" onclick="Auth.signOut()">Sign out</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<button id="workspace-ai-launch-floating" class="workspace-ai-floating-launch" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open CodeLeaf AI assistant" aria-label="Open CodeLeaf AI assistant" aria-expanded="false">
-  <span class="workspace-ai-floating-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.7 14 8l5.3 2-5.3 2-2 5.3-2-5.3-5.3-2L10 8l2-5.3Zm7.2 13.1.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"/></svg></span>
-  <span class="workspace-ai-floating-label"><strong>CodeLeaf AI</strong><small>Ask about your code</small></span>
+<button id="workspace-ai-launch-floating" class="workspace-ai-floating-launch" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open CodeLeaf AI" aria-label="Open CodeLeaf AI" aria-expanded="false">
+  <img class="workspace-ai-floating-logo" src="assets/branding/codeleaf-emblem.png?v=20261019-ai" alt="CodeLeaf AI" />
 </button>
 
 <!-- ══ SHELL ══════════════════════════════════════════════════════════ -->
@@ -9508,17 +9513,18 @@ const Auth = (() => {
   }
 
   function renderAccount() {
+    const wrap = $('auth-account-wrap');
     const button = $('auth-account-button');
     const avatar = $('auth-account-avatar');
     const name = $('auth-account-name');
-    const action = $('auth-account-action');
-    if (!button) return;
-    button.hidden = !state.user;
+    const email = $('auth-account-email');
+    if (!button || !wrap) return;
+    wrap.hidden = !state.user;
     if (state.user) {
       const displayName = state.user.name || state.user.email?.split('@')[0] || 'Account';
       if (avatar) avatar.textContent = displayName.slice(0, 1).toUpperCase();
       if (name) name.textContent = displayName;
-      if (action) action.textContent = state.user.email || 'Sign out';
+      if (email) email.textContent = state.user.email || '';
       button.title = state.user.email || '';
     }
   }
@@ -9579,7 +9585,13 @@ const Auth = (() => {
     if (typeof showView === 'function') showView('intro');
   }
 
-  function accountAction() { if (state.user) signOut(); else open(); }
+  function accountAction() {
+    if (!state.user) return open();
+    const popover = $('auth-profile-popover');
+    const button = $('auth-account-button');
+    if (popover) popover.hidden = !popover.hidden;
+    if (button) button.setAttribute('aria-expanded', String(popover ? !popover.hidden : false));
+  }
 
   async function init() {
     try {
@@ -9588,6 +9600,28 @@ const Auth = (() => {
       state.user = data.user || null;
       state.required = !!data.required;
       renderAccount();
+      const accountWrap = $('auth-account-wrap');
+      const accountPopover = $('auth-profile-popover');
+      const accountButton = $('auth-account-button');
+      accountWrap?.addEventListener('mouseenter', () => {
+        if (state.user && accountPopover) {
+          accountPopover.hidden = false;
+          accountButton?.setAttribute('aria-expanded', 'true');
+        }
+      });
+      accountWrap?.addEventListener('mouseleave', () => {
+        if (accountPopover) accountPopover.hidden = true;
+        accountButton?.setAttribute('aria-expanded', 'false');
+      });
+      document.addEventListener('click', event => {
+        const wrap = $('auth-account-wrap');
+        const popover = $('auth-profile-popover');
+        const button = $('auth-account-button');
+        if (wrap && popover && !wrap.contains(event.target)) {
+          popover.hidden = true;
+          button?.setAttribute('aria-expanded', 'false');
+        }
+      });
       if (new URLSearchParams(location.search).get('auth') === 'error') open();
     } catch (_) { /* The app remains usable until an authenticated API is needed. */ }
   }
@@ -14068,9 +14102,56 @@ const WorkspaceAIAssistant = (() => {
     if (bar) bar.hidden = true;
   }
 
+  function initFloatingLauncher() {
+    const button = byId('workspace-ai-launch-floating');
+    if (!button) return;
+    let drag = null;
+    let moved = false;
+    try {
+      const saved = JSON.parse(localStorage.getItem('codeleaf-ai-launcher-position') || 'null');
+      if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
+        button.style.left = `${saved.left}px`;
+        button.style.top = `${saved.top}px`;
+        button.style.right = 'auto';
+        button.style.bottom = 'auto';
+      }
+    } catch (_) {}
+    button.addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      const rect = button.getBoundingClientRect();
+      drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, left: rect.left, top: rect.top };
+      moved = false;
+      button.setPointerCapture?.(event.pointerId);
+    });
+    button.addEventListener('pointermove', event => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+      if (!moved) return;
+      const maxLeft = Math.max(8, window.innerWidth - button.offsetWidth - 8);
+      const maxTop = Math.max(8, window.innerHeight - button.offsetHeight - 8);
+      button.style.left = `${Math.min(maxLeft, Math.max(8, drag.left + dx))}px`;
+      button.style.top = `${Math.min(maxTop, Math.max(8, drag.top + dy))}px`;
+      button.style.right = 'auto';
+      button.style.bottom = 'auto';
+    });
+    button.addEventListener('pointerup', event => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      if (moved) {
+        try { localStorage.setItem('codeleaf-ai-launcher-position', JSON.stringify({ left: button.offsetLeft, top: button.offsetTop })); } catch (_) {}
+      }
+      drag = null;
+    });
+    button.addEventListener('click', event => {
+      if (moved) { event.preventDefault(); event.stopPropagation(); moved = false; }
+    }, true);
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
     resizer()?.addEventListener('pointerdown', startResize);
     restorePanelWidth();
+    initFloatingLauncher();
     byId('workspace-ai-request')?.addEventListener('keydown', event => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); ask(); }
     });
