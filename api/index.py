@@ -4,6 +4,8 @@ Flask-based Vercel serverless API bootstrap.
 Zero PySide6 dependency. Registers modular blueprints.
 """
 
+import os
+import secrets
 import sys
 from pathlib import Path
 
@@ -11,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-from flask import Flask, request, g, jsonify
+from flask import Flask, request, g, jsonify, session
 from flask_cors import CORS
 
 from utils.logger import setup_logging, get_logger, set_correlation_id
@@ -29,7 +31,21 @@ log = get_logger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+_is_production = bool(os.getenv("VERCEL")) or os.getenv("APP_ENV", "").strip().lower() == "production"
+_cookie_secure = os.getenv("COOKIE_SECURE", "1" if _is_production else "0").strip().lower() not in {"0", "false", "no"}
+app.config.update(
+    SECRET_KEY=os.getenv("AUTH_SECRET_KEY", "").strip() or secrets.token_hex(32),
+    SESSION_COOKIE_NAME="codeleaf_session",
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=_cookie_secure,
+    SESSION_COOKIE_SAMESITE="Lax",
+    PERMANENT_SESSION_LIFETIME=__import__("datetime").timedelta(days=int(os.getenv("AUTH_SESSION_TTL_DAYS", "14"))),
+)
+_cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
+if _cors_origins:
+    CORS(app, supports_credentials=True, origins=_cors_origins)
+else:
+    CORS(app, supports_credentials=True)
 
 # Import blueprints from the modular routes folder
 from api.routes.static_routes import static_bp
@@ -40,6 +56,7 @@ from api.routes.exam_routes import exam_bp
 from api.routes.meeting_routes import meeting_bp
 from api.routes.sql_routes import sql_bp
 from api.routes.ai_routes import ai_bp
+from api.routes.auth_routes import auth_bp
 
 # Register blueprints to keep code structure modular and maintainable
 app.register_blueprint(static_bp)
@@ -50,6 +67,7 @@ app.register_blueprint(exam_bp)
 app.register_blueprint(meeting_bp)
 app.register_blueprint(sql_bp)
 app.register_blueprint(ai_bp)
+app.register_blueprint(auth_bp)
 
 
 @app.before_request
@@ -59,6 +77,16 @@ def _before_request():
     request_id = request.headers.get("X-Request-ID")
     set_correlation_id(correlation_id, request_id=request_id)
     g.correlation_id = correlation_id or set_correlation_id()
+
+    # Authentication is opt-in until provider credentials and AUTH_REQUIRED=1
+    # are configured in the deployment environment. Analytics and auth routes
+    # remain public so the home screen and sign-in flow can load.
+    from services.auth.auth_service import AUTH_REQUIRED, current_user
+    g.user = current_user()
+    if AUTH_REQUIRED and request.path.startswith("/api/"):
+        public = request.path.startswith("/api/auth/") or request.path.startswith("/api/analytics")
+        if not public and not g.user:
+            return jsonify({"error": "Authentication required", "code": "AUTH_REQUIRED"}), 401
 
 
 @app.after_request

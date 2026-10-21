@@ -6,6 +6,9 @@ async function fetchAPI(url, opts = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...opts
   });
+  if (r.status === 401 && window.Auth) {
+    window.Auth.open();
+  }
   return r.json();
 }
 

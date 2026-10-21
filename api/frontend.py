@@ -8470,6 +8470,29 @@ li.CodeMirror-hint-active {
   color: #000;
 }
 .exam-modal-btn.danger:hover { filter: brightness(1.08); }
+/* Secure account gate */
+.auth-overlay { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; padding:24px; background:rgba(5,12,9,.78); backdrop-filter:blur(14px); }
+.auth-overlay[hidden] { display:none; }
+.auth-card { width:min(430px,100%); position:relative; padding:30px; border:1px solid rgba(0,237,100,.25); border-radius:18px; background:linear-gradient(145deg,#17221c,#0d1410); box-shadow:0 26px 80px rgba(0,0,0,.55); color:#e9f4ec; }
+.auth-close { position:absolute; top:10px; right:14px; border:0; background:transparent; color:#9eaca3; font-size:25px; cursor:pointer; }
+.auth-mark { display:block; width:42px; height:42px; object-fit:contain; margin:0 auto 12px; }
+.auth-card h2 { margin:0; text-align:center; font-size:22px; }
+.auth-subtitle { margin:8px 0 20px; color:#96a79c; text-align:center; font-size:13px; line-height:1.5; }
+.auth-email-heading { margin:4px 0 14px; color:#9eafa4; text-align:center; font-size:12px; }
+.auth-secondary,.auth-primary { min-height:38px; border-radius:8px; border:1px solid #344b3b; background:#18231d; color:#e4eee7; cursor:pointer; font:500 13px 'Segoe UI',sans-serif; }
+.auth-secondary:hover { border-color:#00ed64; background:#213228; }
+.auth-divider { display:flex; align-items:center; gap:10px; margin:18px 0 14px; color:#75877b; font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+.auth-divider::before,.auth-divider::after { content:""; height:1px; flex:1; background:#2d3b31; }
+.auth-field { display:grid; gap:6px; margin:10px 0; color:#a8b8ad; font-size:12px; }
+.auth-field input { width:100%; box-sizing:border-box; padding:10px 11px; border:1px solid #35443a; border-radius:7px; background:#0c120e; color:#eef9f0; outline:none; }
+.auth-field input:focus { border-color:#00ed64; box-shadow:0 0 0 2px rgba(0,237,100,.12); }
+.auth-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:16px; }
+.auth-primary { border-color:#00a94b; background:#08783d; font-weight:700; }
+.auth-primary:hover { background:#09934c; }
+.auth-message { min-height:18px; margin:13px 0 0; color:#98b1a0; text-align:center; font-size:12px; }
+.auth-message.error { color:#ff8f82; }
+.auth-account-button { max-width:220px; min-height:22px; padding:2px 8px; border:1px solid #35443a; border-radius:5px; background:#17221c; color:#a9c3b0; cursor:pointer; font:11px 'Segoe UI',sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.auth-account-button:hover { color:#e7f5ea; border-color:#00ed64; }
 
 </style>
 </head>
@@ -8570,6 +8593,7 @@ li.CodeMirror-hint-active {
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
       Inspector
     </button>
+    <button class="auth-account-button" id="auth-account-button" type="button" hidden onclick="Auth.accountAction()"></button>
   </div>
 </div>
 
@@ -8744,17 +8768,17 @@ li.CodeMirror-hint-active {
 
         <p class="intro-tagline">Code. Assess. Collaborate.</p>
         <div class="intro-actions">
-          <button class="intro-enter" onclick="showView('ide')">
+          <button class="intro-enter" id="btn-enter-workspace" onclick="Auth.require(() => showView('ide'))">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
             Enter Workspace
           </button>
 
-          <button class="intro-meet-btn" id="btn-home-meet" onclick="MeetingRoom.toggleMeeting()">
+          <button class="intro-meet-btn" id="btn-home-meet" onclick="Auth.require(() => MeetingRoom.toggleMeeting())">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"></rect><path d="m17 10 5-3v10l-5-3z"></path></svg>
             Meet
           </button>
 
-          <button class="intro-exam-btn" id="btn-exam-portal" onclick="ExamPortal.showRoleSelection()">
+          <button class="intro-exam-btn" id="btn-exam-portal" onclick="Auth.require(() => ExamPortal.showRoleSelection())">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
             Exam Portal
           </button>
@@ -9083,6 +9107,21 @@ li.CodeMirror-hint-active {
   </div>
 </div>
 
+<div class="auth-overlay" id="auth-overlay" hidden>
+  <section class="auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <button class="auth-close" type="button" aria-label="Close sign in" onclick="Auth.close()">×</button>
+    <img class="auth-mark" src="assets/branding/codeleaf-emblem.png?v=20261019-auth" alt="CodeLeaf" />
+    <h2 id="auth-title">Sign in to CodeLeaf</h2>
+    <p class="auth-subtitle">One secure account for your workspace, exams, and meetings.</p>
+    <div class="auth-email-heading">Use your CodeLeaf email account</div>
+    <label class="auth-field auth-name-field" id="auth-name-field" hidden>Name<input id="auth-name" autocomplete="name" placeholder="Your name" /></label>
+    <label class="auth-field">Email<input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required /></label>
+    <label class="auth-field">Password<input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 10 characters" required /></label>
+    <div class="auth-actions"><button class="auth-primary" id="auth-submit" type="button" onclick="Auth.login()">Sign in</button><button class="auth-secondary" id="auth-mode-toggle" type="button" onclick="Auth.register()">Create account</button></div>
+    <p class="auth-message" id="auth-message" role="status"></p>
+  </section>
+</div>
+
 <!-- JavaScript Logic -->
 <script>
 // Unified in-app alert surface. This keeps informational errors and notices
@@ -9222,6 +9261,9 @@ async function fetchAPI(url, opts = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...opts
   });
+  if (r.status === 401 && window.Auth) {
+    window.Auth.open();
+  }
   return r.json();
 }
 
@@ -9428,6 +9470,147 @@ async function loadSnippets() {
     renderSnippetTree();
   } catch(e) {}
 }
+
+</script>
+<script>
+/* CodeLeaf application authentication UI. */
+const Auth = (() => {
+  const state = { user: null, required: false, action: null, mode: 'signin' };
+  const $ = id => document.getElementById(id);
+
+  function overlay() { return $('auth-overlay'); }
+  function setMessage(message, error = false) {
+    const target = $('auth-message');
+    if (target) { target.textContent = message || ''; target.classList.toggle('error', error); }
+  }
+
+  function setMode(mode) {
+    state.mode = mode === 'signup' ? 'signup' : 'signin';
+    const signup = state.mode === 'signup';
+    const title = $('auth-title');
+    const nameField = $('auth-name-field');
+    const nameInput = $('auth-name');
+    const submit = $('auth-submit');
+    const toggle = $('auth-mode-toggle');
+    if (title) title.textContent = signup ? 'Create your CodeLeaf account' : 'Sign in to CodeLeaf';
+    if (nameField) nameField.hidden = !signup;
+    if (nameInput) {
+      nameInput.required = signup;
+      nameInput.disabled = !signup;
+    }
+    if (submit) {
+      submit.textContent = signup ? 'Create account' : 'Sign in';
+      submit.onclick = signup ? register : login;
+    }
+    if (toggle) {
+      toggle.textContent = signup ? 'Use sign in' : 'Create account';
+      toggle.onclick = () => setMode(signup ? 'signin' : 'signup');
+    }
+  }
+
+  function open(action, mode = 'signin') {
+    state.action = action || null;
+    setMode(mode);
+    const node = overlay();
+    if (node) { node.hidden = false; document.body.classList.add('auth-open'); }
+    setMessage('');
+    $('auth-email')?.focus();
+  }
+
+  function close() {
+    const node = overlay();
+    if (node) { node.hidden = true; document.body.classList.remove('auth-open'); }
+  }
+
+  function renderAccount() {
+    const button = $('auth-account-button');
+    if (!button) return;
+    button.hidden = !state.user;
+    if (state.user) {
+      button.textContent = `${state.user.name || state.user.email} · Sign out`;
+      button.title = state.user.email || '';
+    }
+  }
+
+  async function request(path, payload) {
+    const response = await fetch(path, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin', body: JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Authentication request failed.');
+    return data;
+  }
+
+  function completed(data) {
+    state.user = data.user || null;
+    renderAccount();
+    close();
+    setMessage('');
+    if (state.action) { const action = state.action; state.action = null; action(); }
+  }
+
+  async function login() {
+    if (!validate('signin')) return;
+    try {
+      setMessage('Signing you in…');
+      completed(await request('/api/auth/login', { email: $('auth-email')?.value, password: $('auth-password')?.value }));
+    } catch (error) { setMessage(error.message, true); }
+  }
+
+  async function register() {
+    if (!validate('signup')) return;
+    try {
+      setMessage('Creating your secure account…');
+      completed(await request('/api/auth/register', { name: $('auth-name')?.value, email: $('auth-email')?.value, password: $('auth-password')?.value }));
+    } catch (error) { setMessage(error.message, true); }
+  }
+
+  function validate(mode) {
+    const email = $('auth-email')?.value.trim();
+    const password = $('auth-password')?.value || '';
+    const name = $('auth-name')?.value.trim();
+    if (!email || !password || (mode === 'signup' && !name)) {
+      setMessage(mode === 'signup' ? 'Enter your name, email, and password.' : 'Enter your email and password.', true);
+      return false;
+    }
+    if (mode === 'signup' && password.length < 10) {
+      setMessage('Password must contain at least 10 characters.', true);
+      return false;
+    }
+    return true;
+  }
+
+  async function signOut() {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+    state.user = null;
+    renderAccount();
+    if (typeof showView === 'function') showView('intro');
+  }
+
+  function accountAction() { if (state.user) signOut(); else open(); }
+
+  async function init() {
+    try {
+      const response = await fetch('/api/auth/me', { credentials: 'same-origin' });
+      const data = await response.json();
+      state.user = data.user || null;
+      state.required = !!data.required;
+      renderAccount();
+      if (new URLSearchParams(location.search).get('auth') === 'error') open();
+    } catch (_) { /* The app remains usable until an authenticated API is needed. */ }
+  }
+
+  return {
+    init, open, close, login, register, signOut, accountAction, setMode,
+    require(action) { if (state.user || !state.required) return action(); open(action); },
+    get user() { return state.user; },
+  };
+})();
+
+window.Auth = Auth;
+
+document.addEventListener('DOMContentLoaded', () => Auth.init());
 
 </script>
 <script>

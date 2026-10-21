@@ -249,6 +249,7 @@
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
       Inspector
     </button>
+    <button class="auth-account-button" id="auth-account-button" type="button" hidden onclick="Auth.accountAction()"></button>
   </div>
 </div>
 
@@ -423,17 +424,17 @@
 
         <p class="intro-tagline">Code. Assess. Collaborate.</p>
         <div class="intro-actions">
-          <button class="intro-enter" onclick="showView('ide')">
+          <button class="intro-enter" id="btn-enter-workspace" onclick="Auth.require(() => showView('ide'))">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
             Enter Workspace
           </button>
 
-          <button class="intro-meet-btn" id="btn-home-meet" onclick="MeetingRoom.toggleMeeting()">
+          <button class="intro-meet-btn" id="btn-home-meet" onclick="Auth.require(() => MeetingRoom.toggleMeeting())">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"></rect><path d="m17 10 5-3v10l-5-3z"></path></svg>
             Meet
           </button>
 
-          <button class="intro-exam-btn" id="btn-exam-portal" onclick="ExamPortal.showRoleSelection()">
+          <button class="intro-exam-btn" id="btn-exam-portal" onclick="Auth.require(() => ExamPortal.showRoleSelection())">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
             Exam Portal
           </button>
@@ -762,10 +763,26 @@
   </div>
 </div>
 
+<div class="auth-overlay" id="auth-overlay" hidden>
+  <section class="auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <button class="auth-close" type="button" aria-label="Close sign in" onclick="Auth.close()">×</button>
+    <img class="auth-mark" src="assets/branding/codeleaf-emblem.png?v=20261019-auth" alt="CodeLeaf" />
+    <h2 id="auth-title">Sign in to CodeLeaf</h2>
+    <p class="auth-subtitle">One secure account for your workspace, exams, and meetings.</p>
+    <div class="auth-email-heading">Use your CodeLeaf email account</div>
+    <label class="auth-field auth-name-field" id="auth-name-field" hidden>Name<input id="auth-name" autocomplete="name" placeholder="Your name" /></label>
+    <label class="auth-field">Email<input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required /></label>
+    <label class="auth-field">Password<input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 10 characters" required /></label>
+    <div class="auth-actions"><button class="auth-primary" id="auth-submit" type="button" onclick="Auth.login()">Sign in</button><button class="auth-secondary" id="auth-mode-toggle" type="button" onclick="Auth.register()">Create account</button></div>
+    <p class="auth-message" id="auth-message" role="status"></p>
+  </section>
+</div>
+
 <!-- JavaScript Logic -->
 <script src="js/ui/dialogs.js"></script>
 <script src="js/core/state.js"></script>
 <script src="js/core/api.js"></script>
+<script src="js/features/auth.js"></script>
 <script src="js/utils/helpers.js"></script>
 <script src="js/ui/panels.js"></script>
 <script src="js/ui/sidebar.js"></script>

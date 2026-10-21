@@ -3,6 +3,7 @@ import sys
 import json
 import time
 import pymongo
+import mongomock
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent.parent
@@ -11,8 +12,8 @@ sys.path.insert(0, str(ROOT))
 # MongoDB Atlas Direct Connection (Bypasses SRV DNS timeouts on Vercel Serverless)
 MONGO_URI = os.getenv(
     "MONGO_URI",
-    "mongodb://swargamprranith1_db_user:Prranith0521@ac-wowbq8f-shard-00-00.hgri1wa.mongodb.net:27017,ac-wowbq8f-shard-00-01.hgri1wa.mongodb.net:27017,ac-wowbq8f-shard-00-02.hgri1wa.mongodb.net:27017/?ssl=true&replicaSet=atlas-193153-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
-)
+    ""
+).strip()
 
 _mongo_client = None
 _db = None
@@ -24,6 +25,14 @@ def _get_rooms_coll():
     if _rooms is not None:
         return _rooms
     try:
+        if not MONGO_URI:
+            # Never fall back to a credential embedded in source. Local
+            # development and tests use an in-process Mongo-compatible store;
+            # production must provide MONGO_URI through the environment.
+            _mongo_client = mongomock.MongoClient()
+            _db = _mongo_client["exam_system"]
+            _rooms = _db["rooms"]
+            return _rooms
         _mongo_client = pymongo.MongoClient(
             MONGO_URI,
             serverSelectionTimeoutMS=5000,
@@ -39,6 +48,20 @@ def _get_rooms_coll():
     except Exception as e:
         print(f"Warning: Failed to connect to MongoDB Atlas: {e}")
         return None
+
+
+def get_mongo_client():
+    """Return the shared Atlas client for services that need another database."""
+    _get_rooms_coll()
+    return _mongo_client
+
+
+def get_auth_db():
+    """Return the isolated application-auth database, when Atlas is configured."""
+    client = get_mongo_client()
+    if client is None:
+        return None
+    return client[os.getenv("AUTH_DB_NAME", "codeleaf_auth").strip() or "codeleaf_auth"]
 
 
 def get_exam_db():

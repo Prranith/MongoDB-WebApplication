@@ -154,6 +154,20 @@ GEMINI_MIN_INTERVAL_SECONDS=1.5
 
 To use only one provider, set `AI_PROVIDER=groq` or `AI_PROVIDER=gemini`. Configure these variables in the local server environment or the Vercel project settings, then restart the server.
 
+### Authentication configuration
+
+CodeLeaf authentication uses email/password accounts stored in MongoDB Atlas. The implementation uses server-side session records, HttpOnly/SameSite cookies, rate limiting, audit events, and scrypt password hashes.
+
+Copy `.env.example` for local setup, or configure the same variables in Vercel. OAuth authentication is currently disabled.
+
+```text
+AUTH_DB_NAME=codeleaf_auth
+AUTH_SECRET_KEY=replace-with-a-long-random-secret
+AUTH_REQUIRED=1
+```
+
+Set `AUTH_REQUIRED=1` only after `MONGO_URI` and `AUTH_SECRET_KEY` are configured. The home page and `/api/auth/*` remain public so users can sign in; application APIs are then protected by the shared session gate.
+
 ---
 
 ## 🗄 Supported Query Syntax
