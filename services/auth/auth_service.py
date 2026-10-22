@@ -3,8 +3,8 @@
 import hashlib
 import os
 import secrets
-import smtplib
-import time
+import base64
+import requests
 from email.message import EmailMessage
 from datetime import datetime, timedelta, timezone
 from functools import wraps
@@ -68,18 +68,15 @@ def _otp_digest(email, code):
 
 
 def _send_verification_email(email, name, code):
-    host = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
-    port = int(os.getenv("SMTP_PORT", "465"))
-    username = os.getenv("SMTP_USERNAME", "").strip()
-    password = os.getenv("SMTP_PASSWORD", "").replace(" ", "").strip()
-    sender = os.getenv("AUTH_EMAIL_FROM", username).strip()
-    if not username or not password or not sender:
+    client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+    refresh_token = os.getenv("GOOGLE_REFRESH_TOKEN", "").strip()
+    sender = os.getenv("GMAIL_SENDER_EMAIL", "").strip()
+    if not client_id or not client_secret or not refresh_token or not sender:
         if os.getenv("AUTH_EMAIL_DEV_MODE", "0").strip().lower() in {"1", "true", "yes"}:
             print(f"[auth] development email OTP for {email}: {code}")
             return True
-        raise RuntimeError("Gmail SMTP is not configured. Set SMTP_USERNAME, SMTP_PASSWORD, and AUTH_EMAIL_FROM.")
-    if "<" in sender and ">" in sender:
-        sender = sender[sender.find("<") + 1:sender.rfind(">")].strip()
+        raise RuntimeError("Gmail API is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, and GMAIL_SENDER_EMAIL.")
     message = EmailMessage()
     message["Subject"] = "Verify your CodeLeaf email"
     message["From"] = sender
@@ -88,25 +85,32 @@ def _send_verification_email(email, name, code):
         f"Hi {name},\n\nYour CodeLeaf verification code is {code}.\n"
         f"This code expires in {OTP_TTL_MINUTES} minutes.\n\nCodeLeaf Security"
     )
-    ports = [port] + ([465] if port == 587 else [587])
-    failures = []
-    for attempt_port in ports:
-        try:
-            if attempt_port == 465:
-                with smtplib.SMTP_SSL(host, attempt_port, timeout=6) as smtp:
-                    smtp.login(username, password)
-                    smtp.send_message(message)
-            else:
-                with smtplib.SMTP(host, attempt_port, timeout=6) as smtp:
-                    smtp.ehlo()
-                    smtp.starttls()
-                    smtp.ehlo()
-                    smtp.login(username, password)
-                    smtp.send_message(message)
-            return True
-        except (OSError, smtplib.SMTPException) as exc:
-            failures.append(f"port {attempt_port}: {str(exc)[:160]}")
-    raise RuntimeError(f"Gmail SMTP delivery failed ({'; '.join(failures)}). Verify the App Password and SMTP settings.")
+    try:
+        token_response = requests.post(
+            "https://oauth2.googleapis.com/token",
+            data={"client_id": client_id, "client_secret": client_secret,
+                  "refresh_token": refresh_token, "grant_type": "refresh_token"},
+            timeout=15,
+        )
+    except requests.RequestException as exc:
+        raise RuntimeError(f"Gmail OAuth token request failed: {exc}") from exc
+    if token_response.status_code != 200:
+        raise RuntimeError(f"Gmail OAuth token request failed ({token_response.status_code}): {token_response.text[:240]}")
+    access_token = token_response.json().get("access_token")
+    if not access_token:
+        raise RuntimeError("Gmail OAuth token response did not contain an access token.")
+    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii").rstrip("=")
+    try:
+        response = requests.post(
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+            headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+            json={"raw": raw_message}, timeout=15,
+        )
+    except requests.RequestException as exc:
+        raise RuntimeError(f"Gmail API request failed: {exc}") from exc
+    if response.status_code not in {200, 201}:
+        raise RuntimeError(f"Gmail API rejected the message ({response.status_code}): {response.text[:240]}")
+    return True
 
 
 def issue_email_otp(user):
