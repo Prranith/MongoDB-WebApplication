@@ -2,10 +2,10 @@
 
 import hashlib
 import os
-import re
 import secrets
+import smtplib
 import time
-import requests
+from email.message import EmailMessage
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import g, jsonify, request, session
@@ -68,38 +68,41 @@ def _otp_digest(email, code):
 
 
 def _send_verification_email(email, name, code):
-    api_key = os.getenv("BREVO_API_KEY", "").strip()
-    sender = os.getenv("BREVO_EMAIL_FROM", os.getenv("AUTH_EMAIL_FROM", "")).strip()
-    if not api_key or not sender:
+    host = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
+    port = int(os.getenv("SMTP_PORT", "587"))
+    username = os.getenv("SMTP_USERNAME", "").strip()
+    password = os.getenv("SMTP_PASSWORD", "").replace(" ", "").strip()
+    sender = os.getenv("AUTH_EMAIL_FROM", username).strip()
+    if not username or not password or not sender:
         if os.getenv("AUTH_EMAIL_DEV_MODE", "0").strip().lower() in {"1", "true", "yes"}:
             print(f"[auth] development email OTP for {email}: {code}")
             return True
-        raise RuntimeError("Brevo email delivery is not configured. Set BREVO_API_KEY and BREVO_EMAIL_FROM.")
-    match = re.match(r"^(.*?)\s*<([^<>]+)>\s*$", sender)
-    sender_name = (match.group(1).strip() if match else "CodeLeaf") or "CodeLeaf"
-    sender_email = match.group(2).strip() if match else sender
+        raise RuntimeError("Gmail SMTP is not configured. Set SMTP_USERNAME, SMTP_PASSWORD, and AUTH_EMAIL_FROM.")
+    if "<" in sender and ">" in sender:
+        sender = sender[sender.find("<") + 1:sender.rfind(">")].strip()
+    message = EmailMessage()
+    message["Subject"] = "Verify your CodeLeaf email"
+    message["From"] = sender
+    message["To"] = email
+    message.set_content(
+        f"Hi {name},\n\nYour CodeLeaf verification code is {code}.\n"
+        f"This code expires in {OTP_TTL_MINUTES} minutes.\n\nCodeLeaf Security"
+    )
     try:
-        response = requests.post(
-            "https://api.brevo.com/v3/smtp/email",
-            headers={"api-key": api_key, "accept": "application/json", "Content-Type": "application/json"},
-            json={
-                "sender": {"name": sender_name, "email": sender_email},
-                "to": [{"email": email, "name": name}],
-                "subject": "Verify your CodeLeaf email",
-                "htmlContent": f"<p>Hi {name},</p><p>Your CodeLeaf verification code is <strong>{code}</strong>.</p><p>This code expires in {OTP_TTL_MINUTES} minutes.</p>",
-            },
-            timeout=8,
-        )
-        if response.ok:
-            return True
-        try:
-            details = response.json()
-            message = details.get("message") or details.get("code") or "Brevo rejected the email"
-        except ValueError:
-            message = "Brevo rejected the email"
-        raise RuntimeError(f"Brevo delivery failed ({response.status_code}): {str(message)[:240]}")
-    except requests.RequestException:
-        raise RuntimeError("Brevo could not be reached. Check the provider status and try again.")
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port, timeout=10) as smtp:
+                smtp.login(username, password)
+                smtp.send_message(message)
+        else:
+            with smtplib.SMTP(host, port, timeout=10) as smtp:
+                smtp.ehlo()
+                smtp.starttls()
+                smtp.ehlo()
+                smtp.login(username, password)
+                smtp.send_message(message)
+        return True
+    except (OSError, smtplib.SMTPException) as exc:
+        raise RuntimeError(f"Gmail SMTP delivery failed: {str(exc)[:240]}") from exc
 
 
 def issue_email_otp(user):
