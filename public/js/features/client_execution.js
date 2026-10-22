@@ -55,7 +55,7 @@ const ClientExecution = (() => {
         'public final class CodeLeafScanner {\\n' +
         '  private static final String CODELEAF_INPUT = ' + escapedInput + ';\\n' +
         '  private static int position = 0;\\n' +
-        '  public Scanner(InputStream input) { }\\n' +
+        '  public CodeLeafScanner(InputStream input) { }\\n' +
         '  private int readChar() { return position < CODELEAF_INPUT.length() ? CODELEAF_INPUT.charAt(position++) : -1; }\\n' +
         '  public String nextLine() { StringBuilder value = new StringBuilder(); int ch; while ((ch = readChar()) != -1 && ch != 10) { if (ch != 13) value.append((char) ch); } return value.toString(); }\\n' +
         '  public String next() { StringBuilder value = new StringBuilder(); int ch; do { ch = readChar(); } while (ch != -1 && ch <= 32); while (ch != -1 && ch > 32) { value.append((char) ch); ch = readChar(); } return value.toString(); }\\n' +
