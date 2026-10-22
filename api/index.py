@@ -39,6 +39,9 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SECURE=_cookie_secure,
     SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_PATH="/",
+    SESSION_COOKIE_MAX_AGE=int(os.getenv("AUTH_SESSION_TTL_DAYS", "14")) * 24 * 60 * 60,
+    SESSION_REFRESH_EACH_REQUEST=True,
     PERMANENT_SESSION_LIFETIME=__import__("datetime").timedelta(days=int(os.getenv("AUTH_SESSION_TTL_DAYS", "14"))),
 )
 _cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]

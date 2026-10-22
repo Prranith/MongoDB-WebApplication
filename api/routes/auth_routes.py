@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 
 from services.auth.auth_service import (
     AUTH_REQUIRED, create_password_user, create_session,
-    current_user, logout, password_login,
+    current_user, logout, password_login, issue_email_otp, verify_email_otp, _db,
 )
 from services.shared.rate_limit import make_rate_limiter
 
@@ -35,6 +35,9 @@ def auth_register():
         return limited
     try:
         user = create_password_user(body.get("name"), body.get("email"), body.get("password"))
+        if not user.get("emailVerified", False):
+            issue_email_otp(user)
+            return jsonify({"authenticated": False, "verificationRequired": True, "email": user["email"]}), 201
         return jsonify({"authenticated": True, "user": create_session(user)}), 201
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
@@ -61,5 +64,34 @@ def auth_login():
 def auth_logout():
     logout()
     return jsonify({"authenticated": False})
+
+
+@auth_bp.post("/api/auth/verify-email")
+def auth_verify_email():
+    body = request.get_json(silent=True) or {}
+    limited = _rate_limit("verify", body.get("email"))
+    if limited:
+        return limited
+    try:
+        user = verify_email_otp(body.get("email"), body.get("code"))
+        return jsonify({"authenticated": True, "user": create_session(user)})
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@auth_bp.post("/api/auth/resend-verification")
+def auth_resend_verification():
+    body = request.get_json(silent=True) or {}
+    limited = _rate_limit("resend", body.get("email"))
+    if limited:
+        return limited
+    db_user = _db().users.find_one({"email": str(body.get("email", "")).strip().lower()})
+    if not db_user:
+        return jsonify({"error": "Unable to send verification code."}), 400
+    try:
+        issue_email_otp(db_user)
+        return jsonify({"sent": True})
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 503
 
 

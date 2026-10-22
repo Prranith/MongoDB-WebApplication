@@ -4,6 +4,7 @@ import hashlib
 import os
 import secrets
 import time
+import requests
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import g, jsonify, request, session
@@ -14,6 +15,12 @@ from services.shared.redis_client import get_auth_db
 
 SESSION_TTL_DAYS = int(os.getenv("AUTH_SESSION_TTL_DAYS", "14"))
 AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "0").strip().lower() in {"1", "true", "yes"}
+EMAIL_VERIFICATION_REQUIRED = os.getenv(
+    "AUTH_EMAIL_VERIFICATION_REQUIRED",
+    "1" if os.getenv("RESEND_API_KEY", "").strip() else "0",
+).strip().lower() in {"1", "true", "yes"}
+OTP_TTL_MINUTES = max(5, int(os.getenv("AUTH_OTP_TTL_MINUTES", "10")))
+OTP_MAX_ATTEMPTS = max(3, int(os.getenv("AUTH_OTP_MAX_ATTEMPTS", "5")))
 
 
 def _now():
@@ -33,6 +40,7 @@ def _safe_user(doc):
         "name": doc.get("name") or doc.get("email", "").split("@")[0],
         "avatar": doc.get("avatar", ""),
         "providers": sorted(doc.get("providers", [])),
+        "emailVerified": bool(doc.get("emailVerified", False)),
         "createdAt": doc.get("createdAt").isoformat() if hasattr(doc.get("createdAt"), "isoformat") else doc.get("createdAt"),
     }
 
@@ -49,6 +57,66 @@ def init_indexes():
     db.identities.create_index([("provider", 1), ("subject", 1)], unique=True)
     db.sessions.create_index("expiresAt", expireAfterSeconds=0)
     db.auth_events.create_index("createdAt")
+    db.email_otps.create_index("expiresAt", expireAfterSeconds=0)
+
+
+def _otp_digest(email, code):
+    secret = os.getenv("AUTH_SECRET_KEY", "").strip() or "development-only-secret"
+    return hashlib.sha256(f"{secret}:{email}:{code}".encode()).hexdigest()
+
+
+def _send_verification_email(email, name, code):
+    api_key = os.getenv("RESEND_API_KEY", "").strip()
+    sender = os.getenv("AUTH_EMAIL_FROM", "").strip()
+    if not api_key or not sender:
+        if os.getenv("AUTH_EMAIL_DEV_MODE", "0").strip().lower() in {"1", "true", "yes"}:
+            print(f"[auth] development email OTP for {email}: {code}")
+            return True
+        return False
+    try:
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={
+                "from": sender,
+                "to": [email],
+                "subject": "Verify your CodeLeaf email",
+                "html": f"<p>Hi {name},</p><p>Your CodeLeaf verification code is <strong>{code}</strong>.</p><p>This code expires in {OTP_TTL_MINUTES} minutes.</p>",
+            },
+            timeout=8,
+        )
+        return response.ok
+    except requests.RequestException:
+        return False
+
+
+def issue_email_otp(user):
+    db = _db()
+    if db is None:
+        raise RuntimeError("Authentication database is not configured.")
+    email = _email(user.get("email"))
+    code = f"{secrets.randbelow(1000000):06d}"
+    now = _now()
+    db.email_otps.delete_many({"email": email})
+    sent = _send_verification_email(email, user.get("name", "there"), code)
+    if not sent:
+        raise RuntimeError("Email delivery is not configured. Set RESEND_API_KEY and AUTH_EMAIL_FROM.")
+    db.email_otps.insert_one({"email": email, "codeHash": _otp_digest(email, code), "attempts": 0,
+                              "createdAt": now, "expiresAt": now + timedelta(minutes=OTP_TTL_MINUTES)})
+
+
+def verify_email_otp(email, code):
+    db = _db()
+    email = _email(email)
+    record = db.email_otps.find_one({"email": email, "expiresAt": {"$gt": _now()}}) if db is not None else None
+    if not record or record.get("attempts", 0) >= OTP_MAX_ATTEMPTS:
+        raise ValueError("This verification code is expired or locked. Request a new code.")
+    if not secrets.compare_digest(record.get("codeHash", ""), _otp_digest(email, str(code or ""))):
+        db.email_otps.update_one({"_id": record["_id"]}, {"$inc": {"attempts": 1}})
+        raise ValueError("Incorrect verification code.")
+    db.users.update_one({"email": email}, {"$set": {"emailVerified": True, "updatedAt": _now()}})
+    db.email_otps.delete_one({"_id": record["_id"]})
+    return db.users.find_one({"email": email})
 
 
 def _event(kind, user_id=None, provider=None, success=True, reason=""):
@@ -88,6 +156,7 @@ def create_password_user(name, email, password):
         "createdAt": now,
         "updatedAt": now,
         "status": "active",
+        "emailVerified": not EMAIL_VERIFICATION_REQUIRED,
     }
     result = db.users.insert_one(doc)
     doc["_id"] = result.inserted_id
@@ -104,6 +173,8 @@ def password_login(email, password):
         raise ValueError("Invalid email or password.")
     if user.get("status", "active") != "active":
         raise ValueError("This account is not active.")
+    if EMAIL_VERIFICATION_REQUIRED and not user.get("emailVerified", False):
+        raise ValueError("Verify your email before signing in.")
     _event("login", str(user["_id"]), "password")
     return user
 

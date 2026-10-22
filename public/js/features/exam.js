@@ -3695,7 +3695,6 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       // Initialize styling settings (restore saved preferences first)
       studentNS.loadEditorSettings();
       studentNS.updateEditorSettings();
-      studentNS.applySharedEditorSettings();
 
       // If a question was selected before editor initialization, load its value now
       if (state.student.currentQIdx !== null) {
@@ -5487,10 +5486,15 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       const settings = window.S && S.settings;
       if (!cm || !settings) return;
 
-      const font = settings.fontFamily || 'Consolas';
-      const size = `${settings.fontSizeVal || 11}${settings.fontSizeUnit || 'pt'}`;
-      studentNS._applyEditorTypography(cm, font, size);
-      cm.refresh();
+      const fontEl = el('editor-font-family');
+      const sizeEl = el('editor-font-size');
+      if (fontEl && settings.fontFamily) fontEl.value = settings.fontFamily;
+      if (sizeEl && settings.fontSizeVal) {
+        const preferred = `${settings.fontSizeVal}${settings.fontSizeUnit || 'px'}`;
+        const option = [...sizeEl.options].find(item => item.value === preferred);
+        if (option) sizeEl.value = preferred;
+      }
+      studentNS.updateEditorSettings();
     },
 
     loadEditorSettings() {

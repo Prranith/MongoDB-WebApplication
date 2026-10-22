@@ -778,6 +778,7 @@
     <label class="auth-field auth-name-field" id="auth-name-field" hidden>Name<input id="auth-name" autocomplete="name" placeholder="Your name" /></label>
     <label class="auth-field">Email<input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required /></label>
     <label class="auth-field">Password<input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 10 characters" required /></label>
+    <label class="auth-field" id="auth-otp-field" hidden>Verification code<input id="auth-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code" /></label>
     <div class="auth-actions"><button class="auth-primary" id="auth-submit" type="button" onclick="Auth.login()">Sign in</button><button class="auth-secondary" id="auth-mode-toggle" type="button" onclick="Auth.register()">Create account</button></div>
     <p class="auth-message" id="auth-message" role="status"></p>
   </section>

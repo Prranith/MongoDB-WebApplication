@@ -346,6 +346,15 @@ class SqlService:
 
     @classmethod
     def execute_query(cls, sql_query, limit=DEFAULT_LIMIT, custom_tables=None):
+        from services.execution.query_queue import query_slot
+        try:
+            with query_slot("SQL"):
+                return cls._execute_query(sql_query, limit, custom_tables)
+        except TimeoutError as exc:
+            return {"status": "error", "error": str(exc), "code": "QUERY_QUEUE_TIMEOUT"}
+
+    @classmethod
+    def _execute_query(cls, sql_query, limit=DEFAULT_LIMIT, custom_tables=None):
         started = time.perf_counter()
         conn = None
         try:

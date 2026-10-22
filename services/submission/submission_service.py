@@ -81,6 +81,16 @@ class SubmissionService:
     @staticmethod
     def execute_room_query(room_id: str, dataset_ids, query: str, max_results: int = 100000):
         """Load datasets from Redis and execute query against them."""
+        from services.execution.query_queue import query_slot
+        try:
+            with query_slot("MongoDB"):
+                return SubmissionService._execute_room_query(room_id, dataset_ids, query, max_results)
+        except TimeoutError as exc:
+            return {"status": "error", "error": str(exc), "code": "QUERY_QUEUE_TIMEOUT"}
+
+    @staticmethod
+    def _execute_room_query(room_id: str, dataset_ids, query: str, max_results: int = 100000):
+        """Unqueued MongoDB execution implementation."""
         import json as _json
         from bson import json_util
 

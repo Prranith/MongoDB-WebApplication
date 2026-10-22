@@ -10,15 +10,31 @@ const Auth = (() => {
   }
 
   function setMode(mode) {
+    if (mode === 'verify') {
+      state.mode = 'verify';
+      $('auth-title').textContent = 'Verify your email';
+      $('auth-name-field').hidden = true;
+      $('auth-otp-field').hidden = false;
+      $('auth-password').closest('.auth-field').hidden = true;
+      $('auth-submit').textContent = 'Verify email';
+      $('auth-submit').onclick = verifyEmail;
+      $('auth-mode-toggle').textContent = 'Resend code';
+      $('auth-mode-toggle').onclick = resendVerification;
+      return;
+    }
     state.mode = mode === 'signup' ? 'signup' : 'signin';
     const signup = state.mode === 'signup';
     const title = $('auth-title');
     const nameField = $('auth-name-field');
     const nameInput = $('auth-name');
+    const otpField = $('auth-otp-field');
+    const passwordField = $('auth-password')?.closest('.auth-field');
     const submit = $('auth-submit');
     const toggle = $('auth-mode-toggle');
     if (title) title.textContent = signup ? 'Create your CodeLeaf account' : 'Sign in to CodeLeaf';
     if (nameField) nameField.hidden = !signup;
+    if (otpField) otpField.hidden = true;
+    if (passwordField) passwordField.hidden = false;
     if (nameInput) {
       nameInput.required = signup;
       nameInput.disabled = !signup;
@@ -100,8 +116,28 @@ const Auth = (() => {
     if (!validate('signup')) return;
     try {
       setMessage('Creating your secure account…');
-      completed(await request('/api/auth/register', { name: $('auth-name')?.value, email: $('auth-email')?.value, password: $('auth-password')?.value }));
+      const data = await request('/api/auth/register', { name: $('auth-name')?.value, email: $('auth-email')?.value, password: $('auth-password')?.value });
+      if (data.verificationRequired) {
+        setMode('verify');
+        setMessage('We sent a verification code to your email.');
+        $('auth-otp')?.focus();
+        return;
+      }
+      completed(data);
     } catch (error) { setMessage(error.message, true); }
+  }
+
+  async function verifyEmail() {
+    const email = $('auth-email')?.value.trim();
+    const code = $('auth-otp')?.value.trim();
+    if (!email || !/^\d{6}$/.test(code || '')) { setMessage('Enter the 6-digit verification code.', true); return; }
+    try { completed(await request('/api/auth/verify-email', { email, code })); }
+    catch (error) { setMessage(error.message, true); }
+  }
+
+  async function resendVerification() {
+    try { await request('/api/auth/resend-verification', { email: $('auth-email')?.value }); setMessage('A new verification code was sent.'); }
+    catch (error) { setMessage(error.message, true); }
   }
 
   function validate(mode) {
