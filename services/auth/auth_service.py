@@ -220,9 +220,12 @@ def current_user():
         session.pop("auth_session", None)
         return None
     user = db.users.find_one({"_id": record["userId"], "status": "active"})
-    if user:
+    if user and (not EMAIL_VERIFICATION_REQUIRED or user.get("emailVerified", False)):
         db.sessions.update_one({"_id": digest}, {"$set": {"lastSeenAt": _now()}})
-    return _safe_user(user)
+        return _safe_user(user)
+    db.sessions.delete_one({"_id": digest})
+    session.pop("auth_session", None)
+    return None
 
 
 def logout():
