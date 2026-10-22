@@ -27,7 +27,9 @@ def api_meeting_create():
     """Create a new meeting room."""
     log.info("meeting_create_requested", correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    host_name = (body.get("hostName") or "Anonymous").strip() or "Anonymous"
+    user = g.get("user") or {}
+    account_id = str(user.get("id") or "")
+    host_name = str(user.get("name") or user.get("email") or "Account").strip()
     room_id = (body.get("roomId") or "").strip().upper()
     host_token = (body.get("hostToken") or "").strip()
     room_title = (body.get("roomTitle") or "").strip()
@@ -38,6 +40,7 @@ def api_meeting_create():
             room_id=room_id if room_id else None,
             host_token=host_token,
             room_title=room_title,
+            owner_account_id=account_id,
         )
         return _json_response({
             "status": "ok",
@@ -67,7 +70,7 @@ def api_meeting_join():
         return _json_response({"status": "error", "error": "roomId is required"}, status=400)
 
     try:
-        res = MeetingService.join_room(room_id, participant_name, peer_id, host_token=host_token)
+        res = MeetingService.join_room(room_id, participant_name, peer_id, host_token=host_token, account_id=str((g.get("user") or {}).get("id") or ""))
         return _json_response({
             "status": "ok",
             **res,
@@ -92,7 +95,7 @@ def api_meeting_end():
     if not room_id or not peer_id:
         return _json_response({"status": "error", "error": "roomId and peerId are required"}, status=400)
     try:
-        return _json_response({"status": "ok", **MeetingService.end_room(room_id, peer_id)})
+        return _json_response({"status": "ok", **MeetingService.end_room(room_id, peer_id, str((g.get("user") or {}).get("id") or ""))})
     except KeyError as e:
         return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
@@ -117,7 +120,7 @@ def api_meeting_leave():
         return _json_response({"status": "error", "error": "roomId is required"}, status=400)
 
     try:
-        res = MeetingService.leave_room(room_id, peer_id or "unknown")
+        res = MeetingService.leave_room(room_id, peer_id or "unknown", str((g.get("user") or {}).get("id") or ""))
         status_code = 200
         if res.get("destroyed"):
             status_code = 200  # still OK — room was intentionally torn down
@@ -140,7 +143,7 @@ def api_meeting_remove():
     if not room_id or not peer_id or not target_peer_id:
         return _json_response({"status": "error", "error": "roomId, peerId, and targetPeerId are required"}, status=400)
     try:
-        return _json_response({"status": "ok", **MeetingService.remove_participant(room_id, peer_id, target_peer_id)})
+        return _json_response({"status": "ok", **MeetingService.remove_participant(room_id, peer_id, target_peer_id, str((g.get("user") or {}).get("id") or ""))})
     except KeyError as e:
         return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:
@@ -163,7 +166,7 @@ def api_meeting_event():
     if not room_id or not peer_id or not event_type:
         return _json_response({"status": "error", "error": "roomId, peerId, and eventType are required"}, status=400)
     try:
-        return _json_response({"status": "ok", **MeetingService.record_event(room_id, peer_id, event_type, payload)})
+        return _json_response({"status": "ok", **MeetingService.record_event(room_id, peer_id, event_type, payload, str((g.get("user") or {}).get("id") or ""))})
     except KeyError as e:
         return _json_response({"status": "error", "error": str(e)}, status=404)
     except PermissionError as e:

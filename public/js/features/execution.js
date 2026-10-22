@@ -379,7 +379,7 @@ async function runQuery() {
     // Filter custom collections to only include those referenced in the query string
     const customCollsMap = {};
     try {
-      const stored = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+      const stored = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
       Object.entries(stored).forEach(([name, docs]) => {
         const pattern = new RegExp('\\b' + name + '\\b');
         if (pattern.test(q)) {
@@ -700,7 +700,7 @@ function copyResult() {
 // HISTORY ENGINE (Local Storage)
 // ═══════════════════════════════════════════════════════════════════
 function loadHistoryFromLocalStorage() {
-  S.history = JSON.parse(localStorage.getItem('mongosandbox_history') || '[]');
+  S.history = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_history')) || '[]');
   renderHistoryPanel();
 }
 
@@ -717,7 +717,7 @@ function saveToHistory(queryText, status, docsCount, executionTime) {
   };
   S.history.unshift(entry);
   if (S.history.length > 50) S.history.pop();
-  localStorage.setItem('mongosandbox_history', JSON.stringify(S.history));
+  localStorage.setItem(accountStorageKey('mongosandbox_history'), JSON.stringify(S.history));
   renderHistoryPanel();
 }
 
@@ -775,7 +775,7 @@ function clearQueryHistory(event) {
   if (event) event.stopPropagation();
   if (confirm('Clear all query history from your browser cache?')) {
     S.history = [];
-    localStorage.removeItem('mongosandbox_history');
+    localStorage.removeItem(accountStorageKey('mongosandbox_history'));
     renderHistoryPanel();
     logOutput('[info] Query history cleared from browser cache.');
   }
@@ -794,7 +794,7 @@ function toggleFavHistory(id, event) {
   const entry = S.history.find(h => h.id === id);
   if (entry) {
     entry.favorite = !entry.favorite;
-    localStorage.setItem('mongosandbox_history', JSON.stringify(S.history));
+    localStorage.setItem(accountStorageKey('mongosandbox_history'), JSON.stringify(S.history));
     renderHistoryPanel();
   }
 }

@@ -60,7 +60,9 @@ const Auth = (() => {
     wrap.hidden = !state.user;
     if (state.user) {
       const displayName = state.user.name || state.user.email?.split('@')[0] || 'Account';
-      if (avatar) avatar.textContent = displayName.slice(0, 1).toUpperCase();
+      // Keep the account control visually consistent for every user. The
+      // profile details belong in the popover, not inside the avatar button.
+      if (avatar) avatar.innerHTML = '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 12a4.2 4.2 0 1 0 0-8.4A4.2 4.2 0 0 0 12 12Zm0 2.1c-4.05 0-7.35 2.1-7.35 4.7 0 .66.54 1.2 1.2 1.2h12.3c.66 0 1.2-.54 1.2-1.2 0-2.6-3.3-4.7-7.35-4.7Z"/></svg>';
       if (name) name.textContent = displayName;
       if (email) email.textContent = state.user.email || '';
       button.title = state.user.email || '';
@@ -80,6 +82,7 @@ const Auth = (() => {
   function completed(data) {
     state.user = data.user || null;
     renderAccount();
+    window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
     close();
     setMessage('');
     if (state.action) { const action = state.action; state.action = null; action(); }
@@ -117,10 +120,18 @@ const Auth = (() => {
   }
 
   async function signOut() {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
-    state.user = null;
-    renderAccount();
-    if (typeof showView === 'function') showView('intro');
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+    } finally {
+      state.user = null;
+      const popover = $('auth-profile-popover');
+      const button = $('auth-account-button');
+      if (popover) popover.hidden = true;
+      if (button) button.setAttribute('aria-expanded', 'false');
+      renderAccount();
+      window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: null }));
+      if (typeof showView === 'function') showView('intro');
+    }
   }
 
   function accountAction() {
@@ -138,19 +149,9 @@ const Auth = (() => {
       state.user = data.user || null;
       state.required = !!data.required;
       renderAccount();
-      const accountWrap = $('auth-account-wrap');
+      window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
       const accountPopover = $('auth-profile-popover');
       const accountButton = $('auth-account-button');
-      accountWrap?.addEventListener('mouseenter', () => {
-        if (state.user && accountPopover) {
-          accountPopover.hidden = false;
-          accountButton?.setAttribute('aria-expanded', 'true');
-        }
-      });
-      accountWrap?.addEventListener('mouseleave', () => {
-        if (accountPopover) accountPopover.hidden = true;
-        accountButton?.setAttribute('aria-expanded', 'false');
-      });
       document.addEventListener('click', event => {
         const wrap = $('auth-account-wrap');
         const popover = $('auth-profile-popover');

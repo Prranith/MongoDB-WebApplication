@@ -190,7 +190,7 @@ async function loadCollections() {
     const defaultColls = d.collections || [];
     
     // Load custom collections from local storage
-    const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+    const customCollsMap = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
     const customColls = Object.entries(customCollsMap).map(([name, docs]) => ({
       name: name,
       count: Array.isArray(docs) ? docs.length : 0,

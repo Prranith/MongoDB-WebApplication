@@ -147,7 +147,7 @@ function updateWorkspaceStatus(text, connected = false) {
 
 function persistBrowserWorkspace() {
   if (!localWorkspaceHandle) {
-    localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
+    localStorage.setItem(accountStorageKey('mongosandbox_files'), JSON.stringify(S.files));
   }
 }
 
@@ -679,7 +679,7 @@ async function loadFiles() {
     }
 
     // Safe fallback for browsers without File System Access API support.
-    let localFiles = JSON.parse(localStorage.getItem('mongosandbox_files') || '[]');
+    let localFiles = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_files')) || '[]');
     
     // Filter out legacy files
     const legacyPaths = ['01_find_paid.mongo', '02_aggregate_pipeline.mongo', 'kishor.mongo'];
@@ -821,6 +821,9 @@ function openFileInTab(path) {
   rememberWorkspaceEditorHistory();
   
   S.activeFile = path;
+  // Keep the AI assistant context synchronized with the active editor tab,
+  // even when the assistant panel is already open.
+  window.WorkspaceAIAssistant?.syncContext?.();
   // New items are created in the selected file's containing folder.
   const parentParts = path.split('/');
   S.activeFolder = null;
@@ -952,6 +955,7 @@ function closeTab(path, event) {
       openFileInTab(S.tabs[S.tabs.length - 1]);
     } else {
       S.activeFile = null;
+      window.WorkspaceAIAssistant?.syncContext?.();
       restoreWorkspaceEditorHistory('', '');
       if (typeof setSqlNotebookMode === 'function') setSqlNotebookMode(false);
     }
@@ -1279,7 +1283,10 @@ function inlineRenameFile(path) {
         if (item.path === newPath) item.name = newName;
       });
       S.tabs = S.tabs.map(tabPath => tabPath === oldPath ? newPath : (tabPath.startsWith(`${oldPath}/`) ? `${newPath}${tabPath.slice(oldPath.length)}` : tabPath));
-      if (S.activeFile === oldPath) S.activeFile = newPath;
+      if (S.activeFile === oldPath) {
+        S.activeFile = newPath;
+        window.WorkspaceAIAssistant?.syncContext?.();
+      }
       persistBrowserWorkspace();
       document.querySelectorAll('#tabbar .tab:not(.tab-add)').forEach(tab => tab.remove());
       S.tabs.forEach(tabPath => {

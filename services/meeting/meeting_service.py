@@ -99,6 +99,7 @@ class MeetingService:
         room_id: Optional[str] = None,
         host_token: str = "",
         room_title: str = "",
+        owner_account_id: str = "",
     ) -> Dict[str, Any]:
         room_id = (room_id or f"MTG-{uuid.uuid4().hex[:8].upper()}").strip().upper()
         if cls._load(room_id):
@@ -109,6 +110,7 @@ class MeetingService:
             "roomId": room_id,
             "roomTitle": room_title,
             "hostName": host_name,
+            "ownerAccountId": str(owner_account_id or ""),
             "hostToken": (host_token or "").strip(),
             "hostPeerId": "",
             "creatorPeerId": "",
@@ -139,7 +141,7 @@ class MeetingService:
         return list((room or {}).get("_activePeers", set()))
 
     @classmethod
-    def join_room(cls, room_id: str, participant_name: str, peer_id: str, host_token: str = "") -> Dict[str, Any]:
+    def join_room(cls, room_id: str, participant_name: str, peer_id: str, host_token: str = "", account_id: str = "") -> Dict[str, Any]:
         room_id = room_id.strip().upper()
         participant_name = " ".join((participant_name or "Anonymous").split()) or "Anonymous"
         peer_id = peer_id.strip()
@@ -155,6 +157,11 @@ class MeetingService:
             if not room.get("isOpen", True):
                 raise ValueError("Meeting ended by the host")
             participants = dict(room.get("participants") or {})
+            account_id = str(account_id or "")
+            if account_id:
+                for existing_peer, existing in participants.items():
+                    if existing_peer != peer_id and str((existing or {}).get("accountId") or "") == account_id:
+                        raise PermissionError("This account is already in the meeting")
             name_key = participant_name.casefold()
             for existing_peer, existing in participants.items():
                 if existing_peer == peer_id:
@@ -180,6 +187,7 @@ class MeetingService:
             existing = participants.get(peer_id) or {}
             participants[peer_id] = {
                 "name": participant_name,
+                "accountId": account_id,
                 "nameKey": name_key,
                 "isCreator": is_creator or bool(existing.get("isCreator")),
                 "joinedAt": existing.get("joinedAt") or _now_iso(),
@@ -202,12 +210,15 @@ class MeetingService:
         }
 
     @classmethod
-    def leave_room(cls, room_id: str, peer_id: str) -> Dict[str, Any]:
+    def leave_room(cls, room_id: str, peer_id: str, account_id: str = "") -> Dict[str, Any]:
         with _rooms_lock:
             room = cls._load(room_id)
             if not room:
                 return {"roomId": room_id, "destroyed": False, "reason": "not_found"}
             participants = dict(room.get("participants") or {})
+            participant = participants.get(peer_id) or {}
+            if account_id and participant.get("accountId") and participant.get("accountId") != account_id:
+                raise PermissionError("This participant does not belong to the signed-in account")
             removed = peer_id in participants
             participants.pop(peer_id, None)
             if not removed:
@@ -245,7 +256,7 @@ class MeetingService:
         return {"roomId": room_id, "remainingParticipants": len(participants), "destroyed": False, "removed": True, "hostPeerId": room.get("hostPeerId", ""), "hostChanged": host_changed}
 
     @classmethod
-    def remove_participant(cls, room_id: str, host_peer_id: str, target_peer_id: str) -> Dict[str, Any]:
+    def remove_participant(cls, room_id: str, host_peer_id: str, target_peer_id: str, account_id: str = "") -> Dict[str, Any]:
         """Remove a guest after verifying the caller is the persisted host."""
         with _rooms_lock:
             room = cls._load(room_id)
@@ -253,6 +264,9 @@ class MeetingService:
                 raise KeyError(f"Meeting room '{room_id}' not found")
             if room.get("hostPeerId") != host_peer_id:
                 raise PermissionError("Only the meeting host can remove participants")
+            host = (room.get("participants") or {}).get(host_peer_id) or {}
+            if account_id and host.get("accountId") and host.get("accountId") != account_id:
+                raise PermissionError("Only the signed-in meeting host can remove participants")
             if not target_peer_id or target_peer_id == host_peer_id:
                 raise ValueError("The host cannot remove themselves")
             participants = dict(room.get("participants") or {})
@@ -274,7 +288,7 @@ class MeetingService:
         }
 
     @classmethod
-    def record_event(cls, room_id: str, peer_id: str, event_type: str, payload: Optional[dict] = None) -> Dict[str, Any]:
+    def record_event(cls, room_id: str, peer_id: str, event_type: str, payload: Optional[dict] = None, account_id: str = "") -> Dict[str, Any]:
         """Store bounded meeting activity inside the room document itself."""
         allowed = {"chat", "reaction", "participant"}
         if event_type not in allowed:
@@ -285,6 +299,9 @@ class MeetingService:
                 raise KeyError(f"Meeting room '{room_id}' not found")
             if peer_id not in (room.get("participants") or {}):
                 raise PermissionError("Participant is not in this meeting")
+            participant = (room.get("participants") or {}).get(peer_id) or {}
+            if account_id and participant.get("accountId") and participant.get("accountId") != account_id:
+                raise PermissionError("This participant does not belong to the signed-in account")
             event = {"peerId": peer_id, "createdAt": _now_iso(), **(payload or {})}
             field = {"chat": "chatMessages", "reaction": "reactions", "participant": "participantEvents"}[event_type]
             items = list(room.get(field) or [])
@@ -306,12 +323,15 @@ class MeetingService:
             cls._rooms.pop(room_id, None)
 
     @classmethod
-    def end_room(cls, room_id: str, peer_id: str) -> Dict[str, Any]:
+    def end_room(cls, room_id: str, peer_id: str, account_id: str = "") -> Dict[str, Any]:
         room = cls._load(room_id)
         if not room:
             raise KeyError(f"Meeting room '{room_id}' not found")
         if room.get("hostPeerId") != peer_id:
             raise PermissionError("Only the meeting host can end the meeting")
+        host = (room.get("participants") or {}).get(peer_id) or {}
+        if account_id and host.get("accountId") and host.get("accountId") != account_id:
+            raise PermissionError("Only the signed-in meeting host can end the meeting")
         ended_at = _now_iso()
         ended_by = room.get("hostName") or "the host"
         # Ending is terminal. Clients receive the end notification from the

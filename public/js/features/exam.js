@@ -4931,7 +4931,7 @@ const ExamPortal = (() => {
           S.settings.fontSizeUnit = 'px';
           S.settings.fontSize = `${numericSize}px`;
         }
-        try { localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings)); } catch (err) { /* storage unavailable */ }
+        try { localStorage.setItem(accountStorageKey('mongosandbox_settings'), JSON.stringify(S.settings)); } catch (err) { /* storage unavailable */ }
       }
 
       try {

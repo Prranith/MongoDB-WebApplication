@@ -295,5 +295,10 @@ const WorkspaceAIAssistant = (() => {
     });
   });
 
-  return { toggle, close, preset, ask, applyCorrection, undoCorrection, toggleAutofill, syncLauncherVisibility };
+  return { toggle, close, preset, ask, applyCorrection, undoCorrection, toggleAutofill, syncContext, syncLauncherVisibility };
 })();
+
+// The workspace module switches tabs before and after the assistant module is
+// initialized. Expose the same controller used by the inline UI handlers so
+// tab changes can always refresh the assistant context.
+window.WorkspaceAIAssistant = WorkspaceAIAssistant;

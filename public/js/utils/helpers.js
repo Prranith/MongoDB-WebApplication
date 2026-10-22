@@ -9,6 +9,15 @@ function escId(s) {
   return String(s).replace(/[^A-Za-z0-9]/g, '_');
 }
 
+// Browser-persisted workspace data is private to the authenticated account.
+// The guest namespace is used only during the short auth bootstrap phase.
+function accountStorageKey(key) {
+  const accountId = typeof Auth !== 'undefined' && Auth.user?.id
+    ? String(Auth.user.id)
+    : 'guest';
+  return `${key}:${accountId}`;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // SETTINGS OPERATIONS
 // ═══════════════════════════════════════════════════════════════════
@@ -21,7 +30,7 @@ function loadSettingsFromLocalStorage() {
     maxResults: 10000,
     timeout: '30 s'
   };
-  const saved = JSON.parse(localStorage.getItem('mongosandbox_settings') || '{}');
+  const saved = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_settings')) || '{}');
   S.settings = { ...defaults, ...saved };
   
   // Backwards compatibility for old S.settings.fontSize (e.g. "13 pt")
@@ -52,7 +61,7 @@ function saveSettings() {
   // Maintain S.settings.fontSize for older dependencies
   S.settings.fontSize = S.settings.fontSizeVal + S.settings.fontSizeUnit;
   
-  localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings));
+  localStorage.setItem(accountStorageKey('mongosandbox_settings'), JSON.stringify(S.settings));
   applySettings();
   closeModal('settings-modal');
   logOutput('[info] Editor and execution settings saved.');

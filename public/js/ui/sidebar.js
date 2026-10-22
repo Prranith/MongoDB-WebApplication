@@ -50,9 +50,9 @@ function deleteCustomCollection(event, name) {
   if (!confirm(`Are you sure you want to delete the custom dataset "${name}"?`)) {
     return;
   }
-  const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+  const customCollsMap = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
   delete customCollsMap[name];
-  localStorage.setItem('mongosandbox_custom_collections', JSON.stringify(customCollsMap));
+  localStorage.setItem(accountStorageKey('mongosandbox_custom_collections'), JSON.stringify(customCollsMap));
   
   if (S.activeCollection === name) {
     S.activeCollection = null;
@@ -92,9 +92,9 @@ function uploadCustomDataset(event) {
         return;
       }
       
-      const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+      const customCollsMap = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
       customCollsMap[collName] = docs;
-      localStorage.setItem('mongosandbox_custom_collections', JSON.stringify(customCollsMap));
+      localStorage.setItem(accountStorageKey('mongosandbox_custom_collections'), JSON.stringify(customCollsMap));
       
       loadCollections();
       setActiveCollection(collName);
@@ -206,7 +206,7 @@ function openDatabasePreview() {
 
 async function openCollectionPreview(name) {
   let documents = [];
-  const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+  const customCollsMap = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
 
   if (Object.prototype.hasOwnProperty.call(customCollsMap, name)) {
     documents = Array.isArray(customCollsMap[name]) ? customCollsMap[name] : [];
@@ -252,7 +252,7 @@ function loadSchema(coll) {
   if (!coll) return;
   const collObj = S.collections.find(c => c.name === coll);
   if (collObj && collObj.isCustom) {
-    const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+  const customCollsMap = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
     const docs = customCollsMap[coll] || [];
     const schema = getCustomCollectionSchema(docs);
     renderInspector(coll, schema, docs.length);

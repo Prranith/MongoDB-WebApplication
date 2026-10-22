@@ -96,7 +96,7 @@ function setupMongoIntelliSense() {
   function getCollectionsSuggestions() {
     const colls = [...COLLECTIONS_INFO];
     try {
-      const custom = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+      const custom = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
       Object.keys(custom).forEach(name => {
         if (!colls.some(c => c.text === name)) {
           colls.push({ text: name, displayText: `${name} — Custom uploaded dataset` });

@@ -166,7 +166,7 @@ class RoomService:
         }
 
     @staticmethod
-    def join_room(room_id: str, name: str, roll_no: str, branch: str, section: str = "A") -> dict:
+    def join_room(room_id: str, name: str, roll_no: str, branch: str, section: str = "A", account_id: str = "") -> dict:
         import re
         
         # 1. Strict Sanitization & Validation
@@ -205,13 +205,22 @@ class RoomService:
         is_locked = meta.get("isLocked") == "1" or status == "ended"
 
         participants_raw = get_room_participants(room_id)
+        kicked_raw = get_room_kicked_dict(room_id)
         existing_student_id = None
         
         # 3. Strict Identity Integrity Check
+        account_id = str(account_id or "")
         if participants_raw:
             for sid, p_val in participants_raw.items():
                 try:
                     p = json.loads(p_val) if isinstance(p_val, str) else p_val
+                    registered_account = str(p.get("accountId") or "")
+                    if account_id and registered_account == account_id:
+                        if sid in kicked_raw:
+                            raise PermissionError(f"kicked:{kicked_raw.get(sid, 'Removed by Mentor')}")
+                        if p.get("rollNo", "").strip().upper() != clean_roll:
+                            raise PermissionError("This account is already registered in this exam with another roll number.")
+                        existing_student_id = sid
                     if p.get("rollNo", "").strip().upper() == clean_roll:
                         reg_name = p.get("name", "").strip()
                         reg_branch = p.get("branch", "").strip().upper()
@@ -233,8 +242,6 @@ class RoomService:
 
         if not is_locked and status not in ("waiting", "live"):
             raise ValueError(f"Room is {status or 'closed'}")
-
-        kicked_raw = get_room_kicked_dict(room_id)
 
         if existing_student_id:
             student_id = existing_student_id
@@ -265,6 +272,7 @@ class RoomService:
                     pass
             student_data = {
                 "name": clean_name,
+                "accountId": account_id,
                 "rollNo": clean_roll,
                 "branch": clean_branch,
                 "section": clean_section,
@@ -290,6 +298,7 @@ class RoomService:
         else:
             student_data = {
                 "name": clean_name,
+                "accountId": account_id,
                 "rollNo": clean_roll,
                 "branch": clean_branch,
                 "section": clean_section,

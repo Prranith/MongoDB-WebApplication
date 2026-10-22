@@ -9494,7 +9494,7 @@ async function loadCollections() {
     const defaultColls = d.collections || [];
     
     // Load custom collections from local storage
-    const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+    const customCollsMap = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
     const customColls = Object.entries(customCollsMap).map(([name, docs]) => ({
       name: name,
       count: Array.isArray(docs) ? docs.length : 0,
@@ -9581,7 +9581,9 @@ const Auth = (() => {
     wrap.hidden = !state.user;
     if (state.user) {
       const displayName = state.user.name || state.user.email?.split('@')[0] || 'Account';
-      if (avatar) avatar.textContent = displayName.slice(0, 1).toUpperCase();
+      // Keep the account control visually consistent for every user. The
+      // profile details belong in the popover, not inside the avatar button.
+      if (avatar) avatar.innerHTML = '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 12a4.2 4.2 0 1 0 0-8.4A4.2 4.2 0 0 0 12 12Zm0 2.1c-4.05 0-7.35 2.1-7.35 4.7 0 .66.54 1.2 1.2 1.2h12.3c.66 0 1.2-.54 1.2-1.2 0-2.6-3.3-4.7-7.35-4.7Z"/></svg>';
       if (name) name.textContent = displayName;
       if (email) email.textContent = state.user.email || '';
       button.title = state.user.email || '';
@@ -9601,6 +9603,7 @@ const Auth = (() => {
   function completed(data) {
     state.user = data.user || null;
     renderAccount();
+    window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
     close();
     setMessage('');
     if (state.action) { const action = state.action; state.action = null; action(); }
@@ -9638,10 +9641,18 @@ const Auth = (() => {
   }
 
   async function signOut() {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
-    state.user = null;
-    renderAccount();
-    if (typeof showView === 'function') showView('intro');
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+    } finally {
+      state.user = null;
+      const popover = $('auth-profile-popover');
+      const button = $('auth-account-button');
+      if (popover) popover.hidden = true;
+      if (button) button.setAttribute('aria-expanded', 'false');
+      renderAccount();
+      window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: null }));
+      if (typeof showView === 'function') showView('intro');
+    }
   }
 
   function accountAction() {
@@ -9659,19 +9670,9 @@ const Auth = (() => {
       state.user = data.user || null;
       state.required = !!data.required;
       renderAccount();
-      const accountWrap = $('auth-account-wrap');
+      window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
       const accountPopover = $('auth-profile-popover');
       const accountButton = $('auth-account-button');
-      accountWrap?.addEventListener('mouseenter', () => {
-        if (state.user && accountPopover) {
-          accountPopover.hidden = false;
-          accountButton?.setAttribute('aria-expanded', 'true');
-        }
-      });
-      accountWrap?.addEventListener('mouseleave', () => {
-        if (accountPopover) accountPopover.hidden = true;
-        accountButton?.setAttribute('aria-expanded', 'false');
-      });
       document.addEventListener('click', event => {
         const wrap = $('auth-account-wrap');
         const popover = $('auth-profile-popover');
@@ -9709,6 +9710,15 @@ function escId(s) {
   return String(s).replace(/[^A-Za-z0-9]/g, '_');
 }
 
+// Browser-persisted workspace data is private to the authenticated account.
+// The guest namespace is used only during the short auth bootstrap phase.
+function accountStorageKey(key) {
+  const accountId = typeof Auth !== 'undefined' && Auth.user?.id
+    ? String(Auth.user.id)
+    : 'guest';
+  return `${key}:${accountId}`;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // SETTINGS OPERATIONS
 // ═══════════════════════════════════════════════════════════════════
@@ -9721,7 +9731,7 @@ function loadSettingsFromLocalStorage() {
     maxResults: 10000,
     timeout: '30 s'
   };
-  const saved = JSON.parse(localStorage.getItem('mongosandbox_settings') || '{}');
+  const saved = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_settings')) || '{}');
   S.settings = { ...defaults, ...saved };
   
   // Backwards compatibility for old S.settings.fontSize (e.g. "13 pt")
@@ -9752,7 +9762,7 @@ function saveSettings() {
   // Maintain S.settings.fontSize for older dependencies
   S.settings.fontSize = S.settings.fontSizeVal + S.settings.fontSizeUnit;
   
-  localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings));
+  localStorage.setItem(accountStorageKey('mongosandbox_settings'), JSON.stringify(S.settings));
   applySettings();
   closeModal('settings-modal');
   logOutput('[info] Editor and execution settings saved.');
@@ -10193,9 +10203,9 @@ function deleteCustomCollection(event, name) {
   if (!confirm(`Are you sure you want to delete the custom dataset "${name}"?`)) {
     return;
   }
-  const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+  const customCollsMap = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
   delete customCollsMap[name];
-  localStorage.setItem('mongosandbox_custom_collections', JSON.stringify(customCollsMap));
+  localStorage.setItem(accountStorageKey('mongosandbox_custom_collections'), JSON.stringify(customCollsMap));
   
   if (S.activeCollection === name) {
     S.activeCollection = null;
@@ -10235,9 +10245,9 @@ function uploadCustomDataset(event) {
         return;
       }
       
-      const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+      const customCollsMap = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
       customCollsMap[collName] = docs;
-      localStorage.setItem('mongosandbox_custom_collections', JSON.stringify(customCollsMap));
+      localStorage.setItem(accountStorageKey('mongosandbox_custom_collections'), JSON.stringify(customCollsMap));
       
       loadCollections();
       setActiveCollection(collName);
@@ -10349,7 +10359,7 @@ function openDatabasePreview() {
 
 async function openCollectionPreview(name) {
   let documents = [];
-  const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+  const customCollsMap = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
 
   if (Object.prototype.hasOwnProperty.call(customCollsMap, name)) {
     documents = Array.isArray(customCollsMap[name]) ? customCollsMap[name] : [];
@@ -10395,7 +10405,7 @@ function loadSchema(coll) {
   if (!coll) return;
   const collObj = S.collections.find(c => c.name === coll);
   if (collObj && collObj.isCustom) {
-    const customCollsMap = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+  const customCollsMap = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
     const docs = customCollsMap[coll] || [];
     const schema = getCustomCollectionSchema(docs);
     renderInspector(coll, schema, docs.length);
@@ -10702,7 +10712,7 @@ function updateWorkspaceStatus(text, connected = false) {
 
 function persistBrowserWorkspace() {
   if (!localWorkspaceHandle) {
-    localStorage.setItem('mongosandbox_files', JSON.stringify(S.files));
+    localStorage.setItem(accountStorageKey('mongosandbox_files'), JSON.stringify(S.files));
   }
 }
 
@@ -11234,7 +11244,7 @@ async function loadFiles() {
     }
 
     // Safe fallback for browsers without File System Access API support.
-    let localFiles = JSON.parse(localStorage.getItem('mongosandbox_files') || '[]');
+    let localFiles = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_files')) || '[]');
     
     // Filter out legacy files
     const legacyPaths = ['01_find_paid.mongo', '02_aggregate_pipeline.mongo', 'kishor.mongo'];
@@ -11376,6 +11386,9 @@ function openFileInTab(path) {
   rememberWorkspaceEditorHistory();
   
   S.activeFile = path;
+  // Keep the AI assistant context synchronized with the active editor tab,
+  // even when the assistant panel is already open.
+  window.WorkspaceAIAssistant?.syncContext?.();
   // New items are created in the selected file's containing folder.
   const parentParts = path.split('/');
   S.activeFolder = null;
@@ -11507,6 +11520,7 @@ function closeTab(path, event) {
       openFileInTab(S.tabs[S.tabs.length - 1]);
     } else {
       S.activeFile = null;
+      window.WorkspaceAIAssistant?.syncContext?.();
       restoreWorkspaceEditorHistory('', '');
       if (typeof setSqlNotebookMode === 'function') setSqlNotebookMode(false);
     }
@@ -11834,7 +11848,10 @@ function inlineRenameFile(path) {
         if (item.path === newPath) item.name = newName;
       });
       S.tabs = S.tabs.map(tabPath => tabPath === oldPath ? newPath : (tabPath.startsWith(`${oldPath}/`) ? `${newPath}${tabPath.slice(oldPath.length)}` : tabPath));
-      if (S.activeFile === oldPath) S.activeFile = newPath;
+      if (S.activeFile === oldPath) {
+        S.activeFile = newPath;
+        window.WorkspaceAIAssistant?.syncContext?.();
+      }
       persistBrowserWorkspace();
       document.querySelectorAll('#tabbar .tab:not(.tab-add)').forEach(tab => tab.remove());
       S.tabs.forEach(tabPath => {
@@ -12783,7 +12800,7 @@ async function runQuery() {
     // Filter custom collections to only include those referenced in the query string
     const customCollsMap = {};
     try {
-      const stored = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+      const stored = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
       Object.entries(stored).forEach(([name, docs]) => {
         const pattern = new RegExp('\\\\b' + name + '\\\\b');
         if (pattern.test(q)) {
@@ -13104,7 +13121,7 @@ function copyResult() {
 // HISTORY ENGINE (Local Storage)
 // ═══════════════════════════════════════════════════════════════════
 function loadHistoryFromLocalStorage() {
-  S.history = JSON.parse(localStorage.getItem('mongosandbox_history') || '[]');
+  S.history = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_history')) || '[]');
   renderHistoryPanel();
 }
 
@@ -13121,7 +13138,7 @@ function saveToHistory(queryText, status, docsCount, executionTime) {
   };
   S.history.unshift(entry);
   if (S.history.length > 50) S.history.pop();
-  localStorage.setItem('mongosandbox_history', JSON.stringify(S.history));
+  localStorage.setItem(accountStorageKey('mongosandbox_history'), JSON.stringify(S.history));
   renderHistoryPanel();
 }
 
@@ -13179,7 +13196,7 @@ function clearQueryHistory(event) {
   if (event) event.stopPropagation();
   if (confirm('Clear all query history from your browser cache?')) {
     S.history = [];
-    localStorage.removeItem('mongosandbox_history');
+    localStorage.removeItem(accountStorageKey('mongosandbox_history'));
     renderHistoryPanel();
     logOutput('[info] Query history cleared from browser cache.');
   }
@@ -13198,7 +13215,7 @@ function toggleFavHistory(id, event) {
   const entry = S.history.find(h => h.id === id);
   if (entry) {
     entry.favorite = !entry.favorite;
-    localStorage.setItem('mongosandbox_history', JSON.stringify(S.history));
+    localStorage.setItem(accountStorageKey('mongosandbox_history'), JSON.stringify(S.history));
     renderHistoryPanel();
   }
 }
@@ -13620,7 +13637,7 @@ function setupMongoIntelliSense() {
   function getCollectionsSuggestions() {
     const colls = [...COLLECTIONS_INFO];
     try {
-      const custom = JSON.parse(localStorage.getItem('mongosandbox_custom_collections') || '{}');
+      const custom = JSON.parse(localStorage.getItem(accountStorageKey('mongosandbox_custom_collections')) || '{}');
       Object.keys(custom).forEach(name => {
         if (!colls.some(c => c.text === name)) {
           colls.push({ text: name, displayText: `${name} — Custom uploaded dataset` });
@@ -13822,6 +13839,22 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   document.addEventListener('click', closeMenus);
+});
+
+// Authentication resolves asynchronously. Reload account-scoped browser data
+// after the session is known, and clear the in-memory workspace on sign-out so
+// a second account cannot inherit the previous account's editor state.
+window.addEventListener('codeleaf:auth-changed', event => {
+  if (event.detail) {
+    loadSettingsFromLocalStorage();
+    loadHistoryFromLocalStorage();
+    loadFiles();
+  } else {
+    if (typeof resetOpenWorkspaceTabs === 'function') resetOpenWorkspaceTabs();
+    if (typeof S !== 'undefined') S.files = [];
+    if (typeof renderFileTree === 'function') renderFileTree();
+    if (typeof updateWorkspaceEmptyState === 'function') updateWorkspaceEmptyState();
+  }
 });
 
 // Keep toggled comments aligned with the selected code block. The generic
@@ -14305,8 +14338,13 @@ const WorkspaceAIAssistant = (() => {
     });
   });
 
-  return { toggle, close, preset, ask, applyCorrection, undoCorrection, toggleAutofill, syncLauncherVisibility };
+  return { toggle, close, preset, ask, applyCorrection, undoCorrection, toggleAutofill, syncContext, syncLauncherVisibility };
 })();
+
+// The workspace module switches tabs before and after the assistant module is
+// initialized. Expose the same controller used by the inline UI handlers so
+// tab changes can always refresh the assistant context.
+window.WorkspaceAIAssistant = WorkspaceAIAssistant;
 
 </script>
 
@@ -20169,7 +20207,7 @@ const ExamPortal = (() => {
           S.settings.fontSizeUnit = 'px';
           S.settings.fontSize = `${numericSize}px`;
         }
-        try { localStorage.setItem('mongosandbox_settings', JSON.stringify(S.settings)); } catch (err) { /* storage unavailable */ }
+        try { localStorage.setItem(accountStorageKey('mongosandbox_settings'), JSON.stringify(S.settings)); } catch (err) { /* storage unavailable */ }
       }
 
       try {

@@ -140,6 +140,22 @@ window.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', closeMenus);
 });
 
+// Authentication resolves asynchronously. Reload account-scoped browser data
+// after the session is known, and clear the in-memory workspace on sign-out so
+// a second account cannot inherit the previous account's editor state.
+window.addEventListener('codeleaf:auth-changed', event => {
+  if (event.detail) {
+    loadSettingsFromLocalStorage();
+    loadHistoryFromLocalStorage();
+    loadFiles();
+  } else {
+    if (typeof resetOpenWorkspaceTabs === 'function') resetOpenWorkspaceTabs();
+    if (typeof S !== 'undefined') S.files = [];
+    if (typeof renderFileTree === 'function') renderFileTree();
+    if (typeof updateWorkspaceEmptyState === 'function') updateWorkspaceEmptyState();
+  }
+});
+
 // Keep toggled comments aligned with the selected code block. The generic
 // CodeMirror command can place markers at column zero for mixed indentation.
 function toggleCommentWithIndent(cm) {

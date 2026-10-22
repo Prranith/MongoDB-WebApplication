@@ -5,6 +5,7 @@ Decomposed controller layer delegating to domain services.
 """
 
 import sys
+import json
 from pathlib import Path
 from flask import Blueprint, request, jsonify, g, Response, stream_with_context
 
@@ -18,7 +19,7 @@ from services.leaderboard.leaderboard_service import LeaderboardService
 from services.compiler.compiler_service import CompilerService
 from services.sql.sql_service import SqlService
 from services.exam.media_service import QuestionMediaService
-from services.shared.redis_client import redis_one
+from services.shared.redis_client import redis_one, get_room_participants
 from utils.logger import get_logger, bind_component
 
 exam_bp = Blueprint("exam_bp", __name__)
@@ -32,13 +33,31 @@ def _json_response(payload, status=200):
     return jsonify(payload), status
 
 
+def _account_id(fallback=""):
+    """Use the server session identity; fallback is only for local legacy mode."""
+    return str((g.get("user") or {}).get("id") or fallback or "")
+
+
+def _assert_student_account(room_id, student_id):
+    """Prevent an authenticated student from submitting as another student."""
+    account_id = str((g.get("user") or {}).get("id") or "")
+    if not account_id:
+        return
+    raw = get_room_participants(room_id).get(student_id)
+    participant = json.loads(raw) if isinstance(raw, str) else (raw or {})
+    if str(participant.get("accountId") or "") != account_id:
+        raise PermissionError("This student record belongs to another account")
+
+
 @exam_bp.route("/api/exam/room/create", methods=["POST"])
 def api_exam_create_room():
     """Create a new exam room."""
     log.info("room_create_requested", correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
     title = body.get("title", "Untitled Assessment").strip()
-    mentor_id = body.get("mentorId", "")
+    # The authenticated account is the authority; never trust a mentor ID
+    # supplied by the browser.
+    mentor_id = _account_id(body.get("mentorId", ""))
     timed = bool(body.get("timed", False))
     duration = int(body.get("duration", 60))
     fullscreen_mode = bool(body.get("fullscreenMode", False))
@@ -64,7 +83,7 @@ def api_exam_create_room():
 @exam_bp.route("/api/exam/room/<room_id>", methods=["GET"])
 def api_exam_get_room(room_id: str):
     """Fetch room metadata + questions + participants."""
-    mentor_id = request.args.get("mentorId", "")
+    mentor_id = _account_id(request.args.get("mentorId", ""))
     log.debug("room_get_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
         res = RoomService.get_room(room_id, mentor_id)
@@ -118,7 +137,10 @@ def api_exam_join_room(room_id: str):
         return _json_response({"status": "error", "error": "Name, Roll No, and Branch are required"}, status=400)
 
     try:
-        res = RoomService.join_room(room_id, name, roll_no, branch, section)
+        res = RoomService.join_room(
+            room_id, name, roll_no, branch, section,
+            account_id=str((g.get("user") or {}).get("id") or ""),
+        )
         return _json_response({
             "status": "ok",
             "studentId": res["studentId"],
@@ -152,7 +174,7 @@ def api_exam_toggle_lock(room_id: str):
     """Mentor locks or unlocks the room."""
     log.info("room_lock_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId", "")
+    mentor_id = _account_id(body.get("mentorId", ""))
     lock_state = bool(body.get("isLocked", True))
     try:
         res = RoomService.toggle_room_lock(room_id, mentor_id, lock_state)
@@ -171,7 +193,7 @@ def api_exam_start_room(room_id: str):
     """Mentor starts the exam."""
     log.info("room_start_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId", "")
+    mentor_id = _account_id(body.get("mentorId", ""))
     try:
         started_at = RoomService.start_room(room_id, mentor_id)
         return _json_response({"status": "ok", "startedAt": started_at})
@@ -189,7 +211,7 @@ def api_exam_end_room(room_id: str):
     """Mentor ends the exam."""
     log.info("room_end_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId", "")
+    mentor_id = _account_id(body.get("mentorId", ""))
     try:
         ended_at = RoomService.end_room(room_id, mentor_id)
         return _json_response({"status": "ok", "endedAt": ended_at})
@@ -207,7 +229,7 @@ def api_exam_save_questions(room_id: str):
     """Save questions array for a room."""
     log.info("room_questions_save_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId", "")
+    mentor_id = _account_id(body.get("mentorId", ""))
     questions = body.get("questions", [])
     try:
         count = RoomService.save_questions(room_id, mentor_id, questions)
@@ -224,7 +246,7 @@ def api_exam_save_questions(room_id: str):
 @exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/media", methods=["POST"])
 def api_exam_upload_question_media(room_id: str, question_id: str):
     """Upload a question image/video to GridFS (mentor-only, max 30 MB)."""
-    mentor_id = request.form.get("mentorId", "").strip()
+    mentor_id = _account_id(request.form.get("mentorId", "").strip())
     file_storage = request.files.get("file")
     room_mentor = redis_one(["HGET", f"room:{room_id}", "mentorId"])
     if not room_mentor:
@@ -280,7 +302,7 @@ def _media_mentor_guard(room_id: str, mentor_id: str):
 @exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/media/chunk", methods=["POST"])
 def api_exam_upload_question_media_chunk(room_id: str, question_id: str):
     """Buffer one slice of a chunked question-media upload."""
-    mentor_id = request.form.get("mentorId", "").strip()
+    mentor_id = _account_id((body.get("mentorId") or "").strip())
     guard = _media_mentor_guard(room_id, mentor_id)
     if guard is not None:
         return guard
@@ -302,7 +324,7 @@ def api_exam_upload_question_media_chunk(room_id: str, question_id: str):
 def api_exam_complete_question_media(room_id: str, question_id: str):
     """Assemble buffered chunks into one stored media file."""
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = (body.get("mentorId") or "").strip()
+    mentor_id = _account_id((body.get("mentorId") or "").strip())
     guard = _media_mentor_guard(room_id, mentor_id)
     if guard is not None:
         return guard
@@ -328,7 +350,7 @@ def api_exam_complete_question_media(room_id: str, question_id: str):
 def api_exam_abort_question_media(room_id: str, question_id: str):
     """Discard buffered chunks for an abandoned upload."""
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = (body.get("mentorId") or "").strip()
+    mentor_id = _account_id(request.form.get("mentorId", "").strip())
     guard = _media_mentor_guard(room_id, mentor_id)
     if guard is not None:
         return guard
@@ -344,7 +366,7 @@ def api_exam_abort_question_media(room_id: str, question_id: str):
 @exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/media/<media_id>", methods=["DELETE"])
 def api_exam_delete_question_media(room_id: str, question_id: str, media_id: str):
     """Delete a question's media file from GridFS (mentor-only)."""
-    mentor_id = request.form.get("mentorId", "").strip()
+    mentor_id = _account_id(request.args.get("mentorId", ""))
     room_mentor = redis_one(["HGET", f"room:{room_id}", "mentorId"])
     if not room_mentor:
         return _json_response({"status": "error", "error": "Room not found"}, status=404)
@@ -365,7 +387,7 @@ def api_exam_upload_dataset(room_id: str):
     """Upload a dataset for a room."""
     log.info("dataset_upload_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId", "")
+    mentor_id = _account_id(body.get("mentorId", ""))
     name = body.get("name", "dataset").strip()
     docs = body.get("docs", [])
 
@@ -395,7 +417,7 @@ def api_exam_delete_dataset(room_id: str, dataset_id: str):
     """Delete a dataset from a room."""
     log.info("dataset_delete_requested", room_id=room_id, dataset_id=dataset_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId", "")
+    mentor_id = _account_id(body.get("mentorId", ""))
     try:
         SubmissionService.delete_dataset(room_id, mentor_id, dataset_id)
         return _json_response({"status": "ok"})
@@ -455,7 +477,7 @@ def api_exam_freeze_answer(room_id: str):
     """Mentor: run query and freeze the answer for a question."""
     log.info("freeze_answer_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId", "")
+    mentor_id = _account_id(body.get("mentorId", ""))
     question_id = body.get("questionId", "")
     dataset_ids = body.get("datasetIds", [])
     if not dataset_ids and body.get("datasetId"):
@@ -502,6 +524,7 @@ def api_exam_submit_answer(room_id: str):
         return _json_response({"status": "error", "error": "studentId and questionId are required"}, status=400)
 
     try:
+        _assert_student_account(room_id, student_id)
         res = SubmissionService.submit_answer(room_id, student_id, question_id, q_type, marks, body)
         
         # Check if it was an auto-save operation
@@ -565,6 +588,7 @@ def api_exam_student_finish(room_id: str, student_id: str):
     """Submit the final exam for a student."""
     log.info("student_finish_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
     try:
+        _assert_student_account(room_id, student_id)
         SubmissionService.finish_exam(room_id, student_id)
         return _json_response({"status": "ok"})
     except KeyError as e:
@@ -585,6 +609,7 @@ def api_exam_student_self_kick(room_id: str, student_id: str):
         reason = "Terminated: Proctoring Rules Violation"
 
     try:
+        _assert_student_account(room_id, student_id)
         ProctoringService.self_kick(room_id, student_id, reason)
         return _json_response({"status": "ok"})
     except Exception as e:
@@ -614,7 +639,7 @@ def api_exam_cleanup_room(room_id: str):
     """Delete room from Redis."""
     log.info("room_cleanup_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId", "")
+    mentor_id = _account_id(body.get("mentorId", ""))
     try:
         RoomService.cleanup_room(room_id, mentor_id)
         return _json_response({"status": "ok", "deletedKeys": 1})
@@ -634,6 +659,7 @@ def api_exam_student_violation(room_id: str, student_id: str):
     body = request.get_json(force=True, silent=True) or {}
     violation_type = body.get("violationType", "")
     try:
+        _assert_student_account(room_id, student_id)
         res = ProctoringService.record_violation(room_id, student_id, violation_type)
         return _json_response({
             "status": "ok",
@@ -652,7 +678,7 @@ def api_exam_student_violation(room_id: str, student_id: str):
 def api_exam_remove_student(room_id: str, student_id: str):
     """Mentor removes/kicks a student from the exam room."""
     log.info("student_remove_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
-    mentor_id = request.args.get("mentorId", "")
+    mentor_id = _account_id(request.args.get("mentorId", ""))
     keep_leaderboard = request.args.get("keepInLeaderboard", "0") == "1"
     try:
         ProctoringService.kick_student(room_id, student_id, mentor_id, keep_leaderboard)
@@ -669,7 +695,7 @@ def api_exam_reallow_student(room_id: str, student_id: str):
     """Mentor re-allows a kicked student."""
     log.info("student_reallow_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId", "")
+    mentor_id = _account_id(body.get("mentorId", ""))
     try:
         ProctoringService.reallow_student(room_id, student_id, mentor_id)
         return _json_response({"status": "ok"})
@@ -684,7 +710,7 @@ def api_exam_reallow_student(room_id: str, student_id: str):
 def api_exam_kicked_list(room_id: str):
     """Mentor fetches the list of kicked students."""
     log.debug("kicked_list_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
-    mentor_id = request.args.get("mentorId", "")
+    mentor_id = _account_id(request.args.get("mentorId", ""))
     try:
         kicked = ProctoringService.get_kicked_students(room_id, mentor_id)
         return _json_response({"status": "ok", "kicked": kicked})
@@ -699,9 +725,11 @@ def api_exam_kicked_list(room_id: str):
 def api_exam_student_submissions(room_id: str, student_id: str):
     """Mentor fetches submissions for a student or student restores state."""
     log.debug("student_submissions_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
-    mentor_id = request.args.get("mentorId", "")
+    mentor_id = _account_id(request.args.get("mentorId", ""))
     is_student_themselves = request.args.get("isStudent", "") == "1"
     try:
+        if is_student_themselves:
+            _assert_student_account(room_id, student_id)
         submissions = LeaderboardService.get_student_submissions(room_id, student_id, mentor_id, is_student_themselves)
         return _json_response({"status": "ok", "submissions": submissions})
     except KeyError as e:
@@ -717,7 +745,7 @@ def api_exam_student_submissions(room_id: str, student_id: str):
 def api_exam_room_archive(room_id: str):
     """Fetch all room data as a single JSON file."""
     log.debug("room_archive_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
-    mentor_id = request.args.get("mentorId", "")
+    mentor_id = _account_id(request.args.get("mentorId", ""))
     try:
         archive = LeaderboardService.get_room_archive(room_id, mentor_id)
         return _json_response({
@@ -744,7 +772,7 @@ def api_exam_room_archive(room_id: str):
 def api_exam_get_paper(room_id: str):
     """Retrieve full question paper for export."""
     log.debug("paper_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
-    mentor_id = request.args.get("mentorId", "")
+    mentor_id = _account_id(request.args.get("mentorId", ""))
     try:
         paper = RoomService.get_paper(room_id, mentor_id)
         return _json_response({
@@ -836,7 +864,7 @@ def api_exam_delete_room(room_id: str):
     """Permanently delete room and all its data from MongoDB Atlas."""
     log.info("room_delete_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = body.get("mentorId") or request.args.get("mentorId", "")
+    mentor_id = _account_id(body.get("mentorId", ""))
     try:
         RoomService.cleanup_room(room_id, mentor_id)
         return _json_response({"status": "ok", "message": "Room and all associated data permanently deleted"})
