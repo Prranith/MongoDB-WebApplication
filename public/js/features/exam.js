@@ -182,6 +182,27 @@ const ExamPortal = (() => {
       .replace(/'/g, '&#39;');
   }
 
+  // A solve-function Java question is stored as two editor buffers, but the
+  // browser compiler receives one source file. Java requires imports to come
+  // before every type declaration and permits only one public top-level type
+  // per file. Keep the driver as Main.java's public entry point, move imports
+  // to the file header, and make the editorial Solution type package-private.
+  function assembleJavaExecutionSource(editorialCode, driverCode, templateType) {
+    if (templateType !== 'solve_function' || !driverCode) return String(editorialCode || '');
+    const editorial = String(editorialCode || '');
+    const driver = String(driverCode || '');
+    const imports = [];
+    const stripImports = source => source.replace(/^\s*import\s+[^;]+;\s*$/gm, match => {
+      const statement = match.trim();
+      if (statement && !imports.includes(statement)) imports.push(statement);
+      return '';
+    });
+    const normalizedEditorial = stripImports(editorial)
+      .replace(/\bpublic\s+(?=(?:(?:abstract|final)\s+)?(?:class|interface|enum|record)\b)/g, '');
+    const normalizedDriver = stripImports(driver);
+    return `${imports.join('\n')}\n\n${normalizedDriver.trim()}\n\n${normalizedEditorial.trim()}\n`;
+  }
+
 // Mentor-side expected-output generation follows the same policy as normal
 // coding runs: use the student's browser runtime first, and send the complete
 // generation request to the authoritative remote worker only if the browser
@@ -190,9 +211,11 @@ const ExamPortal = (() => {
 async function generateCodingOutputsWithFallback(language, editorialCode, inputs, templateType, driverCode, onProgress) {
   const normalized = String(language || '').toLowerCase();
   const canRunLocally = typeof ClientExecution !== 'undefined' && ClientExecution.supports(normalized);
-  const source = templateType === 'solve_function' && driverCode
-    ? `${editorialCode}\n\n${driverCode}`
-    : editorialCode;
+  const source = normalized === 'java'
+    ? assembleJavaExecutionSource(editorialCode, driverCode, templateType)
+    : (templateType === 'solve_function' && driverCode
+      ? `${editorialCode}\n\n${driverCode}`
+      : editorialCode);
   let localFailure = '';
 
   if (canRunLocally) {

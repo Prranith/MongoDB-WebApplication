@@ -59,7 +59,13 @@ const ClientExecution = (() => {
         '  private int readChar() { return position < CODELEAF_INPUT.length() ? CODELEAF_INPUT.charAt(position++) : -1; }\\n' +
         '  public String nextLine() { StringBuilder value = new StringBuilder(); int ch; while ((ch = readChar()) != -1 && ch != 10) { if (ch != 13) value.append((char) ch); } return value.toString(); }\\n' +
         '  public String next() { StringBuilder value = new StringBuilder(); int ch; do { ch = readChar(); } while (ch != -1 && ch <= 32); while (ch != -1 && ch > 32) { value.append((char) ch); ch = readChar(); } return value.toString(); }\\n' +
-        '  public int nextInt() { return Integer.parseInt(next()); }\\n' +
+         '  public boolean hasNext() { int saved = position; String value = next(); position = saved; return value.length() > 0; }\\n' +
+         '  public boolean hasNextInt() { int saved = position; String value = next(); position = saved; if (value.length() == 0) return false; try { Integer.parseInt(value); return true; } catch (Exception error) { return false; } }\\n' +
+         '  public int nextInt() { return Integer.parseInt(next()); }\\n' +
+         '  public boolean hasNextLong() { int saved = position; String value = next(); position = saved; if (value.length() == 0) return false; try { Long.parseLong(value); return true; } catch (Exception error) { return false; } }\\n' +
+         '  public long nextLong() { return Long.parseLong(next()); }\\n' +
+         '  public boolean hasNextDouble() { int saved = position; String value = next(); position = saved; if (value.length() == 0) return false; try { Double.parseDouble(value); return true; } catch (Exception error) { return false; } }\\n' +
+         '  public double nextDouble() { return Double.parseDouble(next()); }\\n' +
         '}';
       };
       const printfShim = 'public final class CodeLeafConsole {\\n' +
