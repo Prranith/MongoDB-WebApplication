@@ -69,7 +69,7 @@ def _otp_digest(email, code):
 
 def _send_verification_email(email, name, code):
     host = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
-    port = int(os.getenv("SMTP_PORT", "587"))
+    port = int(os.getenv("SMTP_PORT", "465"))
     username = os.getenv("SMTP_USERNAME", "").strip()
     password = os.getenv("SMTP_PASSWORD", "").replace(" ", "").strip()
     sender = os.getenv("AUTH_EMAIL_FROM", username).strip()
@@ -88,21 +88,25 @@ def _send_verification_email(email, name, code):
         f"Hi {name},\n\nYour CodeLeaf verification code is {code}.\n"
         f"This code expires in {OTP_TTL_MINUTES} minutes.\n\nCodeLeaf Security"
     )
-    try:
-        if port == 465:
-            with smtplib.SMTP_SSL(host, port, timeout=10) as smtp:
-                smtp.login(username, password)
-                smtp.send_message(message)
-        else:
-            with smtplib.SMTP(host, port, timeout=10) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
-                smtp.ehlo()
-                smtp.login(username, password)
-                smtp.send_message(message)
-        return True
-    except (OSError, smtplib.SMTPException) as exc:
-        raise RuntimeError(f"Gmail SMTP delivery failed: {str(exc)[:240]}") from exc
+    ports = [port] + ([465] if port == 587 else [587])
+    failures = []
+    for attempt_port in ports:
+        try:
+            if attempt_port == 465:
+                with smtplib.SMTP_SSL(host, attempt_port, timeout=6) as smtp:
+                    smtp.login(username, password)
+                    smtp.send_message(message)
+            else:
+                with smtplib.SMTP(host, attempt_port, timeout=6) as smtp:
+                    smtp.ehlo()
+                    smtp.starttls()
+                    smtp.ehlo()
+                    smtp.login(username, password)
+                    smtp.send_message(message)
+            return True
+        except (OSError, smtplib.SMTPException) as exc:
+            failures.append(f"port {attempt_port}: {str(exc)[:160]}")
+    raise RuntimeError(f"Gmail SMTP delivery failed ({'; '.join(failures)}). Verify the App Password and SMTP settings.")
 
 
 def issue_email_otp(user):
