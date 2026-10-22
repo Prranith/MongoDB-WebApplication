@@ -802,9 +802,18 @@ def api_exam_run_code(room_id: str):
     try:
         body = request.get_json(force=True, silent=True) or {}
         question_id = body.get("questionId")
+        student_id = str(body.get("studentId") or "")
         language = body.get("language", "python")
         code = body.get("code", "")
         stdins = body.get("stdins")
+
+        if not student_id:
+            return _json_response({"status": "error", "error": "studentId is required"}, status=400)
+        _assert_student_account(room_id, student_id)
+        if RoomService.get_room_status(room_id).get("roomStatus") != "live":
+            return _json_response({"status": "error", "error": "Exam is not live"}, status=403)
+        if isinstance(stdins, list) and len(stdins) > 20:
+            return _json_response({"status": "error", "error": "Too many execution inputs"}, status=400)
 
         if isinstance(stdins, list):
             results = SubmissionService.run_piston_code(room_id, question_id, language, code, stdins)
@@ -823,6 +832,8 @@ def api_exam_run_code(room_id: str):
                 "code": res["code"],
                 "output": res["output"]
             })
+    except PermissionError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=403)
     except Exception as e:
         log.error("run_code_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
         return _json_response({
@@ -832,6 +843,76 @@ def api_exam_run_code(room_id: str):
             "code": 1,
             "output": ""
         }, status=500)
+
+
+@exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/grading-inputs", methods=["POST"])
+def api_exam_grading_inputs(room_id: str, question_id: str):
+    """Issue coding stdin fixtures for a student's local submission run.
+
+    This endpoint never returns expected outputs, editorial code, or the
+    answer key. It is intentionally separate from the room bootstrap so
+    hidden inputs are disclosed only when the student submits a coding answer.
+    """
+    try:
+        body = request.get_json(force=True, silent=True) or {}
+        student_id = str(body.get("studentId") or "")
+        if not student_id:
+            return _json_response({"status": "error", "error": "studentId is required"}, status=400)
+        _assert_student_account(room_id, student_id)
+        if RoomService.get_room_status(room_id).get("roomStatus") != "live":
+            return _json_response({"status": "error", "error": "Exam is not live"}, status=403)
+        cases = RoomService.get_coding_grading_inputs(room_id, question_id)
+        return _json_response({"status": "ok", "cases": cases})
+    except KeyError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=404)
+    except ValueError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=400)
+    except PermissionError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=403)
+    except Exception as e:
+        log.error("grading_inputs_failed", room_id=room_id, question_id=question_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": "Unable to prepare local grading inputs"}, status=500)
+
+
+@exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/custom-verify", methods=["POST"])
+def api_exam_custom_verify(room_id: str, question_id: str):
+    """Use the remote worker only to compare a non-empty custom input."""
+    try:
+        body = request.get_json(force=True, silent=True) or {}
+        student_id = str(body.get("studentId") or "")
+        stdin = str(body.get("stdin") or "")
+        if not student_id:
+            return _json_response({"status": "error", "error": "studentId is required"}, status=400)
+        if not stdin.strip():
+            return _json_response({"status": "error", "error": "Custom input is empty"}, status=400)
+        if len(stdin) > 64 * 1024:
+            return _json_response({"status": "error", "error": "Custom input is too large"}, status=400)
+        _assert_student_account(room_id, student_id)
+        if RoomService.get_room_status(room_id).get("roomStatus") != "live":
+            return _json_response({"status": "error", "error": "Exam is not live"}, status=403)
+        result = SubmissionService.verify_custom_input(
+            room_id,
+            question_id,
+            str(body.get("language") or "python"),
+            str(body.get("code") or ""),
+            stdin,
+        )
+        return _json_response({
+            "status": "ok",
+            "results": [result["student"]],
+            "verdict": result["verdict"],
+            "expectedOutput": result["expectedOutput"],
+            "executionOrigin": "remote",
+        })
+    except KeyError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=404)
+    except ValueError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=400)
+    except PermissionError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=403)
+    except Exception as e:
+        log.error("custom_verify_failed", room_id=room_id, question_id=question_id, error=str(e), correlation_id=g.get("correlation_id"))
+        return _json_response({"status": "error", "error": "Custom verification failed"}, status=500)
 
 
 @exam_bp.route("/api/exam/room/<room_id>/generate_test_cases", methods=["POST"])

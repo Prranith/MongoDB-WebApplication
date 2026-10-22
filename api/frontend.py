@@ -18503,6 +18503,43 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     }
   }; // end mentor namespace
 
+  // Execute a coding submission against the exam fixtures without sending
+  // source code to a remote worker. Hidden expected outputs never enter this
+  // function; only stdin fixtures are needed to produce a local transcript.
+  async function executeCodingCasesLocally(question, studentCode, cases, onProgress) {
+    const language = String(question.language || 'python').toLowerCase();
+    const driver = (question.templates && question.templates[language])
+      ? question.templates[language].driverCode || ''
+      : '';
+    const source = language === 'java'
+      ? assembleJavaExecutionSource(studentCode, driver, question.templateType)
+      : (question.templateType === 'solve_function' && driver
+        ? `${studentCode}\\n\\n${driver}`
+        : studentCode);
+    if (typeof ClientExecution === 'undefined' || !ClientExecution.supports(language)) {
+      throw new Error(`No browser runtime is available for ${language}.`);
+    }
+
+    const results = [];
+    for (let index = 0; index < cases.length; index += 1) {
+      onProgress?.(`Running ${language.toUpperCase()} case ${index + 1}/${cases.length} on this device…`);
+      const result = await ClientExecution.run(language, source, cases[index].input || '', {
+        timeoutMs: language === 'java' || language === 'c' || language === 'cpp' ? 60000 : 30000,
+        fileName: language === 'java' ? 'Main.java' : `main.${language}`,
+        onProgress: progress => {
+          if (progress && progress.detail) onProgress?.(progress.detail);
+        }
+      });
+      if (!result) throw new Error(`The ${language} browser runtime did not return a result.`);
+      results.push({
+        stdout: result.stdout || '',
+        stderr: result.stderr || '',
+        code: result.code === undefined ? 1 : result.code,
+      });
+    }
+    return results;
+  }
+
   // ── STUDENT NAMESPACE ──────────────────────────────────────────────────────
   const studentNS = {
 
@@ -19373,18 +19410,20 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         const sampleCases = state.student.sampleCases || [];
         const stdins = sampleCases.map(tc => tc.input || '');
         const customInputVal = el('student-stdin-input') ? el('student-stdin-input').value : '';
-        stdins.push(customInputVal);
+        const hasCustomInput = customInputVal.trim().length > 0;
 
         el('student-run-btn').textContent = 'Running...';
         el('student-run-btn').disabled = true;
-        setExamExecutionOrigin(q.language === 'python' && typeof Sk !== 'undefined' ? 'local' : 'remote');
+        setExamExecutionOrigin('local');
         el('student-console-status').style.color = 'var(--text3)';
 
         let codeToExecute = query;
         if (q.templateType === 'solve_function') {
           const driver = (q.templates && q.templates[q.language]) ? q.templates[q.language].driverCode : '';
           if (driver) {
-            codeToExecute = codeToExecute + '\\n\\n' + driver;
+            codeToExecute = q.language === 'java'
+              ? assembleJavaExecutionSource(query, driver, q.templateType)
+              : `${query}\\n\\n${driver}`;
           }
         }
 
@@ -19406,15 +19445,48 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             return results;
           };
 
-          runLocalCases().then(results => {
+          runLocalCases().then(async results => {
+            let finalResults = results;
+            const localFailed = results.some(result =>
+              Number(result.code) !== 0 || String(result.stderr || '').trim()
+            );
+            if (localFailed && stdins.length > 0) {
+              setExamExecutionOrigin('remote');
+              const fallback = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
+                studentId: state.student.studentId,
+                questionId: q.id,
+                language: q.language,
+                code: query,
+                stdins
+              });
+              if (fallback.status === 'ok' && fallback.results) finalResults = fallback.results;
+            }
             el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
             el('student-run-btn').disabled = false;
 
             state.student.runResults = state.student.runResults || {};
             sampleCases.forEach((tc, i) => {
-              state.student.runResults[`${q.id}-case-${i}`] = results[i];
+              state.student.runResults[`${q.id}-case-${i}`] = finalResults[i];
             });
-            state.student.runResults[`${q.id}-custom`] = results[results.length - 1];
+
+            if (hasCustomInput) {
+              setExamExecutionOrigin('remote');
+              const customResult = await apiCall(`/api/exam/room/${state.student.roomId}/question/${q.id}/custom-verify`, 'POST', {
+                studentId: state.student.studentId,
+                language: q.language,
+                code: query,
+                stdin: customInputVal
+              });
+              if (customResult.status === 'ok' && customResult.results && customResult.results[0]) {
+                state.student.runResults[`${q.id}-custom`] = {
+                  ...customResult.results[0],
+                  customVerdict: customResult.verdict,
+                  expectedOutput: customResult.expectedOutput || ''
+                };
+              }
+            } else {
+              setExamExecutionOrigin('local');
+            }
 
             studentNS.initConsoleTabs();
             const tabId = state.student.activeConsoleTab || 'case-0';
@@ -19445,7 +19517,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             });
           }
 
-          if (localRuntimeAvailable) {
+          const localExecutionFailed = localResults.some(result =>
+            Number(result.code) !== 0 || String(result.stderr || '').trim()
+          );
+          if (localRuntimeAvailable && !localExecutionFailed) {
             el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
             el('student-run-btn').disabled = false;
             setExamExecutionOrigin('local', false);
@@ -19453,7 +19528,22 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             sampleCases.forEach((tc, i) => {
               state.student.runResults[`${q.id}-case-${i}`] = localResults[i];
             });
-            state.student.runResults[`${q.id}-custom`] = localResults[localResults.length - 1];
+            if (hasCustomInput) {
+              setExamExecutionOrigin('remote');
+              const customResult = await apiCall(`/api/exam/room/${state.student.roomId}/question/${q.id}/custom-verify`, 'POST', {
+                studentId: state.student.studentId,
+                language: q.language,
+                code: query,
+                stdin: customInputVal
+              });
+              if (customResult.status === 'ok' && customResult.results && customResult.results[0]) {
+                state.student.runResults[`${q.id}-custom`] = {
+                  ...customResult.results[0],
+                  customVerdict: customResult.verdict,
+                  expectedOutput: customResult.expectedOutput || ''
+                };
+              }
+            }
             studentNS.initConsoleTabs();
             const tabId = state.student.activeConsoleTab || 'case-0';
             studentNS.selectConsoleTab(tabId);
@@ -19461,8 +19551,17 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           }
         }
 
+        if (stdins.length === 0 && !hasCustomInput) {
+          el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
+          el('student-run-btn').disabled = false;
+          studentNS.initConsoleTabs();
+          studentNS.selectConsoleTab('custom');
+          return;
+        }
+
         setExamExecutionOrigin('remote');
         const res = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
+          studentId: state.student.studentId,
           questionId: q.id,
           language: q.language,
           code: query,
@@ -19478,7 +19577,21 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           sampleCases.forEach((tc, i) => {
             state.student.runResults[`${q.id}-case-${i}`] = res.results[i];
           });
-          state.student.runResults[`${q.id}-custom`] = res.results[res.results.length - 1];
+          if (hasCustomInput) {
+            const customResult = await apiCall(`/api/exam/room/${state.student.roomId}/question/${q.id}/custom-verify`, 'POST', {
+              studentId: state.student.studentId,
+              language: q.language,
+              code: query,
+              stdin: customInputVal
+            });
+            if (customResult.status === 'ok' && customResult.results && customResult.results[0]) {
+              state.student.runResults[`${q.id}-custom`] = {
+                ...customResult.results[0],
+                customVerdict: customResult.verdict,
+                expectedOutput: customResult.expectedOutput || ''
+              };
+            }
+          }
 
           studentNS.initConsoleTabs();
 
@@ -19661,6 +19774,37 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         const cm = state.student.examEditor;
         body.code = cm ? cm.getValue() : '';
         body.language = q.language;
+
+        // Official coding submissions use the browser runtime first. The
+        // server receives only the execution transcript and compares it with
+        // its private frozen answers; it does not execute the editorial code
+        // or consume a remote worker for a healthy local run.
+        try {
+          if (submitBtn) submitBtn.textContent = 'Running locally...';
+          const gradingInputs = await apiCall(
+            `/api/exam/room/${state.student.roomId}/question/${q.id}/grading-inputs`,
+            'POST',
+            { studentId: state.student.studentId }
+          );
+          if (gradingInputs.status !== 'ok' || !Array.isArray(gradingInputs.cases)) {
+            throw new Error(gradingInputs.error || 'Unable to prepare grading inputs.');
+          }
+          const localResults = await executeCodingCasesLocally(q, body.code, gradingInputs.cases);
+          const localFailed = localResults.some(result =>
+            Number(result.code) !== 0 || String(result.stderr || '').trim()
+          );
+          if (!localFailed && localResults.length === gradingInputs.cases.length) {
+            body.clientResults = localResults;
+            body.clientExecution = 'on-device';
+          } else {
+            body.clientExecution = 'remote-fallback';
+          }
+        } catch (localError) {
+          // The backend will use its rate-limited emergency worker path when
+          // the browser cannot produce a complete local transcript.
+          body.clientExecution = 'remote-fallback';
+          body.clientExecutionError = String(localError.message || localError).slice(0, 500);
+        }
       } else {
         const cm = state.student.examEditor;
         body.query = cm ? cm.getValue() : '';
@@ -20204,10 +20348,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       }
       if (!q) return;
 
-      let sampleCases = (q.testCases || []).filter(tc => tc.isSample);
-      if (sampleCases.length === 0) {
-        sampleCases = (q.testCases || []).slice(0, 2);
-      }
+      // Only explicitly marked sample cases are exposed in the student UI.
+      // Never fall back to the first hidden cases: their inputs must remain
+      // undisclosed until an authenticated submission is being prepared.
+      const sampleCases = (q.testCases || []).filter(tc => tc.isSample);
       state.student.sampleCases = sampleCases;
 
       const tabsBar = el('student-console-tabs-bar');
@@ -20335,10 +20479,18 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             statusEl.innerHTML = `— <span class="exam-verdict exam-verdict-${verdictClass}">${resultTitle}</span>`;
             statusEl.style.color = '';
           } else {
-            const exitCode = cached.code !== undefined ? cached.code : 0;
-            const isError = exitCode !== 0 || (cached.stderr || '').trim().length > 0;
-            statusEl.textContent = `— Exit Code: ${exitCode}`;
-            statusEl.style.color = isError ? 'var(--red)' : 'var(--text3)';
+            if (cached.customVerdict) {
+              const accepted = cached.customVerdict === 'accepted';
+              const verdictClass = accepted ? 'accepted' : 'wrong';
+              const title = accepted ? 'Accepted' : (cached.customVerdict === 'runtime_error' ? 'Runtime Error' : 'Wrong Answer');
+              statusEl.innerHTML = `— <span class="exam-verdict exam-verdict-${verdictClass}">${title}</span>`;
+              statusEl.style.color = '';
+            } else {
+              const exitCode = cached.code !== undefined ? cached.code : 0;
+              const isError = exitCode !== 0 || (cached.stderr || '').trim().length > 0;
+              statusEl.textContent = `— Exit Code: ${exitCode}`;
+              statusEl.style.color = isError ? 'var(--red)' : 'var(--text3)';
+            }
           }
         } else {
           statusEl.textContent = '';
@@ -20410,6 +20562,17 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           <div style="margin-bottom:6px"><strong>Your Output:</strong><pre style="background:var(--bg3);padding:6px;border-radius:4px;font-family:monospace;margin:4px 0;color:${isError ? 'var(--red)' : matched ? 'var(--green2)' : 'var(--red)'}">${stdout || `${cmt} No output`}</pre></div>
         `;
       } else {
+        if (res.customVerdict) {
+          const accepted = res.customVerdict === 'accepted';
+          const title = accepted ? 'Accepted' : (res.customVerdict === 'runtime_error' ? 'Runtime Error' : 'Wrong Answer');
+          const color = accepted ? 'var(--green3)' : 'var(--red)';
+          outputArea.innerHTML = `
+            <div style="color:${color};font-weight:bold;margin-bottom:8px;font-size:12px;text-transform:uppercase">${title}</div>
+            <div style="margin-bottom:6px"><strong>Reference output:</strong><pre style="background:var(--bg3);padding:6px;border-radius:4px;font-family:monospace;margin:4px 0;white-space:pre-wrap">${escapeExamHtml(res.expectedOutput || `${cmt} No output`)}</pre></div>
+            <div style="margin-bottom:6px"><strong>Your output:</strong><pre style="background:var(--bg3);padding:6px;border-radius:4px;font-family:monospace;margin:4px 0;white-space:pre-wrap;color:${color}">${escapeExamHtml(stdout || `${cmt} No output`)}</pre></div>
+          `;
+          return;
+        }
         if (isError) {
           outputArea.innerHTML = `
             <div style="color:var(--red);font-weight:bold;margin-bottom:8px;font-size:12px;text-transform:uppercase">Execution Error</div>

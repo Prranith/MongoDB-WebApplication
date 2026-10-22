@@ -4,6 +4,7 @@ import string
 import random
 import time
 import uuid
+import copy
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent.parent
@@ -15,6 +16,47 @@ from services.shared.redis_client import (
 )
 
 class RoomService:
+    @staticmethod
+    def _student_safe_questions(questions):
+        """Return the exam paper without reference answers or editorial code.
+
+        Students may run sample cases in the browser, so sample inputs and
+        frozen sample outputs are intentionally public. Hidden expected
+        outputs, editorial solutions, expected queries, and answer keys must
+        never be included in the room bootstrap payload.
+        """
+        safe_questions = []
+        for original in questions or []:
+            q = copy.deepcopy(original)
+            q.pop("expectedQuery", None)
+            if q.get("type") == "mcq":
+                q.pop("correctOption", None)
+                q.pop("correctOptions", None)
+            elif q.get("type") == "coding":
+                public_cases = []
+                for case in q.get("testCases", []) or []:
+                    if not case.get("isSample"):
+                        continue
+                    public_cases.append({
+                        "input": case.get("input", ""),
+                        "expectedOutput": case.get("expectedOutput", ""),
+                        "isSample": True,
+                    })
+                q["testCases"] = public_cases
+                templates = {}
+                for language, template in (q.get("templates") or {}).items():
+                    if not isinstance(template, dict):
+                        continue
+                    templates[language] = {
+                        key: template.get(key, "")
+                        for key in ("starterCode", "driverCode")
+                        if key in template
+                    }
+                q["templates"] = templates
+                q.pop("editorialCode", None)
+            safe_questions.append(q)
+        return safe_questions
+
     @staticmethod
     def _gen_room_id() -> str:
         """Generate a unique 6-char alphanumeric Room ID (e.g. MNG-4X9)."""
@@ -96,12 +138,10 @@ class RoomService:
             except Exception:
                 pass
 
-        # Strip correctOption from questions if not mentor
+        # Strip reference answers and editorial material from student papers.
         is_mentor = client_mentor_id == meta.get("mentorId", "")
         if not is_mentor:
-            for q in questions:
-                if q.get("type") == "mcq":
-                    q.pop("correctOption", None)
+            questions = RoomService._student_safe_questions(questions)
 
         participants_raw = get_room_participants(room_id)
         participants = []
@@ -133,6 +173,36 @@ class RoomService:
             "datasets": datasets,
             "kicked": kicked
         }
+
+    @staticmethod
+    def get_coding_grading_inputs(room_id: str, question_id: str) -> list:
+        """Return stdin fixtures for local submission execution only.
+
+        Expected outputs are deliberately excluded. The browser needs the
+        inputs to run the student's code locally, while the server remains
+        the only place that retains authoritative hidden answers.
+        """
+        raw = redis_one(["HGET", f"room:{room_id}", "questions"])
+        if not raw:
+            raise KeyError("Room not found")
+        try:
+            questions = json.loads(raw)
+        except Exception as exc:
+            raise ValueError("Invalid question paper") from exc
+        for question in questions:
+            if question.get("id") != question_id:
+                continue
+            if question.get("type") != "coding":
+                raise ValueError("Question is not a coding question")
+            return [
+                {
+                    "index": index,
+                    "input": case.get("input", ""),
+                    "isSample": bool(case.get("isSample")),
+                }
+                for index, case in enumerate(question.get("testCases", []) or [])
+            ]
+        raise KeyError("Question not found")
 
     @staticmethod
     def get_room_status(room_id: str) -> dict:

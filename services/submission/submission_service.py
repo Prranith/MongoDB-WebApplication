@@ -387,7 +387,8 @@ class SubmissionService:
                 })
 
         elif q_type == "coding":
-            code = body.get("code", "")
+            submitted_code = body.get("code", "")
+            code = submitted_code
             language = body.get("language", "python")
 
             test_cases = []
@@ -408,13 +409,35 @@ class SubmissionService:
             if template_type == "solve_function" and driver_code:
                 code = CompilerService.merge_driver_code(language, code, driver_code)
 
+            # A normal exam submission is graded against the frozen outputs
+            # without invoking Paiza/Piston. The browser may provide its
+            # on-device execution transcript; the server validates its shape
+            # and compares only against the server-held expected outputs.
+            client_results = body.get("clientResults")
+            local_results_valid = (
+                isinstance(client_results, list)
+                and len(client_results) == len(test_cases)
+                and all(isinstance(result, dict) for result in client_results)
+            )
+
             passed_count = 0
             total_count = len(test_cases)
-            for tc in test_cases:
+            execution_origin = "local" if local_results_valid else "remote-fallback"
+            for case_index, tc in enumerate(test_cases):
                 tc_input = tc.get("input", "")
                 tc_expected = tc.get("expectedOutput", "")
 
-                run_res = CompilerService.run_piston_code(language, code, tc_input)
+                if local_results_valid:
+                    supplied = client_results[case_index]
+                    run_res = {
+                        "stdout": str(supplied.get("stdout", "") or ""),
+                        "stderr": str(supplied.get("stderr", "") or ""),
+                        "code": supplied.get("code", 1),
+                    }
+                else:
+                    # Emergency path only: browser runtime unavailable or
+                    # failed to produce a complete transcript.
+                    run_res = CompilerService.run_piston_code(language, code, tc_input)
                 actual_out = run_res.get("stdout", "")
                 if run_res.get("stderr"):
                     actual_out += "\n" + run_res.get("stderr")
@@ -439,12 +462,13 @@ class SubmissionService:
 
             submission = json.dumps({
                 "type": "coding",
-                "code": code,
+                "code": submitted_code,
                 "language": language,
                 "score": score,
                 "allPassed": all_passed,
                 "passedCount": passed_count,
                 "totalCount": total_count,
+                "executionOrigin": execution_origin,
                 "isAutoSave": False,
                 "submittedAt": now,
             })
@@ -524,6 +548,7 @@ class SubmissionService:
             ret_data["correct"] = all_passed
             ret_data["passedCount"] = passed_count
             ret_data["totalCount"] = total_count
+            ret_data["executionOrigin"] = execution_origin
         else:
             ret_data["correct"] = score > 0
 
@@ -725,6 +750,63 @@ class SubmissionService:
                 "code": code_val,
                 "output": res.get("output", "")
             }]
+
+    @staticmethod
+    def verify_custom_input(room_id: str, question_id: str, language: str, code: str, stdin: str) -> dict:
+        """Run student and reference programs remotely for custom input only."""
+        questions_json = redis_one(["HGET", f"room:{room_id}", "questions"])
+        if not questions_json:
+            raise KeyError("Room not found")
+        questions = json.loads(questions_json)
+        question = next((item for item in questions if item.get("id") == question_id), None)
+        if not question or question.get("type") != "coding":
+            raise KeyError("Coding question not found")
+
+        template_type = question.get("templateType", "scratch")
+        driver = (question.get("templates", {}).get(language, {}) or {}).get("driverCode", "")
+        student_result = SubmissionService.run_piston_code(room_id, question_id, language, code, stdin)[0]
+
+        reference_code = (question.get("templates", {}).get(language, {}) or {}).get("editorialCode", "")
+        if template_type == "solve_function" and driver:
+            reference_code = CompilerService.merge_driver_code(language, reference_code, driver)
+        reference_raw = CompilerService.run_piston_code(language, reference_code, stdin)
+        try:
+            reference_code = int(reference_raw.get("code", 0) or 0)
+        except (TypeError, ValueError):
+            reference_code = 1
+        try:
+            student_code = int(student_result.get("code", 1) or 1)
+        except (TypeError, ValueError):
+            student_code = 1
+        reference_result = {
+            "stdout": reference_raw.get("stdout", ""),
+            "stderr": reference_raw.get("stderr", ""),
+            "code": reference_code,
+        }
+
+        student_stdout = str(student_result.get("stdout", "") or "")
+        reference_stdout = str(reference_result.get("stdout", "") or "")
+        student_error = str(student_result.get("stderr", "") or "")
+        reference_error = str(reference_result.get("stderr", "") or "")
+        normalize = lambda value: "\n".join(line.strip() for line in value.strip().splitlines() if line.strip())
+        student_ok = student_code == 0 and not student_error
+        reference_ok = reference_result["code"] == 0 and not reference_error
+        verdict = "accepted" if student_ok and reference_ok and normalize(student_stdout) == normalize(reference_stdout) else "wrong_answer"
+        if not student_ok:
+            verdict = "runtime_error"
+        elif not reference_ok:
+            verdict = "reference_error"
+
+        return {
+            "student": {
+                "stdout": student_stdout,
+                "stderr": student_error,
+                "code": student_code,
+                "output": student_result.get("output", ""),
+            },
+            "verdict": verdict,
+            "expectedOutput": reference_stdout,
+        }
 
     @staticmethod
     def generate_test_cases(language: str, code: str, inputs: list, template_type: str, driver_code: str) -> list:
