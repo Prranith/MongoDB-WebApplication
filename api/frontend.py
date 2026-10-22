@@ -15436,7 +15436,7 @@ const ExamPortal = (() => {
 
   function el(id) { return document.getElementById(id); }
 
-  function setExamExecutionOrigin(origin, running = true) {
+  function setExamExecutionOrigin(origin, running = true, reason = '') {
     const status = el('student-console-status');
     if (!status) return;
     const local = origin === 'local';
@@ -15444,7 +15444,10 @@ const ExamPortal = (() => {
     const detail = local
       ? 'CodeLeaf is running this program on your device.'
       : 'CodeLeaf is running this program on a dedicated execution worker.';
-    status.innerHTML = `<span class="execution-origin ${local ? 'execution-origin-local' : 'execution-origin-remote'}"><span class="execution-origin-dot"></span>${label}</span>${running ? ' <span class="execution-phase">· Running…</span>' : ` <span class="execution-phase">· ${detail}</span>`}`;
+    const reasonHtml = reason
+      ? ` <span class="execution-phase execution-fallback-reason">· ${escapeExamHtml(String(reason).slice(0, 240))}</span>`
+      : '';
+    status.innerHTML = `<span class="execution-origin ${local ? 'execution-origin-local' : 'execution-origin-remote'}"><span class="execution-origin-dot"></span>${label}</span>${running ? ' <span class="execution-phase">· Running…</span>' : ` <span class="execution-phase">· ${detail}</span>`}${reasonHtml}`;
   }
 
   function langCommentPrefix(lang) {
@@ -19490,7 +19493,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               Number(result.code) !== 0 || String(result.stderr || '').trim()
             );
             if (localFailed && stdins.length > 0) {
-              setExamExecutionOrigin('remote');
+              const failedResult = results.find(result => Number(result.code) !== 0 || String(result.stderr || '').trim());
+              const reason = failedResult?.stderr || `on-device Python exited with code ${failedResult?.code ?? 'unknown'}`;
+              setExamExecutionOrigin('remote', true, `On-device execution failed: ${reason}`);
               const fallback = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
                 studentId: state.student.studentId,
                 questionId: q.id,
@@ -19539,6 +19544,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         // the authoritative server path below, so local execution cannot
         // affect the exam verdict.
         const codingLanguage = String(q.language || '').toLowerCase().trim();
+        let localFailureReason = '';
         if (['c', 'cpp', 'java'].includes(codingLanguage) &&
             typeof ClientExecution !== 'undefined' && ClientExecution.supports(codingLanguage)) {
           const localResults = [];
@@ -19552,7 +19558,11 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             });
             if (!local) {
               localRuntimeAvailable = false;
+              localFailureReason = 'The browser runtime returned no result.';
               break;
+            }
+            if (Number(local.code) !== 0 || String(local.stderr || '').trim()) {
+              localFailureReason = String(local.stderr || `on-device ${codingLanguage.toUpperCase()} exited with code ${local.code}`).trim();
             }
             localResults.push({
               stdout: local.stdout || '',
@@ -19609,7 +19619,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           sampleCount: stdins.length,
           runtimeAvailable: typeof ClientExecution !== 'undefined' && ClientExecution.supports(codingLanguage)
         });
-        setExamExecutionOrigin('remote');
+        const fallbackReason = typeof ClientExecution === 'undefined'
+          ? 'Browser execution runtime was not loaded.'
+          : (localFailureReason || `On-device ${codingLanguage.toUpperCase() || 'code'} runtime failed or timed out.`);
+        setExamExecutionOrigin('remote', true, `On-device execution failed: ${fallbackReason}`);
         const res = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
           studentId: state.student.studentId,
           questionId: q.id,
@@ -19857,6 +19870,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             });
           } else {
             body.clientExecution = 'remote-fallback';
+            setExamExecutionOrigin('remote', true, 'On-device grading returned an incomplete or failed transcript.');
             console.warn('[CodeLeaf exam] On-device grading returned an incomplete/failed transcript.', {
               questionId: q.id,
               expectedCases: gradingInputs.cases.length,
@@ -19869,6 +19883,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           // the browser cannot produce a complete local transcript.
           body.clientExecution = 'remote-fallback';
           body.clientExecutionError = String(localError.message || localError).slice(0, 500);
+          setExamExecutionOrigin('remote', true, `On-device grading failed: ${body.clientExecutionError}`);
           console.error('[CodeLeaf exam] On-device grading failed; remote fallback will be used.', {
             questionId: q.id,
             language: q.language,
