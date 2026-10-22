@@ -58,6 +58,12 @@ const ExamPortal = (() => {
 
   function el(id) { return document.getElementById(id); }
 
+  function isExecutionFailure(result) {
+    if (!result) return true;
+    if (result.executionFailure === true) return true;
+    return result.code !== undefined && Number(result.code) !== 0;
+  }
+
   function setExamExecutionOrigin(origin, running = true, reason = '') {
     if (state.student) {
       state.student.executionOrigin = origin;
@@ -288,7 +294,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           if (progress && progress.detail) onProgress?.(progress.detail);
         }
       });
-      if (!result || result.code !== 0 || String(result.stderr || '').trim()) {
+      if (isExecutionFailure(result)) {
         localFailure = String(result?.stderr || 'The browser runtime could not generate the expected output.');
         break;
       }
@@ -674,6 +680,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     state.student.datasets = [];
     state.student.roomStatus = 'live';
     state.student.fullscreenMode = false;
+    state.student.fullscreenActive = false;
     state.student.blockCopyPaste = false;
     state.student.maxFullscreenExits = null;
     state.student.fullscreenExitCount = 0;
@@ -3243,7 +3250,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         }
       });
       if (!result) throw new Error(`The ${language} browser runtime did not return a result.`);
-      if (Number(result.code) !== 0 || String(result.stderr || '').trim()) {
+      if (isExecutionFailure(result)) {
         const detail = String(result.stderr || `exit code ${result.code}`).trim();
         throw new Error(`${language.toUpperCase()} case ${index + 1} failed: ${detail.slice(0, 800)}`);
       }
@@ -4168,11 +4175,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
           runLocalCases().then(async results => {
             let finalResults = results;
-            const localFailed = results.some(result =>
-              Number(result.code) !== 0 || String(result.stderr || '').trim()
-            );
+            const localFailed = results.some(isExecutionFailure);
             if (localFailed && stdins.length > 0) {
-              const failedResult = results.find(result => Number(result.code) !== 0 || String(result.stderr || '').trim());
+              const failedResult = results.find(isExecutionFailure);
               const reason = failedResult?.stderr || `on-device Python exited with code ${failedResult?.code ?? 'unknown'}`;
               setExamExecutionOrigin('remote', true, `On-device execution failed: ${reason}`);
               updateStudentExecutionCard(`Remote fallback started: ${reason}`, { mode: 'remote', kind: 'error' });
@@ -4255,9 +4260,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             });
           }
 
-          const localExecutionFailed = localResults.some(result =>
-            Number(result.code) !== 0 || String(result.stderr || '').trim()
-          );
+          const localExecutionFailed = localResults.some(isExecutionFailure);
           if (localRuntimeAvailable && !localExecutionFailed) {
             el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
             el('student-run-btn').disabled = false;
@@ -4549,9 +4552,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             gradingInputs.cases,
             detail => updateStudentExecutionCard(detail, { mode: 'local' })
           );
-          const localFailed = localResults.some(result =>
-            Number(result.code) !== 0 || String(result.stderr || '').trim()
-          );
+          const localFailed = localResults.some(isExecutionFailure);
           if (!localFailed && localResults.length === gradingInputs.cases.length) {
             body.clientResults = localResults;
             body.clientExecution = 'on-device';
@@ -4908,12 +4909,15 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       const requestFs = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
       if (requestFs) {
         requestFs.call(docEl).then(() => {
+          state.student.fullscreenActive = true;
+          state.student.fullscreenWarningOpen = false;
           el('student-fullscreen-overlay').style.display = 'none';
         }).catch(err => {
           console.error("Fullscreen request failed:", err);
           showExamAlert("Fullscreen mode is required to start the exam. Please click the button again or allow browser fullscreen permissions.", { title: 'Fullscreen Required', danger: true });
         });
       } else {
+        state.student.fullscreenActive = false;
         el('student-fullscreen-overlay').style.display = 'none';
       }
     },
@@ -5140,7 +5144,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             const expected = (tc.expectedOutput || '').trim();
             const actual = (cached.stdout || '').trim();
             const exitCode = cached.code !== undefined ? cached.code : 0;
-            const isError = exitCode !== 0 || (cached.stderr || '').trim().length > 0;
+            const isError = isExecutionFailure(cached);
 
             const actualLines = actual.split('\n').map(l => l.trim()).filter(Boolean);
             const expectedLines = expected.split('\n').map(l => l.trim()).filter(Boolean);
@@ -5158,7 +5162,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         let customBadge = '';
         if (customCached) {
           const customExitCode = customCached.code !== undefined ? customCached.code : 0;
-          const customIsError = customExitCode !== 0 || (customCached.stderr || '').trim().length > 0;
+          const customIsError = isExecutionFailure(customCached);
           customBadge = customIsError
             ? '<span style="color:var(--red);margin-left:6px;font-size:10px;font-weight:bold">✗</span>'
             : '<span style="color:var(--green3);margin-left:6px;font-size:10px;font-weight:bold">✓</span>';
@@ -5235,7 +5239,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             const expected = tc ? (tc.expectedOutput || '').trim() : '';
             const actual = (cached.stdout || '').trim();
             const exitCode = cached.code !== undefined ? cached.code : 0;
-            const isError = exitCode !== 0 || (cached.stderr || '').trim().length > 0;
+            const isError = isExecutionFailure(cached);
 
             const actualLines = actual.split('\n').map(l => l.trim()).filter(Boolean);
             const expectedLines = expected.split('\n').map(l => l.trim()).filter(Boolean);
@@ -5265,7 +5269,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               statusEl.style.color = '';
             } else {
               const exitCode = cached.code !== undefined ? cached.code : 0;
-              const isError = exitCode !== 0 || (cached.stderr || '').trim().length > 0;
+              const isError = isExecutionFailure(cached);
               statusEl.textContent = `— Exit Code: ${exitCode}`;
               statusEl.style.color = isError ? 'var(--red)' : 'var(--text3)';
             }
@@ -5305,7 +5309,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       const stderr = (res.stderr || '').trim();
       const stdout = (res.stdout || '').trim();
       const exitCode = res.code !== undefined ? res.code : 0;
-      const isError = exitCode !== 0 || stderr.length > 0;
+      const isError = isExecutionFailure(res);
 
       if (tabId.startsWith('case-')) {
         const idx = parseInt(tabId.split('-')[1]);
@@ -5709,11 +5713,16 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
     const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
     if (isFs) {
+      state.student.fullscreenActive = true;
       state.student.fullscreenWarningOpen = false;
       return;
     }
     if (!isFs) {
       // Exited fullscreen!
+      // Fullscreen enforcement starts with an entry overlay. That initial
+      // non-fullscreen state is not an exit and must not trigger a warning.
+      if (!state.student.fullscreenActive) return;
+      state.student.fullscreenActive = false;
       if (state.student.ignoreFullscreenChange) {
         return;
       }
