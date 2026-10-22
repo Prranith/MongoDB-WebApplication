@@ -16,10 +16,9 @@ from services.shared.redis_client import get_auth_db
 
 SESSION_TTL_DAYS = int(os.getenv("AUTH_SESSION_TTL_DAYS", "14"))
 AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "0").strip().lower() in {"1", "true", "yes"}
-EMAIL_VERIFICATION_REQUIRED = os.getenv(
-    "AUTH_EMAIL_VERIFICATION_REQUIRED",
-    "1" if os.getenv("BREVO_API_KEY", "").strip() else "0",
-).strip().lower() in {"1", "true", "yes"}
+# Email ownership is mandatory; a deployment variable must not accidentally
+# disable this security gate.
+EMAIL_VERIFICATION_REQUIRED = True
 OTP_TTL_MINUTES = max(5, int(os.getenv("AUTH_OTP_TTL_MINUTES", "10")))
 OTP_MAX_ATTEMPTS = max(3, int(os.getenv("AUTH_OTP_MAX_ATTEMPTS", "5")))
 
@@ -73,7 +72,7 @@ def _send_verification_email(email, name, code):
         if os.getenv("AUTH_EMAIL_DEV_MODE", "0").strip().lower() in {"1", "true", "yes"}:
             print(f"[auth] development email OTP for {email}: {code}")
             return True
-        return False
+        raise RuntimeError("Brevo email delivery is not configured. Set BREVO_API_KEY and BREVO_EMAIL_FROM.")
     match = re.match(r"^(.*?)\s*<([^<>]+)>\s*$", sender)
     sender_name = (match.group(1).strip() if match else "CodeLeaf") or "CodeLeaf"
     sender_email = match.group(2).strip() if match else sender
@@ -89,9 +88,16 @@ def _send_verification_email(email, name, code):
             },
             timeout=8,
         )
-        return response.ok
+        if response.ok:
+            return True
+        try:
+            details = response.json()
+            message = details.get("message") or details.get("code") or "Brevo rejected the email"
+        except ValueError:
+            message = "Brevo rejected the email"
+        raise RuntimeError(f"Brevo delivery failed ({response.status_code}): {str(message)[:240]}")
     except requests.RequestException:
-        return False
+        raise RuntimeError("Brevo could not be reached. Check the provider status and try again.")
 
 
 def issue_email_otp(user):
@@ -102,9 +108,7 @@ def issue_email_otp(user):
     code = f"{secrets.randbelow(1000000):06d}"
     now = _now()
     db.email_otps.delete_many({"email": email})
-    sent = _send_verification_email(email, user.get("name", "there"), code)
-    if not sent:
-        raise RuntimeError("Email delivery is not configured. Set BREVO_API_KEY and BREVO_EMAIL_FROM.")
+    _send_verification_email(email, user.get("name", "there"), code)
     db.email_otps.insert_one({"email": email, "codeHash": _otp_digest(email, code), "attempts": 0,
                               "createdAt": now, "expiresAt": now + timedelta(minutes=OTP_TTL_MINUTES)})
 
