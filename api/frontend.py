@@ -12433,6 +12433,12 @@ const ClientExecution = (() => {
     };
     worker.onerror = event => {
       const error = new Error(event.message || 'Client runtime failed to load');
+      console.error('[CodeLeaf] Browser execution worker error:', {
+        message: error.message,
+        filename: event.filename || '',
+        line: event.lineno || 0,
+        column: event.colno || 0
+      });
       pending.forEach(item => {
         clearTimeout(item.timer);
         item.reject(error);
@@ -12459,16 +12465,40 @@ const ClientExecution = (() => {
       };
     }
     try {
+      console.info('[CodeLeaf] Starting on-device execution:', {
+        language: normalizedLanguage,
+        stdinBytes: String(stdin || '').length,
+        codeBytes: String(code || '').length,
+        timeoutMs: timeout
+      });
       const result = await new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
           pending.delete(id);
           destroyWorker();
+          console.error('[CodeLeaf] On-device execution timed out:', {
+            language: normalizedLanguage,
+            timeoutMs: timeout
+          });
           reject(new Error(`Client execution timed out after ${timeout}ms`));
         }, timeout);
         pending.set(id, { resolve, reject, timer, onProgress: options.onProgress });
         getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin, fileName: options.fileName || '' });
       });
       result.duration = (performance.now() - started).toFixed(2);
+      if (Number(result.code) !== 0 || String(result.stderr || '').trim()) {
+        console.warn('[CodeLeaf] On-device execution returned an error:', {
+          language: normalizedLanguage,
+          code: result.code,
+          stderr: String(result.stderr || '').slice(0, 1000),
+          runtime: result.runtime || ''
+        });
+      } else {
+        console.info('[CodeLeaf] On-device execution completed:', {
+          language: normalizedLanguage,
+          durationMs: result.duration,
+          runtime: result.runtime || ''
+        });
+      }
       return result;
     } catch (error) {
       // Supported languages are intentionally device-only. Do not silently
@@ -18507,7 +18537,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
   // source code to a remote worker. Hidden expected outputs never enter this
   // function; only stdin fixtures are needed to produce a local transcript.
   async function executeCodingCasesLocally(question, studentCode, cases, onProgress) {
-    const language = String(question.language || 'python').toLowerCase();
+    const language = String(question.language || 'python').toLowerCase().trim();
+    const runtimeTimeout = ['java', 'c', 'cpp'].includes(language) ? 120000 : 60000;
     const driver = (question.templates && question.templates[language])
       ? question.templates[language].driverCode || ''
       : '';
@@ -18516,21 +18547,29 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       : (question.templateType === 'solve_function' && driver
         ? `${studentCode}\\n\\n${driver}`
         : studentCode);
-    if (typeof ClientExecution === 'undefined' || !ClientExecution.supports(language)) {
+    if (typeof ClientExecution === 'undefined') {
+      throw new Error(`Browser runtime module is not loaded for ${language}.`);
+    }
+    if (!ClientExecution.supports(language)) {
       throw new Error(`No browser runtime is available for ${language}.`);
     }
 
     const results = [];
     for (let index = 0; index < cases.length; index += 1) {
+      const testCase = cases[index] || {};
       onProgress?.(`Running ${language.toUpperCase()} case ${index + 1}/${cases.length} on this device…`);
-      const result = await ClientExecution.run(language, source, cases[index].input || '', {
-        timeoutMs: language === 'java' || language === 'c' || language === 'cpp' ? 60000 : 30000,
+      const result = await ClientExecution.run(language, source, String(testCase.input || ''), {
+        timeoutMs: runtimeTimeout,
         fileName: language === 'java' ? 'Main.java' : `main.${language}`,
         onProgress: progress => {
           if (progress && progress.detail) onProgress?.(progress.detail);
         }
       });
       if (!result) throw new Error(`The ${language} browser runtime did not return a result.`);
+      if (Number(result.code) !== 0 || String(result.stderr || '').trim()) {
+        const detail = String(result.stderr || `exit code ${result.code}`).trim();
+        throw new Error(`${language.toUpperCase()} case ${index + 1} failed: ${detail.slice(0, 800)}`);
+      }
       results.push({
         stdout: result.stdout || '',
         stderr: result.stderr || '',
@@ -19499,12 +19538,18 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         // compiler as the normal workspace. Submission/grading still uses
         // the authoritative server path below, so local execution cannot
         // affect the exam verdict.
-        if ((q.language === 'c' || q.language === 'cpp' || q.language === 'java') &&
-            typeof ClientExecution !== 'undefined' && ClientExecution.supports(q.language)) {
+        const codingLanguage = String(q.language || '').toLowerCase().trim();
+        if (['c', 'cpp', 'java'].includes(codingLanguage) &&
+            typeof ClientExecution !== 'undefined' && ClientExecution.supports(codingLanguage)) {
           const localResults = [];
           let localRuntimeAvailable = true;
           for (const inp of stdins) {
-            const local = await ClientExecution.run(q.language, codeToExecute, inp, { timeoutMs: 30000 });
+            const local = await ClientExecution.run(codingLanguage, codeToExecute, inp, {
+              timeoutMs: 120000,
+              onProgress: progress => {
+                if (progress && progress.detail) console.info('[CodeLeaf exam]', progress.detail);
+              }
+            });
             if (!local) {
               localRuntimeAvailable = false;
               break;
@@ -19559,6 +19604,11 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           return;
         }
 
+        console.warn('[CodeLeaf exam] On-device run unavailable or failed; using remote fallback.', {
+          language: codingLanguage || q.language,
+          sampleCount: stdins.length,
+          runtimeAvailable: typeof ClientExecution !== 'undefined' && ClientExecution.supports(codingLanguage)
+        });
         setExamExecutionOrigin('remote');
         const res = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
           studentId: state.student.studentId,
@@ -19781,6 +19831,11 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         // or consume a remote worker for a healthy local run.
         try {
           if (submitBtn) submitBtn.textContent = 'Running locally...';
+          console.info('[CodeLeaf exam] Starting on-device grading transcript.', {
+            questionId: q.id,
+            language: q.language,
+            sourceLength: body.code.length
+          });
           const gradingInputs = await apiCall(
             `/api/exam/room/${state.student.roomId}/question/${q.id}/grading-inputs`,
             'POST',
@@ -19796,14 +19851,29 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           if (!localFailed && localResults.length === gradingInputs.cases.length) {
             body.clientResults = localResults;
             body.clientExecution = 'on-device';
+            console.info('[CodeLeaf exam] On-device grading transcript complete.', {
+              questionId: q.id,
+              cases: localResults.length
+            });
           } else {
             body.clientExecution = 'remote-fallback';
+            console.warn('[CodeLeaf exam] On-device grading returned an incomplete/failed transcript.', {
+              questionId: q.id,
+              expectedCases: gradingInputs.cases.length,
+              actualResults: localResults.length,
+              failed: localFailed
+            });
           }
         } catch (localError) {
           // The backend will use its rate-limited emergency worker path when
           // the browser cannot produce a complete local transcript.
           body.clientExecution = 'remote-fallback';
           body.clientExecutionError = String(localError.message || localError).slice(0, 500);
+          console.error('[CodeLeaf exam] On-device grading failed; remote fallback will be used.', {
+            questionId: q.id,
+            language: q.language,
+            error: body.clientExecutionError
+          });
         }
       } else {
         const cm = state.student.examEditor;

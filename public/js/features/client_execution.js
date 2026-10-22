@@ -354,6 +354,12 @@ const ClientExecution = (() => {
     };
     worker.onerror = event => {
       const error = new Error(event.message || 'Client runtime failed to load');
+      console.error('[CodeLeaf] Browser execution worker error:', {
+        message: error.message,
+        filename: event.filename || '',
+        line: event.lineno || 0,
+        column: event.colno || 0
+      });
       pending.forEach(item => {
         clearTimeout(item.timer);
         item.reject(error);
@@ -380,16 +386,40 @@ const ClientExecution = (() => {
       };
     }
     try {
+      console.info('[CodeLeaf] Starting on-device execution:', {
+        language: normalizedLanguage,
+        stdinBytes: String(stdin || '').length,
+        codeBytes: String(code || '').length,
+        timeoutMs: timeout
+      });
       const result = await new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
           pending.delete(id);
           destroyWorker();
+          console.error('[CodeLeaf] On-device execution timed out:', {
+            language: normalizedLanguage,
+            timeoutMs: timeout
+          });
           reject(new Error(`Client execution timed out after ${timeout}ms`));
         }, timeout);
         pending.set(id, { resolve, reject, timer, onProgress: options.onProgress });
         getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin, fileName: options.fileName || '' });
       });
       result.duration = (performance.now() - started).toFixed(2);
+      if (Number(result.code) !== 0 || String(result.stderr || '').trim()) {
+        console.warn('[CodeLeaf] On-device execution returned an error:', {
+          language: normalizedLanguage,
+          code: result.code,
+          stderr: String(result.stderr || '').slice(0, 1000),
+          runtime: result.runtime || ''
+        });
+      } else {
+        console.info('[CodeLeaf] On-device execution completed:', {
+          language: normalizedLanguage,
+          durationMs: result.duration,
+          runtime: result.runtime || ''
+        });
+      }
       return result;
     } catch (error) {
       // Supported languages are intentionally device-only. Do not silently
