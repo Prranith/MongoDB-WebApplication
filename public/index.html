@@ -1455,6 +1455,16 @@ db.collection.find({})</textarea>
               <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-console-status">— Ready</span>
             </div>
           </div>
+          <div id="student-execution-card" class="student-execution-card" hidden aria-live="polite">
+            <div class="student-execution-card-top">
+              <span class="student-execution-pulse"></span>
+              <strong id="student-execution-card-title">Execution</strong>
+              <span id="student-execution-card-mode" class="student-execution-card-mode">ON DEVICE</span>
+              <span id="student-execution-card-current" class="student-execution-card-current"></span>
+            </div>
+            <div class="student-execution-progress"><span id="student-execution-progress-bar"></span></div>
+            <div id="student-execution-steps" class="student-execution-steps"></div>
+          </div>
           <div style="display:flex;flex:1;background:var(--border);overflow:hidden" id="student-console-panes-box">
             <!-- Left Side: Custom Input (stdin) or Yours Output -->
             <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;min-width:100px" id="box-pane-left">

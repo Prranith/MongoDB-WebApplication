@@ -72,10 +72,56 @@ const ExamPortal = (() => {
     const detail = local
       ? 'CodeLeaf is running this program on your device.'
       : 'CodeLeaf is running this program on a dedicated execution worker.';
+    const currentQuestion = state.student.questions && state.student.questions[state.student.currentQIdx];
+    if (currentQuestion && currentQuestion.type === 'coding') {
+      updateStudentExecutionCard(
+        reason || (running ? (local ? 'Running program on this device…' : 'Running program on a remote worker…') : detail),
+        { mode: local ? 'local' : 'remote', kind: reason ? 'error' : (running ? 'active' : 'done') }
+      );
+    }
     const reasonHtml = reason
       ? ` <span class="execution-phase execution-fallback-reason">· ${escapeExamHtml(String(reason).slice(0, 240))}</span>`
       : '';
     status.innerHTML = `<span class="execution-origin ${local ? 'execution-origin-local' : 'execution-origin-remote'}"><span class="execution-origin-dot"></span>${label}</span>${running ? ' <span class="execution-phase">· Running…</span>' : ` <span class="execution-phase">· ${detail}</span>`}${reasonHtml}`;
+  }
+
+  function updateStudentExecutionCard(message, options = {}) {
+    const card = el('student-execution-card');
+    if (!card) return;
+    const mode = options.mode || state.student.executionCardMode || 'local';
+    const kind = options.kind || 'active';
+    state.student.executionCardMode = mode;
+    state.student.executionCardSteps = state.student.executionCardSteps || [];
+    if (message) {
+      const last = state.student.executionCardSteps[state.student.executionCardSteps.length - 1];
+      if (!last || last.message !== String(message) || last.kind !== kind) {
+        state.student.executionCardSteps.push({ message: String(message), kind });
+      }
+    }
+    card.hidden = false;
+    card.classList.toggle('is-remote', mode === 'remote');
+    card.classList.toggle('is-error', kind === 'error');
+    const modeEl = el('student-execution-card-mode');
+    const currentEl = el('student-execution-card-current');
+    const stepsEl = el('student-execution-steps');
+    const progressEl = el('student-execution-progress-bar');
+    if (modeEl) modeEl.textContent = mode === 'remote' ? 'REMOTE WORKER' : 'ON DEVICE';
+    if (currentEl) currentEl.textContent = String(message || 'Preparing execution…');
+    if (progressEl) {
+      const count = state.student.executionCardSteps.length;
+      progressEl.style.width = `${Math.min(96, Math.max(12, count * 18))}%`;
+    }
+    if (stepsEl) {
+      stepsEl.innerHTML = state.student.executionCardSteps.slice(-5).map(step =>
+        `<span class="student-execution-step is-${step.kind}">${escapeExamHtml(step.message)}</span>`
+      ).join('');
+    }
+  }
+
+  function startStudentExecutionCard(language) {
+    state.student.executionCardSteps = [];
+    state.student.executionOriginReason = '';
+    updateStudentExecutionCard(`Preparing ${String(language || 'program').toUpperCase()} runtime…`, { mode: 'local' });
   }
 
   function langCommentPrefix(lang) {
@@ -4084,6 +4130,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
         el('student-run-btn').textContent = 'Running...';
         el('student-run-btn').disabled = true;
+        startStudentExecutionCard(q.language);
         setExamExecutionOrigin('local');
         el('student-console-status').style.color = 'var(--text3)';
 
@@ -4105,6 +4152,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               const res = await new Promise(resolve => {
                 runPythonLocally(codeToExecute, inp, resolve);
               });
+              updateStudentExecutionCard('Compiling and running Python case on this device…', { mode: 'local' });
               results.push({
                 stdout: res.stdout,
                 stderr: res.stderr,
@@ -4124,6 +4172,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               const failedResult = results.find(result => Number(result.code) !== 0 || String(result.stderr || '').trim());
               const reason = failedResult?.stderr || `on-device Python exited with code ${failedResult?.code ?? 'unknown'}`;
               setExamExecutionOrigin('remote', true, `On-device execution failed: ${reason}`);
+              updateStudentExecutionCard(`Remote fallback started: ${reason}`, { mode: 'remote', kind: 'error' });
               const fallback = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
                 studentId: state.student.studentId,
                 questionId: q.id,
@@ -4181,7 +4230,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             const local = await ClientExecution.run(codingLanguage, codeToExecute, inp, {
               timeoutMs: 120000,
               onProgress: progress => {
-                if (progress && progress.detail) console.info('[CodeLeaf exam]', progress.detail);
+                if (progress && progress.detail) {
+                  console.info('[CodeLeaf exam]', progress.detail);
+                  updateStudentExecutionCard(progress.detail, { mode: 'local' });
+                }
               }
             });
             if (!local) {
@@ -4251,6 +4303,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           ? 'Browser execution runtime was not loaded.'
           : (localFailureReason || `On-device ${codingLanguage.toUpperCase() || 'code'} runtime failed or timed out.`);
         setExamExecutionOrigin('remote', true, `On-device execution failed: ${fallbackReason}`);
+        updateStudentExecutionCard(`Remote fallback started: ${fallbackReason}`, { mode: 'remote', kind: 'error' });
         const res = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
           studentId: state.student.studentId,
           questionId: q.id,
@@ -4472,6 +4525,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         // or consume a remote worker for a healthy local run.
         try {
           if (submitBtn) submitBtn.textContent = 'Running locally...';
+          startStudentExecutionCard(q.language);
+          setExamExecutionOrigin('local');
           console.info('[CodeLeaf exam] Starting on-device grading transcript.', {
             questionId: q.id,
             language: q.language,
@@ -4485,7 +4540,12 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           if (gradingInputs.status !== 'ok' || !Array.isArray(gradingInputs.cases)) {
             throw new Error(gradingInputs.error || 'Unable to prepare grading inputs.');
           }
-          const localResults = await executeCodingCasesLocally(q, body.code, gradingInputs.cases);
+          const localResults = await executeCodingCasesLocally(
+            q,
+            body.code,
+            gradingInputs.cases,
+            detail => updateStudentExecutionCard(detail, { mode: 'local' })
+          );
           const localFailed = localResults.some(result =>
             Number(result.code) !== 0 || String(result.stderr || '').trim()
           );

@@ -5270,6 +5270,30 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel #student-console-tabs-bar > * { padding:6px 10px; border:1px solid transparent; border-radius:4px; }
 #exam-student-exam-panel #student-console-tabs-bar > *.active { color:#dce7d8; background:#1b241b; border-color:#344334; }
 #exam-student-exam-panel #student-console-panes-box { background:#202820 !important; gap:1px; }
+#exam-student-exam-panel .student-execution-card {
+  flex:0 0 auto;
+  padding:8px 14px 9px;
+  border-bottom:1px solid #2b342b;
+  background:#111711;
+  color:#cbd7ca;
+  font:10px/1.35 'JetBrains Mono',monospace;
+}
+#exam-student-exam-panel .student-execution-card-top { display:flex; align-items:center; gap:7px; min-width:0; }
+#exam-student-exam-panel .student-execution-pulse { width:7px; height:7px; border-radius:50%; background:#78e39a; box-shadow:0 0 0 3px rgba(120,227,154,.12); flex:0 0 auto; }
+#exam-student-exam-panel .student-execution-card.is-error .student-execution-pulse { background:#ff7668; box-shadow:0 0 0 3px rgba(255,118,104,.12); }
+#exam-student-exam-panel .student-execution-card.is-remote .student-execution-pulse { background:#83baff; box-shadow:0 0 0 3px rgba(131,186,255,.12); }
+#exam-student-exam-panel .student-execution-card-title { color:#dce7d8; font-size:10px; }
+#exam-student-exam-panel .student-execution-card-mode { padding:2px 5px; border:1px solid #3d513f; border-radius:3px; color:#9ab89c; font-size:8px; letter-spacing:.08em; }
+#exam-student-exam-panel .student-execution-card-current { margin-left:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#84968a; }
+#exam-student-exam-panel .student-execution-progress { height:2px; margin:7px 0 6px; background:#263026; border-radius:4px; overflow:hidden; }
+#exam-student-exam-panel .student-execution-progress span { display:block; width:18%; height:100%; background:#78e39a; border-radius:4px; transition:width .25s ease; }
+#exam-student-exam-panel .student-execution-card.is-remote .student-execution-progress span { background:#83baff; }
+#exam-student-exam-panel .student-execution-card.is-error .student-execution-progress span { background:#ff7668; }
+#exam-student-exam-panel .student-execution-steps { display:flex; gap:12px; overflow:hidden; white-space:nowrap; }
+#exam-student-exam-panel .student-execution-step { color:#718074; overflow:hidden; text-overflow:ellipsis; }
+#exam-student-exam-panel .student-execution-step.is-active { color:#d5e3d5; }
+#exam-student-exam-panel .student-execution-step.is-done { color:#8eb49a; }
+#exam-student-exam-panel .student-execution-step.is-error { color:#ff8b7e; }
 #exam-student-exam-panel #box-pane-left,
 #exam-student-exam-panel #box-pane-right { background:#101410 !important; }
 #exam-student-exam-panel #student-pane-left-title,
@@ -15104,6 +15128,16 @@ db.collection.find({})</textarea>
               <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="student-console-status">— Ready</span>
             </div>
           </div>
+          <div id="student-execution-card" class="student-execution-card" hidden aria-live="polite">
+            <div class="student-execution-card-top">
+              <span class="student-execution-pulse"></span>
+              <strong id="student-execution-card-title">Execution</strong>
+              <span id="student-execution-card-mode" class="student-execution-card-mode">ON DEVICE</span>
+              <span id="student-execution-card-current" class="student-execution-card-current"></span>
+            </div>
+            <div class="student-execution-progress"><span id="student-execution-progress-bar"></span></div>
+            <div id="student-execution-steps" class="student-execution-steps"></div>
+          </div>
           <div style="display:flex;flex:1;background:var(--border);overflow:hidden" id="student-console-panes-box">
             <!-- Left Side: Custom Input (stdin) or Yours Output -->
             <div style="flex:1;background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;min-width:100px" id="box-pane-left">
@@ -15450,10 +15484,56 @@ const ExamPortal = (() => {
     const detail = local
       ? 'CodeLeaf is running this program on your device.'
       : 'CodeLeaf is running this program on a dedicated execution worker.';
+    const currentQuestion = state.student.questions && state.student.questions[state.student.currentQIdx];
+    if (currentQuestion && currentQuestion.type === 'coding') {
+      updateStudentExecutionCard(
+        reason || (running ? (local ? 'Running program on this device…' : 'Running program on a remote worker…') : detail),
+        { mode: local ? 'local' : 'remote', kind: reason ? 'error' : (running ? 'active' : 'done') }
+      );
+    }
     const reasonHtml = reason
       ? ` <span class="execution-phase execution-fallback-reason">· ${escapeExamHtml(String(reason).slice(0, 240))}</span>`
       : '';
     status.innerHTML = `<span class="execution-origin ${local ? 'execution-origin-local' : 'execution-origin-remote'}"><span class="execution-origin-dot"></span>${label}</span>${running ? ' <span class="execution-phase">· Running…</span>' : ` <span class="execution-phase">· ${detail}</span>`}${reasonHtml}`;
+  }
+
+  function updateStudentExecutionCard(message, options = {}) {
+    const card = el('student-execution-card');
+    if (!card) return;
+    const mode = options.mode || state.student.executionCardMode || 'local';
+    const kind = options.kind || 'active';
+    state.student.executionCardMode = mode;
+    state.student.executionCardSteps = state.student.executionCardSteps || [];
+    if (message) {
+      const last = state.student.executionCardSteps[state.student.executionCardSteps.length - 1];
+      if (!last || last.message !== String(message) || last.kind !== kind) {
+        state.student.executionCardSteps.push({ message: String(message), kind });
+      }
+    }
+    card.hidden = false;
+    card.classList.toggle('is-remote', mode === 'remote');
+    card.classList.toggle('is-error', kind === 'error');
+    const modeEl = el('student-execution-card-mode');
+    const currentEl = el('student-execution-card-current');
+    const stepsEl = el('student-execution-steps');
+    const progressEl = el('student-execution-progress-bar');
+    if (modeEl) modeEl.textContent = mode === 'remote' ? 'REMOTE WORKER' : 'ON DEVICE';
+    if (currentEl) currentEl.textContent = String(message || 'Preparing execution…');
+    if (progressEl) {
+      const count = state.student.executionCardSteps.length;
+      progressEl.style.width = `${Math.min(96, Math.max(12, count * 18))}%`;
+    }
+    if (stepsEl) {
+      stepsEl.innerHTML = state.student.executionCardSteps.slice(-5).map(step =>
+        `<span class="student-execution-step is-${step.kind}">${escapeExamHtml(step.message)}</span>`
+      ).join('');
+    }
+  }
+
+  function startStudentExecutionCard(language) {
+    state.student.executionCardSteps = [];
+    state.student.executionOriginReason = '';
+    updateStudentExecutionCard(`Preparing ${String(language || 'program').toUpperCase()} runtime…`, { mode: 'local' });
   }
 
   function langCommentPrefix(lang) {
@@ -19462,6 +19542,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
         el('student-run-btn').textContent = 'Running...';
         el('student-run-btn').disabled = true;
+        startStudentExecutionCard(q.language);
         setExamExecutionOrigin('local');
         el('student-console-status').style.color = 'var(--text3)';
 
@@ -19483,6 +19564,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               const res = await new Promise(resolve => {
                 runPythonLocally(codeToExecute, inp, resolve);
               });
+              updateStudentExecutionCard('Compiling and running Python case on this device…', { mode: 'local' });
               results.push({
                 stdout: res.stdout,
                 stderr: res.stderr,
@@ -19502,6 +19584,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               const failedResult = results.find(result => Number(result.code) !== 0 || String(result.stderr || '').trim());
               const reason = failedResult?.stderr || `on-device Python exited with code ${failedResult?.code ?? 'unknown'}`;
               setExamExecutionOrigin('remote', true, `On-device execution failed: ${reason}`);
+              updateStudentExecutionCard(`Remote fallback started: ${reason}`, { mode: 'remote', kind: 'error' });
               const fallback = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
                 studentId: state.student.studentId,
                 questionId: q.id,
@@ -19559,7 +19642,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             const local = await ClientExecution.run(codingLanguage, codeToExecute, inp, {
               timeoutMs: 120000,
               onProgress: progress => {
-                if (progress && progress.detail) console.info('[CodeLeaf exam]', progress.detail);
+                if (progress && progress.detail) {
+                  console.info('[CodeLeaf exam]', progress.detail);
+                  updateStudentExecutionCard(progress.detail, { mode: 'local' });
+                }
               }
             });
             if (!local) {
@@ -19629,6 +19715,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           ? 'Browser execution runtime was not loaded.'
           : (localFailureReason || `On-device ${codingLanguage.toUpperCase() || 'code'} runtime failed or timed out.`);
         setExamExecutionOrigin('remote', true, `On-device execution failed: ${fallbackReason}`);
+        updateStudentExecutionCard(`Remote fallback started: ${fallbackReason}`, { mode: 'remote', kind: 'error' });
         const res = await apiCall(`/api/exam/room/${state.student.roomId}/run`, 'POST', {
           studentId: state.student.studentId,
           questionId: q.id,
@@ -19850,6 +19937,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         // or consume a remote worker for a healthy local run.
         try {
           if (submitBtn) submitBtn.textContent = 'Running locally...';
+          startStudentExecutionCard(q.language);
+          setExamExecutionOrigin('local');
           console.info('[CodeLeaf exam] Starting on-device grading transcript.', {
             questionId: q.id,
             language: q.language,
@@ -19863,7 +19952,12 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           if (gradingInputs.status !== 'ok' || !Array.isArray(gradingInputs.cases)) {
             throw new Error(gradingInputs.error || 'Unable to prepare grading inputs.');
           }
-          const localResults = await executeCodingCasesLocally(q, body.code, gradingInputs.cases);
+          const localResults = await executeCodingCasesLocally(
+            q,
+            body.code,
+            gradingInputs.cases,
+            detail => updateStudentExecutionCard(detail, { mode: 'local' })
+          );
           const localFailed = localResults.some(result =>
             Number(result.code) !== 0 || String(result.stderr || '').trim()
           );
