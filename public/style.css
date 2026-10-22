@@ -8431,6 +8431,7 @@ li.CodeMirror-hint-active {
 .auth-divider { display:flex; align-items:center; gap:10px; margin:18px 0 14px; color:#75877b; font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
 .auth-divider::before,.auth-divider::after { content:""; height:1px; flex:1; background:#2d3b31; }
 .auth-field { display:grid; gap:6px; margin:10px 0; color:#a8b8ad; font-size:12px; }
+.auth-field[hidden] { display:none !important; }
 .auth-field input { width:100%; box-sizing:border-box; padding:10px 11px; border:1px solid #35443a; border-radius:7px; background:#0c120e; color:#eef9f0; outline:none; }
 .auth-field input:focus { border-color:#00ed64; box-shadow:0 0 0 2px rgba(0,237,100,.12); }
 .auth-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:16px; }

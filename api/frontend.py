@@ -8588,6 +8588,7 @@ li.CodeMirror-hint-active {
 .auth-divider { display:flex; align-items:center; gap:10px; margin:18px 0 14px; color:#75877b; font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
 .auth-divider::before,.auth-divider::after { content:""; height:1px; flex:1; background:#2d3b31; }
 .auth-field { display:grid; gap:6px; margin:10px 0; color:#a8b8ad; font-size:12px; }
+.auth-field[hidden] { display:none !important; }
 .auth-field input { width:100%; box-sizing:border-box; padding:10px 11px; border:1px solid #35443a; border-radius:7px; background:#0c120e; color:#eef9f0; outline:none; }
 .auth-field input:focus { border-color:#00ed64; box-shadow:0 0 0 2px rgba(0,237,100,.12); }
 .auth-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:16px; }
@@ -9257,8 +9258,8 @@ li.CodeMirror-hint-active {
     <button class="auth-close" type="button" aria-label="Close sign in" onclick="Auth.close()">×</button>
     <img class="auth-mark" src="assets/branding/codeleaf-emblem.png?v=20261019-auth" alt="CodeLeaf" />
     <h2 id="auth-title">Sign in to CodeLeaf</h2>
-    <p class="auth-subtitle">One secure account for your workspace, exams, and meetings.</p>
-    <div class="auth-email-heading">Use your CodeLeaf email account</div>
+    <p class="auth-subtitle" id="auth-subtitle">One secure account for your workspace, exams, and meetings.</p>
+    <div class="auth-email-heading" id="auth-email-heading">Use your CodeLeaf email account</div>
     <label class="auth-field auth-name-field" id="auth-name-field" hidden>Name<input id="auth-name" autocomplete="name" placeholder="Your name" /></label>
     <label class="auth-field">Email<input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required /></label>
     <label class="auth-field">Password<input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 10 characters" required /></label>
@@ -9631,9 +9632,13 @@ const Auth = (() => {
     if (mode === 'verify') {
       state.mode = 'verify';
       $('auth-title').textContent = 'Verify your email';
+      $('auth-subtitle').textContent = 'One last step to secure your CodeLeaf account.';
+      $('auth-email-heading').textContent = 'Enter the 6-digit code we sent to your email';
       $('auth-name-field').hidden = true;
       $('auth-otp-field').hidden = false;
-      $('auth-password').closest('.auth-field').hidden = true;
+      const password = $('auth-password');
+      password.closest('.auth-field').hidden = true;
+      password.required = false;
       $('auth-submit').textContent = 'Verify email';
       $('auth-submit').onclick = verifyEmail;
       $('auth-mode-toggle').textContent = 'Resend code';
@@ -9650,9 +9655,14 @@ const Auth = (() => {
     const submit = $('auth-submit');
     const toggle = $('auth-mode-toggle');
     if (title) title.textContent = signup ? 'Create your CodeLeaf account' : 'Sign in to CodeLeaf';
+    const subtitle = $('auth-subtitle');
+    const emailHeading = $('auth-email-heading');
+    if (subtitle) subtitle.textContent = signup ? 'One secure account for your workspace, exams, and meetings.' : 'Welcome back. Sign in to continue securely.';
+    if (emailHeading) emailHeading.textContent = signup ? 'Create your secure CodeLeaf account' : 'Sign in with your CodeLeaf email';
     if (nameField) nameField.hidden = !signup;
     if (otpField) otpField.hidden = true;
     if (passwordField) passwordField.hidden = false;
+    if ($('auth-password')) $('auth-password').required = true;
     if (nameInput) {
       nameInput.required = signup;
       nameInput.disabled = !signup;

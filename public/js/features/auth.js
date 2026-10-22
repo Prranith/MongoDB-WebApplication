@@ -13,9 +13,13 @@ const Auth = (() => {
     if (mode === 'verify') {
       state.mode = 'verify';
       $('auth-title').textContent = 'Verify your email';
+      $('auth-subtitle').textContent = 'One last step to secure your CodeLeaf account.';
+      $('auth-email-heading').textContent = 'Enter the 6-digit code we sent to your email';
       $('auth-name-field').hidden = true;
       $('auth-otp-field').hidden = false;
-      $('auth-password').closest('.auth-field').hidden = true;
+      const password = $('auth-password');
+      password.closest('.auth-field').hidden = true;
+      password.required = false;
       $('auth-submit').textContent = 'Verify email';
       $('auth-submit').onclick = verifyEmail;
       $('auth-mode-toggle').textContent = 'Resend code';
@@ -32,9 +36,14 @@ const Auth = (() => {
     const submit = $('auth-submit');
     const toggle = $('auth-mode-toggle');
     if (title) title.textContent = signup ? 'Create your CodeLeaf account' : 'Sign in to CodeLeaf';
+    const subtitle = $('auth-subtitle');
+    const emailHeading = $('auth-email-heading');
+    if (subtitle) subtitle.textContent = signup ? 'One secure account for your workspace, exams, and meetings.' : 'Welcome back. Sign in to continue securely.';
+    if (emailHeading) emailHeading.textContent = signup ? 'Create your secure CodeLeaf account' : 'Sign in with your CodeLeaf email';
     if (nameField) nameField.hidden = !signup;
     if (otpField) otpField.hidden = true;
     if (passwordField) passwordField.hidden = false;
+    if ($('auth-password')) $('auth-password').required = true;
     if (nameInput) {
       nameInput.required = signup;
       nameInput.disabled = !signup;
