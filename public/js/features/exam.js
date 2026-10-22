@@ -79,7 +79,7 @@ const ExamPortal = (() => {
       ? 'CodeLeaf is running this program on your device.'
       : 'CodeLeaf is running this program on a dedicated execution worker.';
     const currentQuestion = state.student.questions && state.student.questions[state.student.currentQIdx];
-    if (currentQuestion && currentQuestion.type === 'coding') {
+    if (currentQuestion && currentQuestion.type === 'coding' && (running || reason)) {
       updateStudentExecutionCard(
         reason || (running ? (local ? 'Running program on this device…' : 'Running program on a remote worker…') : detail),
         { mode: local ? 'local' : 'remote', kind: reason ? 'error' : (running ? 'active' : 'done') }
@@ -127,7 +127,27 @@ const ExamPortal = (() => {
   function startStudentExecutionCard(language) {
     state.student.executionCardSteps = [];
     state.student.executionOriginReason = '';
-    updateStudentExecutionCard(`Preparing ${String(language || 'program').toUpperCase()} runtime…`, { mode: 'local' });
+    const card = el('student-execution-card');
+    const toggle = el('student-execution-toggle');
+    if (card) card.classList.remove('is-collapsed');
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('title', 'Collapse execution log');
+      toggle.textContent = '⌃';
+    }
+    updateStudentExecutionCard(`Starting ${String(language || 'program').toUpperCase()} on-device execution…`, { mode: 'local' });
+  }
+
+  function finishStudentExecutionCard() {
+    const card = el('student-execution-card');
+    const toggle = el('student-execution-toggle');
+    if (!card) return;
+    card.classList.add('is-collapsed');
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('title', 'Expand execution log');
+      toggle.textContent = '⌄';
+    }
   }
 
   function langCommentPrefix(lang) {
@@ -4212,7 +4232,12 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 code: query,
                 stdins
               });
-              if (fallback.status === 'ok' && fallback.results) finalResults = fallback.results;
+              if (fallback.status === 'ok' && fallback.results) {
+                finalResults = fallback.results;
+                updateStudentExecutionCard('Remote worker completed execution.', { mode: 'remote', kind: 'done' });
+              } else {
+                updateStudentExecutionCard(`Remote worker failed: ${fallback.error || 'unknown error'}`, { mode: 'remote', kind: 'error' });
+              }
             }
             el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
             el('student-run-btn').disabled = false;
@@ -4241,6 +4266,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               setExamExecutionOrigin(usedRemoteFallback ? 'remote' : 'local', false);
             }
 
+            finishStudentExecutionCard();
             studentNS.initConsoleTabs();
             const tabId = state.student.activeConsoleTab || 'case-0';
             studentNS.selectConsoleTab(tabId);
@@ -4311,6 +4337,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             studentNS.initConsoleTabs();
             const tabId = state.student.activeConsoleTab || 'case-0';
             studentNS.selectConsoleTab(tabId);
+            finishStudentExecutionCard();
             return;
           }
         }
@@ -4347,6 +4374,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         state.student.runResults = state.student.runResults || {};
 
         if (res.status === 'ok' && res.results) {
+          updateStudentExecutionCard('Remote worker completed execution.', { mode: 'remote', kind: 'done' });
           sampleCases.forEach((tc, i) => {
             state.student.runResults[`${q.id}-case-${i}`] = res.results[i];
           });
@@ -4370,7 +4398,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
           const tabId = state.student.activeConsoleTab || 'case-0';
           studentNS.selectConsoleTab(tabId);
+          finishStudentExecutionCard();
         } else {
+          updateStudentExecutionCard(`Remote worker failed: ${res.error || 'unknown error'}`, { mode: 'remote', kind: 'error' });
+          finishStudentExecutionCard();
           showExamAlert('Failed to run: ' + (res.error || 'Unknown error'), { title: 'Run Failed', danger: true });
         }
         return;
