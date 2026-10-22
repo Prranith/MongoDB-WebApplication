@@ -12131,7 +12131,7 @@ const ClientExecution = (() => {
           .split(String.fromCharCode(9)).join(String.fromCharCode(92, 116))
           .split(String.fromCharCode(12)).join(String.fromCharCode(92, 102)) + '"';
         return 'import java.io.InputStream;\\\\n' +
-        'public final class Scanner {\\\\n' +
+        'public final class CodeLeafScanner {\\\\n' +
         '  private static final String CODELEAF_INPUT = ' + escapedInput + ';\\\\n' +
         '  private static int position = 0;\\\\n' +
         '  public Scanner(InputStream input) { }\\\\n' +
@@ -12274,10 +12274,12 @@ const ClientExecution = (() => {
         }
         if (/\\\\bScanner\\\\b/.test(sourceText)) {
           // TeaVM cannot add classes to java.base, so provide Scanner in the
-          // source's default package. Remove only an explicit Scanner import;
-          // wildcard imports remain harmless and existing code stays intact.
+          // source's default package. Remove explicit Scanner imports and
+          // rewrite the type to a unique shim name so java.util.* cannot win
+          // name resolution during browser compilation.
           sourceText = sourceText.replace(/^\\\\s*import\\\\s+java\\\\.util\\\\.Scanner\\\\s*;\\\\s*$/gm, '');
-          compiler.addSourceFile('Scanner.java', scannerShim(stdin));
+          sourceText = sourceText.split('Scanner').join('CodeLeafScanner');
+          compiler.addSourceFile('CodeLeafScanner.java', scannerShim(stdin));
         }
         compiler.addSourceFile(sourceName, sourceText);
         const compiled = compiler.compile();
