@@ -5290,7 +5290,10 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel .student-execution-card.is-remote .student-execution-progress span { background:#83baff; }
 #exam-student-exam-panel .student-execution-card.is-error .student-execution-progress span { background:#ff7668; }
 #exam-student-exam-panel .student-execution-steps { display:flex; gap:12px; overflow:hidden; white-space:nowrap; }
-#exam-student-exam-panel .student-execution-step { color:#718074; overflow:hidden; text-overflow:ellipsis; }
+#exam-student-exam-panel .student-execution-steps { display:block; max-height:76px; overflow-y:auto; overflow-x:hidden; padding-top:1px; }
+#exam-student-exam-panel .student-execution-step { display:block; color:#84968a; white-space:pre-wrap; word-break:break-word; line-height:1.45; }
+#exam-student-exam-panel .student-execution-step::before { content:'[codeleaf] '; color:#6b8d76; }
+#exam-student-exam-panel .student-execution-step + .student-execution-step { margin-top:2px; }
 #exam-student-exam-panel .student-execution-step.is-active { color:#d5e3d5; }
 #exam-student-exam-panel .student-execution-step.is-done { color:#8eb49a; }
 #exam-student-exam-panel .student-execution-step.is-error { color:#ff8b7e; }
