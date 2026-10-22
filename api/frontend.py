@@ -15437,6 +15437,12 @@ const ExamPortal = (() => {
   function el(id) { return document.getElementById(id); }
 
   function setExamExecutionOrigin(origin, running = true, reason = '') {
+    if (state.student) {
+      state.student.executionOrigin = origin;
+      state.student.executionOriginReason = reason ? String(reason) : '';
+      const currentQuestion = state.student.questions && state.student.questions[state.student.currentQIdx];
+      state.student.executionOriginQuestionId = currentQuestion ? currentQuestion.id : '';
+    }
     const status = el('student-console-status');
     if (!status) return;
     const local = origin === 'local';
@@ -20561,14 +20567,16 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             }
 
             const verdictClass = isError ? 'error' : matched ? 'accepted' : 'wrong';
-            statusEl.innerHTML = `— <span class="exam-verdict exam-verdict-${verdictClass}">${resultTitle}</span>`;
+            const fallbackReason = state.student.executionOriginQuestionId === q.id ? (state.student.executionOriginReason || '') : '';
+            statusEl.innerHTML = `— <span class="exam-verdict exam-verdict-${verdictClass}">${resultTitle}</span>${fallbackReason ? ` <span class="execution-phase execution-fallback-reason" title="${escapeExamHtml(fallbackReason)}">· ${escapeExamHtml(fallbackReason)}</span>` : ''}`;
             statusEl.style.color = '';
           } else {
             if (cached.customVerdict) {
               const accepted = cached.customVerdict === 'accepted';
               const verdictClass = accepted ? 'accepted' : 'wrong';
               const title = accepted ? 'Accepted' : (cached.customVerdict === 'runtime_error' ? 'Runtime Error' : 'Wrong Answer');
-              statusEl.innerHTML = `— <span class="exam-verdict exam-verdict-${verdictClass}">${title}</span>`;
+              const fallbackReason = state.student.executionOriginQuestionId === q.id ? (state.student.executionOriginReason || '') : '';
+              statusEl.innerHTML = `— <span class="exam-verdict exam-verdict-${verdictClass}">${title}</span>${fallbackReason ? ` <span class="execution-phase execution-fallback-reason" title="${escapeExamHtml(fallbackReason)}">· ${escapeExamHtml(fallbackReason)}</span>` : ''}`;
               statusEl.style.color = '';
             } else {
               const exitCode = cached.code !== undefined ? cached.code : 0;
