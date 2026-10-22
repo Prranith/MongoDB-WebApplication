@@ -2,6 +2,10 @@
 // SIDE PANEL TOGGLES
 // ═══════════════════════════════════════════════════════════════════
 function setSidePanel(name) {
+  if (window.Auth && !Auth.user) {
+    Auth.require(() => setSidePanel(name));
+    return;
+  }
   S.sidePanel = name;
   const panels = ['files', 'db', 'history', 'snippets', 'search'];
   panels.forEach(p => {

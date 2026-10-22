@@ -2,7 +2,7 @@
 // The active file is the single source of truth for workspace language.
 // There is intentionally no manual language selector in the toolbar.
 function getWorkspaceLanguage() {
-  const path = String(window.S?.activeFile || '').toLowerCase();
+  const path = String(typeof S !== 'undefined' && S ? S.activeFile || '' : '').toLowerCase();
   if (path.endsWith('.py')) return 'python';
   if (path.endsWith('.cpp') || path.endsWith('.cc') || path.endsWith('.cxx')) return 'cpp';
   if (path.endsWith('.c')) return 'c';

@@ -32,6 +32,7 @@ const ClientExecution = (() => {
       let javaCompiler = null;
       let javaSdk = null;
       let javaClasslib = null;
+      const initializedRuntimes = new Set();
       const base = ${JSON.stringify(PYODIDE_BASE)};
       const clangScript = ${JSON.stringify(CLANG_WASM_SCRIPT)};
       const clangAssets = ${JSON.stringify(CLANG_WASM_ASSETS)};
@@ -244,12 +245,17 @@ const ClientExecution = (() => {
       self.onmessage = async event => {
         const request = event.data || {};
         try {
-          reportProgress(request.id, 'loading', 'Loading ' + request.language + ' runtime…');
+          const runtimeKey = String(request.language || '').toLowerCase();
+          const firstRun = !initializedRuntimes.has(runtimeKey);
+          reportProgress(request.id, 'loading', firstRun
+            ? 'First run: setting up ' + runtimeKey + ' runtime — please wait…'
+            : 'Loading ' + runtimeKey + ' runtime…');
           if (request.language === 'c' || request.language === 'cpp') {
             // Keep each compilation isolated so a previous run cannot retain
             // its stdin or generated program state.
             codeleafClangCompilers.delete(request.language);
             const compiler = await clangRuntime(request.language);
+            initializedRuntimes.add(runtimeKey);
             reportProgress(request.id, 'compiling', 'Compiling ' + request.language.toUpperCase() + ' source…');
             const result = await compiler.run(String(request.code || ''), String(request.stdin || ''), {
               fileName: request.language === 'c' ? 'main.c' : 'main.cpp'
@@ -272,6 +278,7 @@ const ClientExecution = (() => {
             try {
               const result = await runJava(request.code, request.stdin, request.fileName,
                 (phase, detail) => reportProgress(request.id, phase, detail));
+              initializedRuntimes.add(runtimeKey);
               reportProgress(request.id, 'completed', 'Program finished on this device.');
               self.postMessage({ id: request.id, ok: true, result });
             } catch (error) {
@@ -290,6 +297,7 @@ const ClientExecution = (() => {
             return;
           }
           const python = await runtime();
+          initializedRuntimes.add(runtimeKey);
           reportProgress(request.id, 'compiling', 'Preparing Python program…');
           const input = String(request.stdin || '').split(/\\r?\\n/);
           let inputIndex = 0;

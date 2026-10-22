@@ -1316,7 +1316,7 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
   min-height: 76px;
   max-height: 180px;
   margin: 0;
-  padding: 10px 42px 30px 10px;
+  padding: 10px 76px 30px 10px;
   box-sizing: border-box;
   resize: vertical;
   border: 1px solid #454545;
@@ -1337,6 +1337,10 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
   background: #2b2b2b;
   color: #d4d4d4;
 }
+.workspace-ai-inline-tool { position:absolute; right:42px; bottom:7px; width:29px; height:25px; padding:0; border:1px solid #3b5142; border-radius:6px; background:#18251d; color:#89a996; cursor:pointer; }
+.workspace-ai-inline-tool:hover { border-color:#708c79; background:#223329; color:#d8f0dd; }
+.workspace-ai-inline-tool.is-active { border-color:#739e80; background:#2c4935; color:#bff3c9; box-shadow:0 0 0 1px rgba(115,158,128,.15); }
+.workspace-ai-inline-tool svg { width:13px; height:13px; fill:currentColor; }
 .workspace-ai-send:hover:not(:disabled) { background: #3a3a3a; border-color: #707070; }
 .workspace-ai-send span { display: none; }
 .workspace-ai-send svg { width: 13px; height: 13px; fill: currentColor; }
@@ -1794,6 +1798,26 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
   font-size: 11px;
 }
 
+.execution-origin-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text3);
+  font: 10px 'JetBrains Mono', monospace;
+  text-transform: lowercase;
+}
+.execution-origin-cli {
+  margin: 0 0 8px;
+  color: var(--text3);
+  font: 10px/1.4 'JetBrains Mono', monospace;
+}
+.execution-origin-note { color: #b4a56d; }
+.execution-cli-line { margin: 0 0 3px; color: #84968a; font: 10px/1.4 'JetBrains Mono', monospace; white-space: pre-wrap; }
+.execution-cli-line::before { color: #6b8d76; }
+.execution-cli-note { color: #b4a56d; }
+#execution-log-output { color: #84968a; }
+#execution-log-output::before { content: 'RUNTIME DIAGNOSTICS'; display: block; color: #66766c; font: 10px/1.4 Inter, sans-serif; letter-spacing: .08em; margin-bottom: 8px; }
+
 .execution-origin-banner {
   display: flex;
   align-items: flex-start;
@@ -1842,13 +1866,15 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
 }
 
 .execution-origin-local {
-  border-color: rgba(95, 208, 133, .28);
-  background: rgba(41, 112, 69, .13);
+  border-color: transparent;
+  background: transparent;
+  color: var(--text2);
 }
 
 .execution-origin-remote {
-  border-color: rgba(115, 169, 231, .28);
-  background: rgba(42, 83, 135, .13);
+  border-color: transparent;
+  background: transparent;
+  color: var(--text2);
 }
 
 .execution-origin-dot {
@@ -1861,6 +1887,8 @@ body.workspace-ai-resizing * { cursor: col-resize !important; user-select: none 
   box-shadow: 0 0 0 3px rgba(113, 227, 154, .12);
   flex: 0 0 auto;
 }
+
+.execution-origin .execution-origin-dot { width: 5px; height: 5px; margin-top: 0; box-shadow:none; }
 
 .execution-origin-remote .execution-origin-dot {
   background: #78b7ff;
@@ -8475,7 +8503,8 @@ li.CodeMirror-hint-active {
 .auth-account-wrap { position:relative; display:inline-flex; }
 .auth-account-button { display:grid; place-items:center; width:24px; height:24px; padding:2px; border:1px solid #4a4a4a; border-radius:50%; background:#252526; color:#d6d6d6; cursor:pointer; box-shadow:none; transition:background .16s,border-color .16s; }
 .auth-account-button:hover { border-color:#707070; background:#303030; }
-.auth-account-avatar { display:grid; place-items:center; width:100%; height:100%; border-radius:50%; color:#032012; font-size:12px; font-weight:800; }
+.auth-account-avatar { display:grid; place-items:center; width:100%; height:100%; border-radius:50%; color:#f2fff5; font-size:11px; font-weight:800; }
+.auth-account-avatar svg { width:15px; height:15px; fill:currentColor; }
 .auth-profile-popover { position:absolute; top:calc(100% + 9px); right:0; z-index:5000; display:grid; min-width:210px; gap:4px; padding:13px; border:1px solid rgba(0,237,100,.28); border-radius:10px; background:linear-gradient(145deg,#17221c,#0d1410); box-shadow:0 16px 38px rgba(0,0,0,.48); color:#e9f4ec; }
 .auth-profile-popover[hidden] { display:none; }
 .auth-profile-heading { color:#87a291; font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
@@ -8483,6 +8512,25 @@ li.CodeMirror-hint-active {
 .auth-profile-email { overflow:hidden; color:#9db5a4; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
 .auth-profile-logout { margin-top:8px; padding:7px 9px; border:1px solid rgba(255,128,112,.3); border-radius:6px; background:rgba(120,35,30,.18); color:#ffb2a8; cursor:pointer; font-size:11px; text-align:left; }
 .auth-profile-logout:hover { border-color:#ff8f82; background:rgba(150,43,35,.3); }
+.workspace-ai-mark { display:grid; place-items:center; width:30px; height:30px; border:1px solid #3b5646; border-radius:9px; background:#16221b; }
+.workspace-ai-mark img { width:24px; height:24px; object-fit:contain; }
+.workspace-ai-brand-copy { display:grid; gap:2px; min-width:0; }
+.workspace-ai-brand-copy strong { color:#edf9f0; font-size:13px; letter-spacing:.01em; }
+.workspace-ai-brand-copy small { color:#8da696; font-size:10px; }
+#workspace-ai-panel { border-left:1px solid #304538; background:linear-gradient(180deg,#111a15,#0d120f); box-shadow:-12px 0 28px rgba(0,0,0,.18); }
+.workspace-ai-header { min-height:48px; padding:0 12px; border-bottom-color:#26382c; background:rgba(20,31,24,.92); }
+.workspace-ai-context { margin:12px 12px 0; padding:8px 10px; border-color:#2d4434; border-radius:7px; background:#142019; }
+.workspace-ai-live-dot { background:#54df86; box-shadow:0 0 8px rgba(84,223,134,.7); }
+.workspace-ai-presets button { padding:6px 9px; border-color:#354d3d; border-radius:6px; background:#17231b; color:#b8cdbd; }
+.workspace-ai-presets button:hover { border-color:#73917d; color:#effff3; background:#203127; }
+#workspace-ai-request { border-color:#354b3c; border-radius:8px; background:#101812; color:#e6f1e8; }
+#workspace-ai-request:focus { border-color:#699878; box-shadow:0 0 0 1px rgba(105,152,120,.35); }
+.workspace-ai-send { border-color:#527561; border-radius:7px; background:#294936; color:#effff3; }
+.workspace-ai-send:hover:not(:disabled) { background:#356044; border-color:#83b995; }
+.workspace-ai-autofill { border-color:#2d4234; border-radius:7px; background:#121c16; }
+.workspace-ai-result { background:#0f1511; border-top-color:#26382c; }
+.workspace-ai-user-message { border-color:#304438; border-radius:9px; background:#18251c; }
+.workspace-ai-message { border-bottom-color:#26382c; }
 .workspace-ai-floating-launch { position:fixed; right:20px; bottom:20px; z-index:4200; display:grid; place-items:center; width:46px; height:46px; padding:0; border:0; border-radius:50%; background:transparent; cursor:grab; box-shadow:none; opacity:.86; transition:opacity .18s ease,transform .18s ease; touch-action:none; user-select:none; }
 .workspace-ai-floating-launch:hover { transform:scale(1.06); opacity:1; }
 .workspace-ai-floating-launch:active { cursor:grabbing; transform:scale(.97); }
@@ -8573,7 +8621,7 @@ li.CodeMirror-hint-active {
     </button>
     <div class="auth-account-wrap" id="auth-account-wrap" hidden>
       <button class="auth-account-button" id="auth-account-button" type="button" onclick="Auth.accountAction()" aria-label="Open profile menu" aria-expanded="false">
-        <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true">P</span>
+        <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 12a4.2 4.2 0 1 0 0-8.4A4.2 4.2 0 0 0 12 12Zm0 2.1c-4.05 0-7.35 2.1-7.35 4.7 0 .66.54 1.2 1.2 1.2h12.3c.66 0 1.2-.54 1.2-1.2 0-2.6-3.3-4.7-7.35-4.7Z"/></svg></span>
       </button>
       <div class="auth-profile-popover" id="auth-profile-popover" hidden>
         <div class="auth-profile-heading">Signed in as</div>
@@ -8842,7 +8890,7 @@ li.CodeMirror-hint-active {
         <div id="workspace-ai-resizer" role="separator" aria-orientation="vertical" aria-label="Resize CodeLeaf AI panel" hidden></div>
         <aside id="workspace-ai-panel" aria-label="CodeLeaf AI editor assistant" hidden>
         <div class="workspace-ai-header">
-          <div class="workspace-ai-brand"><span class="workspace-ai-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14 8l5.2 2-5.2 2 2 5.2-2-5.2-5.2-2L10 8l2-5.2Z"/></svg></span><strong>CodeLeaf AI</strong><span class="workspace-ai-title-divider">·</span><small>Editor intelligence</small></div>
+          <div class="workspace-ai-brand"><span class="workspace-ai-mark"><img src="assets/branding/codeleaf-emblem.png?v=20261019-ai-panel" alt="CodeLeaf" /></span><span class="workspace-ai-brand-copy"><strong>CodeLeaf AI</strong><small>Editor intelligence</small></span></div>
           <div class="workspace-ai-actions"><button type="button" class="workspace-ai-action" onclick="WorkspaceAIAssistant.preset('Review this code for bugs and explain the highest-impact fixes.')" aria-label="Start a new AI request" title="New request">＋</button><button type="button" class="workspace-ai-close" onclick="WorkspaceAIAssistant.close()" aria-label="Close AI assistant" title="Close">×</button></div>
         </div>
         <div class="workspace-ai-context"><span class="workspace-ai-live-dot"></span><span id="workspace-ai-file">Entire active file context</span></div>
@@ -8855,11 +8903,14 @@ li.CodeMirror-hint-active {
           </div>
           <div class="workspace-ai-input-shell">
             <textarea id="workspace-ai-request" placeholder="Ask CodeLeaf AI about the active file…" rows="3"></textarea>
+            <button type="button" id="workspace-ai-autofill-toggle" class="workspace-ai-inline-tool" onclick="WorkspaceAIAssistant.toggleAutofill()" aria-label="Toggle safe autofill" aria-pressed="false" title="Safe autofill: off">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Zm7 13 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg>
+            </button>
             <button type="button" id="workspace-ai-send" class="workspace-ai-send" onclick="WorkspaceAIAssistant.ask()" aria-label="Send message" title="Send message">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Zm4.7 7h6.7L8.7 8.1 10 11Z"/></svg><span>Ask</span>
             </button>
           </div>
-          <label class="workspace-ai-autofill"><input id="workspace-ai-autofill" type="checkbox"/><span><strong>Safe autofill</strong><small>Suggest editor changes only when the fix is unambiguous</small></span><span class="workspace-ai-toggle"></span></label>
+          <input id="workspace-ai-autofill" type="checkbox" hidden />
         </div>
         </aside>
       </div>
@@ -8921,6 +8972,12 @@ li.CodeMirror-hint-active {
           <span class="out-info">// CodeLeaf Ready. Run a query (Ctrl+Enter) to see output.</span>
             </div>
           </div>
+          <!-- Runtime diagnostics are kept separate from the program's stdout/stderr. -->
+          <div class="con-view" id="logs-view" style="display:none;flex-direction:column;flex:1;overflow-y:auto;background:#181818">
+            <div id="execution-log-output" style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.55;min-height:100%;box-sizing:border-box">
+              <span class="out-info">// Execution diagnostics will appear here.</span>
+            </div>
+          </div>
           <!-- Unified terminal console (stdout/stderr + stdin) -->
           <div class="con-view" id="terminal-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;background:#181818">
             <textarea id="terminal-interactive-console" onkeydown="if(event.ctrlKey && event.key === 'Enter') runQuery()" style="flex:1;background:transparent;border:none;color:#d4d4d4;font-family:'Consolas', 'JetBrains Mono', monospace;font-size:12px;line-height:1.6;padding:12px;resize:none;outline:none;user-select:text" placeholder="// Type standard input (stdin) directly here...&#10;// Then click Run (or press Ctrl+Enter) to execute code and see output in this terminal console."></textarea>
@@ -8944,7 +9001,7 @@ li.CodeMirror-hint-active {
     <div class="sb-sep"></div>
     <div class="sb-item" id="sb-pos">Ln 1, Col 1</div>
     <div class="sb-sep"></div>
-    <div class="sb-item" id="sb-lang-indicator">Mongo Shell</div>
+    <div class="sb-item" id="sb-lang-indicator">Code Terminal</div>
     <div class="sb-item" onclick="openPalette()">⌘K</div>
     <div class="sb-item" onclick="openModal('schema-modal')">F1 Help</div>
   </div>
@@ -9630,7 +9687,7 @@ const Auth = (() => {
 
   return {
     init, open, close, login, register, signOut, accountAction, setMode,
-    require(action) { if (state.user || !state.required) return action(); open(action); },
+    require(action) { if (state.user) return action(); open(action); },
     get user() { return state.user; },
   };
 })();
@@ -9755,6 +9812,10 @@ function applySettings() {
 // SIDE PANEL TOGGLES
 // ═══════════════════════════════════════════════════════════════════
 function setSidePanel(name) {
+  if (window.Auth && !Auth.user) {
+    Auth.require(() => setSidePanel(name));
+    return;
+  }
   S.sidePanel = name;
   const panels = ['files', 'db', 'history', 'snippets', 'search'];
   panels.forEach(p => {
@@ -10431,6 +10492,13 @@ function insertSnippet(body) {
 // VIEWS SWITCHING
 // ═══════════════════════════════════════════════════════════════════
 function showView(name) {
+  // Home is public; every workspace surface requires an authenticated session.
+  // Keep this check centralized so toolbar, activity-bar, and programmatic
+  // navigation all follow the same rule.
+  if (name !== 'intro' && window.Auth && !Auth.user) {
+    Auth.require(() => showView(name));
+    return;
+  }
   S.view = name;
   const ide = document.getElementById('ide-panel');
   const intro = document.getElementById('intro-panel');
@@ -11328,7 +11396,7 @@ function openFileInTab(path) {
   // Dynamically update workspace language and views based on file extension
   let lang = 'mongodb';
   let cmMode = 'javascript';
-  let langIndicator = 'Mongo Shell';
+  let langIndicator = 'Code Terminal';
   
   const lowerPath = file.path.toLowerCase();
   if (lowerPath.endsWith('.py')) {
@@ -11962,6 +12030,7 @@ const ClientExecution = (() => {
       let javaCompiler = null;
       let javaSdk = null;
       let javaClasslib = null;
+      const initializedRuntimes = new Set();
       const base = ${JSON.stringify(PYODIDE_BASE)};
       const clangScript = ${JSON.stringify(CLANG_WASM_SCRIPT)};
       const clangAssets = ${JSON.stringify(CLANG_WASM_ASSETS)};
@@ -12174,12 +12243,17 @@ const ClientExecution = (() => {
       self.onmessage = async event => {
         const request = event.data || {};
         try {
-          reportProgress(request.id, 'loading', 'Loading ' + request.language + ' runtime…');
+          const runtimeKey = String(request.language || '').toLowerCase();
+          const firstRun = !initializedRuntimes.has(runtimeKey);
+          reportProgress(request.id, 'loading', firstRun
+            ? 'First run: setting up ' + runtimeKey + ' runtime — please wait…'
+            : 'Loading ' + runtimeKey + ' runtime…');
           if (request.language === 'c' || request.language === 'cpp') {
             // Keep each compilation isolated so a previous run cannot retain
             // its stdin or generated program state.
             codeleafClangCompilers.delete(request.language);
             const compiler = await clangRuntime(request.language);
+            initializedRuntimes.add(runtimeKey);
             reportProgress(request.id, 'compiling', 'Compiling ' + request.language.toUpperCase() + ' source…');
             const result = await compiler.run(String(request.code || ''), String(request.stdin || ''), {
               fileName: request.language === 'c' ? 'main.c' : 'main.cpp'
@@ -12202,6 +12276,7 @@ const ClientExecution = (() => {
             try {
               const result = await runJava(request.code, request.stdin, request.fileName,
                 (phase, detail) => reportProgress(request.id, phase, detail));
+              initializedRuntimes.add(runtimeKey);
               reportProgress(request.id, 'completed', 'Program finished on this device.');
               self.postMessage({ id: request.id, ok: true, result });
             } catch (error) {
@@ -12220,6 +12295,7 @@ const ClientExecution = (() => {
             return;
           }
           const python = await runtime();
+          initializedRuntimes.add(runtimeKey);
           reportProgress(request.id, 'compiling', 'Preparing Python program…');
           const input = String(request.stdin || '').split(/\\\\r?\\\\n/);
           let inputIndex = 0;
@@ -12958,6 +13034,7 @@ function setConTab(tab) {
   const treeView = document.getElementById('tree-view');
   const rawView = document.getElementById('raw-view');
   const outputView = document.getElementById('output-view');
+  const logsView = document.getElementById('logs-view');
   const terminalView = document.getElementById('terminal-view');
   const viewBtns = document.getElementById('view-btns');
   
@@ -12965,19 +13042,24 @@ function setConTab(tab) {
     const showOutput = tab === 'output';
     if (treeView) treeView.style.display = (showOutput && S.resultView === 'tree') ? 'flex' : 'none';
     if (rawView) rawView.style.display = (showOutput && S.resultView === 'raw') ? 'block' : 'none';
-    if (outputView) outputView.style.display = (!showOutput || S.resultView === 'out') ? 'block' : 'none';
+    if (outputView) outputView.style.display = (showOutput && S.resultView === 'out') ? 'block' : 'none';
+    if (logsView) logsView.style.display = tab === 'logs' ? 'flex' : 'none';
     if (terminalView) terminalView.style.display = 'none';
     if (viewBtns) viewBtns.style.display = showOutput ? 'flex' : 'none';
   } else {
     if (treeView) treeView.style.display = 'none';
     if (rawView) rawView.style.display = 'none';
     if (viewBtns) viewBtns.style.display = 'none';
+    if (logsView) logsView.style.display = tab === 'logs' ? 'flex' : 'none';
     
     if (tab === 'stdin') {
       if (outputView) outputView.style.display = 'none';
       if (terminalView) terminalView.style.display = 'flex';
-    } else {
+    } else if (tab === 'output') {
       if (outputView) outputView.style.display = 'block';
+      if (terminalView) terminalView.style.display = 'none';
+    } else {
+      if (outputView) outputView.style.display = 'none';
       if (terminalView) terminalView.style.display = 'none';
     }
   }
@@ -12999,6 +13081,8 @@ function clearConsole() {
   document.getElementById('tree-rows').innerHTML = `<div style="padding:12px 14px;color:var(--text3);font-family:'JetBrains Mono',monospace">// Cleared</div>`;
   document.getElementById('raw-view').innerHTML = `<div style="padding:12px 14px;color:var(--text3);font-family:'JetBrains Mono',monospace">// Cleared</div>`;
   document.getElementById('output-text').innerHTML = `<span class="out-info">// Console cleared</span>`;
+  const executionLog = document.getElementById('execution-log-output');
+  if (executionLog) executionLog.innerHTML = `<span class="out-info">// Execution diagnostics cleared</span>`;
   const termConsole = document.getElementById('terminal-interactive-console');
   if (termConsole) {
     termConsole.value = '';
@@ -13179,6 +13263,29 @@ function runPythonLocally(code, stdin, onFinish) {
 }
 
 let executionProgressTimer = null;
+let executionCliLines = [];
+
+function resetExecutionCli() {
+  executionCliLines = [];
+}
+
+function renderExecutionCli() {
+  const logView = document.getElementById('execution-log-output');
+  if (!logView) return;
+  logView.innerHTML = executionCliMarkup() || '<span class="out-info">// Execution diagnostics will appear here.</span>';
+  logView.scrollTop = logView.scrollHeight;
+}
+
+function executionCliMarkup() {
+  return executionCliLines.map(line => `<div class="execution-cli-line">${esc(line)}</div>`).join('');
+}
+
+function appendExecutionCli(detail) {
+  const text = String(detail || '').trim();
+  if (!text || executionCliLines[executionCliLines.length - 1] === text) return;
+  executionCliLines.push(text);
+  renderExecutionCli();
+}
 
 function stopExecutionProgress() {
   if (executionProgressTimer) {
@@ -13195,27 +13302,20 @@ function setExecutionOrigin(origin, language, running, detail) {
     ? 'CodeLeaf is executing this program on your device.'
     : 'CodeLeaf is executing this program on a dedicated CodeLeaf execution worker.');
   const statEl = document.getElementById('console-status');
-  const outView = document.getElementById('output-text');
   const stateClass = isLocal ? 'execution-origin-local' : 'execution-origin-remote';
 
+  const phases = isLocal ? `Preparing ${language} runtime…` : 'Connecting to a dedicated worker…';
+  const current = detail || phases;
   if (statEl) {
-    statEl.innerHTML = `<span class="execution-origin ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>${running ? ' <span class="execution-phase">· Starting…</span>' : ''}`;
+    statEl.innerHTML = `<span class="execution-origin ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>${running ? ` <span class="execution-phase">· ${esc(current)}</span>` : ''}`;
   }
-  if (outView && running) {
-    outView.innerHTML = `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div class="execution-origin-content"><div class="execution-origin-heading"><strong>${label}</strong><span class="execution-origin-live">LIVE</span></div><span>${message}</span><div class="execution-progress"><span></span></div><small id="execution-progress-text">Preparing ${esc(language)} runtime…</small></div></div>`;
-    const phases = isLocal
-      ? `Preparing ${language} runtime…`
-      : 'Connecting to a dedicated worker…';
-    const phaseEl = document.getElementById('execution-progress-text');
-    if (phaseEl) phaseEl.textContent = phases;
-  }
+  appendExecutionCli(`[codeleaf] ${current}`);
 }
 
 function updateExecutionProgress(progress) {
   const detail = progress && progress.detail ? progress.detail : '';
   if (!detail) return;
-  const phaseEl = document.getElementById('execution-progress-text');
-  if (phaseEl) phaseEl.textContent = detail;
+  appendExecutionCli(`[codeleaf] ${detail}`);
   const statEl = document.getElementById('console-status');
   const phase = statEl && statEl.querySelector('.execution-phase');
   if (phase) phase.textContent = `· ${detail}`;
@@ -13224,12 +13324,15 @@ function updateExecutionProgress(progress) {
 function executionOriginBanner(origin, fallbackNotice) {
   const isLocal = origin === 'local';
   const label = isLocal ? 'Local execution' : 'Remote execution';
-  const message = isLocal
-    ? 'CodeLeaf executed this program on your device.'
-    : 'CodeLeaf executed this program on a dedicated CodeLeaf execution worker.';
+  const notice = fallbackNotice ? `<div class="execution-origin-cli execution-origin-note">[fallback] ${esc(fallbackNotice)}</div>` : '';
+  return notice;
+}
+
+function executionOriginInline(origin) {
+  const isLocal = origin === 'local';
   const stateClass = isLocal ? 'execution-origin-local' : 'execution-origin-remote';
-  const notice = fallbackNotice ? `<small class="execution-fallback-note">${esc(fallbackNotice)}</small>` : '';
-  return `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div class="execution-origin-content"><div class="execution-origin-heading"><strong>${label}</strong><span class="execution-origin-live">${isLocal ? 'DEVICE' : 'WORKER'}</span></div><span>${message}</span>${notice}</div></div>`;
+  const label = isLocal ? 'device' : 'remote worker';
+  return `<span class="execution-origin-inline ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>`;
 }
 
 async function runPlaygroundCode(language, code, stdin) {
@@ -13249,8 +13352,12 @@ async function runPlaygroundCode(language, code, stdin) {
   if (countEl) countEl.textContent = 'Playground';
 
   setConTab('output');
+  resetExecutionCli();
   const outView = document.getElementById('output-text');
-  if (outView) outView.innerHTML = `<span class="out-info">[info] Selecting the safest available execution runtime…</span>`;
+  if (outView) outView.innerHTML = '';
+  const logView = document.getElementById('execution-log-output');
+  if (logView) logView.innerHTML = '';
+  appendExecutionCli('[codeleaf] Selecting the safest available execution runtime…');
 
   const runBtn = document.querySelector('.tbtn-run');
   if (runBtn) {
@@ -13274,13 +13381,13 @@ async function runPlaygroundCode(language, code, stdin) {
 
       if (statEl) {
         statEl.innerHTML = isError
-          ? `<span style="color:var(--red)">✗ Execution Failed</span>`
-          : `<span style="color:var(--green3)">✓ Success</span>`;
+          ? `<span style="color:var(--red)">✗ Execution Failed</span> ${executionOriginInline(origin)}`
+          : `<span style="color:var(--green3)">✓ Success</span> ${executionOriginInline(origin)}`;
       }
       if (timeEl) timeEl.textContent = `${duration}ms`;
 
       if (outView) {
-        let outputHTML = executionOriginBanner(origin, fallbackNotice);
+        let outputHTML = '';
         if (stdout) {
           outputHTML += `<pre style="margin: 0; font-family: inherit; color: #d4d4d4; white-space: pre-wrap; word-break: break-all;">${esc(stdout)}</pre>`;
         }
@@ -13293,12 +13400,13 @@ async function runPlaygroundCode(language, code, stdin) {
         outView.innerHTML = outputHTML;
         outView.scrollTop = outView.scrollHeight;
       }
+      if (fallbackNotice) appendExecutionCli(`[codeleaf] [fallback] ${fallbackNotice}`);
 
       saveToHistory(`${language.toUpperCase()} Code Run`, isError ? 'error' : 'ok', 0, duration);
     } else {
-      if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ ${origin === 'local' ? 'Local runtime error' : 'Remote execution error'}</span>`;
+      if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ ${origin === 'local' ? 'Local runtime error' : 'Remote execution error'}</span> ${executionOriginInline(origin)}`;
       if (outView) {
-        outView.innerHTML = `${executionOriginBanner(origin)}<div class="out-err"><b>[Error] Failed to execute code:</b> ${esc(d.error || 'Execution error')}</div>`;
+        outView.innerHTML = `<div class="out-err"><b>[Error] Failed to execute code:</b> ${esc(d.error || 'Execution error')}</div>`;
       }
       saveToHistory(`${language.toUpperCase()} Code Run`, 'error', 0, 0);
     }
@@ -13369,8 +13477,10 @@ async function runPlaygroundCode(language, code, stdin) {
 }
 
 function updateWorkspaceConsoleLayout(newLang) {
-  const isMongo = newLang === 'mongodb';
-  const isInspectorFile = /\\.(sql|mongo)$/i.test(String(S.activeFile || ''));
+  const activePath = String(S.activeFile || '');
+  const isMongoFile = /\\.(mongo|mongodb|js)$/i.test(activePath);
+  const isMongo = newLang === 'mongodb' && isMongoFile;
+  const isInspectorFile = /\\.(sql|mongo)$/i.test(activePath);
   const inspectorEl = document.getElementById('inspector');
   const btnToggleInspector = document.getElementById('btn-toggle-inspector');
   const menuToggleInspector = document.getElementById('menu-toggle-inspector');
@@ -13576,7 +13686,7 @@ function setupMongoIntelliSense() {
 // The active file is the single source of truth for workspace language.
 // There is intentionally no manual language selector in the toolbar.
 function getWorkspaceLanguage() {
-  const path = String(window.S?.activeFile || '').toLowerCase();
+  const path = String(typeof S !== 'undefined' && S ? S.activeFile || '' : '').toLowerCase();
   if (path.endsWith('.py')) return 'python';
   if (path.endsWith('.cpp') || path.endsWith('.cc') || path.endsWith('.cxx')) return 'cpp';
   if (path.endsWith('.c')) return 'c';
@@ -13917,7 +14027,8 @@ const WorkspaceAIAssistant = (() => {
     const auth = byId('auth-overlay');
     const homeVisible = Boolean(intro?.classList.contains('active'));
     const authVisible = Boolean(auth && !auth.hidden);
-    button.hidden = homeVisible || authVisible;
+    const panelOpen = Boolean(panel() && !panel().hidden);
+    button.hidden = homeVisible || authVisible || panelOpen;
   }
   function launchButtons() {
     return [byId('workspace-ai-launch-floating'), byId('workspace-ai-launch')].filter(Boolean);
@@ -14027,6 +14138,7 @@ const WorkspaceAIAssistant = (() => {
     p.parentElement?.classList.toggle('workspace-ai-open', !p.hidden);
     if (resizer()) resizer().hidden = p.hidden;
     launchButtons().forEach(button => button.setAttribute('aria-expanded', String(!p.hidden)));
+    syncLauncherVisibility();
     if (!p.hidden) {
       restorePanelWidth();
       syncContext();
@@ -14037,6 +14149,24 @@ const WorkspaceAIAssistant = (() => {
   function close() {
     const p = panel();
     if (p) { p.hidden = true; p.parentElement?.classList.remove('workspace-ai-open'); if (resizer()) resizer().hidden = true; launchButtons().forEach(button => button.setAttribute('aria-expanded', 'false')); }
+    syncLauncherVisibility();
+  }
+
+  function syncAutofillButton() {
+    const input = byId('workspace-ai-autofill');
+    const button = byId('workspace-ai-autofill-toggle');
+    if (!input || !button) return;
+    const enabled = Boolean(input.checked);
+    button.setAttribute('aria-pressed', String(enabled));
+    button.title = `Safe autofill: ${enabled ? 'on' : 'off'}`;
+    button.classList.toggle('is-active', enabled);
+  }
+
+  function toggleAutofill() {
+    const input = byId('workspace-ai-autofill');
+    if (!input) return;
+    input.checked = !input.checked;
+    syncAutofillButton();
   }
 
   function preset(text) {
@@ -14163,6 +14293,7 @@ const WorkspaceAIAssistant = (() => {
     resizer()?.addEventListener('pointerdown', startResize);
     restorePanelWidth();
     initFloatingLauncher();
+    syncAutofillButton();
     syncLauncherVisibility();
     const visibilityObserver = new MutationObserver(syncLauncherVisibility);
     ['intro-panel', 'auth-overlay'].forEach(id => {
@@ -14174,7 +14305,7 @@ const WorkspaceAIAssistant = (() => {
     });
   });
 
-  return { toggle, close, preset, ask, applyCorrection, undoCorrection, syncLauncherVisibility };
+  return { toggle, close, preset, ask, applyCorrection, undoCorrection, toggleAutofill, syncLauncherVisibility };
 })();
 
 </script>

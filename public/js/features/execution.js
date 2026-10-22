@@ -630,6 +630,7 @@ function setConTab(tab) {
   const treeView = document.getElementById('tree-view');
   const rawView = document.getElementById('raw-view');
   const outputView = document.getElementById('output-view');
+  const logsView = document.getElementById('logs-view');
   const terminalView = document.getElementById('terminal-view');
   const viewBtns = document.getElementById('view-btns');
   
@@ -637,19 +638,24 @@ function setConTab(tab) {
     const showOutput = tab === 'output';
     if (treeView) treeView.style.display = (showOutput && S.resultView === 'tree') ? 'flex' : 'none';
     if (rawView) rawView.style.display = (showOutput && S.resultView === 'raw') ? 'block' : 'none';
-    if (outputView) outputView.style.display = (!showOutput || S.resultView === 'out') ? 'block' : 'none';
+    if (outputView) outputView.style.display = (showOutput && S.resultView === 'out') ? 'block' : 'none';
+    if (logsView) logsView.style.display = tab === 'logs' ? 'flex' : 'none';
     if (terminalView) terminalView.style.display = 'none';
     if (viewBtns) viewBtns.style.display = showOutput ? 'flex' : 'none';
   } else {
     if (treeView) treeView.style.display = 'none';
     if (rawView) rawView.style.display = 'none';
     if (viewBtns) viewBtns.style.display = 'none';
+    if (logsView) logsView.style.display = tab === 'logs' ? 'flex' : 'none';
     
     if (tab === 'stdin') {
       if (outputView) outputView.style.display = 'none';
       if (terminalView) terminalView.style.display = 'flex';
-    } else {
+    } else if (tab === 'output') {
       if (outputView) outputView.style.display = 'block';
+      if (terminalView) terminalView.style.display = 'none';
+    } else {
+      if (outputView) outputView.style.display = 'none';
       if (terminalView) terminalView.style.display = 'none';
     }
   }
@@ -671,6 +677,8 @@ function clearConsole() {
   document.getElementById('tree-rows').innerHTML = `<div style="padding:12px 14px;color:var(--text3);font-family:'JetBrains Mono',monospace">// Cleared</div>`;
   document.getElementById('raw-view').innerHTML = `<div style="padding:12px 14px;color:var(--text3);font-family:'JetBrains Mono',monospace">// Cleared</div>`;
   document.getElementById('output-text').innerHTML = `<span class="out-info">// Console cleared</span>`;
+  const executionLog = document.getElementById('execution-log-output');
+  if (executionLog) executionLog.innerHTML = `<span class="out-info">// Execution diagnostics cleared</span>`;
   const termConsole = document.getElementById('terminal-interactive-console');
   if (termConsole) {
     termConsole.value = '';
@@ -851,6 +859,29 @@ function runPythonLocally(code, stdin, onFinish) {
 }
 
 let executionProgressTimer = null;
+let executionCliLines = [];
+
+function resetExecutionCli() {
+  executionCliLines = [];
+}
+
+function renderExecutionCli() {
+  const logView = document.getElementById('execution-log-output');
+  if (!logView) return;
+  logView.innerHTML = executionCliMarkup() || '<span class="out-info">// Execution diagnostics will appear here.</span>';
+  logView.scrollTop = logView.scrollHeight;
+}
+
+function executionCliMarkup() {
+  return executionCliLines.map(line => `<div class="execution-cli-line">${esc(line)}</div>`).join('');
+}
+
+function appendExecutionCli(detail) {
+  const text = String(detail || '').trim();
+  if (!text || executionCliLines[executionCliLines.length - 1] === text) return;
+  executionCliLines.push(text);
+  renderExecutionCli();
+}
 
 function stopExecutionProgress() {
   if (executionProgressTimer) {
@@ -867,27 +898,20 @@ function setExecutionOrigin(origin, language, running, detail) {
     ? 'CodeLeaf is executing this program on your device.'
     : 'CodeLeaf is executing this program on a dedicated CodeLeaf execution worker.');
   const statEl = document.getElementById('console-status');
-  const outView = document.getElementById('output-text');
   const stateClass = isLocal ? 'execution-origin-local' : 'execution-origin-remote';
 
+  const phases = isLocal ? `Preparing ${language} runtime…` : 'Connecting to a dedicated worker…';
+  const current = detail || phases;
   if (statEl) {
-    statEl.innerHTML = `<span class="execution-origin ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>${running ? ' <span class="execution-phase">· Starting…</span>' : ''}`;
+    statEl.innerHTML = `<span class="execution-origin ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>${running ? ` <span class="execution-phase">· ${esc(current)}</span>` : ''}`;
   }
-  if (outView && running) {
-    outView.innerHTML = `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div class="execution-origin-content"><div class="execution-origin-heading"><strong>${label}</strong><span class="execution-origin-live">LIVE</span></div><span>${message}</span><div class="execution-progress"><span></span></div><small id="execution-progress-text">Preparing ${esc(language)} runtime…</small></div></div>`;
-    const phases = isLocal
-      ? `Preparing ${language} runtime…`
-      : 'Connecting to a dedicated worker…';
-    const phaseEl = document.getElementById('execution-progress-text');
-    if (phaseEl) phaseEl.textContent = phases;
-  }
+  appendExecutionCli(`[codeleaf] ${current}`);
 }
 
 function updateExecutionProgress(progress) {
   const detail = progress && progress.detail ? progress.detail : '';
   if (!detail) return;
-  const phaseEl = document.getElementById('execution-progress-text');
-  if (phaseEl) phaseEl.textContent = detail;
+  appendExecutionCli(`[codeleaf] ${detail}`);
   const statEl = document.getElementById('console-status');
   const phase = statEl && statEl.querySelector('.execution-phase');
   if (phase) phase.textContent = `· ${detail}`;
@@ -896,12 +920,15 @@ function updateExecutionProgress(progress) {
 function executionOriginBanner(origin, fallbackNotice) {
   const isLocal = origin === 'local';
   const label = isLocal ? 'Local execution' : 'Remote execution';
-  const message = isLocal
-    ? 'CodeLeaf executed this program on your device.'
-    : 'CodeLeaf executed this program on a dedicated CodeLeaf execution worker.';
+  const notice = fallbackNotice ? `<div class="execution-origin-cli execution-origin-note">[fallback] ${esc(fallbackNotice)}</div>` : '';
+  return notice;
+}
+
+function executionOriginInline(origin) {
+  const isLocal = origin === 'local';
   const stateClass = isLocal ? 'execution-origin-local' : 'execution-origin-remote';
-  const notice = fallbackNotice ? `<small class="execution-fallback-note">${esc(fallbackNotice)}</small>` : '';
-  return `<div class="execution-origin-banner ${stateClass}"><span class="execution-origin-dot"></span><div class="execution-origin-content"><div class="execution-origin-heading"><strong>${label}</strong><span class="execution-origin-live">${isLocal ? 'DEVICE' : 'WORKER'}</span></div><span>${message}</span>${notice}</div></div>`;
+  const label = isLocal ? 'device' : 'remote worker';
+  return `<span class="execution-origin-inline ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>`;
 }
 
 async function runPlaygroundCode(language, code, stdin) {
@@ -921,8 +948,12 @@ async function runPlaygroundCode(language, code, stdin) {
   if (countEl) countEl.textContent = 'Playground';
 
   setConTab('output');
+  resetExecutionCli();
   const outView = document.getElementById('output-text');
-  if (outView) outView.innerHTML = `<span class="out-info">[info] Selecting the safest available execution runtime…</span>`;
+  if (outView) outView.innerHTML = '';
+  const logView = document.getElementById('execution-log-output');
+  if (logView) logView.innerHTML = '';
+  appendExecutionCli('[codeleaf] Selecting the safest available execution runtime…');
 
   const runBtn = document.querySelector('.tbtn-run');
   if (runBtn) {
@@ -946,13 +977,13 @@ async function runPlaygroundCode(language, code, stdin) {
 
       if (statEl) {
         statEl.innerHTML = isError
-          ? `<span style="color:var(--red)">✗ Execution Failed</span>`
-          : `<span style="color:var(--green3)">✓ Success</span>`;
+          ? `<span style="color:var(--red)">✗ Execution Failed</span> ${executionOriginInline(origin)}`
+          : `<span style="color:var(--green3)">✓ Success</span> ${executionOriginInline(origin)}`;
       }
       if (timeEl) timeEl.textContent = `${duration}ms`;
 
       if (outView) {
-        let outputHTML = executionOriginBanner(origin, fallbackNotice);
+        let outputHTML = '';
         if (stdout) {
           outputHTML += `<pre style="margin: 0; font-family: inherit; color: #d4d4d4; white-space: pre-wrap; word-break: break-all;">${esc(stdout)}</pre>`;
         }
@@ -965,12 +996,13 @@ async function runPlaygroundCode(language, code, stdin) {
         outView.innerHTML = outputHTML;
         outView.scrollTop = outView.scrollHeight;
       }
+      if (fallbackNotice) appendExecutionCli(`[codeleaf] [fallback] ${fallbackNotice}`);
 
       saveToHistory(`${language.toUpperCase()} Code Run`, isError ? 'error' : 'ok', 0, duration);
     } else {
-      if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ ${origin === 'local' ? 'Local runtime error' : 'Remote execution error'}</span>`;
+      if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ ${origin === 'local' ? 'Local runtime error' : 'Remote execution error'}</span> ${executionOriginInline(origin)}`;
       if (outView) {
-        outView.innerHTML = `${executionOriginBanner(origin)}<div class="out-err"><b>[Error] Failed to execute code:</b> ${esc(d.error || 'Execution error')}</div>`;
+        outView.innerHTML = `<div class="out-err"><b>[Error] Failed to execute code:</b> ${esc(d.error || 'Execution error')}</div>`;
       }
       saveToHistory(`${language.toUpperCase()} Code Run`, 'error', 0, 0);
     }
@@ -1041,8 +1073,10 @@ async function runPlaygroundCode(language, code, stdin) {
 }
 
 function updateWorkspaceConsoleLayout(newLang) {
-  const isMongo = newLang === 'mongodb';
-  const isInspectorFile = /\.(sql|mongo)$/i.test(String(S.activeFile || ''));
+  const activePath = String(S.activeFile || '');
+  const isMongoFile = /\.(mongo|mongodb|js)$/i.test(activePath);
+  const isMongo = newLang === 'mongodb' && isMongoFile;
+  const isInspectorFile = /\.(sql|mongo)$/i.test(activePath);
   const inspectorEl = document.getElementById('inspector');
   const btnToggleInspector = document.getElementById('btn-toggle-inspector');
   const menuToggleInspector = document.getElementById('menu-toggle-inspector');

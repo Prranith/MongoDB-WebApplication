@@ -2,6 +2,13 @@
 // VIEWS SWITCHING
 // ═══════════════════════════════════════════════════════════════════
 function showView(name) {
+  // Home is public; every workspace surface requires an authenticated session.
+  // Keep this check centralized so toolbar, activity-bar, and programmatic
+  // navigation all follow the same rule.
+  if (name !== 'intro' && window.Auth && !Auth.user) {
+    Auth.require(() => showView(name));
+    return;
+  }
   S.view = name;
   const ide = document.getElementById('ide-panel');
   const intro = document.getElementById('intro-panel');

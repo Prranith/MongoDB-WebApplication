@@ -17,7 +17,8 @@ const WorkspaceAIAssistant = (() => {
     const auth = byId('auth-overlay');
     const homeVisible = Boolean(intro?.classList.contains('active'));
     const authVisible = Boolean(auth && !auth.hidden);
-    button.hidden = homeVisible || authVisible;
+    const panelOpen = Boolean(panel() && !panel().hidden);
+    button.hidden = homeVisible || authVisible || panelOpen;
   }
   function launchButtons() {
     return [byId('workspace-ai-launch-floating'), byId('workspace-ai-launch')].filter(Boolean);
@@ -127,6 +128,7 @@ const WorkspaceAIAssistant = (() => {
     p.parentElement?.classList.toggle('workspace-ai-open', !p.hidden);
     if (resizer()) resizer().hidden = p.hidden;
     launchButtons().forEach(button => button.setAttribute('aria-expanded', String(!p.hidden)));
+    syncLauncherVisibility();
     if (!p.hidden) {
       restorePanelWidth();
       syncContext();
@@ -137,6 +139,24 @@ const WorkspaceAIAssistant = (() => {
   function close() {
     const p = panel();
     if (p) { p.hidden = true; p.parentElement?.classList.remove('workspace-ai-open'); if (resizer()) resizer().hidden = true; launchButtons().forEach(button => button.setAttribute('aria-expanded', 'false')); }
+    syncLauncherVisibility();
+  }
+
+  function syncAutofillButton() {
+    const input = byId('workspace-ai-autofill');
+    const button = byId('workspace-ai-autofill-toggle');
+    if (!input || !button) return;
+    const enabled = Boolean(input.checked);
+    button.setAttribute('aria-pressed', String(enabled));
+    button.title = `Safe autofill: ${enabled ? 'on' : 'off'}`;
+    button.classList.toggle('is-active', enabled);
+  }
+
+  function toggleAutofill() {
+    const input = byId('workspace-ai-autofill');
+    if (!input) return;
+    input.checked = !input.checked;
+    syncAutofillButton();
   }
 
   function preset(text) {
@@ -263,6 +283,7 @@ const WorkspaceAIAssistant = (() => {
     resizer()?.addEventListener('pointerdown', startResize);
     restorePanelWidth();
     initFloatingLauncher();
+    syncAutofillButton();
     syncLauncherVisibility();
     const visibilityObserver = new MutationObserver(syncLauncherVisibility);
     ['intro-panel', 'auth-overlay'].forEach(id => {
@@ -274,5 +295,5 @@ const WorkspaceAIAssistant = (() => {
     });
   });
 
-  return { toggle, close, preset, ask, applyCorrection, undoCorrection, syncLauncherVisibility };
+  return { toggle, close, preset, ask, applyCorrection, undoCorrection, toggleAutofill, syncLauncherVisibility };
 })();

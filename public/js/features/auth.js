@@ -166,7 +166,7 @@ const Auth = (() => {
 
   return {
     init, open, close, login, register, signOut, accountAction, setMode,
-    require(action) { if (state.user || !state.required) return action(); open(action); },
+    require(action) { if (state.user) return action(); open(action); },
     get user() { return state.user; },
   };
 })();

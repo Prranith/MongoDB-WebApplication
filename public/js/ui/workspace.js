@@ -841,7 +841,7 @@ function openFileInTab(path) {
   // Dynamically update workspace language and views based on file extension
   let lang = 'mongodb';
   let cmMode = 'javascript';
-  let langIndicator = 'Mongo Shell';
+  let langIndicator = 'Code Terminal';
   
   const lowerPath = file.path.toLowerCase();
   if (lowerPath.endsWith('.py')) {
