@@ -4090,6 +4090,18 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       });
     },
 
+    toggleExecutionLog() {
+      const card = el('student-execution-card');
+      const toggle = el('student-execution-toggle');
+      if (!card) return;
+      const collapsed = card.classList.toggle('is-collapsed');
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.setAttribute('title', collapsed ? 'Expand execution log' : 'Collapse execution log');
+        toggle.textContent = collapsed ? '⌄' : '⌃';
+      }
+    },
+
     async runQuery() {
       const cm = state.student.examEditor;
       if (!cm) return;
@@ -4143,6 +4155,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         startStudentExecutionCard(q.language);
         setExamExecutionOrigin('local');
         el('student-console-status').style.color = 'var(--text3)';
+        const codingLanguage = String(q.language || 'python').toLowerCase().trim();
 
         let codeToExecute = query;
         if (q.templateType === 'solve_function') {
@@ -4154,20 +4167,29 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           }
         }
 
-        // Run client-side Python locally if Skulpt is loaded
-        if (q.language === 'python' && typeof Sk !== 'undefined') {
+        // Run Python in the same isolated browser worker runtime used by the
+        // compiled languages. This avoids Skulpt's exam-specific input and
+        // execution-limit behaviour while keeping Python on-device.
+        if (codingLanguage === 'python' && typeof ClientExecution !== 'undefined' && ClientExecution.supports('python')) {
           const runLocalCases = async () => {
             const results = [];
             for (const inp of stdins) {
-              const res = await new Promise(resolve => {
-                runPythonLocally(codeToExecute, inp, resolve);
+              const res = await ClientExecution.run('python', codeToExecute, inp, {
+                timeoutMs: 60000,
+                onProgress: progress => {
+                  if (progress && progress.detail) {
+                    console.info('[CodeLeaf exam]', progress.detail);
+                    updateStudentExecutionCard(progress.detail, { mode: 'local' });
+                  }
+                }
               });
-              updateStudentExecutionCard('Compiling and running Python case on this device…', { mode: 'local' });
+              if (!res) throw new Error('The Python browser runtime returned no result.');
               results.push({
-                stdout: res.stdout,
-                stderr: res.stderr,
+                stdout: res.stdout || '',
+                stderr: res.stderr || '',
                 code: res.code,
-                output: res.stdout || res.stderr
+                executionFailure: res.executionFailure === true,
+                output: res.stdout || res.stderr || ''
               });
             }
             return results;
@@ -4175,8 +4197,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
           runLocalCases().then(async results => {
             let finalResults = results;
+            let usedRemoteFallback = false;
             const localFailed = results.some(isExecutionFailure);
             if (localFailed && stdins.length > 0) {
+              usedRemoteFallback = true;
               const failedResult = results.find(isExecutionFailure);
               const reason = failedResult?.stderr || `on-device Python exited with code ${failedResult?.code ?? 'unknown'}`;
               setExamExecutionOrigin('remote', true, `On-device execution failed: ${reason}`);
@@ -4214,7 +4238,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 };
               }
             } else {
-              setExamExecutionOrigin('local');
+              setExamExecutionOrigin(usedRemoteFallback ? 'remote' : 'local', false);
             }
 
             studentNS.initConsoleTabs();
@@ -4228,7 +4252,6 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         // compiler as the normal workspace. Submission/grading still uses
         // the authoritative server path below, so local execution cannot
         // affect the exam verdict.
-        const codingLanguage = String(q.language || '').toLowerCase().trim();
         let localFailureReason = '';
         if (['c', 'cpp', 'java'].includes(codingLanguage) &&
             typeof ClientExecution !== 'undefined' && ClientExecution.supports(codingLanguage)) {

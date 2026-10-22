@@ -5285,6 +5285,11 @@ li.CodeMirror-hint-active {
 #exam-student-exam-panel .student-execution-card-title { color:#dce7d8; font-size:10px; }
 #exam-student-exam-panel .student-execution-card-mode { padding:2px 5px; border:1px solid #3d513f; border-radius:3px; color:#9ab89c; font-size:8px; letter-spacing:.08em; }
 #exam-student-exam-panel .student-execution-card-current { margin-left:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#84968a; }
+#exam-student-exam-panel .student-execution-toggle { flex:0 0 auto; width:20px; height:18px; padding:0; border:1px solid #354335; border-radius:3px; background:transparent; color:#9ab89c; cursor:pointer; font:12px/14px 'JetBrains Mono',monospace; }
+#exam-student-exam-panel .student-execution-toggle:hover { background:#1b241b; color:#dce7d8; }
+#exam-student-exam-panel .student-execution-card.is-collapsed .student-execution-progress,
+#exam-student-exam-panel .student-execution-card.is-collapsed .student-execution-steps { display:none; }
+#exam-student-exam-panel .student-execution-card.is-collapsed .student-execution-card-current { display:none; }
 #exam-student-exam-panel .student-execution-progress { height:2px; margin:7px 0 6px; background:#263026; border-radius:4px; overflow:hidden; }
 #exam-student-exam-panel .student-execution-progress span { display:block; width:18%; height:100%; background:#78e39a; border-radius:4px; transition:width .25s ease; }
 #exam-student-exam-panel .student-execution-card.is-remote .student-execution-progress span { background:#83baff; }
@@ -15137,6 +15142,7 @@ db.collection.find({})</textarea>
               <strong id="student-execution-card-title">Execution</strong>
               <span id="student-execution-card-mode" class="student-execution-card-mode">ON DEVICE</span>
               <span id="student-execution-card-current" class="student-execution-card-current"></span>
+              <button type="button" id="student-execution-toggle" class="student-execution-toggle" onclick="ExamPortal.student.toggleExecutionLog()" aria-expanded="true" title="Collapse execution log">⌃</button>
             </div>
             <div class="student-execution-progress"><span id="student-execution-progress-bar"></span></div>
             <div id="student-execution-steps" class="student-execution-steps"></div>
@@ -19505,6 +19511,18 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       });
     },
 
+    toggleExecutionLog() {
+      const card = el('student-execution-card');
+      const toggle = el('student-execution-toggle');
+      if (!card) return;
+      const collapsed = card.classList.toggle('is-collapsed');
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.setAttribute('title', collapsed ? 'Expand execution log' : 'Collapse execution log');
+        toggle.textContent = collapsed ? '⌄' : '⌃';
+      }
+    },
+
     async runQuery() {
       const cm = state.student.examEditor;
       if (!cm) return;
@@ -19558,6 +19576,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         startStudentExecutionCard(q.language);
         setExamExecutionOrigin('local');
         el('student-console-status').style.color = 'var(--text3)';
+        const codingLanguage = String(q.language || 'python').toLowerCase().trim();
 
         let codeToExecute = query;
         if (q.templateType === 'solve_function') {
@@ -19569,20 +19588,29 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           }
         }
 
-        // Run client-side Python locally if Skulpt is loaded
-        if (q.language === 'python' && typeof Sk !== 'undefined') {
+        // Run Python in the same isolated browser worker runtime used by the
+        // compiled languages. This avoids Skulpt's exam-specific input and
+        // execution-limit behaviour while keeping Python on-device.
+        if (codingLanguage === 'python' && typeof ClientExecution !== 'undefined' && ClientExecution.supports('python')) {
           const runLocalCases = async () => {
             const results = [];
             for (const inp of stdins) {
-              const res = await new Promise(resolve => {
-                runPythonLocally(codeToExecute, inp, resolve);
+              const res = await ClientExecution.run('python', codeToExecute, inp, {
+                timeoutMs: 60000,
+                onProgress: progress => {
+                  if (progress && progress.detail) {
+                    console.info('[CodeLeaf exam]', progress.detail);
+                    updateStudentExecutionCard(progress.detail, { mode: 'local' });
+                  }
+                }
               });
-              updateStudentExecutionCard('Compiling and running Python case on this device…', { mode: 'local' });
+              if (!res) throw new Error('The Python browser runtime returned no result.');
               results.push({
-                stdout: res.stdout,
-                stderr: res.stderr,
+                stdout: res.stdout || '',
+                stderr: res.stderr || '',
                 code: res.code,
-                output: res.stdout || res.stderr
+                executionFailure: res.executionFailure === true,
+                output: res.stdout || res.stderr || ''
               });
             }
             return results;
@@ -19590,8 +19618,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
           runLocalCases().then(async results => {
             let finalResults = results;
+            let usedRemoteFallback = false;
             const localFailed = results.some(isExecutionFailure);
             if (localFailed && stdins.length > 0) {
+              usedRemoteFallback = true;
               const failedResult = results.find(isExecutionFailure);
               const reason = failedResult?.stderr || `on-device Python exited with code ${failedResult?.code ?? 'unknown'}`;
               setExamExecutionOrigin('remote', true, `On-device execution failed: ${reason}`);
@@ -19629,7 +19659,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 };
               }
             } else {
-              setExamExecutionOrigin('local');
+              setExamExecutionOrigin(usedRemoteFallback ? 'remote' : 'local', false);
             }
 
             studentNS.initConsoleTabs();
@@ -19643,7 +19673,6 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         // compiler as the normal workspace. Submission/grading still uses
         // the authoritative server path below, so local execution cannot
         // affect the exam verdict.
-        const codingLanguage = String(q.language || '').toLowerCase().trim();
         let localFailureReason = '';
         if (['c', 'cpp', 'java'].includes(codingLanguage) &&
             typeof ClientExecution !== 'undefined' && ClientExecution.supports(codingLanguage)) {
