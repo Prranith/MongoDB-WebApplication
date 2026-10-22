@@ -58,6 +58,8 @@ def init_indexes():
     db.sessions.create_index("expiresAt", expireAfterSeconds=0)
     db.auth_events.create_index("createdAt")
     db.email_otps.create_index("expiresAt", expireAfterSeconds=0)
+    db.pending_signups.create_index("expiresAt", expireAfterSeconds=0)
+    db.pending_signups.create_index("email", unique=True)
 
 
 def _otp_digest(email, code):
@@ -111,6 +113,73 @@ def issue_email_otp(user):
     _send_verification_email(email, user.get("name", "there"), code)
     db.email_otps.insert_one({"email": email, "codeHash": _otp_digest(email, code), "attempts": 0,
                               "createdAt": now, "expiresAt": now + timedelta(minutes=OTP_TTL_MINUTES)})
+
+
+def create_pending_signup(name, email, password):
+    """Send OTP first; persist signup data only in a temporary collection."""
+    email = _email(email)
+    name = str(name or "").strip()[:100]
+    if len(name) < 2 or "@" not in email or len(email) > 254:
+        raise ValueError("Enter a valid name and email address.")
+    if len(password or "") < 10:
+        raise ValueError("Password must contain at least 10 characters.")
+    db = _db()
+    if db is None:
+        raise RuntimeError("Authentication database is not configured.")
+    init_indexes()
+    if db.users.find_one({"email": email}):
+        raise ValueError("An account with this email already exists.")
+    code = f"{secrets.randbelow(1000000):06d}"
+    _send_verification_email(email, name, code)
+    now = _now()
+    db.pending_signups.replace_one(
+        {"email": email},
+        {"email": email, "name": name, "passwordHash": generate_password_hash(password, method="scrypt"),
+         "otpHash": _otp_digest(email, code), "attempts": 0, "createdAt": now,
+         "expiresAt": now + timedelta(minutes=OTP_TTL_MINUTES)},
+        upsert=True,
+    )
+    return {"email": email}
+
+
+def resend_pending_signup_otp(email):
+    db = _db()
+    email = _email(email)
+    pending = db.pending_signups.find_one({"email": email}) if db is not None else None
+    if not pending:
+        raise ValueError("No pending verification was found. Please create the account again.")
+    code = f"{secrets.randbelow(1000000):06d}"
+    _send_verification_email(email, pending.get("name", "there"), code)
+    db.pending_signups.update_one({"_id": pending["_id"]}, {"$set": {
+        "otpHash": _otp_digest(email, code), "attempts": 0,
+        "expiresAt": _now() + timedelta(minutes=OTP_TTL_MINUTES),
+    }})
+    return True
+
+
+def verify_pending_signup(email, code):
+    db = _db()
+    email = _email(email)
+    pending = db.pending_signups.find_one({"email": email, "expiresAt": {"$gt": _now()}}) if db is not None else None
+    if not pending or pending.get("attempts", 0) >= OTP_MAX_ATTEMPTS:
+        raise ValueError("This verification code is expired or locked. Request a new code.")
+    if not secrets.compare_digest(pending.get("otpHash", ""), _otp_digest(email, str(code or ""))):
+        db.pending_signups.update_one({"_id": pending["_id"]}, {"$inc": {"attempts": 1}})
+        raise ValueError("Incorrect verification code.")
+    now = _now()
+    user = {"email": email, "name": pending["name"], "passwordHash": pending["passwordHash"],
+            "providers": ["password"], "createdAt": now, "updatedAt": now,
+            "status": "active", "emailVerified": True}
+    try:
+        result = db.users.insert_one(user)
+    except Exception as exc:
+        if "duplicate" in str(exc).lower():
+            raise ValueError("An account with this email already exists.")
+        raise
+    user["_id"] = result.inserted_id
+    db.pending_signups.delete_one({"_id": pending["_id"]})
+    _event("signup", str(result.inserted_id), "password")
+    return user
 
 
 def verify_email_otp(email, code):
