@@ -19541,7 +19541,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         const sampleCases = state.student.sampleCases || [];
         const stdins = sampleCases.map(tc => tc.input || '');
         const customInputVal = el('student-stdin-input') ? el('student-stdin-input').value : '';
-        const hasCustomInput = customInputVal.trim().length > 0;
+        // The stdin textarea also displays the selected sample case. Only
+        // input entered while the Custom Input tab is active may trigger the
+        // intentional remote custom-verification path.
+        const hasCustomInput = state.student.activeConsoleTab === 'custom' && customInputVal.trim().length > 0;
 
         el('student-run-btn').textContent = 'Running...';
         el('student-run-btn').disabled = true;
@@ -21120,6 +21123,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     if (!state.student.roomId || !state.student.fullscreenMode) return;
 
     const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+    if (isFs) {
+      state.student.fullscreenWarningOpen = false;
+      return;
+    }
     if (!isFs) {
       // Exited fullscreen!
       if (state.student.ignoreFullscreenChange) {
@@ -21132,6 +21139,11 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       if (kickedActive || thankYouActive) {
         return;
       }
+
+      // Browsers can emit fullscreenchange and a vendor-prefixed event for
+      // the same transition. Keep one acknowledgement modal per exit.
+      if (state.student.fullscreenWarningOpen) return;
+      state.student.fullscreenWarningOpen = true;
 
       state.student.fullscreenExitCount = (state.student.fullscreenExitCount || 0) + 1;
       const limit = state.student.maxFullscreenExits || 5;
