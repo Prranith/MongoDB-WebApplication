@@ -3625,6 +3625,70 @@ li.CodeMirror-hint-active {
   letter-spacing: .5px;
   margin-bottom: 4px;
 }
+.exam-testcases-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.exam-testcases-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.exam-generation-log {
+  margin-top: 10px;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .16);
+  overflow: hidden;
+}
+.exam-generation-log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 9px;
+  color: var(--text3);
+  font: 10px/1.2 'JetBrains Mono', monospace;
+  letter-spacing: .06em;
+  border-bottom: 1px solid var(--border);
+}
+.exam-generation-log-mode { color: var(--text3); }
+.exam-generation-log-mode.is-running { color: var(--blue2); }
+.exam-generation-log-mode.is-success { color: var(--green3); }
+.exam-generation-log-mode.is-remote { color: #d7b46a; }
+.exam-generation-log-mode.is-error { color: var(--red); }
+.exam-generation-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: exam-generation-spin .7s linear infinite;
+}
+@keyframes exam-generation-spin { to { transform: rotate(360deg); } }
+.exam-generation-log-lines {
+  max-height: 132px;
+  overflow: auto;
+  padding: 7px 9px;
+  font: 10px/1.45 'JetBrains Mono', monospace;
+}
+.exam-generation-log-line {
+  color: var(--text3);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.exam-generation-log-line + .exam-generation-log-line { margin-top: 2px; }
+.exam-generation-log-line.is-active { color: var(--text2); }
+.exam-generation-log-line.is-success { color: var(--green3); }
+.exam-generation-log-line.is-remote { color: #d7b46a; }
+.exam-generation-log-line.is-error { color: var(--red); }
 .exam-textarea {
   width: 100%;
   padding: 8px 10px;

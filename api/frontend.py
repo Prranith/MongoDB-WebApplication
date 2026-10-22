@@ -3782,6 +3782,70 @@ li.CodeMirror-hint-active {
   letter-spacing: .5px;
   margin-bottom: 4px;
 }
+.exam-testcases-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.exam-testcases-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.exam-generation-log {
+  margin-top: 10px;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .16);
+  overflow: hidden;
+}
+.exam-generation-log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 9px;
+  color: var(--text3);
+  font: 10px/1.2 'JetBrains Mono', monospace;
+  letter-spacing: .06em;
+  border-bottom: 1px solid var(--border);
+}
+.exam-generation-log-mode { color: var(--text3); }
+.exam-generation-log-mode.is-running { color: var(--blue2); }
+.exam-generation-log-mode.is-success { color: var(--green3); }
+.exam-generation-log-mode.is-remote { color: #d7b46a; }
+.exam-generation-log-mode.is-error { color: var(--red); }
+.exam-generation-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: exam-generation-spin .7s linear infinite;
+}
+@keyframes exam-generation-spin { to { transform: rotate(360deg); } }
+.exam-generation-log-lines {
+  max-height: 132px;
+  overflow: auto;
+  padding: 7px 9px;
+  font: 10px/1.45 'JetBrains Mono', monospace;
+}
+.exam-generation-log-line {
+  color: var(--text3);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.exam-generation-log-line + .exam-generation-log-line { margin-top: 2px; }
+.exam-generation-log-line.is-active { color: var(--text2); }
+.exam-generation-log-line.is-success { color: var(--green3); }
+.exam-generation-log-line.is-remote { color: #d7b46a; }
+.exam-generation-log-line.is-error { color: var(--red); }
 .exam-textarea {
   width: 100%;
   padding: 8px 10px;
@@ -15458,6 +15522,113 @@ const ExamPortal = (() => {
       .replace(/'/g, '&#39;');
   }
 
+// Mentor-side expected-output generation follows the same policy as normal
+// coding runs: use the student's browser runtime first, and send the complete
+// generation request to the authoritative remote worker only if the browser
+// runtime is unavailable or produces an error. The server still freezes and
+// stores the final outputs, so this optimization never changes grading rules.
+async function generateCodingOutputsWithFallback(language, editorialCode, inputs, templateType, driverCode, onProgress) {
+  const normalized = String(language || '').toLowerCase();
+  const canRunLocally = typeof ClientExecution !== 'undefined' && ClientExecution.supports(normalized);
+  const source = templateType === 'solve_function' && driverCode
+    ? `${editorialCode}\\n\\n${driverCode}`
+    : editorialCode;
+  let localFailure = '';
+
+  if (canRunLocally) {
+    onProgress?.(`Preparing ${normalized.toUpperCase()} browser runtime…`);
+    const outputs = [];
+    for (let index = 0; index < inputs.length; index += 1) {
+      onProgress?.(`Compiling test case ${index + 1}/${inputs.length} on this device…`);
+      const result = await ClientExecution.run(normalized, source, inputs[index] || '', {
+        timeoutMs: normalized === 'java' || normalized === 'c' || normalized === 'cpp' ? 60000 : 30000,
+        fileName: normalized === 'java' ? 'Main.java' : `main.${normalized}`,
+        // Forward the runtime's real worker events into the Test Cases log.
+        // This keeps the mentor informed about actual setup/compile/run work
+        // instead of displaying a guessed list of static phases.
+        onProgress: progress => {
+          if (progress && progress.detail) onProgress?.(progress.detail);
+        }
+      });
+      if (!result || result.code !== 0 || String(result.stderr || '').trim()) {
+        localFailure = String(result?.stderr || 'The browser runtime could not generate the expected output.');
+        break;
+      }
+      outputs.push(String(result.stdout || ''));
+      onProgress?.(`Test case ${index + 1}/${inputs.length} completed on this device.`);
+    }
+    if (!localFailure && outputs.length === inputs.length) {
+      onProgress?.('All expected outputs generated on this device.');
+      return { status: 'ok', outputs, executionOrigin: 'local' };
+    }
+    onProgress?.(`On-device generation failed${localFailure ? `: ${localFailure.slice(0, 160)}` : ''}`);
+    onProgress?.('Submitting the test cases to a remote worker…');
+  } else {
+    onProgress?.('Browser runtime unavailable; submitting the test cases to a remote worker…');
+  }
+
+  onProgress?.('Remote worker is compiling and running the test cases…');
+  const remote = await apiCall(`/api/exam/room/${state.mentor.roomId}/generate_test_cases`, 'POST', {
+    language: normalized,
+    editorialCode,
+    inputs,
+    templateType,
+    driverCode
+  });
+  if (remote.status === 'ok' && remote.outputs) {
+    onProgress?.('Remote worker completed expected-output generation.');
+    return { ...remote, executionOrigin: 'remote', localFailure };
+  }
+  onProgress?.(`Remote output generation failed: ${remote.error || 'unknown error'}`);
+  return remote;
+}
+
+  // Per-question generation logs stay in the browser UI only. They are not
+  // persisted with the question paper because they describe this editor
+  // session, not grading data.
+  const generationLogs = new Map();
+  const generationModes = new Map();
+
+  function clearGenerationLog(qId) {
+    generationLogs.set(qId, []);
+    generationModes.set(qId, { text: 'RUNNING', className: 'is-running' });
+    const log = el(`gen-log-${qId}`);
+    const lines = el(`gen-log-lines-${qId}`);
+    const mode = el(`gen-log-mode-${qId}`);
+    if (log) log.hidden = false;
+    if (lines) lines.innerHTML = '';
+    if (mode) {
+      mode.textContent = 'RUNNING';
+      mode.className = 'exam-generation-log-mode is-running';
+    }
+  }
+
+  function appendGenerationLog(qId, message, kind = 'active') {
+    const entries = generationLogs.get(qId) || [];
+    entries.push({ message: String(message || ''), kind });
+    generationLogs.set(qId, entries.slice(-80));
+    const log = el(`gen-log-${qId}`);
+    const lines = el(`gen-log-lines-${qId}`);
+    if (log) log.hidden = false;
+    if (!lines) return;
+    const row = document.createElement('div');
+    row.className = `exam-generation-log-line is-${kind}`;
+    row.textContent = `[codeleaf] ${String(message || '')}`;
+    lines.appendChild(row);
+    lines.scrollTop = lines.scrollHeight;
+  }
+
+  function finishGenerationLog(qId, ok, origin) {
+    const modeState = ok
+      ? { text: origin === 'remote' ? 'REMOTE WORKER' : 'ON DEVICE', className: origin === 'remote' ? 'is-remote' : 'is-success' }
+      : { text: 'FAILED', className: 'is-error' };
+    generationModes.set(qId, modeState);
+    const mode = el(`gen-log-mode-${qId}`);
+    if (!mode) return;
+    mode.textContent = modeState.text;
+    mode.className = `exam-generation-log-mode ${modeState.className}`;
+  }
+
   function canonicalExamOutput(value) {
     if (Array.isArray(value)) return value.map(canonicalExamOutput);
     if (value && typeof value === 'object') {
@@ -16606,6 +16777,11 @@ const ExamPortal = (() => {
             </div>
           </div>
         `).join('');
+        const generationLogEntries = generationLogs.get(qId) || [];
+        const generationLogRows = generationLogEntries.map(entry =>
+          `<div class="exam-generation-log-line is-${escapeExamHtml(entry.kind || 'active')}">${escapeExamHtml(`[codeleaf] ${entry.message}`)}</div>`
+        ).join('');
+        const generationMode = generationModes.get(qId) || { text: 'READY', className: '' };
 
         qeditor.innerHTML = `
           <div class="exam-fieldset">
@@ -16658,30 +16834,39 @@ const ExamPortal = (() => {
           <div class="exam-fieldset">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
               <div class="exam-fieldset-title">Editorial Correct Code (${activeLang})</div>
-              <button class="exam-btn exam-btn-green" style="font-size:11px;padding:4px 10px"
-                onclick="ExamPortal.mentor.generateCodingOutputs('${qId}')" id="btn-gen-outputs-${qId}">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="margin-right:3px"><path d="M12 2C6.48 2 2 4.02 2 6.5v11c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2zm0 3c4.14 0 7.5 1.12 7.5 2.5S16.14 10 12 10 4.5 8.88 4.5 7.5 7.86 5 12 5z"/></svg>
-                Generate &amp; Freeze Outputs
-              </button>
             </div>
             <div class="exam-mini-editor" id="editorial-wrap-${qId}">
               <textarea id="mini-editor-editorial-${qId}">${(q.templates && q.templates[activeLang]) ? q.templates[activeLang].editorialCode : ''}</textarea>
             </div>
-            <div id="gen-status-${qId}" style="display:none;font-size:11px;color:var(--text3);margin-top:4px"></div>
           </div>
 
           <div class="exam-fieldset">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="exam-testcases-header">
               <div class="exam-fieldset-title">Test Cases (for grading)</div>
-              <button class="exam-btn exam-btn-secondary" style="font-size:11px;padding:4px 10px"
-                onclick="ExamPortal.mentor.addTestCase('${qId}')">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                Add Test Case
-              </button>
+              <div class="exam-testcases-actions">
+                <button class="exam-btn exam-btn-green exam-generate-outputs-btn" style="font-size:11px;padding:4px 10px"
+                  onclick="ExamPortal.mentor.generateCodingOutputs('${qId}')" id="btn-gen-outputs-${qId}">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="margin-right:3px"><path d="M12 2C6.48 2 2 4.02 2 6.5v11c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2zm0 3c4.14 0 7.5 1.12 7.5 2.5S16.14 10 12 10 4.5 8.88 4.5 7.5 7.86 5 12 5z"/></svg>
+                  Generate &amp; Freeze Outputs
+                </button>
+                <button class="exam-btn exam-btn-secondary" style="font-size:11px;padding:4px 10px"
+                  onclick="ExamPortal.mentor.addTestCase('${qId}')">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                  Add Test Case
+                </button>
+              </div>
             </div>
             <div id="test-cases-${qId}">
               ${testCasesRows}
             </div>
+            <div class="exam-generation-log" id="gen-log-${qId}" ${generationLogEntries.length ? '' : 'hidden'}>
+              <div class="exam-generation-log-head">
+                <span>OUTPUT GENERATION</span>
+                <span id="gen-log-mode-${qId}" class="exam-generation-log-mode ${generationMode.className}">${generationMode.text}</span>
+              </div>
+              <div class="exam-generation-log-lines" id="gen-log-lines-${qId}">${generationLogRows}</div>
+            </div>
+            <div id="gen-status-${qId}" style="display:none;font-size:11px;color:var(--text3);margin-top:6px"></div>
           </div>
         `;
 
@@ -17280,27 +17465,44 @@ const ExamPortal = (() => {
 
       const statusEl = el(`gen-status-${qId}`);
       const btn = el(`btn-gen-outputs-${qId}`);
+      const btnOriginal = btn ? btn.innerHTML : '';
+      clearGenerationLog(qId);
+      appendGenerationLog(qId, 'Starting expected-output generation…', 'active');
       if (statusEl) {
         statusEl.textContent = `${cmt} Running editorial code against inputs...`;
         statusEl.style.color = 'var(--text3)';
         statusEl.style.display = 'block';
       }
-      if (btn) btn.disabled = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="exam-generation-spinner" aria-hidden="true"></span> Generating…`;
+      }
 
       const inputs = q.testCases.map(tc => tc.input || '');
       const driverCode = ((q.templates && q.templates[activeLang]) ? q.templates[activeLang].driverCode : null) || '';
 
-      const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/generate_test_cases`, 'POST', {
-        language: activeLang,
-        editorialCode: editorialCode,
-        inputs: inputs,
-        templateType: q.templateType,
-        driverCode: driverCode
-      });
+      const res = await generateCodingOutputsWithFallback(
+        activeLang,
+        editorialCode,
+        inputs,
+        q.templateType,
+        driverCode,
+        detail => {
+          const detailText = String(detail || '');
+          const detailKind = detailText.toLowerCase().includes('remote') ? 'remote' : (detailText.toLowerCase().includes('failed') ? 'error' : 'active');
+          appendGenerationLog(qId, detailText, detailKind);
+          if (statusEl) statusEl.textContent = `${cmt} ${detail}`;
+        }
+      );
 
-      if (btn) btn.disabled = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = btnOriginal;
+      }
 
       if (res.status === 'ok' && res.outputs) {
+        appendGenerationLog(qId, 'Expected outputs generated and frozen successfully.', res.executionOrigin === 'remote' ? 'remote' : 'success');
+        finishGenerationLog(qId, true, res.executionOrigin);
         if (statusEl) {
           statusEl.textContent = `${cmt} Expected outputs generated and frozen successfully!`;
           statusEl.style.color = 'var(--green3)';
@@ -17314,6 +17516,8 @@ const ExamPortal = (() => {
         await mentor._saveQuestions();
         mentor._renderQEditor(qId);
       } else {
+        appendGenerationLog(qId, 'Generation failed: ' + (res.error || 'Failed to execute solution'), 'error');
+        finishGenerationLog(qId, false, res.executionOrigin);
         if (statusEl) {
           statusEl.textContent = `${cmt} Error: ${res.error || 'Failed to execute solution'}`;
           statusEl.style.color = 'var(--red)';
@@ -17474,6 +17678,7 @@ const ExamPortal = (() => {
             }
             const langs = q.allowedLanguages && q.allowedLanguages.length ? q.allowedLanguages : ['python'];
             for (const lang of langs) {
+              clearGenerationLog(q.id);
               const tpl = (q.templates && q.templates[lang]) ? q.templates[lang] : null;
               const editorialCode = tpl ? tpl.editorialCode : '';
               if (!editorialCode || !editorialCode.trim()) {
@@ -17481,18 +17686,23 @@ const ExamPortal = (() => {
                 continue;
               }
               try {
-                const res = await apiCall(`/api/exam/room/${state.mentor.roomId}/generate_test_cases`, 'POST', {
-                  language: lang,
+                const res = await generateCodingOutputsWithFallback(
+                  lang,
                   editorialCode,
                   inputs,
-                  templateType: q.templateType,
-                  driverCode: (tpl && tpl.driverCode) || '',
-                });
+                  q.templateType,
+                  (tpl && tpl.driverCode) || '',
+                  detail => appendGenerationLog(q.id, `${lang.toUpperCase()}: ${detail}`, String(detail || '').toLowerCase().includes('remote') ? 'remote' : 'active')
+                );
                 if (res.status === 'ok' && res.outputs) {
+                  appendGenerationLog(q.id, 'Expected outputs frozen for ' + lang.toUpperCase() + '.', res.executionOrigin === 'remote' ? 'remote' : 'success');
+                  finishGenerationLog(q.id, true, res.executionOrigin);
                   res.outputs.forEach((out, idx) => {
                     if (q.testCases[idx]) q.testCases[idx].expectedOutput = out;
                   });
                 } else {
+                  appendGenerationLog(q.id, 'Output generation failed for ' + lang.toUpperCase() + ': ' + (res.error || 'unknown error'), 'error');
+                  finishGenerationLog(q.id, false, res.executionOrigin);
                   freezeFailures.push(`${qLabel(q)} (${lang}) — ${res.error || 'output generation failed'}`);
                 }
               } catch (genErr) {
