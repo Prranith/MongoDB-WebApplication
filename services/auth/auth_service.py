@@ -2,6 +2,7 @@
 
 import hashlib
 import os
+import re
 import secrets
 import time
 import requests
@@ -17,7 +18,7 @@ SESSION_TTL_DAYS = int(os.getenv("AUTH_SESSION_TTL_DAYS", "14"))
 AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "0").strip().lower() in {"1", "true", "yes"}
 EMAIL_VERIFICATION_REQUIRED = os.getenv(
     "AUTH_EMAIL_VERIFICATION_REQUIRED",
-    "1" if os.getenv("RESEND_API_KEY", "").strip() else "0",
+    "1" if os.getenv("BREVO_API_KEY", "").strip() else "0",
 ).strip().lower() in {"1", "true", "yes"}
 OTP_TTL_MINUTES = max(5, int(os.getenv("AUTH_OTP_TTL_MINUTES", "10")))
 OTP_MAX_ATTEMPTS = max(3, int(os.getenv("AUTH_OTP_MAX_ATTEMPTS", "5")))
@@ -66,22 +67,25 @@ def _otp_digest(email, code):
 
 
 def _send_verification_email(email, name, code):
-    api_key = os.getenv("RESEND_API_KEY", "").strip()
-    sender = os.getenv("AUTH_EMAIL_FROM", "").strip()
+    api_key = os.getenv("BREVO_API_KEY", "").strip()
+    sender = os.getenv("BREVO_EMAIL_FROM", os.getenv("AUTH_EMAIL_FROM", "")).strip()
     if not api_key or not sender:
         if os.getenv("AUTH_EMAIL_DEV_MODE", "0").strip().lower() in {"1", "true", "yes"}:
             print(f"[auth] development email OTP for {email}: {code}")
             return True
         return False
+    match = re.match(r"^(.*?)\s*<([^<>]+)>\s*$", sender)
+    sender_name = (match.group(1).strip() if match else "CodeLeaf") or "CodeLeaf"
+    sender_email = match.group(2).strip() if match else sender
     try:
         response = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": api_key, "accept": "application/json", "Content-Type": "application/json"},
             json={
-                "from": sender,
-                "to": [email],
+                "sender": {"name": sender_name, "email": sender_email},
+                "to": [{"email": email, "name": name}],
                 "subject": "Verify your CodeLeaf email",
-                "html": f"<p>Hi {name},</p><p>Your CodeLeaf verification code is <strong>{code}</strong>.</p><p>This code expires in {OTP_TTL_MINUTES} minutes.</p>",
+                "htmlContent": f"<p>Hi {name},</p><p>Your CodeLeaf verification code is <strong>{code}</strong>.</p><p>This code expires in {OTP_TTL_MINUTES} minutes.</p>",
             },
             timeout=8,
         )
@@ -100,7 +104,7 @@ def issue_email_otp(user):
     db.email_otps.delete_many({"email": email})
     sent = _send_verification_email(email, user.get("name", "there"), code)
     if not sent:
-        raise RuntimeError("Email delivery is not configured. Set RESEND_API_KEY and AUTH_EMAIL_FROM.")
+        raise RuntimeError("Email delivery is not configured. Set BREVO_API_KEY and BREVO_EMAIL_FROM.")
     db.email_otps.insert_one({"email": email, "codeHash": _otp_digest(email, code), "attempts": 0,
                               "createdAt": now, "expiresAt": now + timedelta(minutes=OTP_TTL_MINUTES)})
 
