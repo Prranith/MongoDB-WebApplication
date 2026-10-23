@@ -107,6 +107,7 @@ const Auth = (() => {
     $('profile-college').value = state.user.college || '';
     $('profile-bio').value = state.user.bio || '';
     $('profile-phone').value = state.user.phone || '';
+    window.__profilePreferences = { emailNotifications: state.user.preferences?.emailNotifications !== false, assessmentReminders: state.user.preferences?.assessmentReminders !== false, profileVisibility: state.user.preferences?.profileVisibility || 'members' };
     const avatar = $('profile-avatar');
     const fallback = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" rx="40" fill="#087d43"/><path fill="#eafff0" d="M40 39a12 12 0 1 0 0-24 12 12 0 0 0 0 24Zm0 7c-12 0-22 7-22 16 0 2 2 3 4 3h36c2 0 4-1 4-3 0-9-10-16-22-16Z"/></svg>');
     avatar.src = state.user.avatar || fallback;
@@ -130,6 +131,37 @@ const Auth = (() => {
     const actions = document.querySelector('.profile-actions'); if (actions) actions.hidden = !enabled;
     const edit = $('profile-edit-button'); if (edit) edit.hidden = enabled;
     document.querySelectorAll('.profile-photo-button,.profile-photo-remove,.profile-photo-edit,.profile-camera-button,.profile-cover-button,.profile-add-link').forEach(button => { button.disabled = !enabled; });
+    if (enabled) document.querySelector('.profile-personal-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function renderTab(index) {
+    const personal = document.querySelector('.profile-personal-section');
+    const social = document.querySelector('.profile-social-section');
+    let panel = $('profile-tab-panel');
+    if (index < 2) {
+      if (panel) panel.hidden = true;
+      if (personal) personal.hidden = index !== 0;
+      if (social) social.hidden = index !== 1;
+      return;
+    }
+    if (personal) personal.hidden = true;
+    if (social) social.hidden = true;
+    if (!panel) { panel = document.createElement('section'); panel.id = 'profile-tab-panel'; panel.className = 'profile-section profile-tab-panel'; document.querySelector('.profile-main').insertBefore(panel, document.querySelector('.profile-actions')); }
+    panel.hidden = false;
+    if (index === 2) {
+      const prefs = window.__profilePreferences || {};
+      panel.innerHTML = `<div class="profile-section-heading"><div><span class="profile-eyebrow">PREFERENCES</span><h3>Workspace preferences</h3><p>Choose how CodeLeaf keeps you informed.</p></div></div><label class="profile-setting"><span><strong>Email notifications</strong><small>Receive account and workspace updates.</small></span><input id="profile-pref-email" type="checkbox" ${prefs.emailNotifications ? 'checked' : ''}></label><label class="profile-setting"><span><strong>Assessment reminders</strong><small>Get reminders for assigned exams and meetings.</small></span><input id="profile-pref-assessments" type="checkbox" ${prefs.assessmentReminders ? 'checked' : ''}></label><label class="profile-setting"><span><strong>Profile visibility</strong><small>Control who can find your public profile.</small></span><select id="profile-pref-visibility"><option value="members" ${prefs.profileVisibility !== 'public' ? 'selected' : ''}>CodeLeaf members</option><option value="public" ${prefs.profileVisibility === 'public' ? 'selected' : ''}>Anyone with a profile link</option></select></label><div class="profile-tab-actions"><button class="auth-primary" type="button" id="profile-save-preferences">Save preferences</button></div>`;
+      $('profile-save-preferences').onclick = async () => { const payload = { preferences: { emailNotifications: $('profile-pref-email').checked, assessmentReminders: $('profile-pref-assessments').checked, profileVisibility: $('profile-pref-visibility').value } }; await persistProfile(payload, 'Preferences saved.'); };
+    } else {
+      panel.innerHTML = `<div class="profile-section-heading"><div><span class="profile-eyebrow">SECURITY</span><h3>Account security</h3><p>Manage your password and verification status.</p></div></div><div class="security-status"><span class="security-status-dot"></span><div><strong>Email verified</strong><small>${state.user?.email || ''} is verified for this account.</small></div></div><form class="password-form" id="profile-password-form"><label class="auth-field">Current password<input id="profile-current-password" type="password" autocomplete="current-password" required></label><label class="auth-field">New password<input id="profile-new-password" type="password" autocomplete="new-password" minlength="10" required></label><label class="auth-field">Confirm new password<input id="profile-confirm-password" type="password" autocomplete="new-password" minlength="10" required></label><div class="profile-tab-actions"><button class="auth-primary" type="submit">Change password</button></div><p class="profile-inline-message" id="profile-security-message"></p></form>`;
+      $('profile-password-form').onsubmit = async event => { event.preventDefault(); const message = $('profile-security-message'); if ($('profile-new-password').value !== $('profile-confirm-password').value) { message.textContent = 'New passwords do not match.'; message.className = 'profile-inline-message error'; return; } try { await request('/api/auth/change-password', { currentPassword: $('profile-current-password').value, newPassword: $('profile-new-password').value }); message.textContent = 'Password changed successfully.'; message.className = 'profile-inline-message success'; event.target.reset(); } catch (error) { message.textContent = error.message; message.className = 'profile-inline-message error'; } };
+    }
+  }
+  async function persistProfile(payload, successMessage) {
+    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(payload) });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Unable to save changes.');
+    state.user = data.user; window.__profilePreferences = state.user.preferences || window.__profilePreferences; renderAccount();
+    const button = $('profile-save-preferences'); if (button) { button.textContent = successMessage; setTimeout(() => { button.textContent = 'Save preferences'; }, 1800); }
   }
   function chooseCover(event) {
     const file = event.target.files?.[0]; if (!file || !file.type.startsWith('image/')) return;
@@ -264,14 +296,11 @@ const Auth = (() => {
       const accountPopover = $('auth-profile-popover');
       const accountButton = $('auth-account-button');
       document.querySelector('.profile-cover-button')?.addEventListener('click', () => $('profile-cover-file')?.click());
+      document.querySelector('.profile-photo-remove')?.addEventListener('click', () => { $('profile-avatar').src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" rx="40" fill="#087d43"/><path fill="#eafff0" d="M40 39a12 12 0 1 0 0-24 12 12 0 0 0 0 24Zm0 7c-12 0-22 7-22 16 0 2 2 3 4 3h36c2 0 4-1 4-3 0-9-10-16-22-16Z"/></svg>'); $('profile-avatar-preview').src = $('profile-avatar').src; $('profile-avatar-data').value = ''; });
       document.querySelectorAll('.profile-tabs button').forEach((tab, index) => tab.addEventListener('click', () => {
         document.querySelectorAll('.profile-tabs button').forEach(item => item.classList.remove('active'));
         tab.classList.add('active');
-        const personal = document.querySelector('.profile-personal-section');
-        const social = document.querySelector('.profile-social-section');
-        let panel = $('profile-tab-panel');
-        if (index < 2) { if (panel) panel.hidden = true; if (personal) personal.hidden = index !== 0; if (social) social.hidden = index !== 1; }
-        else { if (personal) personal.hidden = true; if (social) social.hidden = true; if (!panel) { panel = document.createElement('section'); panel.id = 'profile-tab-panel'; panel.className = 'profile-section profile-tab-placeholder'; document.querySelector('.profile-main').insertBefore(panel, document.querySelector('.profile-actions')); } panel.hidden = false; panel.innerHTML = `<span class="profile-eyebrow">${index === 2 ? 'PREFERENCES' : 'SECURITY'}</span><h3>${index === 2 ? 'Preferences' : 'Security'}</h3><p>${index === 2 ? 'Preference controls will appear here as they become available.' : 'Your account security is managed through the secure authentication flow.'}</p>`; }
+        renderTab(index);
       }));
       $('profile-search-query')?.addEventListener('input', (() => { let timer; return () => { clearTimeout(timer); timer = setTimeout(searchProfiles, 220); }; })());
       accountButton?.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); accountAction(); });

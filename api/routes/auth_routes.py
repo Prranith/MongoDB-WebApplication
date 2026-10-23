@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 from services.auth.auth_service import (
     AUTH_REQUIRED, create_session, create_pending_signup,
     current_user, logout, password_login, verify_pending_signup,
-    resend_pending_signup_otp, update_profile, _safe_user,
+    resend_pending_signup_otp, update_profile, change_password, _safe_user,
 )
 from services.shared.rate_limit import make_rate_limiter
 
@@ -113,6 +113,22 @@ def auth_search():
             "links": doc.get("links", []),
         }
     return jsonify({"users": [current for current in (public_profile(doc) for doc in docs) if current]})
+
+
+@auth_bp.post("/api/auth/change-password")
+def auth_change_password():
+    user = current_user()
+    if not user:
+        return jsonify({"error": "Authentication required", "code": "AUTH_REQUIRED"}), 401
+    body = request.get_json(silent=True) or {}
+    try:
+        from bson import ObjectId
+        change_password(ObjectId(user["id"]), body.get("currentPassword"), body.get("newPassword"))
+        return jsonify({"changed": True})
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 503
 
 
 @auth_bp.post("/api/auth/verify-email")

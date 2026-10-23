@@ -34,16 +34,23 @@ def _email(value):
 def _safe_user(doc):
     if not doc:
         return None
+    preferences = doc.get("preferences") if isinstance(doc.get("preferences"), dict) else {}
     return {
         "id": str(doc.get("_id", "")),
         "email": doc.get("email", ""),
         "name": doc.get("name") or doc.get("email", "").split("@")[0],
         "avatar": doc.get("avatar", ""),
+        "cover": doc.get("cover", ""),
         "college": doc.get("college", ""),
         "linkedin": doc.get("linkedin", ""),
         "bio": doc.get("bio", ""),
         "phone": doc.get("phone", ""),
         "links": doc.get("links", []),
+        "preferences": {
+            "emailNotifications": bool(preferences.get("emailNotifications", True)),
+            "assessmentReminders": bool(preferences.get("assessmentReminders", True)),
+            "profileVisibility": preferences.get("profileVisibility", "members"),
+        },
         "providers": sorted(doc.get("providers", [])),
         "emailVerified": bool(doc.get("emailVerified", False)),
         "createdAt": doc.get("createdAt").isoformat() if hasattr(doc.get("createdAt"), "isoformat") else doc.get("createdAt"),
@@ -325,7 +332,7 @@ def update_profile(user_id, updates):
     db = _db()
     if db is None:
         raise RuntimeError("Authentication database is not configured.")
-    allowed = {"name", "avatar", "college", "phone", "bio"}
+    allowed = {"name", "avatar", "cover", "college", "phone", "bio"}
     clean = {key: str(updates.get(key) or "").strip()[:500 if key == "bio" else 180]
              for key in allowed if key in updates}
     if "name" in clean and len(clean["name"]) < 2:
@@ -337,14 +344,38 @@ def update_profile(user_id, updates):
         if avatar and (not avatar.startswith("data:image/") or len(avatar) > 1_500_000):
             raise ValueError("Profile photo must be an image smaller than 1 MB.")
         clean["avatar"] = avatar
+    if "cover" in updates:
+        cover = str(updates.get("cover") or "")
+        if cover and (not cover.startswith("data:image/") or len(cover) > 2_500_000):
+            raise ValueError("Cover image must be an image smaller than 2 MB.")
+        clean["cover"] = cover
     if "links" in updates:
         links = updates.get("links") if isinstance(updates.get("links"), list) else []
         clean["links"] = [{"label": str(item.get("label") or "Website")[:40], "url": str(item.get("url") or "")[:300]}
                            for item in links[:20] if isinstance(item, dict) and str(item.get("url") or "").startswith(("https://", "http://"))]
+    if "preferences" in updates and isinstance(updates.get("preferences"), dict):
+        prefs = updates["preferences"]
+        clean["preferences"] = {
+            "emailNotifications": bool(prefs.get("emailNotifications", True)),
+            "assessmentReminders": bool(prefs.get("assessmentReminders", True)),
+            "profileVisibility": "public" if prefs.get("profileVisibility") == "public" else "members",
+        }
     if clean:
         clean["updatedAt"] = _now()
         db.users.update_one({"_id": user_id}, {"$set": clean})
     return db.users.find_one({"_id": user_id, "status": "active"})
+
+
+def change_password(user_id, current_password, new_password):
+    db = _db()
+    if db is None:
+        raise RuntimeError("Authentication database is not configured.")
+    user = db.users.find_one({"_id": user_id, "status": "active"})
+    if not user or not user.get("passwordHash") or not check_password_hash(user["passwordHash"], current_password or ""):
+        raise ValueError("Current password is incorrect.")
+    if len(new_password or "") < 10:
+        raise ValueError("New password must contain at least 10 characters.")
+    db.users.update_one({"_id": user_id}, {"$set": {"passwordHash": generate_password_hash(new_password, method="scrypt"), "updatedAt": _now()}})
 
 
 def require_auth(view):
