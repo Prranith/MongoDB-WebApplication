@@ -166,7 +166,7 @@ const ClientExecution = (() => {
         return javaCompiler;
       }
 
-      async function runJava(code, stdin, fileName, report) {
+      async function runJava(code, stdin, fileName, report, strictJavaFilename = false) {
         // TeaVM can retain generated source/class state between compiler
         // invocations. Recreate only the compiler so Scanner gets the
         // current run's stdin literal; the downloaded runtime is reused.
@@ -177,16 +177,22 @@ const ClientExecution = (() => {
         if (compiler.clearInputClassFiles) compiler.clearInputClassFiles();
         if (compiler.clearOutputFiles) compiler.clearOutputFiles();
 
-        const diagnostics = [];
-        const registration = compiler.onDiagnostic(diagnostic => {
-          if (diagnostic && diagnostic.message) diagnostics.push(diagnostic.message);
-        });
         let sourceText = String(code || '');
         let sourceName = String(fileName || 'Main.java').split(/[\\/]/).pop() || 'Main.java';
-        // Exam templates commonly provide public class Solution while the
-        // runner supplies the generic Main.java filename. Java requires a
-        // public top-level type to match its source filename, so derive the
-        // filename from the submitted public declaration before compiling.
+        const diagnostics = [];
+        const registration = compiler.onDiagnostic(diagnostic => {
+          if (!diagnostic) return;
+          const message = String(diagnostic.message || diagnostic.detail || diagnostic || '').trim();
+          if (!message) return;
+          const location = diagnostic.location || diagnostic.start || diagnostic.position || {};
+          const line = diagnostic.lineNumber || diagnostic.line || location.line || location.lineNumber || 0;
+          const column = diagnostic.columnNumber || diagnostic.column || location.column || location.columnNumber || 0;
+          const severity = diagnostic.severity ? '[' + String(diagnostic.severity).toUpperCase() + '] ' : '';
+          const where = line ? sourceName + ':' + line + (column ? ':' + column : '') + ': ' : sourceName + ': ';
+          diagnostics.push(severity + where + message);
+        });
+        // Playground Java preserves the submitted filename. Exam templates
+        // may continue to use Main.java as their launcher filename.
         const publicTypeMarker = 'public class ';
         const publicTypeStart = sourceText.indexOf(publicTypeMarker);
         if (publicTypeStart >= 0) {
@@ -194,7 +200,11 @@ const ClientExecution = (() => {
           let nameEnd = nameStart;
           while (nameEnd < sourceText.length && /[A-Za-z0-9_$]/.test(sourceText[nameEnd])) nameEnd += 1;
           const publicTypeName = sourceText.slice(nameStart, nameEnd);
-          if (publicTypeName) sourceName = publicTypeName + '.java';
+          const sourceStem = sourceName.replace(/\.java$/i, '');
+          if (strictJavaFilename && publicTypeName && publicTypeName !== sourceStem) {
+            return { status: 'ok', code: 1, stdout: '', stderr: 'Java filename/class mismatch: public class ' + publicTypeName + ' must be saved as ' + publicTypeName + '.java.', runtime: 'teavm-javac', validationError: true };
+          }
+          if (!strictJavaFilename && publicTypeName) sourceName = publicTypeName + '.java';
         }
         // Keep this detection regex-free: this file is embedded inside a
         // worker template, where regex escaping can corrupt the worker code.
@@ -219,7 +229,26 @@ const ClientExecution = (() => {
         const compiled = compiler.compile();
         if (registration && registration.destroy) registration.destroy();
         if (!compiled) {
-          return { status: 'ok', code: 1, stdout: '', stderr: diagnostics.join('\\n') || 'Java compilation failed.', runtime: 'teavm-javac' };
+          let diagnosticText = diagnostics.join('\\n');
+          // Some TeaVM compiler builds emit only a bare ";' expected" without a
+          // source position. Recover the likely statement location so the
+          // editor can point the user to the actual line and column.
+          if (diagnosticText.indexOf("';' expected") !== -1 && diagnosticText.indexOf(sourceName + ':') === -1) {
+            const lines = sourceText.split('\\n');
+            const declarationPrefixes = ['byte ', 'short ', 'int ', 'long ', 'float ', 'double ', 'boolean ', 'char ', 'String '];
+            for (let index = 0; index < lines.length; index += 1) {
+              const lineText = lines[index];
+              const trimmed = lineText.trim();
+              const isDeclaration = declarationPrefixes.some(prefix => trimmed.indexOf(prefix) === 0);
+              const isStatementBoundary = !trimmed || trimmed.indexOf('//') === 0 || trimmed.endsWith(';') || trimmed.endsWith('{') || trimmed.endsWith('}');
+              if (isDeclaration && !isStatementBoundary && trimmed.indexOf('=') !== -1) {
+                const column = lineText.indexOf(trimmed) + trimmed.length + 1;
+                diagnosticText = sourceName + ':' + (index + 1) + ':' + column + ": ';' expected after statement: " + trimmed + '\\n' + diagnosticText;
+                break;
+              }
+            }
+          }
+          return { status: 'ok', code: 1, stdout: '', stderr: diagnosticText || 'Java compilation failed.', runtime: 'teavm-javac' };
         }
 
         const mainClasses = compiler.detectMainClasses();
@@ -298,7 +327,7 @@ const ClientExecution = (() => {
           if (request.language === 'java') {
             try {
               const result = await runJava(request.code, request.stdin, request.fileName,
-                (phase, detail) => reportProgress(request.id, phase, detail));
+                (phase, detail) => reportProgress(request.id, phase, detail), !!request.strictJavaFilename);
               initializedRuntimes.add(runtimeKey);
               reportProgress(request.id, 'completed', 'Program finished on this device.');
               self.postMessage({ id: request.id, ok: true, result });
@@ -386,6 +415,17 @@ const ClientExecution = (() => {
   async function run(language, code, stdin, options = {}) {
     const normalizedLanguage = String(language || '').toLowerCase();
     if (!supports(normalizedLanguage)) return null;
+    if (normalizedLanguage === 'java' && options.strictJavaFilename) {
+      const fileName = String(options.fileName || '').split(/[\\/]/).pop();
+      const fileStem = fileName.replace(/\.java$/i, '');
+      const publicClass = String(code || '').match(/\bpublic\s+(?:final\s+|abstract\s+)?class\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
+      if (!/^\w[\w$]*\.java$/i.test(fileName)) {
+        return { status: 'ok', code: 1, stdout: '', stderr: 'Java playground code must be run from a .java file.', runtime: 'teavm-javac', validationError: true };
+      }
+      if (publicClass && publicClass[1] !== fileStem) {
+        return { status: 'ok', code: 1, stdout: '', stderr: `Java filename/class mismatch: public class ${publicClass[1]} must be saved as ${publicClass[1]}.java.`, runtime: 'teavm-javac', validationError: true };
+      }
+    }
     const id = ++sequence;
     const timeout = Number(options.timeoutMs || DEFAULT_TIMEOUT_MS);
     const started = performance.now();
@@ -416,7 +456,7 @@ const ClientExecution = (() => {
           reject(new Error(`Client execution timed out after ${timeout}ms`));
         }, timeout);
         pending.set(id, { resolve, reject, timer, onProgress: options.onProgress });
-        getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin, fileName: options.fileName || '' });
+        getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin, fileName: options.fileName || '', strictJavaFilename: !!options.strictJavaFilename });
       });
       result.duration = (performance.now() - started).toFixed(2);
       if (Number(result.code) !== 0 || String(result.stderr || '').trim()) {

@@ -9557,23 +9557,11 @@ let editor;
 // API CORE
 // ═══════════════════════════════════════════════════════════════════
 async function fetchAPI(url, opts = {}) {
-  const method = String(opts.method || 'GET').toUpperCase();
-  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) headers['X-Idempotency-Key'] = requestIdempotencyKey(url, opts.body || '');
-  const r = await fetch(url, { ...opts, headers });
-  const data = await r.json();
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) releaseIdempotencyKey(url, opts.body || '');
-  return data;
-}
-
-const pendingIdempotencyKeys = new Map();
-function requestIdempotencyKey(url, body) {
-  const key = `${url}|${typeof body === 'string' ? body : JSON.stringify(body || {})}`;
-  if (!pendingIdempotencyKeys.has(key)) pendingIdempotencyKeys.set(key, `cl_${crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2)}`);
-  return pendingIdempotencyKeys.get(key);
-}
-function releaseIdempotencyKey(url, body) {
-  pendingIdempotencyKeys.delete(`${url}|${typeof body === 'string' ? body : JSON.stringify(body || {})}`);
+  const r = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts
+  });
+  return r.json();
 }
 
 function getClientId() {
@@ -10032,13 +10020,11 @@ const Auth = (() => {
   }
 
   async function request(path, payload) {
-    const body = JSON.stringify(payload);
     const response = await fetch(path, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Idempotency-Key': requestIdempotencyKey(path, body) },
-      credentials: 'same-origin', body
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin', body: JSON.stringify(payload)
     });
     const data = await response.json().catch(() => ({}));
-    releaseIdempotencyKey(path, body);
     if (!response.ok) throw new Error(data.error || 'Authentication request failed.');
     return data;
   }
@@ -12693,6 +12679,8 @@ const ClientExecution = (() => {
         if (compiler.clearInputClassFiles) compiler.clearInputClassFiles();
         if (compiler.clearOutputFiles) compiler.clearOutputFiles();
 
+        let sourceText = String(code || '');
+        let sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
         const diagnostics = [];
         const registration = compiler.onDiagnostic(diagnostic => {
           if (!diagnostic) return;
@@ -12701,14 +12689,12 @@ const ClientExecution = (() => {
           const location = diagnostic.location || diagnostic.start || diagnostic.position || {};
           const line = diagnostic.lineNumber || diagnostic.line || location.line || location.lineNumber || 0;
           const column = diagnostic.columnNumber || diagnostic.column || location.column || location.columnNumber || 0;
-          const severity = diagnostic.severity ? `[${String(diagnostic.severity).toUpperCase()}] ` : '';
-          const where = line ? `${sourceName}:${line}${column ? `:${column}` : ''}: ` : `${sourceName}: `;
-          diagnostics.push(`${severity}${where}${message}`);
+          const severity = diagnostic.severity ? '[' + String(diagnostic.severity).toUpperCase() + '] ' : '';
+          const where = line ? sourceName + ':' + line + (column ? ':' + column : '') + ': ' : sourceName + ': ';
+          diagnostics.push(severity + where + message);
         });
-        let sourceText = String(code || '');
-        let sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
-        // Playground runs preserve the submitted filename. Exam runs retain
-        // their template launcher behavior and may use Main.java.
+        // Playground Java preserves the submitted filename. Exam templates
+        // may continue to use Main.java as their launcher filename.
         const publicTypeMarker = 'public class ';
         const publicTypeStart = sourceText.indexOf(publicTypeMarker);
         if (publicTypeStart >= 0) {
@@ -12716,9 +12702,9 @@ const ClientExecution = (() => {
           let nameEnd = nameStart;
           while (nameEnd < sourceText.length && /[A-Za-z0-9_$]/.test(sourceText[nameEnd])) nameEnd += 1;
           const publicTypeName = sourceText.slice(nameStart, nameEnd);
-          const sourceStem = sourceName.replace(/\.java$/i, '');
+          const sourceStem = sourceName.replace(/\\.java$/i, '');
           if (strictJavaFilename && publicTypeName && publicTypeName !== sourceStem) {
-            return { status: 'ok', code: 1, stdout: '', stderr: `Java filename/class mismatch: public class ${publicTypeName} must be saved as ${publicTypeName}.java.`, runtime: 'teavm-javac' };
+            return { status: 'ok', code: 1, stdout: '', stderr: 'Java filename/class mismatch: public class ' + publicTypeName + ' must be saved as ' + publicTypeName + '.java.', runtime: 'teavm-javac', validationError: true };
           }
           if (!strictJavaFilename && publicTypeName) sourceName = publicTypeName + '.java';
         }
@@ -12745,7 +12731,26 @@ const ClientExecution = (() => {
         const compiled = compiler.compile();
         if (registration && registration.destroy) registration.destroy();
         if (!compiled) {
-          return { status: 'ok', code: 1, stdout: '', stderr: diagnostics.join('\\\\n') || 'Java compilation failed.', runtime: 'teavm-javac' };
+          let diagnosticText = diagnostics.join('\\\\n');
+          // Some TeaVM compiler builds emit only a bare ";' expected" without a
+          // source position. Recover the likely statement location so the
+          // editor can point the user to the actual line and column.
+          if (diagnosticText.indexOf("';' expected") !== -1 && diagnosticText.indexOf(sourceName + ':') === -1) {
+            const lines = sourceText.split('\\\\n');
+            const declarationPrefixes = ['byte ', 'short ', 'int ', 'long ', 'float ', 'double ', 'boolean ', 'char ', 'String '];
+            for (let index = 0; index < lines.length; index += 1) {
+              const lineText = lines[index];
+              const trimmed = lineText.trim();
+              const isDeclaration = declarationPrefixes.some(prefix => trimmed.indexOf(prefix) === 0);
+              const isStatementBoundary = !trimmed || trimmed.indexOf('//') === 0 || trimmed.endsWith(';') || trimmed.endsWith('{') || trimmed.endsWith('}');
+              if (isDeclaration && !isStatementBoundary && trimmed.indexOf('=') !== -1) {
+                const column = lineText.indexOf(trimmed) + trimmed.length + 1;
+                diagnosticText = sourceName + ':' + (index + 1) + ':' + column + ": ';' expected after statement: " + trimmed + '\\\\n' + diagnosticText;
+                break;
+              }
+            }
+          }
+          return { status: 'ok', code: 1, stdout: '', stderr: diagnosticText || 'Java compilation failed.', runtime: 'teavm-javac' };
         }
 
         const mainClasses = compiler.detectMainClasses();
@@ -12913,14 +12918,14 @@ const ClientExecution = (() => {
     const normalizedLanguage = String(language || '').toLowerCase();
     if (!supports(normalizedLanguage)) return null;
     if (normalizedLanguage === 'java' && options.strictJavaFilename) {
-      const fileName = String(options.fileName || '').split(/[\\/]/).pop();
-      const classMatch = String(code || '').match(/\bpublic\s+(?:final\s+|abstract\s+)?class\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
-      const fileStem = fileName.replace(/\.java$/i, '');
-      if (!/^\w[\w$]*\.java$/i.test(fileName)) {
-        return { status: 'ok', code: 1, stdout: '', stderr: 'Java playground code must be run from a .java file.', runtime: 'codeleaf-browser' };
+      const fileName = String(options.fileName || '').split(/[\\\\/]/).pop();
+      const fileStem = fileName.replace(/\\.java$/i, '');
+      const publicClass = String(code || '').match(/\\bpublic\\s+(?:final\\s+|abstract\\s+)?class\\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
+      if (!/^\\w[\\w$]*\\.java$/i.test(fileName)) {
+        return { status: 'ok', code: 1, stdout: '', stderr: 'Java playground code must be run from a .java file.', runtime: 'teavm-javac', validationError: true };
       }
-      if (classMatch && classMatch[1] !== fileStem) {
-        return { status: 'ok', code: 1, stdout: '', stderr: `Java filename/class mismatch: public class ${classMatch[1]} must be saved as ${classMatch[1]}.java.`, runtime: 'codeleaf-browser' };
+      if (publicClass && publicClass[1] !== fileStem) {
+        return { status: 'ok', code: 1, stdout: '', stderr: `Java filename/class mismatch: public class ${publicClass[1]} must be saved as ${publicClass[1]}.java.`, runtime: 'teavm-javac', validationError: true };
       }
     }
     const id = ++sequence;
@@ -13936,27 +13941,6 @@ async function runPlaygroundCode(language, code, stdin) {
   }
   const statEl = document.getElementById('console-status');
 
-  // Playground Java follows the real Java source-file rule even when the
-  // browser runtime is available. Never rename the source to Main.java (or
-  // to the detected class); report the mismatch before starting execution.
-  if (language === 'java') {
-    const submittedFile = String(S.activeFile || '').split(/[\\/]/).pop();
-    const fileStem = submittedFile.replace(/\.java$/i, '');
-    const publicClass = String(code || '').match(/\bpublic\s+(?:final\s+|abstract\s+)?class\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
-    if (!submittedFile || !/^\w[\w$]*\.java$/i.test(submittedFile)) {
-      const message = 'Java playground code must be run from a .java file.';
-      logOutput(`<span class="out-error">[error] ${message}</span>`);
-      if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ ${message}</span>`;
-      return;
-    }
-    if (publicClass && publicClass[1] !== fileStem) {
-      const message = `Java filename/class mismatch: public class ${publicClass[1]} must be saved as ${publicClass[1]}.java.`;
-      logOutput(`<span class="out-error">[error] ${message}</span>`);
-      if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ ${message}</span>`;
-      return;
-    }
-  }
-
   const timeEl = document.getElementById('console-time');
   const countEl = document.getElementById('console-count');
   if (timeEl) timeEl.textContent = '0ms';
@@ -14031,7 +14015,7 @@ async function runPlaygroundCode(language, code, stdin) {
     const clientResult = await ClientExecution.run(language, code, stdin, {
       timeoutMs: clientTimeout,
       fileName: S.activeFile || 'Main.java',
-      strictJavaFilename: true,
+      strictJavaFilename: language === 'java',
       onProgress: updateExecutionProgress
     });
     if (clientResult) {
@@ -16499,11 +16483,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         headers: { 'Content-Type': 'application/json' },
       };
       if (body) opts.body = JSON.stringify(body);
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) opts.headers['X-Idempotency-Key'] = requestIdempotencyKey(url, opts.body || '');
       const res = await fetch(url, opts);
-      const data = await res.json();
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) releaseIdempotencyKey(url, opts.body || '');
-      return data;
+      return await res.json();
     } catch (e) {
       return { status: 'error', error: '// Connection error — retrying...' };
     }

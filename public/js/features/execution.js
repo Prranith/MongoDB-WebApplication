@@ -1016,6 +1016,7 @@ async function runPlaygroundCode(language, code, stdin) {
     const clientResult = await ClientExecution.run(language, code, stdin, {
       timeoutMs: clientTimeout,
       fileName: S.activeFile || 'Main.java',
+      strictJavaFilename: language === 'java',
       onProgress: updateExecutionProgress
     });
     if (clientResult) {
