@@ -12682,7 +12682,7 @@ const ClientExecution = (() => {
         return javaCompiler;
       }
 
-      async function runJava(code, stdin, fileName, report) {
+      async function runJava(code, stdin, fileName, report, strictJavaFilename = false) {
         // TeaVM can retain generated source/class state between compiler
         // invocations. Recreate only the compiler so Scanner gets the
         // current run's stdin literal; the downloaded runtime is reused.
@@ -12699,9 +12699,8 @@ const ClientExecution = (() => {
         });
         let sourceText = String(code || '');
         let sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
-        // Preserve the submitted filename. Java requires a public top-level
-        // type to match it; never rewrite a playground file to Main.java or
-        // to the class detected in its source.
+        // Playground runs preserve the submitted filename. Exam runs retain
+        // their template launcher behavior and may use Main.java.
         const publicTypeMarker = 'public class ';
         const publicTypeStart = sourceText.indexOf(publicTypeMarker);
         if (publicTypeStart >= 0) {
@@ -12710,9 +12709,10 @@ const ClientExecution = (() => {
           while (nameEnd < sourceText.length && /[A-Za-z0-9_$]/.test(sourceText[nameEnd])) nameEnd += 1;
           const publicTypeName = sourceText.slice(nameStart, nameEnd);
           const sourceStem = sourceName.replace(/\.java$/i, '');
-          if (publicTypeName && publicTypeName !== sourceStem) {
+          if (strictJavaFilename && publicTypeName && publicTypeName !== sourceStem) {
             return { status: 'ok', code: 1, stdout: '', stderr: `Java filename/class mismatch: public class ${publicTypeName} must be saved as ${publicTypeName}.java.`, runtime: 'teavm-javac' };
           }
+          if (!strictJavaFilename && publicTypeName) sourceName = publicTypeName + '.java';
         }
         // Keep this detection regex-free: this file is embedded inside a
         // worker template, where regex escaping can corrupt the worker code.
@@ -12816,7 +12816,7 @@ const ClientExecution = (() => {
           if (request.language === 'java') {
             try {
               const result = await runJava(request.code, request.stdin, request.fileName,
-                (phase, detail) => reportProgress(request.id, phase, detail));
+                (phase, detail) => reportProgress(request.id, phase, detail), !!request.strictJavaFilename);
               initializedRuntimes.add(runtimeKey);
               reportProgress(request.id, 'completed', 'Program finished on this device.');
               self.postMessage({ id: request.id, ok: true, result });
@@ -12904,6 +12904,17 @@ const ClientExecution = (() => {
   async function run(language, code, stdin, options = {}) {
     const normalizedLanguage = String(language || '').toLowerCase();
     if (!supports(normalizedLanguage)) return null;
+    if (normalizedLanguage === 'java' && options.strictJavaFilename) {
+      const fileName = String(options.fileName || '').split(/[\\/]/).pop();
+      const classMatch = String(code || '').match(/\bpublic\s+(?:final\s+|abstract\s+)?class\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
+      const fileStem = fileName.replace(/\.java$/i, '');
+      if (!/^\w[\w$]*\.java$/i.test(fileName)) {
+        return { status: 'ok', code: 1, stdout: '', stderr: 'Java playground code must be run from a .java file.', runtime: 'codeleaf-browser' };
+      }
+      if (classMatch && classMatch[1] !== fileStem) {
+        return { status: 'ok', code: 1, stdout: '', stderr: `Java filename/class mismatch: public class ${classMatch[1]} must be saved as ${classMatch[1]}.java.`, runtime: 'codeleaf-browser' };
+      }
+    }
     const id = ++sequence;
     const timeout = Number(options.timeoutMs || DEFAULT_TIMEOUT_MS);
     const started = performance.now();
@@ -12934,7 +12945,7 @@ const ClientExecution = (() => {
           reject(new Error(`Client execution timed out after ${timeout}ms`));
         }, timeout);
         pending.set(id, { resolve, reject, timer, onProgress: options.onProgress });
-        getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin, fileName: options.fileName || '' });
+        getWorker().postMessage({ id, language: String(language || '').toLowerCase(), code, stdin, fileName: options.fileName || '', strictJavaFilename: !!options.strictJavaFilename });
       });
       result.duration = (performance.now() - started).toFixed(2);
       if (Number(result.code) !== 0 || String(result.stderr || '').trim()) {
@@ -14012,6 +14023,7 @@ async function runPlaygroundCode(language, code, stdin) {
     const clientResult = await ClientExecution.run(language, code, stdin, {
       timeoutMs: clientTimeout,
       fileName: S.activeFile || 'Main.java',
+      strictJavaFilename: true,
       onProgress: updateExecutionProgress
     });
     if (clientResult) {
