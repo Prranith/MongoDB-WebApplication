@@ -93,7 +93,11 @@ def _before_request():
         # The administrator login is a separate public entry point. Every
         # other admin API remains protected by its own server-side session
         # decorator in admin_routes.py.
-        public = request.path.startswith("/api/auth/") or request.path == "/api/admin/auth/login" or request.path.startswith("/api/analytics")
+        # Admin APIs authenticate through the separate administrator session
+        # enforced by admin_routes._require_admin. Do not let the ordinary
+        # student session guard reject those requests before that decorator
+        # gets a chance to validate the admin identity.
+        public = request.path.startswith("/api/auth/") or request.path.startswith("/api/admin/") or request.path.startswith("/api/analytics")
         is_admin_api = request.path.startswith("/api/admin/")
         # Admin APIs have their own independent session and role guard. Do
         # not let the ordinary student session gate intercept them first.
