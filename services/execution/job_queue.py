@@ -166,7 +166,7 @@ def _dispatch(kind: str, payload: dict) -> Any:
     """Execute one job. Imports stay inside the worker path to avoid cycles."""
     if kind == "playground_code":
         from services.compiler.compiler_service import CompilerService
-        return CompilerService.run_piston_code(payload["language"], payload["code"], payload.get("stdin", ""), payload.get("filename", ""))
+        return CompilerService.run_piston_code(payload["language"], payload["code"], payload.get("stdin", ""), payload.get("filename", ""), payload.get("strictJavaFilename", False))
     if kind == "exam_code":
         from services.submission.submission_service import SubmissionService
         return {"results": SubmissionService.run_piston_code(payload["roomId"], payload.get("questionId"), payload["language"], payload["code"], payload.get("stdins", ""))}

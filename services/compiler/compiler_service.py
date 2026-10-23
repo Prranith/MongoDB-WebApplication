@@ -149,7 +149,7 @@ class CompilerService:
         }
 
     @classmethod
-    def run_local_code(cls, language: str, code: str, stdin: str = "", filename: str = ""):
+    def run_local_code(cls, language: str, code: str, stdin: str = "", filename: str = "", strict_java_filename: bool = False):
         """Compile and run code inside the dedicated execution worker.
 
         This method deliberately has no network execution fallback. The API
@@ -180,10 +180,29 @@ class CompilerService:
                 compile_cmd = [shutil.which("g++") or "g++", "-std=c++17", "-O2", "-pipe", str(source_path), "-o", str(binary_path)]
                 run_cmd = [str(binary_path)]
             else:
-                entry_class = cls._java_entry_class(source, filename)
+                supplied_name = Path(str(filename or "")).name
+                if strict_java_filename:
+                    if not supplied_name or supplied_name.lower() == ".java" or not supplied_name.lower().endswith(".java"):
+                        return cls._result(stderr="Java playground code must be run from a .java file. Rename the file to match the public class name.", code=1)
+                    file_stem = Path(supplied_name).stem
+                    if not re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", file_stem):
+                        return cls._result(stderr=f"Invalid Java filename '{supplied_name}'. Use a valid Java class filename such as Solution.java.", code=1)
+                    public_declaration = re.search(
+                        r"\bpublic\s+(?:abstract\s+|final\s+)?class\s+([A-Za-z_$][A-Za-z0-9_$]*)",
+                        re.sub(r"/\*.*?\*/|//[^\n]*", "", source, flags=re.DOTALL),
+                    )
+                    if public_declaration and public_declaration.group(1) != file_stem:
+                        return cls._result(
+                            stderr=f"Java filename/class mismatch: public class {public_declaration.group(1)} must be saved as {public_declaration.group(1)}.java, or change the public class to {file_stem}.",
+                            code=1,
+                        )
+                    entry_class = public_declaration.group(1) if public_declaration else file_stem
+                    source_path = root / supplied_name
+                else:
+                    entry_class = cls._java_entry_class(source, filename)
+                    source_path = root / f"{entry_class}.java"
                 if not entry_class:
                     return cls._result(stderr="No Java class declaration was found in the submitted source.", code=1)
-                source_path = root / f"{entry_class}.java"
                 compile_cmd = [shutil.which("javac") or "javac", "-encoding", "UTF-8", str(source_path)]
                 run_cmd = [shutil.which("java") or "java", "-cp", str(root), entry_class]
 
@@ -224,6 +243,6 @@ class CompilerService:
                 return cls._result(stderr=f"Worker execution failed: {exc}", code=1)
 
     @classmethod
-    def run_piston_code(cls, language: str, code: str, stdin: str = "", filename: str = ""):
+    def run_piston_code(cls, language: str, code: str, stdin: str = "", filename: str = "", strict_java_filename: bool = False):
         """Compatibility name used by existing routes; execution is local only."""
-        return cls.run_local_code(language, code, stdin, filename)
+        return cls.run_local_code(language, code, stdin, filename, strict_java_filename)

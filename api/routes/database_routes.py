@@ -212,8 +212,8 @@ def api_sandbox_run():
     
     res = execute_job(
         "playground_code",
-        {"language": language, "code": code, "stdin": stdin, "filename": filename},
-        lambda: run_piston_code(language, code, stdin, filename),
+        {"language": language, "code": code, "stdin": stdin, "filename": filename, "strictJavaFilename": language == "java"},
+        lambda: run_piston_code(language, code, stdin, filename, language == "java"),
         idempotency_key=get_idempotency_key_from_request(request),
     )
     try:
