@@ -12683,8 +12683,21 @@ const ClientExecution = (() => {
         const registration = compiler.onDiagnostic(diagnostic => {
           if (diagnostic && diagnostic.message) diagnostics.push(diagnostic.message);
         });
-        const sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
         let sourceText = String(code || '');
+        let sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
+        // Exam templates commonly provide `public class Solution` while the
+        // runner supplies the generic Main.java filename. Java requires a
+        // public top-level type to match its source filename, so derive the
+        // filename from the submitted public declaration before compiling.
+        const publicTypeMarker = 'public class ';
+        const publicTypeStart = sourceText.indexOf(publicTypeMarker);
+        if (publicTypeStart >= 0) {
+          const nameStart = publicTypeStart + publicTypeMarker.length;
+          let nameEnd = nameStart;
+          while (nameEnd < sourceText.length && /[A-Za-z0-9_$]/.test(sourceText[nameEnd])) nameEnd += 1;
+          const publicTypeName = sourceText.slice(nameStart, nameEnd);
+          if (publicTypeName) sourceName = publicTypeName + '.java';
+        }
         // Keep this detection regex-free: this file is embedded inside a
         // worker template, where regex escaping can corrupt the worker code.
         const usesPrintf = sourceText.indexOf('System.out.printf') !== -1;
