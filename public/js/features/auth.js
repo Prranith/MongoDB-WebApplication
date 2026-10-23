@@ -103,6 +103,9 @@ const Auth = (() => {
     if (!state.user) return open();
     const modal = $('profile-modal');
     if (!modal) return;
+    // Mount discovery when the profile is opened as well as during startup;
+    // this keeps the directory available after a delayed auth/session restore.
+    mountProfileDirectory();
     $('profile-name').value = state.user.name || '';
     $('profile-display-name').textContent = state.user.name || 'CodeLeaf member';
     const verified = document.createElement('span'); verified.className = 'profile-verified'; verified.setAttribute('aria-label', 'Verified profile'); verified.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.3 16.8-4.1-4.1 1.8-1.8 2.3 2.3 7.7-7.7 1.8 1.8-9.5 9.5Z"/></svg>'; $('profile-display-name').appendChild(verified);

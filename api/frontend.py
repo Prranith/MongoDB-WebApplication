@@ -8605,6 +8605,8 @@ li.CodeMirror-hint-active {
 .auth-account-avatar { overflow:hidden; }
 .auth-account-avatar svg { width:15px; height:15px; fill:currentColor; }
 .auth-account-avatar img { display:block; width:100%; height:100%; border-radius:50%; object-fit:cover; }
+.auth-account-avatar { aspect-ratio:1 / 1; overflow:hidden; border-radius:50%; }
+.auth-account-avatar img { width:100% !important; height:100% !important; min-width:0; min-height:0; max-width:none; max-height:none; border-radius:50% !important; object-fit:cover !important; object-position:center; }
 .auth-profile-popover { position:absolute; top:calc(100% + 9px); right:0; z-index:5000; display:grid; min-width:210px; gap:4px; padding:13px; border:1px solid rgba(0,237,100,.28); border-radius:10px; background:linear-gradient(145deg,#17221c,#0d1410); box-shadow:0 16px 38px rgba(0,0,0,.48); color:#e9f4ec; }
 .auth-profile-popover[hidden] { display:none; }
 .auth-profile-heading { color:#87a291; font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
@@ -9870,6 +9872,9 @@ const Auth = (() => {
     if (!state.user) return open();
     const modal = $('profile-modal');
     if (!modal) return;
+    // Mount discovery when the profile is opened as well as during startup;
+    // this keeps the directory available after a delayed auth/session restore.
+    mountProfileDirectory();
     $('profile-name').value = state.user.name || '';
     $('profile-display-name').textContent = state.user.name || 'CodeLeaf member';
     const verified = document.createElement('span'); verified.className = 'profile-verified'; verified.setAttribute('aria-label', 'Verified profile'); verified.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.3 16.8-4.1-4.1 1.8-1.8 2.3 2.3 7.7-7.7 1.8 1.8-9.5 9.5Z"/></svg>'; $('profile-display-name').appendChild(verified);
