@@ -47,6 +47,7 @@ const ExamPortal = (() => {
       pollInterval: null,
       examEditor: null,
       timerInterval: null,
+      fullscreenWatchInterval: null,
       ignoreFullscreenChange: false,
       finalSubmissionConfirmed: false,
       finalSubmissionInFlight: false,
@@ -709,6 +710,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     state.student.status = {};
     state.student.pollInterval = null;
     state.student.timerInterval = null;
+    clearInterval(state.student.fullscreenWatchInterval);
+    state.student.fullscreenWatchInterval = null;
     state.student.currentQIdx = null;
     state.student.autoSaveTimeout = null;
     state.student.ignoreFullscreenChange = false;
@@ -3499,6 +3502,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       state.student.maxCopyPasteAttempts = (res.meta && parseInt(res.meta.maxCopyPasteAttempts)) || 3;
       state.student.copyPasteAttempts = 0;
       state.student.fullscreenExitCount = 0;
+      state.student.fullscreenActive = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      state.student.fullscreenWarningOpen = false;
 
       // Initialize question status
       state.student.status = {};
@@ -3552,8 +3557,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       showPanel('exam-student-exam-panel');
 
       if (state.student.fullscreenMode) {
-        const overlay = el('student-fullscreen-overlay');
-        if (overlay) overlay.style.display = 'flex';
+        syncFullscreenEnforcement(true);
+        clearInterval(state.student.fullscreenWatchInterval);
+        state.student.fullscreenWatchInterval = setInterval(() => syncFullscreenEnforcement(false), 750);
       }
 
       // Poll for exam end & kicked status using optimized status check
@@ -4987,16 +4993,16 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       const requestFs = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
       if (requestFs) {
         requestFs.call(docEl).then(() => {
-          state.student.fullscreenActive = true;
-          state.student.fullscreenWarningOpen = false;
-          el('student-fullscreen-overlay').style.display = 'none';
+          syncFullscreenEnforcement(false);
         }).catch(err => {
           console.error("Fullscreen request failed:", err);
           showExamAlert("Fullscreen mode is required to start the exam. Please click the button again or allow browser fullscreen permissions.", { title: 'Fullscreen Required', danger: true });
         });
       } else {
         state.student.fullscreenActive = false;
-        el('student-fullscreen-overlay').style.display = 'none';
+        const overlay = el('student-fullscreen-overlay');
+        if (overlay) overlay.style.display = 'flex';
+        showExamAlert("This browser does not support fullscreen enforcement. Please use an up-to-date browser to start the exam.", { title: 'Fullscreen Unsupported', danger: true });
       }
     },
 
@@ -5804,10 +5810,37 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
   }
 
   // ── PROCTORING EVENT HANDLERS ────────────────────────────────────────────────
+  function isDocumentFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+
+  function syncFullscreenEnforcement(initialCheck) {
+    if (!state.student.roomId || !state.student.fullscreenMode) return;
+    const isFs = isDocumentFullscreen();
+    if (isFs) {
+      state.student.fullscreenActive = true;
+      state.student.fullscreenWarningOpen = false;
+      const overlay = el('student-fullscreen-overlay');
+      if (overlay) overlay.style.display = 'none';
+      return;
+    }
+
+    // Keep the entry gate visible whenever the exam has not successfully
+    // entered fullscreen yet. This closes the gap where a rejected/unsupported
+    // request could leave the exam usable in a normal browser window.
+    if (!state.student.fullscreenActive) {
+      const overlay = el('student-fullscreen-overlay');
+      if (overlay) overlay.style.display = 'flex';
+      return;
+    }
+
+    handleFullscreenChange();
+  }
+
   function handleFullscreenChange() {
     if (!state.student.roomId || !state.student.fullscreenMode) return;
 
-    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+    const isFs = isDocumentFullscreen();
     if (isFs) {
       state.student.fullscreenActive = true;
       state.student.fullscreenWarningOpen = false;
@@ -5911,6 +5944,11 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
   document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
   document.addEventListener('mozfullscreenchange', handleFullscreenChange);
   document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') setTimeout(() => syncFullscreenEnforcement(false), 0);
+  });
+  window.addEventListener('focus', () => syncFullscreenEnforcement(false));
+  window.addEventListener('pageshow', () => syncFullscreenEnforcement(false));
 
   document.addEventListener('copy', handleCopy, true);
   document.addEventListener('cut', handleCopy, true);
