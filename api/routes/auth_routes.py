@@ -99,7 +99,20 @@ def auth_search():
     import re
     pattern = re.compile(re.escape(query), re.IGNORECASE)
     docs = db.users.find({"status": "active", "$or": [{"name": pattern}, {"college": pattern}, {"bio": pattern}]}).limit(25)
-    return jsonify({"users": [current for current in (_safe_user(doc) for doc in docs) if current]})
+    # Search is a public-profile feature: never return account email, phone,
+    # provider identities, or verification/session metadata to other users.
+    def public_profile(doc):
+        if not doc:
+            return None
+        return {
+            "id": str(doc.get("_id", "")),
+            "name": doc.get("name") or doc.get("email", "").split("@")[0],
+            "avatar": doc.get("avatar", ""),
+            "college": doc.get("college", ""),
+            "bio": doc.get("bio", ""),
+            "links": doc.get("links", []),
+        }
+    return jsonify({"users": [current for current in (public_profile(doc) for doc in docs) if current]})
 
 
 @auth_bp.post("/api/auth/verify-email")

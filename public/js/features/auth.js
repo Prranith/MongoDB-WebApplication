@@ -101,6 +101,7 @@ const Auth = (() => {
     $('profile-name').value = state.user.name || '';
     $('profile-display-name').textContent = state.user.name || 'CodeLeaf member';
     $('profile-display-email').textContent = state.user.email || '';
+    if ($('profile-display-bio')) $('profile-display-bio').textContent = state.user.bio || 'Build your CodeLeaf identity.';
     $('profile-email').value = state.user.email || '';
     $('profile-college').value = state.user.college || '';
     $('profile-bio').value = state.user.bio || '';
@@ -108,6 +109,7 @@ const Auth = (() => {
     const avatar = $('profile-avatar');
     const fallback = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" rx="40" fill="#087d43"/><path fill="#eafff0" d="M40 39a12 12 0 1 0 0-24 12 12 0 0 0 0 24Zm0 7c-12 0-22 7-22 16 0 2 2 3 4 3h36c2 0 4-1 4-3 0-9-10-16-22-16Z"/></svg>');
     avatar.src = state.user.avatar || fallback;
+    if ($('profile-avatar-preview')) $('profile-avatar-preview').src = state.user.avatar || fallback;
     avatar.onerror = () => { avatar.onerror = null; avatar.src = fallback; };
     $('profile-avatar-data').value = state.user.avatar || '';
     $('profile-links').innerHTML = '';
@@ -126,7 +128,7 @@ const Auth = (() => {
     row.querySelector('button').onclick = () => row.remove(); $('profile-links').appendChild(row);
   }
   function readProfileLinks() { return [...document.querySelectorAll('.profile-link-row')].map(row => ({ label: row.querySelector('.profile-link-label').value, url: row.querySelector('.profile-link-url').value })).filter(x => x.url); }
-  function chooseAvatar(event) { const file = event.target.files?.[0]; if (!file || !file.type.startsWith('image/')) return; if (file.size > 1000000) return setMessage('Profile photo must be smaller than 1 MB.', true); const reader = new FileReader(); reader.onload = () => { $('profile-avatar').src = reader.result; $('profile-avatar-data').value = reader.result; }; reader.readAsDataURL(file); }
+  function chooseAvatar(event) { const file = event.target.files?.[0]; if (!file || !file.type.startsWith('image/')) return; if (file.size > 1000000) return setMessage('Profile photo must be smaller than 1 MB.', true); const reader = new FileReader(); reader.onload = () => { $('profile-avatar').src = reader.result; if ($('profile-avatar-preview')) $('profile-avatar-preview').src = reader.result; $('profile-avatar-data').value = reader.result; }; reader.readAsDataURL(file); }
   async function searchProfiles() {
     const query = $('profile-search-query').value.trim(); const target = $('profile-search-results');
     if (query.length < 1) { target.innerHTML = '<div class="profile-search-empty">Start typing to discover CodeLeaf members.</div>'; return; }
