@@ -162,7 +162,7 @@ def _dispatch(kind: str, payload: dict) -> Any:
     raise ValueError(f"Unsupported execution job type: {kind}")
 
 
-def process(job_id: str, kind: str, payload: dict | None = None) -> None:
+def process(job_id: str, kind: str, payload: dict | None = None) -> str:
     collection = _jobs()
     if payload is None:
         stored = collection.find_one({"_id": job_id}) or {}
@@ -173,10 +173,12 @@ def process(job_id: str, kind: str, payload: dict | None = None) -> None:
         {"$set": {"status": "running", "startedAt": now, "updatedAt": now}},
     )
     if not claimed.modified_count:
-        return
+        return "skipped"
     try:
         result = _safe_json(_dispatch(kind, payload))
         collection.update_one({"_id": job_id}, {"$set": {"status": "completed", "result": result, "finishedAt": datetime.now(timezone.utc), "updatedAt": datetime.now(timezone.utc)}})
+        return "completed"
     except Exception as exc:
         collection.update_one({"_id": job_id}, {"$set": {"status": "failed", "error": str(exc)[:1000], "finishedAt": datetime.now(timezone.utc), "updatedAt": datetime.now(timezone.utc)}})
+        return "failed"
 
