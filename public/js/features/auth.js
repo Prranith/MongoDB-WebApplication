@@ -109,6 +109,8 @@ const Auth = (() => {
     $('profile-links').innerHTML = '';
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
     modal.hidden = false;
+    modal.style.display = 'grid';
+    document.body.classList.add('profile-open');
   }
   function addProfileLink(label = '', url = '') {
     const row = document.createElement('div'); row.className = 'profile-link-row';
@@ -125,7 +127,7 @@ const Auth = (() => {
     const data = await response.json().catch(() => ({}));
     target.innerHTML = (data.users || []).map(user => `<div class="profile-search-result"><strong>${user.name || 'CodeLeaf member'}</strong><span>${user.college || user.bio || 'CodeLeaf member'}</span></div>`).join('') || 'No matching profiles found.';
   }
-  function closeProfile() { const modal = $('profile-modal'); if (modal) modal.hidden = true; }
+  function closeProfile() { const modal = $('profile-modal'); if (modal) { modal.hidden = true; modal.style.display = 'none'; } document.body.classList.remove('profile-open'); }
   async function saveProfile() {
     const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, phone: $('profile-phone').value, college: $('profile-college').value, bio: $('profile-bio').value, avatar: $('profile-avatar-data').value, links: readProfileLinks() }) });
     const data = await response.json().catch(() => ({}));
@@ -237,6 +239,7 @@ const Auth = (() => {
       window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
       const accountPopover = $('auth-profile-popover');
       const accountButton = $('auth-account-button');
+      accountButton?.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); accountAction(); });
       document.addEventListener('click', event => {
         const wrap = $('auth-account-wrap');
         const popover = $('auth-profile-popover');

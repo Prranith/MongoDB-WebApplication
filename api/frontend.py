@@ -8612,6 +8612,7 @@ li.CodeMirror-hint-active {
 .auth-profile-edit { margin-top:8px; padding:7px 9px; border:1px solid #34483b; border-radius:6px; background:#162019; color:#cfe1d4; cursor:pointer; font-size:11px; text-align:left; }
 .profile-modal { position:fixed; inset:0; z-index:10001; display:grid; place-items:center; padding:24px; background:rgba(5,12,9,.78); backdrop-filter:blur(14px); }
 .profile-modal[hidden] { display:none; }
+.profile-modal[hidden] { visibility:hidden; pointer-events:none; }
 .profile-card { position:relative; width:min(520px,100%); padding:28px; border:1px solid rgba(0,237,100,.28); border-radius:18px; background:linear-gradient(145deg,#17221c,#0d1410); box-shadow:0 22px 70px rgba(0,0,0,.55); }
 .profile-hero { display:flex; align-items:center; gap:14px; margin-bottom:22px; }.profile-hero h2 { margin:0; color:#f1fff4; }.profile-hero p { margin:5px 0 0; color:#9db5a4; font-size:12px; }.profile-hero-avatar { display:grid; place-items:center; width:48px; height:48px; border-radius:50%; background:#087d43; color:#eafff0; }.profile-hero-avatar svg { width:25px; fill:currentColor; }.profile-card textarea { width:100%; resize:vertical; }.profile-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
 .profile-hero-avatar { position:relative; }.profile-hero-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; }.profile-photo-edit { position:absolute; top:54px; white-space:nowrap; border:0; background:none; color:#78e39a; font-size:10px; cursor:pointer; }.profile-links-heading { display:flex; justify-content:space-between; margin:12px 0 6px; color:#9db5a4; font-size:12px; }.profile-links-heading button { border:0; background:none; color:#78e39a; cursor:pointer; }.profile-link-row { display:grid; grid-template-columns:1fr 1.5fr 25px; gap:6px; margin-bottom:7px; }.profile-link-row input { min-width:0; padding:8px; border:1px solid #304438; border-radius:6px; background:#0b110d; color:#e9f4ec; }.profile-link-row button { border:1px solid #513735; border-radius:6px; background:transparent; color:#ff8c80; cursor:pointer; }.profile-search { margin-top:22px; padding-top:16px; border-top:1px solid #293a2e; }.profile-search-title { color:#dce9df; font-size:13px; margin-bottom:8px; }.profile-search-input { display:flex; gap:8px; }.profile-search-input input { flex:1; }.profile-search-input button { border:1px solid #168b4b; border-radius:6px; background:#087d43; color:#fff; padding:0 12px; cursor:pointer; }.profile-search-result { display:flex; flex-direction:column; gap:2px; margin-top:8px; padding:8px; border:1px solid #26382b; border-radius:6px; }.profile-search-result span { color:#91a998; font-size:11px; }
@@ -9753,6 +9754,8 @@ const Auth = (() => {
     $('profile-links').innerHTML = '';
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
     modal.hidden = false;
+    modal.style.display = 'grid';
+    document.body.classList.add('profile-open');
   }
   function addProfileLink(label = '', url = '') {
     const row = document.createElement('div'); row.className = 'profile-link-row';
@@ -9769,7 +9772,7 @@ const Auth = (() => {
     const data = await response.json().catch(() => ({}));
     target.innerHTML = (data.users || []).map(user => `<div class="profile-search-result"><strong>${user.name || 'CodeLeaf member'}</strong><span>${user.college || user.bio || 'CodeLeaf member'}</span></div>`).join('') || 'No matching profiles found.';
   }
-  function closeProfile() { const modal = $('profile-modal'); if (modal) modal.hidden = true; }
+  function closeProfile() { const modal = $('profile-modal'); if (modal) { modal.hidden = true; modal.style.display = 'none'; } document.body.classList.remove('profile-open'); }
   async function saveProfile() {
     const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, phone: $('profile-phone').value, college: $('profile-college').value, bio: $('profile-bio').value, avatar: $('profile-avatar-data').value, links: readProfileLinks() }) });
     const data = await response.json().catch(() => ({}));
@@ -9881,6 +9884,7 @@ const Auth = (() => {
       window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
       const accountPopover = $('auth-profile-popover');
       const accountButton = $('auth-account-button');
+      accountButton?.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); accountAction(); });
       document.addEventListener('click', event => {
         const wrap = $('auth-account-wrap');
         const popover = $('auth-profile-popover');
