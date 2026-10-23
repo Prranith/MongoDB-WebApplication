@@ -8702,6 +8702,29 @@ li.CodeMirror-hint-active {
 .profile-content { display:block; max-width:980px; margin:0 auto; }
 .profile-rail { display:none !important; }
 .profile-main { width:100%; }
+.profile-content { max-width:1120px; }
+.profile-section { background:linear-gradient(145deg,rgba(10,25,16,.86),rgba(7,17,11,.72)); }
+.profile-section-heading h3 { letter-spacing:-.02em; }
+.profile-tabs button { display:inline-flex; align-items:center; gap:6px; }
+.profile-tabs button svg { flex:0 0 auto; margin:0; }
+.profile-card { width:min(1120px,calc(100% - 72px)); min-height:0; margin:32px auto; border:1px solid #294838; border-radius:14px; background:#09140e; box-shadow:0 28px 80px rgba(0,0,0,.42); overflow:hidden; }
+.profile-topbar { padding:22px 32px 18px; }
+.profile-identity { margin:18px 32px 0; border:1px solid #294838; border-radius:13px; background:#0d2015; }
+.profile-content { padding:22px 32px 32px; }
+.profile-topbar-actions { display:flex; align-items:center; gap:14px; }
+.profile-edit-button { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border:1px solid #356245; border-radius:7px; background:#102319; color:#b9e9c5; cursor:pointer; font-size:11px; }
+.profile-edit-button:hover { border-color:#62e58d; background:#173622; color:#fff; }
+.profile-edit-button svg { width:14px; height:14px; fill:currentColor; }
+.profile-actions[hidden] { display:none; }
+.profile-tab-placeholder { min-height:180px; }
+.profile-tab-placeholder h3 { margin:8px 0; color:#edf9f0; }
+.profile-tab-placeholder p { color:#819888; font-size:12px; }
+.profile-tabs button:active,.profile-add-link:active,.profile-photo-button:active { background:#2a9f57; color:#fff; }
+.profile-actions .auth-primary,.profile-actions .auth-secondary { min-width:116px; padding:10px 16px; font-weight:700; transition:background .15s,border-color .15s,filter .15s; }
+.profile-actions .auth-primary:hover,.profile-actions .auth-secondary:hover { filter:brightness(1.18); }
+.profile-actions .auth-primary:active,.profile-actions .auth-secondary:active { background:#61e895; border-color:#8bffb2; color:#062612; }
+.profile-cover-button:disabled,.profile-photo-button:disabled,.profile-photo-remove:disabled,.profile-photo-edit:disabled,.profile-camera-button:disabled,.profile-add-link:disabled { opacity:.55; cursor:not-allowed; }
+@media (max-width:850px) { .profile-card { width:100%; margin:0; border:0; border-radius:0; }.profile-identity { margin:12px 22px 0; }.profile-content { padding-left:22px; padding-right:22px; } }
 
 </style>
 </head>
@@ -8801,9 +8824,10 @@ li.CodeMirror-hint-active {
 
 <div class="profile-modal" id="profile-modal" hidden>
   <section class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profile-title">
-    <header class="profile-topbar"><div><span class="profile-eyebrow">ACCOUNT / PROFILE</span><h2 id="profile-title">Your profile</h2></div><button class="profile-close" type="button" aria-label="Close profile" onclick="Auth.closeProfile()">×</button></header>
+    <header class="profile-topbar"><div><span class="profile-eyebrow">ACCOUNT / PROFILE</span><h2 id="profile-title">Your profile</h2></div><div class="profile-topbar-actions"><button id="profile-edit-button" class="profile-edit-button" type="button" onclick="Auth.setEditMode(true)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.8-.7 3.9 3.9-.7L18.7 7.5l-3.8-3.8L4 16.8Zm12-11.7 3.8 3.8 1.4-1.4a2 2 0 0 0 0-2.8l-1-1a2 2 0 0 0-2.8 0L16 5.1Z"/></svg> Edit profile</button><button class="profile-close" type="button" aria-label="Close profile" onclick="Auth.closeProfile()">×</button></div></header>
     <div class="profile-identity"><div class="profile-cover-pattern" aria-hidden="true"></div><div class="profile-hero-avatar"><img id="profile-avatar" alt="Profile photo"><input id="profile-avatar-file" type="file" accept="image/*" hidden onchange="Auth.chooseAvatar(event)"><button type="button" class="profile-photo-edit" onclick="document.getElementById('profile-avatar-file').click()">Change photo</button><button type="button" class="profile-camera-button" aria-label="Change profile photo" onclick="document.getElementById('profile-avatar-file').click()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h2l1.2-2h3.6L15 7h2a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3Zm5 3.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/></svg></button></div><div class="profile-identity-copy"><div class="profile-identity-name" id="profile-display-name">Your name <span class="profile-verified" aria-label="Verified profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.3 16.8-4.1-4.1 1.8-1.8 2.3 2.3 7.7-7.7 1.8 1.8-9.5 9.5Z"/></svg></span></div><div class="profile-identity-email" id="profile-display-email">your@email.com</div><div class="profile-identity-status"><span></span> CodeLeaf member</div><p class="profile-identity-bio" id="profile-display-bio">Build your CodeLeaf identity.</p></div><button class="profile-cover-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4V5Zm2 2v10h12V7H6Zm2 8 2.8-3.2 2 2.2 1.7-2 2.5 3H8Z"/></svg> Change cover</button></div>
     <input id="profile-avatar-data" type="hidden">
+    <input id="profile-cover-file" type="file" accept="image/*" hidden onchange="Auth.chooseCover(event)">
 <div class="profile-content"><main class="profile-main"><nav class="profile-tabs"><button class="active" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z"/></svg> Personal Information</button><button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.2 1.2 1.4 1.4 1.2-1.2a3 3 0 0 1 4.3 4.3l-2 2A3 3 0 0 1 11.4 12L10 13Zm4-2a5 5 0 0 0-7.1-.1l-2 2a5 5 0 0 0 7.1 7.1l1.2-1.2-1.4-1.4-1.2 1.2a3 3 0 0 1-4.3-4.3l2-2A3 3 0 0 1 12.6 12L14 11Z"/></svg> Social Links</button><button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 4 1-2h3l1 2 2 .8 2-.8 2.1 2.1-.8 2 .8 2-2 .8-.8 2 .8 2-2.1 2.1-2-.8-2 .8-1-2h-3l-1 2L5.4 17l.8-2-.8-2 .8-2-.8-2L8 6.1l2 .8 1.5-.8ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/></svg> Preferences</button><button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2h2v10H5V10h2Zm2 0h6V8a3 3 0 0 0-6 0v2Z"/></svg> Security</button></nav><section class="profile-section"><div class="profile-section-heading"><div><span class="profile-eyebrow">PERSONAL INFORMATION</span><h3>Personal information</h3><p>Update your personal details and how others see you on CodeLeaf.</p></div><span class="profile-section-note">Visible on your CodeLeaf profile</span></div><div class="profile-fields"><label class="auth-field">Full name <em>*</em><input id="profile-name" autocomplete="name" /></label><label class="auth-field">Email address <em>*</em><input id="profile-email" disabled /></label><label class="auth-field">Phone number<input id="profile-phone" type="tel" placeholder="Your phone number" /></label><label class="auth-field">College / University<input id="profile-college" placeholder="Your college or institution" /></label></div><label class="auth-field profile-bio-field">Bio<textarea id="profile-bio" rows="4" maxlength="300" placeholder="Tell the CodeLeaf community about yourself"></textarea><small class="profile-character-hint">Shown on your public profile</small></label><div class="profile-photo-row"><span>Profile photo</span><div class="profile-photo-preview"><img id="profile-avatar-preview" alt=""><span>Upload a JPG, PNG or GIF (max 1 MB)</span></div><button type="button" class="profile-photo-button" onclick="document.getElementById('profile-avatar-file').click()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4V5Zm2 2v10h12V7H6Zm2 8 2.8-3.2 2 2.2 1.7-2 2.5 3H8Z"/></svg> Change photo</button><button type="button" class="profile-photo-remove">Remove</button></div></section><section class="profile-section"><div class="profile-section-heading"><div><span class="profile-eyebrow">CONNECTED ACCOUNTS</span><h3>Social links</h3><p>Add your developer profiles so others can connect with you.</p></div><button class="profile-add-link" type="button" onclick="Auth.addProfileLink()">+ Add link</button></div><div id="profile-links"></div></section><div class="profile-actions"><button class="auth-secondary" type="button" onclick="Auth.closeProfile()">Cancel</button><button class="auth-primary" type="button" onclick="Auth.saveProfile()">Save changes</button></div></main><aside class="profile-rail"><section class="profile-rail-card"><div class="profile-rail-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9h4v10H4Zm6 0V5h4v14h-4Zm6 0V2h4v17h-4Z"/></svg> Profile completion</div><div class="profile-completion"><div class="profile-ring" id="profile-completion-ring"><strong id="profile-completion-value">0%</strong></div><div><strong id="profile-completion-label">Complete your profile</strong><p>Complete your profile to get a better experience on CodeLeaf.</p></div></div><ul class="profile-checklist" id="profile-checklist"></ul></section><section class="profile-rail-card"><div class="profile-rail-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9h4v10H4Zm6 0V5h4v14h-4Zm6 0V2h4v17h-4Z"/></svg> Account stats</div><div class="profile-stat"><span>Problems solved</span><strong>—</strong></div><div class="profile-stat"><span>Contests participated</span><strong>—</strong></div><div class="profile-stat"><span>Member since</span><strong id="profile-member-since">—</strong></div></section><section class="profile-rail-card profile-activity"><div class="profile-rail-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 7 7h2a9 9 0 1 1-9-9v2Zm1-4h2v7h-2V1Zm3 3 1.4-1.4L22 6.2l-1.4 1.4L16 4Z"/></svg> Recent activity <a href="#">View all</a></div><div class="activity-empty">Your recent CodeLeaf activity will appear here.</div></section><section class="profile-rail-card profile-discover"><div class="profile-rail-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 20-4.4-4.4a7 7 0 1 0-1.4 1.4L19.6 21 21 20ZM5 10a5 5 0 1 1 10 0A5 5 0 0 1 5 10Z"/></svg> Discover people</div><p>Find students and mentors by name, college, or bio.</p><div class="profile-search-input"><input id="profile-search-query" placeholder="Search profiles"><button type="button" onclick="Auth.searchProfiles()">Search</button></div><div id="profile-search-results"><div class="profile-search-empty">Start typing to discover CodeLeaf members.</div></div></section></aside></div>
   </section>
 </div>
@@ -9810,11 +9834,28 @@ const Auth = (() => {
     if ($('profile-avatar-preview')) $('profile-avatar-preview').src = state.user.avatar || fallback;
     avatar.onerror = () => { avatar.onerror = null; avatar.src = fallback; };
     $('profile-avatar-data').value = state.user.avatar || '';
+    const cover = document.querySelector('.profile-cover-pattern');
+    if (cover && state.user.cover) { cover.style.backgroundImage = `linear-gradient(90deg,rgba(7,20,12,.18),rgba(3,16,11,.08)),url(${state.user.cover})`; cover.style.backgroundSize = 'cover'; cover.style.backgroundPosition = 'center'; }
     $('profile-links').innerHTML = '';
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
+    const profileSections = document.querySelectorAll('.profile-main > .profile-section');
+    profileSections[0]?.classList.add('profile-personal-section');
+    profileSections[1]?.classList.add('profile-social-section');
+    setEditMode(false);
     modal.hidden = false;
     modal.style.display = 'grid';
     document.body.classList.add('profile-open');
+  }
+  function setEditMode(enabled) {
+    document.querySelectorAll('#profile-name,#profile-phone,#profile-college,#profile-bio,.profile-link-label,.profile-link-url').forEach(field => { field.disabled = !enabled; });
+    const actions = document.querySelector('.profile-actions'); if (actions) actions.hidden = !enabled;
+    const edit = $('profile-edit-button'); if (edit) edit.hidden = enabled;
+    document.querySelectorAll('.profile-photo-button,.profile-photo-remove,.profile-photo-edit,.profile-camera-button,.profile-cover-button,.profile-add-link').forEach(button => { button.disabled = !enabled; });
+  }
+  function chooseCover(event) {
+    const file = event.target.files?.[0]; if (!file || !file.type.startsWith('image/')) return;
+    if (file.size > 2000000) return setMessage('Cover image must be smaller than 2 MB.', true);
+    const reader = new FileReader(); reader.onload = () => { const cover = document.querySelector('.profile-cover-pattern'); if (cover) { cover.style.backgroundImage = `linear-gradient(90deg,rgba(7,20,12,.18),rgba(3,16,11,.08)),url(${reader.result})`; cover.style.backgroundSize = 'cover'; cover.style.backgroundPosition = 'center'; } window.__profileCoverData = reader.result; }; reader.readAsDataURL(file);
   }
   function addProfileLink(label = '', url = '') {
     const row = document.createElement('div'); row.className = 'profile-link-row';
@@ -9833,7 +9874,7 @@ const Auth = (() => {
   }
   function closeProfile() { const modal = $('profile-modal'); if (modal) { modal.hidden = true; modal.style.display = 'none'; } document.body.classList.remove('profile-open'); }
   async function saveProfile() {
-    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, phone: $('profile-phone').value, college: $('profile-college').value, bio: $('profile-bio').value, avatar: $('profile-avatar-data').value, links: readProfileLinks() }) });
+    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, phone: $('profile-phone').value, college: $('profile-college').value, bio: $('profile-bio').value, avatar: $('profile-avatar-data').value, cover: window.__profileCoverData || state.user.cover || '', links: readProfileLinks() }) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Unable to save profile.');
     state.user = data.user; renderAccount(); closeProfile();
@@ -9943,6 +9984,16 @@ const Auth = (() => {
       window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
       const accountPopover = $('auth-profile-popover');
       const accountButton = $('auth-account-button');
+      document.querySelector('.profile-cover-button')?.addEventListener('click', () => $('profile-cover-file')?.click());
+      document.querySelectorAll('.profile-tabs button').forEach((tab, index) => tab.addEventListener('click', () => {
+        document.querySelectorAll('.profile-tabs button').forEach(item => item.classList.remove('active'));
+        tab.classList.add('active');
+        const personal = document.querySelector('.profile-personal-section');
+        const social = document.querySelector('.profile-social-section');
+        let panel = $('profile-tab-panel');
+        if (index < 2) { if (panel) panel.hidden = true; if (personal) personal.hidden = index !== 0; if (social) social.hidden = index !== 1; }
+        else { if (personal) personal.hidden = true; if (social) social.hidden = true; if (!panel) { panel = document.createElement('section'); panel.id = 'profile-tab-panel'; panel.className = 'profile-section profile-tab-placeholder'; document.querySelector('.profile-main').insertBefore(panel, document.querySelector('.profile-actions')); } panel.hidden = false; panel.innerHTML = `<span class="profile-eyebrow">${index === 2 ? 'PREFERENCES' : 'SECURITY'}</span><h3>${index === 2 ? 'Preferences' : 'Security'}</h3><p>${index === 2 ? 'Preference controls will appear here as they become available.' : 'Your account security is managed through the secure authentication flow.'}</p>`; }
+      }));
       $('profile-search-query')?.addEventListener('input', (() => { let timer; return () => { clearTimeout(timer); timer = setTimeout(searchProfiles, 220); }; })());
       accountButton?.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); accountAction(); });
       document.addEventListener('click', event => {
@@ -9959,7 +10010,7 @@ const Auth = (() => {
   }
 
   return {
-    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, searchProfiles, setMode,
+    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, chooseCover, setEditMode, searchProfiles, setMode,
     require(action) { if (state.user) return action(); open(action); },
     get user() { return state.user; },
   };

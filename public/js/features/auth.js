@@ -113,11 +113,28 @@ const Auth = (() => {
     if ($('profile-avatar-preview')) $('profile-avatar-preview').src = state.user.avatar || fallback;
     avatar.onerror = () => { avatar.onerror = null; avatar.src = fallback; };
     $('profile-avatar-data').value = state.user.avatar || '';
+    const cover = document.querySelector('.profile-cover-pattern');
+    if (cover && state.user.cover) { cover.style.backgroundImage = `linear-gradient(90deg,rgba(7,20,12,.18),rgba(3,16,11,.08)),url(${state.user.cover})`; cover.style.backgroundSize = 'cover'; cover.style.backgroundPosition = 'center'; }
     $('profile-links').innerHTML = '';
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
+    const profileSections = document.querySelectorAll('.profile-main > .profile-section');
+    profileSections[0]?.classList.add('profile-personal-section');
+    profileSections[1]?.classList.add('profile-social-section');
+    setEditMode(false);
     modal.hidden = false;
     modal.style.display = 'grid';
     document.body.classList.add('profile-open');
+  }
+  function setEditMode(enabled) {
+    document.querySelectorAll('#profile-name,#profile-phone,#profile-college,#profile-bio,.profile-link-label,.profile-link-url').forEach(field => { field.disabled = !enabled; });
+    const actions = document.querySelector('.profile-actions'); if (actions) actions.hidden = !enabled;
+    const edit = $('profile-edit-button'); if (edit) edit.hidden = enabled;
+    document.querySelectorAll('.profile-photo-button,.profile-photo-remove,.profile-photo-edit,.profile-camera-button,.profile-cover-button,.profile-add-link').forEach(button => { button.disabled = !enabled; });
+  }
+  function chooseCover(event) {
+    const file = event.target.files?.[0]; if (!file || !file.type.startsWith('image/')) return;
+    if (file.size > 2000000) return setMessage('Cover image must be smaller than 2 MB.', true);
+    const reader = new FileReader(); reader.onload = () => { const cover = document.querySelector('.profile-cover-pattern'); if (cover) { cover.style.backgroundImage = `linear-gradient(90deg,rgba(7,20,12,.18),rgba(3,16,11,.08)),url(${reader.result})`; cover.style.backgroundSize = 'cover'; cover.style.backgroundPosition = 'center'; } window.__profileCoverData = reader.result; }; reader.readAsDataURL(file);
   }
   function addProfileLink(label = '', url = '') {
     const row = document.createElement('div'); row.className = 'profile-link-row';
@@ -136,7 +153,7 @@ const Auth = (() => {
   }
   function closeProfile() { const modal = $('profile-modal'); if (modal) { modal.hidden = true; modal.style.display = 'none'; } document.body.classList.remove('profile-open'); }
   async function saveProfile() {
-    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, phone: $('profile-phone').value, college: $('profile-college').value, bio: $('profile-bio').value, avatar: $('profile-avatar-data').value, links: readProfileLinks() }) });
+    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, phone: $('profile-phone').value, college: $('profile-college').value, bio: $('profile-bio').value, avatar: $('profile-avatar-data').value, cover: window.__profileCoverData || state.user.cover || '', links: readProfileLinks() }) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Unable to save profile.');
     state.user = data.user; renderAccount(); closeProfile();
@@ -246,6 +263,16 @@ const Auth = (() => {
       window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
       const accountPopover = $('auth-profile-popover');
       const accountButton = $('auth-account-button');
+      document.querySelector('.profile-cover-button')?.addEventListener('click', () => $('profile-cover-file')?.click());
+      document.querySelectorAll('.profile-tabs button').forEach((tab, index) => tab.addEventListener('click', () => {
+        document.querySelectorAll('.profile-tabs button').forEach(item => item.classList.remove('active'));
+        tab.classList.add('active');
+        const personal = document.querySelector('.profile-personal-section');
+        const social = document.querySelector('.profile-social-section');
+        let panel = $('profile-tab-panel');
+        if (index < 2) { if (panel) panel.hidden = true; if (personal) personal.hidden = index !== 0; if (social) social.hidden = index !== 1; }
+        else { if (personal) personal.hidden = true; if (social) social.hidden = true; if (!panel) { panel = document.createElement('section'); panel.id = 'profile-tab-panel'; panel.className = 'profile-section profile-tab-placeholder'; document.querySelector('.profile-main').insertBefore(panel, document.querySelector('.profile-actions')); } panel.hidden = false; panel.innerHTML = `<span class="profile-eyebrow">${index === 2 ? 'PREFERENCES' : 'SECURITY'}</span><h3>${index === 2 ? 'Preferences' : 'Security'}</h3><p>${index === 2 ? 'Preference controls will appear here as they become available.' : 'Your account security is managed through the secure authentication flow.'}</p>`; }
+      }));
       $('profile-search-query')?.addEventListener('input', (() => { let timer; return () => { clearTimeout(timer); timer = setTimeout(searchProfiles, 220); }; })());
       accountButton?.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); accountAction(); });
       document.addEventListener('click', event => {
@@ -262,7 +289,7 @@ const Auth = (() => {
   }
 
   return {
-    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, searchProfiles, setMode,
+    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, chooseCover, setEditMode, searchProfiles, setMode,
     require(action) { if (state.user) return action(); open(action); },
     get user() { return state.user; },
   };

@@ -8545,3 +8545,26 @@ li.CodeMirror-hint-active {
 .profile-content { display:block; max-width:980px; margin:0 auto; }
 .profile-rail { display:none !important; }
 .profile-main { width:100%; }
+.profile-content { max-width:1120px; }
+.profile-section { background:linear-gradient(145deg,rgba(10,25,16,.86),rgba(7,17,11,.72)); }
+.profile-section-heading h3 { letter-spacing:-.02em; }
+.profile-tabs button { display:inline-flex; align-items:center; gap:6px; }
+.profile-tabs button svg { flex:0 0 auto; margin:0; }
+.profile-card { width:min(1120px,calc(100% - 72px)); min-height:0; margin:32px auto; border:1px solid #294838; border-radius:14px; background:#09140e; box-shadow:0 28px 80px rgba(0,0,0,.42); overflow:hidden; }
+.profile-topbar { padding:22px 32px 18px; }
+.profile-identity { margin:18px 32px 0; border:1px solid #294838; border-radius:13px; background:#0d2015; }
+.profile-content { padding:22px 32px 32px; }
+.profile-topbar-actions { display:flex; align-items:center; gap:14px; }
+.profile-edit-button { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border:1px solid #356245; border-radius:7px; background:#102319; color:#b9e9c5; cursor:pointer; font-size:11px; }
+.profile-edit-button:hover { border-color:#62e58d; background:#173622; color:#fff; }
+.profile-edit-button svg { width:14px; height:14px; fill:currentColor; }
+.profile-actions[hidden] { display:none; }
+.profile-tab-placeholder { min-height:180px; }
+.profile-tab-placeholder h3 { margin:8px 0; color:#edf9f0; }
+.profile-tab-placeholder p { color:#819888; font-size:12px; }
+.profile-tabs button:active,.profile-add-link:active,.profile-photo-button:active { background:#2a9f57; color:#fff; }
+.profile-actions .auth-primary,.profile-actions .auth-secondary { min-width:116px; padding:10px 16px; font-weight:700; transition:background .15s,border-color .15s,filter .15s; }
+.profile-actions .auth-primary:hover,.profile-actions .auth-secondary:hover { filter:brightness(1.18); }
+.profile-actions .auth-primary:active,.profile-actions .auth-secondary:active { background:#61e895; border-color:#8bffb2; color:#062612; }
+.profile-cover-button:disabled,.profile-photo-button:disabled,.profile-photo-remove:disabled,.profile-photo-edit:disabled,.profile-camera-button:disabled,.profile-add-link:disabled { opacity:.55; cursor:not-allowed; }
+@media (max-width:850px) { .profile-card { width:100%; margin:0; border:0; border-radius:0; }.profile-identity { margin:12px 22px 0; }.profile-content { padding-left:22px; padding-right:22px; } }
