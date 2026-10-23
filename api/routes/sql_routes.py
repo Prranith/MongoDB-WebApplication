@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from services.sql.sql_service import SqlService
 from services.execution.job_queue import execute as execute_job
+from services.shared.idempotency import get_idempotency_key_from_request
 
 sql_bp = Blueprint("sql_bp", __name__)
 
@@ -15,6 +16,7 @@ def run_sql():
         "playground_sql",
         {"query": query, "limit": limit, "tables": tables},
         lambda: SqlService.execute_query(query, limit, tables),
+        idempotency_key=get_idempotency_key_from_request(request),
     )
     return jsonify(result)
 

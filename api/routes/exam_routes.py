@@ -21,6 +21,9 @@ from services.sql.sql_service import SqlService
 from services.exam.media_service import QuestionMediaService
 from services.shared.redis_client import redis_one, get_room_participants
 from services.execution.job_queue import execute as execute_job
+from services.shared.idempotency import get_idempotency_key_from_request, get_persistent_idempotency_handler, serialize_idempotency_body
+from services.shared.pagination import encode_cursor, decode_cursor
+from services.shared.cache import get_cache_manager
 from utils.logger import get_logger, bind_component
 
 exam_bp = Blueprint("exam_bp", __name__)
@@ -28,6 +31,20 @@ log = bind_component(get_logger(__name__), "exam_api")
 
 # Expose the worker execution helper for backwards compatibility.
 run_piston_code = CompilerService.run_piston_code
+_exam_idem = get_persistent_idempotency_handler(ttl_seconds=900)
+
+
+def _exam_replay():
+    key = get_idempotency_key_from_request(request)
+    replay = _exam_idem.check_replay(key, method=request.method, path=request.path)
+    return (jsonify(replay[1]), replay[0]) if replay else None
+
+
+def _exam_record(payload, status=200):
+    _exam_idem.record_response(
+        get_idempotency_key_from_request(request), method=request.method,
+        path=request.path, status_code=status, body=serialize_idempotency_body(payload),
+    )
 
 
 def _json_response(payload, status=200):
@@ -472,12 +489,14 @@ def api_exam_run_query(room_id: str):
             "exam_sql",
             {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": limit},
             lambda: SqlService.execute_room_query(room_id, dataset_ids, query, limit=limit),
+            idempotency_key=get_idempotency_key_from_request(request),
         )
     else:
         result = execute_job(
             "exam_mongodb",
             {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": limit},
             lambda: SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=limit),
+            idempotency_key=get_idempotency_key_from_request(request),
         )
     return _json_response(result)
 
@@ -503,6 +522,7 @@ def api_exam_freeze_answer(room_id: str):
                 "exam_sql",
                 {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": 10000},
                 lambda: SqlService.execute_room_query(room_id, dataset_ids, query, limit=10000),
+                idempotency_key=get_idempotency_key_from_request(request),
             )
             if result.get("status") != "ok":
                 raise ValueError(result.get("error", "SQL execution failed"))
@@ -512,6 +532,7 @@ def api_exam_freeze_answer(room_id: str):
                 "exam_mongodb",
                 {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": 100000},
                 lambda: SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=100000),
+                idempotency_key=get_idempotency_key_from_request(request),
             )
             if result.get("status") != "ok":
                 raise ValueError(result.get("error", "MongoDB execution failed"))
@@ -535,6 +556,9 @@ def api_exam_freeze_answer(room_id: str):
 def api_exam_submit_answer(room_id: str):
     """Student submits an answer."""
     log.info("submission_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
+    replay = _exam_replay()
+    if replay:
+        return replay
     body = request.get_json(force=True, silent=True) or {}
     student_id = body.get("studentId", "")
     question_id = body.get("questionId", "")
@@ -550,12 +574,14 @@ def api_exam_submit_answer(room_id: str):
         
         # Check if it was an auto-save operation
         if res.get("autoSaved"):
-            return _json_response({
+            payload = {
                 "status": "ok",
                 "score": res["score"],
                 "maxMarks": res["maxMarks"],
                 "autoSaved": True
-            })
+            }
+            _exam_record(payload)
+            return _json_response(payload)
 
         ret_data = {
             "status": "ok",
@@ -569,6 +595,7 @@ def api_exam_submit_answer(room_id: str):
             ret_data["passedCount"] = res["passedCount"]
             ret_data["totalCount"] = res["totalCount"]
 
+        _exam_record(ret_data)
         return _json_response(ret_data)
     except KeyError as e:
         return _json_response({"status": "error", "error": str(e)}, status=404)
@@ -608,10 +635,15 @@ def api_exam_expected_preview(room_id: str, question_id: str):
 def api_exam_student_finish(room_id: str, student_id: str):
     """Submit the final exam for a student."""
     log.info("student_finish_requested", room_id=room_id, student_id=student_id, correlation_id=g.get("correlation_id"))
+    replay = _exam_replay()
+    if replay:
+        return replay
     try:
         _assert_student_account(room_id, student_id)
         SubmissionService.finish_exam(room_id, student_id)
-        return _json_response({"status": "ok"})
+        payload = {"status": "ok"}
+        _exam_record(payload)
+        return _json_response(payload)
     except KeyError as e:
         return _json_response({"status": "error", "error": str(e)}, status=404)
     except Exception as e:
@@ -643,10 +675,32 @@ def api_exam_leaderboard(room_id: str):
     """Fetch leaderboard from room."""
     log.debug("leaderboard_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
-        res = LeaderboardService.get_room_leaderboard(room_id)
+        limit = max(1, min(int(request.args.get("limit", 100)), 100))
+        cursor = request.args.get("cursor")
+        cache = get_cache_manager(default_ttl_seconds=2)
+        res = cache.get_or_load(
+            f"exam:leaderboard:{room_id}",
+            lambda: LeaderboardService.get_room_leaderboard(room_id),
+            ttl_seconds=2,
+        )
+        rows = list(res["leaderboard"])
+        if cursor:
+            try:
+                after = str(decode_cursor(cursor).get("studentId", ""))
+                index = next((i for i, row in enumerate(rows) if row.get("studentId") == after), None)
+                if index is None:
+                    return _json_response({"status": "error", "error": "Invalid leaderboard cursor"}, status=400)
+                rows = rows[index + 1:]
+            except ValueError:
+                return _json_response({"status": "error", "error": "Invalid leaderboard cursor"}, status=400)
+        page = rows[:limit]
+        has_more = len(rows) > limit
+        next_cursor = encode_cursor({"studentId": page[-1]["studentId"]}) if has_more and page else None
         return _json_response({
             "status": "ok",
-            "leaderboard": res["leaderboard"],
+            "leaderboard": page,
+            "nextCursor": next_cursor,
+            "hasMore": has_more,
             "maxScore": res["maxScore"],
             "totalQuestions": res["totalQuestions"]
         })
@@ -844,6 +898,7 @@ def api_exam_run_code(room_id: str):
                 "exam_code",
                 {"roomId": room_id, "questionId": question_id, "language": language, "code": code, "stdins": stdins},
                 lambda: {"results": SubmissionService.run_piston_code(room_id, question_id, language, code, stdins)},
+                idempotency_key=get_idempotency_key_from_request(request),
             )
             if queued_result.get("status") == "error":
                 return _json_response(queued_result, status=503)
@@ -858,6 +913,7 @@ def api_exam_run_code(room_id: str):
                 "exam_code",
                 {"roomId": room_id, "questionId": question_id, "language": language, "code": code, "stdins": stdin},
                 lambda: {"results": SubmissionService.run_piston_code(room_id, question_id, language, code, stdin)},
+                idempotency_key=get_idempotency_key_from_request(request),
             )
             if queued_result.get("status") == "error":
                 return _json_response(queued_result, status=503)
@@ -934,6 +990,7 @@ def api_exam_custom_verify(room_id: str, question_id: str):
             "exam_custom_verify",
             {"roomId": room_id, "questionId": question_id, "language": language, "code": code, "stdin": stdin},
             lambda: SubmissionService.verify_custom_input(room_id, question_id, language, code, stdin),
+            idempotency_key=get_idempotency_key_from_request(request),
         )
         if result.get("status") == "error" and result.get("code"):
             return _json_response(result, status=503)
@@ -969,6 +1026,7 @@ def api_exam_generate_test_cases(room_id: str):
             "exam_generate_cases",
             {"language": language, "code": code, "inputs": inputs, "templateType": template_type, "driverCode": driver_code},
             lambda: {"outputs": SubmissionService.generate_test_cases(language, code, inputs, template_type, driver_code)},
+            idempotency_key=get_idempotency_key_from_request(request),
         )
         if queued_result.get("status") == "error":
             return _json_response(queued_result, status=503)

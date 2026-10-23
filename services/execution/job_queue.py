@@ -14,12 +14,15 @@ import json
 import os
 import time
 import uuid
+import hashlib
 from datetime import datetime, timezone
 from typing import Any, Callable
 
 from bson import json_util
 
 from services.shared.redis_client import get_exam_db
+from services.shared.cache import get_cache_manager, sha_signature
+from services.shared.idempotency import get_persistent_idempotency_handler
 
 
 QUEUE_URL = os.getenv("CLOUDAMQP_URL", "").strip()
@@ -40,6 +43,7 @@ QUEUE_NAMES = {
     "playground_sql": "sql-execution",
     "exam_sql": "sql-execution",
 }
+_execution_idem = get_persistent_idempotency_handler(ttl_seconds=300)
 
 
 def enabled() -> bool:
@@ -55,6 +59,7 @@ def _jobs():
     try:
         collection.create_index("createdAt", expireAfterSeconds=86400)
         collection.create_index("status")
+        collection.create_index([("kind", 1), ("idempotencyKey", 1)], unique=True, sparse=True)
     except Exception:
         pass
     return collection
@@ -77,20 +82,31 @@ def _connection():
     return pika, pika.BlockingConnection(params)
 
 
-def enqueue(kind: str, payload: dict) -> str:
+def enqueue(kind: str, payload: dict, idempotency_key: str | None = None) -> str:
     queue_name = QUEUE_NAMES.get(kind)
     if not queue_name:
         raise ValueError(f"Unsupported execution job type: {kind}")
-    job_id = f"job_{uuid.uuid4().hex}"
+    fingerprint = sha_signature(kind, _safe_json(payload))
+    stable_key = None
+    if idempotency_key:
+        stable_key = hashlib.sha256(f"{kind}|{idempotency_key}".encode()).hexdigest()
+    job_id = f"job_{stable_key or uuid.uuid4().hex}"
     now = datetime.now(timezone.utc)
-    _jobs().insert_one({
-        "_id": job_id,
-        "kind": kind,
-        "payload": _safe_json(payload),
-        "status": "queued",
-        "createdAt": now,
-        "updatedAt": now,
-    })
+    jobs = _jobs()
+    doc = {"_id": job_id, "kind": kind, "payload": _safe_json(payload),
+           "status": "queued", "createdAt": now, "updatedAt": now,
+           "fingerprint": fingerprint}
+    if stable_key:
+        doc["idempotencyKey"] = stable_key
+    try:
+        jobs.insert_one(doc)
+    except Exception as exc:
+        existing = jobs.find_one({"_id": job_id}) if stable_key else None
+        if not existing:
+            raise
+        if existing.get("fingerprint") != fingerprint:
+            raise ValueError("Idempotency key was already used with a different execution request") from exc
+        return job_id
     pika, connection = _connection()
     try:
         channel = connection.channel()
@@ -124,11 +140,26 @@ def wait_for_result(job_id: str, timeout: float | None = None) -> dict:
     return {"status": "error", "error": "Execution queue timed out while waiting for a worker.", "code": "EXECUTION_QUEUE_TIMEOUT", "jobId": job_id}
 
 
-def execute(kind: str, payload: dict, direct: Callable[[], dict]) -> dict:
+def execute(kind: str, payload: dict, direct: Callable[[], dict], idempotency_key: str | None = None) -> dict:
     """Run directly when disabled, otherwise enqueue and wait for a result."""
-    if not enabled():
-        return direct()
-    return wait_for_result(enqueue(kind, payload))
+    # Read-only database work is safe to cache briefly. Code execution is
+    # deliberately never cached because it may depend on time or randomness.
+    if kind in {"playground_mongodb", "exam_mongodb", "playground_sql", "exam_sql"}:
+        cache = get_cache_manager(default_ttl_seconds=5)
+        cache_key = f"execution:{kind}:{sha_signature(_safe_json(payload))}"
+        return cache.get_or_load(cache_key, lambda: _execute_uncached(kind, payload, direct, idempotency_key), ttl_seconds=5)
+    return _execute_uncached(kind, payload, direct, idempotency_key)
+
+
+def _execute_uncached(kind: str, payload: dict, direct: Callable[[], dict], idempotency_key: str | None = None) -> dict:
+    if idempotency_key:
+        replay = _execution_idem.check_replay(idempotency_key, method="POST", path=f"/execution/{kind}")
+        if replay:
+            return replay[1]
+    result = direct() if not enabled() else wait_for_result(enqueue(kind, payload, idempotency_key))
+    if idempotency_key:
+        _execution_idem.record_response(idempotency_key, method="POST", path=f"/execution/{kind}", status_code=200, body=result)
+    return result
 
 
 def _dispatch(kind: str, payload: dict) -> Any:

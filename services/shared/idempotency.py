@@ -100,6 +100,55 @@ class MemoryIdempotencyStore:
             self._store.pop(key, None)
 
 
+class MongoIdempotencyStore:
+    """Durable idempotency store shared by all API instances.
+
+    The in-memory store is useful for tests, but it cannot protect a request
+    retried against another serverless instance.  This store keeps only the
+    serialized response and expires entries automatically in MongoDB.
+    """
+
+    def __init__(self, collection_name: str = "api_idempotency") -> None:
+        from services.shared.redis_client import get_mongo_client
+        client = get_mongo_client()
+        if client is None:
+            raise RuntimeError("MongoDB is required for durable idempotency")
+        self._collection = client["codeleaf_platform"][collection_name]
+        try:
+            self._collection.create_index("expiresAt", expireAfterSeconds=0)
+        except Exception:
+            pass
+
+    def get(self, key: str) -> t.Optional[IdempotencyEntry]:
+        doc = self._collection.find_one({"_id": key})
+        if not doc or doc.get("expiresAt", 0) <= time.time():
+            if doc:
+                self._collection.delete_one({"_id": key})
+            return None
+        return (int(doc.get("status", 200)), doc.get("body"), float(doc.get("createdAt", time.time())))
+
+    def set(self, key: str, entry: IdempotencyEntry, *, ttl_seconds: int) -> None:
+        status, body, created_at = entry
+        now = time.time()
+        self._collection.update_one(
+            {"_id": key},
+            {"$setOnInsert": {"createdAt": created_at},
+             "$set": {"status": status, "body": body, "expiresAt": now + ttl_seconds}},
+            upsert=True,
+        )
+
+    def delete(self, key: str) -> None:
+        self._collection.delete_one({"_id": key})
+
+
+def get_persistent_idempotency_handler(*, ttl_seconds: int = 600) -> "IdempotencyHandler":
+    """Return Mongo-backed handler, falling back safely for local tests."""
+    try:
+        return IdempotencyHandler(MongoIdempotencyStore(), default_ttl_seconds=ttl_seconds)
+    except Exception:
+        return IdempotencyHandler(MemoryIdempotencyStore(), default_ttl_seconds=ttl_seconds)
+
+
 # ---------------------------------------------------------------------------
 # Idempotency handler
 # ---------------------------------------------------------------------------

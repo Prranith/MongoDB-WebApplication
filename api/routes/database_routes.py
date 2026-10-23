@@ -131,6 +131,7 @@ def api_query():
                 db=_create_temp_db(raw_query, custom_collections),
             ) if custom_collections else web_execute(raw_query, max_results=limit)
         ).to_dict(),
+        idempotency_key=get_idempotency_key_from_request(request),
     )
     if result.get("status") == "error" and result.get("code") == "EXECUTION_QUEUE_TIMEOUT":
         return _json_response(result, status=503)
@@ -213,6 +214,7 @@ def api_sandbox_run():
         "playground_code",
         {"language": language, "code": code, "stdin": stdin, "filename": filename},
         lambda: run_piston_code(language, code, stdin, filename),
+        idempotency_key=get_idempotency_key_from_request(request),
     )
     try:
         code_val = int(res.get("code", 0))

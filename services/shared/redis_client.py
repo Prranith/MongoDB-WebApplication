@@ -180,6 +180,36 @@ def redis_cmd(commands: list) -> list | None:
     return results
 
 
+def update_participant_if_not_finished(room_id: str, student_id: str, participant: dict) -> str:
+    """OCC guard for the final exam transition.
+
+    The conditional update means two Vercel instances can receive the final
+    request concurrently without one overwriting a newer participant state.
+    "already_finished" is a successful idempotent replay; "updated" is the
+    first writer; "missing" lets the route return the normal 404.
+    """
+    coll = _get_rooms_coll()
+    if coll is None:
+        return "missing"
+    room_key = room_id.replace("room:", "").strip().upper()
+    field = f"participant:{student_id}"
+    current = coll.find_one({"_id": room_key}, {field: 1}) or {}
+    raw = current.get(field)
+    if raw is None:
+        return "missing"
+    try:
+        parsed = json.loads(raw) if isinstance(raw, str) else raw
+    except Exception:
+        parsed = {}
+    if parsed.get("finished"):
+        return "already_finished"
+    result = coll.update_one(
+        {"_id": room_key, field: raw},
+        {"$set": {field: json.dumps(participant)}},
+    )
+    return "updated" if result.modified_count else "already_finished"
+
+
 def redis_one(command: list):
     """Execute a single operation against MongoDB Atlas."""
     if not command or not isinstance(command, list):

@@ -7,9 +7,27 @@ from services.auth.auth_service import (
     request_password_reset, reset_password, _safe_user,
 )
 from services.shared.rate_limit import make_rate_limiter
+from services.shared.idempotency import (
+    get_idempotency_key_from_request, get_persistent_idempotency_handler,
+    serialize_idempotency_body,
+)
 
 auth_bp = Blueprint("auth_bp", __name__)
 _auth_limiter = make_rate_limiter()
+_auth_idem = get_persistent_idempotency_handler(ttl_seconds=900)
+
+
+def _replay_auth():
+    key = get_idempotency_key_from_request(request)
+    replay = _auth_idem.check_replay(key, method=request.method, path=request.path)
+    return (jsonify(replay[1]), replay[0]) if replay else None
+
+
+def _record_auth(payload, status=200):
+    _auth_idem.record_response(
+        get_idempotency_key_from_request(request), method=request.method,
+        path=request.path, status_code=status, body=serialize_idempotency_body(payload),
+    )
 
 
 def _rate_limit(action, email=""):
@@ -34,13 +52,18 @@ def auth_me():
 
 @auth_bp.post("/api/auth/register")
 def auth_register():
+    replay = _replay_auth()
+    if replay:
+        return replay
     body = request.get_json(silent=True) or {}
     limited = _rate_limit("register", body.get("email"))
     if limited:
         return limited
     try:
         pending = create_pending_signup(body.get("name"), body.get("email"), body.get("password"))
-        return jsonify({"authenticated": False, "verificationRequired": True, "email": pending["email"]}), 201
+        payload = {"authenticated": False, "verificationRequired": True, "email": pending["email"]}
+        _record_auth(payload, 201)
+        return jsonify(payload), 201
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     except RuntimeError as exc:
@@ -189,13 +212,18 @@ def auth_change_password():
 
 @auth_bp.post("/api/auth/verify-email")
 def auth_verify_email():
+    replay = _replay_auth()
+    if replay:
+        return replay
     body = request.get_json(silent=True) or {}
     limited = _rate_limit("verify", body.get("email"))
     if limited:
         return limited
     try:
         user = verify_pending_signup(body.get("email"), body.get("code"))
-        return jsonify({"authenticated": True, "user": create_session(user)})
+        payload = {"authenticated": True, "user": create_session(user)}
+        _record_auth(payload)
+        return jsonify(payload)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 

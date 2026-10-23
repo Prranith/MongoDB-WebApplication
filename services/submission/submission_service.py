@@ -651,10 +651,10 @@ class SubmissionService:
         p["finished"] = True
         p["finishedAt"] = int(time.time())
 
-        redis_cmd([
-            ["HSET", f"room:{room_id}", f"participant:{student_id}", json.dumps(p)],
-            ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
-        ])
+        from services.shared.redis_client import update_participant_if_not_finished
+        state = update_participant_if_not_finished(room_id, student_id, p)
+        if state == "missing":
+            raise KeyError("Student not found")
         return True
 
     @staticmethod

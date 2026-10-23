@@ -9557,11 +9557,23 @@ let editor;
 // API CORE
 // ═══════════════════════════════════════════════════════════════════
 async function fetchAPI(url, opts = {}) {
-  const r = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opts
-  });
-  return r.json();
+  const method = String(opts.method || 'GET').toUpperCase();
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) headers['X-Idempotency-Key'] = requestIdempotencyKey(url, opts.body || '');
+  const r = await fetch(url, { ...opts, headers });
+  const data = await r.json();
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) releaseIdempotencyKey(url, opts.body || '');
+  return data;
+}
+
+const pendingIdempotencyKeys = new Map();
+function requestIdempotencyKey(url, body) {
+  const key = `${url}|${typeof body === 'string' ? body : JSON.stringify(body || {})}`;
+  if (!pendingIdempotencyKeys.has(key)) pendingIdempotencyKeys.set(key, `cl_${crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2)}`);
+  return pendingIdempotencyKeys.get(key);
+}
+function releaseIdempotencyKey(url, body) {
+  pendingIdempotencyKeys.delete(`${url}|${typeof body === 'string' ? body : JSON.stringify(body || {})}`);
 }
 
 function getClientId() {
@@ -10020,11 +10032,13 @@ const Auth = (() => {
   }
 
   async function request(path, payload) {
+    const body = JSON.stringify(payload);
     const response = await fetch(path, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin', body: JSON.stringify(payload)
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Idempotency-Key': requestIdempotencyKey(path, body) },
+      credentials: 'same-origin', body
     });
     const data = await response.json().catch(() => ({}));
+    releaseIdempotencyKey(path, body);
     if (!response.ok) throw new Error(data.error || 'Authentication request failed.');
     return data;
   }
@@ -16442,8 +16456,11 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         headers: { 'Content-Type': 'application/json' },
       };
       if (body) opts.body = JSON.stringify(body);
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) opts.headers['X-Idempotency-Key'] = requestIdempotencyKey(url, opts.body || '');
       const res = await fetch(url, opts);
-      return await res.json();
+      const data = await res.json();
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) releaseIdempotencyKey(url, opts.body || '');
+      return data;
     } catch (e) {
       return { status: 'error', error: '// Connection error — retrying...' };
     }
