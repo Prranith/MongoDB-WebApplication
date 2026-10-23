@@ -48,6 +48,22 @@ class TestServices(unittest.TestCase):
     def test_java_entry_class_does_not_fallback_to_main(self):
         self.assertEqual(CompilerService._java_entry_class("System.out.println(1);"), "")
 
+    def test_java_playground_rejects_public_class_filename_mismatch(self):
+        result = CompilerService.run_local_code(
+            "java", "public class Test { public static void main(String[] args) {} }",
+            filename="solution.java", strict_java_filename=True,
+        )
+        self.assertNotEqual(result["code"], 0)
+        self.assertIn("filename/class mismatch", result["stderr"])
+
+    def test_java_playground_uses_submitted_filename(self):
+        result = CompilerService.run_local_code(
+            "java", "public class Solution { public static void main(String[] args) { System.out.print(\"OK\"); } }",
+            filename="Solution.java", strict_java_filename=True,
+        )
+        self.assertEqual(result["code"], 0)
+        self.assertEqual(result["stdout"], "OK")
+
     def test_extract_sub_metrics(self):
         subs = {
             "q1": '{"score": 10, "submittedAt": 1000}',

@@ -196,7 +196,22 @@ class CompilerService:
                             stderr=f"Java filename/class mismatch: public class {public_declaration.group(1)} must be saved as {public_declaration.group(1)}.java, or change the public class to {file_stem}.",
                             code=1,
                         )
-                    entry_class = public_declaration.group(1) if public_declaration else file_stem
+                    if public_declaration:
+                        entry_class = public_declaration.group(1)
+                    else:
+                        # Do not assume the filename is the class name. That
+                        # would turn a clear source error into a confusing
+                        # runtime failure (and historically caused Main.java
+                        # style rewrites). Require the runnable class to match
+                        # the submitted Java filename as well.
+                        entry_class = cls._java_entry_class(source, "")
+                        if not entry_class:
+                            return cls._result(stderr="No Java class declaration was found in the submitted source.", code=1)
+                        if entry_class != file_stem:
+                            return cls._result(
+                                stderr=f"Java filename/class mismatch: class {entry_class} must be saved as {entry_class}.java, or change the class to {file_stem}.",
+                                code=1,
+                            )
                     source_path = root / supplied_name
                 else:
                     entry_class = cls._java_entry_class(source, filename)

@@ -220,6 +220,17 @@ def api_sandbox_run():
         code_val = int(res.get("code", 0))
     except (ValueError, TypeError):
         code_val = 0
+
+    # Filename validation is a client error, not a successful execution with
+    # compiler output. This is intentionally limited to the playground Java
+    # path; exam execution keeps its existing contract.
+    if language == "java" and code_val != 0 and "Java filename/class mismatch" in str(res.get("stderr", "")):
+        return _json_response({
+            "status": "error",
+            "error": res.get("stderr", ""),
+            "stderr": res.get("stderr", ""),
+            "code": code_val,
+        }, status=400)
         
     return _json_response({
         "status": "ok",
