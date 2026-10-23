@@ -12699,10 +12699,9 @@ const ClientExecution = (() => {
         });
         let sourceText = String(code || '');
         let sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
-        // Exam templates commonly provide public class Solution while the
-        // runner supplies the generic Main.java filename. Java requires a
-        // public top-level type to match its source filename, so derive the
-        // filename from the submitted public declaration before compiling.
+        // Preserve the submitted filename. Java requires a public top-level
+        // type to match it; never rewrite a playground file to Main.java or
+        // to the class detected in its source.
         const publicTypeMarker = 'public class ';
         const publicTypeStart = sourceText.indexOf(publicTypeMarker);
         if (publicTypeStart >= 0) {
@@ -12710,7 +12709,10 @@ const ClientExecution = (() => {
           let nameEnd = nameStart;
           while (nameEnd < sourceText.length && /[A-Za-z0-9_$]/.test(sourceText[nameEnd])) nameEnd += 1;
           const publicTypeName = sourceText.slice(nameStart, nameEnd);
-          if (publicTypeName) sourceName = publicTypeName + '.java';
+          const sourceStem = sourceName.replace(/\.java$/i, '');
+          if (publicTypeName && publicTypeName !== sourceStem) {
+            return { status: 'ok', code: 1, stdout: '', stderr: `Java filename/class mismatch: public class ${publicTypeName} must be saved as ${publicTypeName}.java.`, runtime: 'teavm-javac' };
+          }
         }
         // Keep this detection regex-free: this file is embedded inside a
         // worker template, where regex escaping can corrupt the worker code.
@@ -13914,6 +13916,27 @@ async function runPlaygroundCode(language, code, stdin) {
     return;
   }
   const statEl = document.getElementById('console-status');
+
+  // Playground Java follows the real Java source-file rule even when the
+  // browser runtime is available. Never rename the source to Main.java (or
+  // to the detected class); report the mismatch before starting execution.
+  if (language === 'java') {
+    const submittedFile = String(S.activeFile || '').split(/[\\/]/).pop();
+    const fileStem = submittedFile.replace(/\.java$/i, '');
+    const publicClass = String(code || '').match(/\bpublic\s+(?:final\s+|abstract\s+)?class\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
+    if (!submittedFile || !/^\w[\w$]*\.java$/i.test(submittedFile)) {
+      const message = 'Java playground code must be run from a .java file.';
+      logOutput(`<span class="out-error">[error] ${message}</span>`);
+      if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ ${message}</span>`;
+      return;
+    }
+    if (publicClass && publicClass[1] !== fileStem) {
+      const message = `Java filename/class mismatch: public class ${publicClass[1]} must be saved as ${publicClass[1]}.java.`;
+      logOutput(`<span class="out-error">[error] ${message}</span>`);
+      if (statEl) statEl.innerHTML = `<span style="color:var(--red)">✗ ${message}</span>`;
+      return;
+    }
+  }
 
   const timeEl = document.getElementById('console-time');
   const countEl = document.getElementById('console-count');
