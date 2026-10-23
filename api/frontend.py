@@ -12685,7 +12685,7 @@ const ClientExecution = (() => {
         });
         let sourceText = String(code || '');
         let sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
-        // Exam templates commonly provide `public class Solution` while the
+        // Exam templates commonly provide public class Solution while the
         // runner supplies the generic Main.java filename. Java requires a
         // public top-level type to match its source filename, so derive the
         // filename from the submitted public declaration before compiling.
