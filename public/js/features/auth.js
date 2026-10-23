@@ -128,7 +128,7 @@ const Auth = (() => {
   }
   function setEditMode(enabled) {
     document.querySelectorAll('#profile-name,#profile-phone,#profile-college,#profile-bio,.profile-link-label,.profile-link-url').forEach(field => { field.disabled = !enabled; });
-    const actions = document.querySelector('.profile-actions'); if (actions) actions.hidden = !enabled;
+    const actions = document.querySelector('.profile-actions'); if (actions) actions.hidden = false;
     const edit = $('profile-edit-button'); if (edit) edit.hidden = enabled;
     document.querySelectorAll('.profile-photo-button,.profile-photo-remove,.profile-photo-edit,.profile-camera-button,.profile-cover-button,.profile-add-link').forEach(button => { button.disabled = !enabled; });
     if (enabled) document.querySelector('.profile-personal-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });

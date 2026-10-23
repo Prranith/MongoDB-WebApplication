@@ -8651,7 +8651,7 @@ li.CodeMirror-hint-active {
 .profile-card { min-height:0; padding:38px 52px 34px; }
 .profile-card { display:block; width:min(1180px,calc(100% - 64px)); min-height:0; margin:32px auto; padding:0; overflow:hidden; border:1px solid rgba(85,205,126,.25); border-radius:20px; background:#101a14; box-shadow:0 30px 100px rgba(0,0,0,.55); }
 .profile-modal { align-items:stretch; overflow-y:auto; background:linear-gradient(135deg,#07140c 0%,#0a1710 48%,#071117 100%); }
-.profile-modal { overscroll-behavior:contain; }
+.profile-modal { overscroll-behavior:contain; align-items:flex-start; }
 .profile-card { width:100%; min-height:100vh; margin:0; overflow:visible; border:0; border-radius:0; box-shadow:none; background:transparent; }
 .profile-topbar { display:flex; align-items:flex-start; justify-content:space-between; padding:28px 40px 22px; border-bottom:1px solid #25382a; }.profile-eyebrow { display:block; color:#72a083; font-size:10px; font-weight:700; letter-spacing:.14em; }.profile-topbar h2 { margin:7px 0 0; color:#eef9f0; font-size:24px; letter-spacing:-.03em; }.profile-close { border:0; background:none; color:#8da296; font-size:27px; line-height:1; cursor:pointer; }.profile-close:hover { color:#effff3; }
 .profile-identity { display:flex; align-items:center; gap:20px; padding:28px 40px; background:linear-gradient(110deg,rgba(20,83,45,.36),rgba(12,27,18,.08)); }.profile-identity .profile-hero-avatar { flex:0 0 88px; width:88px; height:88px; }.profile-identity-copy { flex:1; }.profile-identity-name { color:#effff2; font-size:23px; font-weight:700; }.profile-identity-email { margin-top:4px; color:#9cb2a2; font-size:13px; }.profile-identity-status { display:flex; align-items:center; gap:6px; margin-top:10px; color:#86ba94; font-size:11px; }.profile-identity-status span { width:7px; height:7px; border-radius:50%; background:#63df8b; box-shadow:0 0 0 3px rgba(99,223,139,.12); }.profile-edit-chip { padding:8px 13px; border:1px solid #34513c; border-radius:8px; background:#17251b; color:#b9d9c0; cursor:pointer; }.profile-edit-chip:hover { border-color:#62b77a; color:#effff2; }
@@ -8705,6 +8705,15 @@ li.CodeMirror-hint-active {
 .profile-rail { display:none !important; }
 .profile-main { width:100%; }
 .profile-main { min-height:0; }
+.profile-identity-copy,.profile-cover-button,.profile-photo-edit,.profile-camera-button { display:none !important; }
+.profile-identity { min-height:180px; justify-content:center; background-color:#0d2015; }
+.profile-identity .profile-hero-avatar { flex:0 0 124px; width:124px; height:124px; }
+.profile-content { min-height:0; padding-bottom:110px; }
+.profile-modal .profile-section { overflow:visible; }
+.profile-actions { position:sticky; bottom:16px; z-index:10; display:flex !important; min-height:58px; box-sizing:border-box; padding:10px 12px; border:1px solid #294838; border-radius:10px; background:rgba(8,20,13,.96); box-shadow:0 -10px 24px rgba(0,0,0,.28); }
+.profile-tab-panel { max-height:calc(100vh - 290px); overflow-y:auto !important; overscroll-behavior:contain; }
+.profile-personal-section,.profile-social-section { scroll-margin-top:20px; }
+.profile-main { min-height:0; }
 .profile-section[hidden],.profile-tab-panel[hidden] { display:none !important; }
 .profile-tab-panel { animation:profile-panel-in .16s ease-out; }
 @keyframes profile-panel-in { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
@@ -8722,6 +8731,11 @@ li.CodeMirror-hint-active {
 .profile-topbar { padding:22px 32px 18px; }
 .profile-identity { margin:18px 32px 0; border:1px solid #294838; border-radius:13px; background:#0d2015; }
 .profile-content { padding:22px 32px 32px; }
+.profile-modal .profile-content { overflow:visible; }
+.profile-modal .profile-personal-section,.profile-modal .profile-social-section { max-height:calc(100vh - 300px); overflow-y:auto; overscroll-behavior:contain; scroll-margin-top:18px; }
+.profile-identity-copy,.profile-cover-button,.profile-photo-edit,.profile-camera-button { display:none !important; }
+.profile-identity { min-height:180px; justify-content:center; }
+.profile-actions[hidden] { display:flex !important; }
 .profile-topbar-actions { display:flex; align-items:center; gap:14px; }
 .profile-edit-button { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border:1px solid #356245; border-radius:7px; background:#102319; color:#b9e9c5; cursor:pointer; font-size:11px; }
 .profile-edit-button:hover { border-color:#62e58d; background:#173622; color:#fff; }
@@ -9860,7 +9874,7 @@ const Auth = (() => {
   }
   function setEditMode(enabled) {
     document.querySelectorAll('#profile-name,#profile-phone,#profile-college,#profile-bio,.profile-link-label,.profile-link-url').forEach(field => { field.disabled = !enabled; });
-    const actions = document.querySelector('.profile-actions'); if (actions) actions.hidden = !enabled;
+    const actions = document.querySelector('.profile-actions'); if (actions) actions.hidden = false;
     const edit = $('profile-edit-button'); if (edit) edit.hidden = enabled;
     document.querySelectorAll('.profile-photo-button,.profile-photo-remove,.profile-photo-edit,.profile-camera-button,.profile-cover-button,.profile-add-link').forEach(button => { button.disabled = !enabled; });
     if (enabled) document.querySelector('.profile-personal-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
