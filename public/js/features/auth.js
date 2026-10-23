@@ -104,7 +104,7 @@ const Auth = (() => {
     $('profile-linkedin').value = state.user.linkedin || '';
     $('profile-bio').value = state.user.bio || '';
     $('profile-phone').value = state.user.phone || '';
-    $('profile-avatar').src = state.user.avatar || 'assets/branding/codeleaf-emblem.png?v=20261019-auth';
+    $('profile-avatar').src = state.user.avatar || '/assets/branding/codeleaf-emblem.png?v=20261019-auth';
     $('profile-avatar-data').value = state.user.avatar || '';
     $('profile-links').innerHTML = '';
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
@@ -121,7 +121,7 @@ const Auth = (() => {
   function chooseAvatar(event) { const file = event.target.files?.[0]; if (!file || !file.type.startsWith('image/')) return; if (file.size > 1000000) return setMessage('Profile photo must be smaller than 1 MB.', true); const reader = new FileReader(); reader.onload = () => { $('profile-avatar').src = reader.result; $('profile-avatar-data').value = reader.result; }; reader.readAsDataURL(file); }
   async function searchProfiles() {
     const query = $('profile-search-query').value.trim(); const target = $('profile-search-results');
-    if (query.length < 2) { target.textContent = 'Type at least 2 characters.'; return; }
+    if (query.length < 1) { target.innerHTML = '<div class="profile-search-empty">Start typing to discover CodeLeaf members.</div>'; return; }
     target.textContent = 'Searching…';
     const response = await fetch(`/api/auth/search?q=${encodeURIComponent(query)}`, { credentials: 'same-origin' });
     const data = await response.json().catch(() => ({}));
@@ -239,6 +239,7 @@ const Auth = (() => {
       window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
       const accountPopover = $('auth-profile-popover');
       const accountButton = $('auth-account-button');
+      $('profile-search-query')?.addEventListener('input', (() => { let timer; return () => { clearTimeout(timer); timer = setTimeout(searchProfiles, 220); }; })());
       accountButton?.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); accountAction(); });
       document.addEventListener('click', event => {
         const wrap = $('auth-account-wrap');

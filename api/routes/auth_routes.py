@@ -91,7 +91,7 @@ def auth_search():
         return jsonify({"error": "Authentication required", "code": "AUTH_REQUIRED"}), 401
     from services.shared.redis_client import get_auth_db
     query = str(request.args.get("q") or "").strip()[:80]
-    if len(query) < 2:
+    if len(query) < 1:
         return jsonify({"users": []})
     db = get_auth_db()
     if db is None:

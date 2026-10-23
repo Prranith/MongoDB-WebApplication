@@ -8643,6 +8643,11 @@ li.CodeMirror-hint-active {
 .workspace-ai-floating-launch[aria-expanded="true"] { background:transparent; }
 .workspace-ai-floating-logo { width:42px; height:42px; object-fit:contain; filter:none; pointer-events:none; }
 @media (max-width:600px) { .workspace-ai-floating-launch { right:12px; bottom:12px; } }
+.profile-modal { place-items:stretch; overflow:auto; padding:0; background:radial-gradient(circle at 15% 10%,rgba(20,103,64,.25),transparent 32%),radial-gradient(circle at 90% 80%,rgba(24,74,105,.18),transparent 35%),#08100c; }
+.profile-card { width:min(1080px,calc(100% - 56px)); min-height:calc(100vh - 56px); margin:28px auto; padding:42px 54px; border-radius:24px; background:linear-gradient(145deg,rgba(23,39,29,.98),rgba(10,20,15,.98)); }
+.profile-hero { gap:18px; margin-bottom:32px; padding-bottom:24px; border-bottom:1px solid rgba(126,166,137,.2); }.profile-hero h2 { font-size:28px; }.profile-hero-avatar { width:82px; height:82px; }.profile-hero-avatar svg { width:35px; }.profile-card > .auth-field,.profile-card > .profile-links-heading,.profile-card > #profile-links,.profile-card > .profile-actions { max-width:680px; }
+.profile-search { position:absolute; top:160px; right:54px; width:300px; margin:0; padding:20px; border:1px solid rgba(126,166,137,.22); border-radius:14px; background:rgba(8,17,12,.7); }.profile-search-title { font-size:15px; margin-bottom:12px; }.profile-search-input { flex-direction:column; }.profile-search-input button { min-height:34px; }.profile-search-empty { color:#819786; font-size:12px; line-height:1.5; }.profile-search-result { cursor:pointer; transition:border-color .15s,background .15s; }.profile-search-result:hover { border-color:#3f9e63; background:rgba(22,72,42,.25); }
+@media (max-width:850px) { .profile-card { width:100%; min-height:100vh; margin:0; border-radius:0; padding:28px 24px 44px; }.profile-search { position:static; width:auto; margin-top:28px; }.profile-hero h2 { font-size:23px; } }
 
 </style>
 </head>
@@ -9749,7 +9754,7 @@ const Auth = (() => {
     $('profile-linkedin').value = state.user.linkedin || '';
     $('profile-bio').value = state.user.bio || '';
     $('profile-phone').value = state.user.phone || '';
-    $('profile-avatar').src = state.user.avatar || 'assets/branding/codeleaf-emblem.png?v=20261019-auth';
+    $('profile-avatar').src = state.user.avatar || '/assets/branding/codeleaf-emblem.png?v=20261019-auth';
     $('profile-avatar-data').value = state.user.avatar || '';
     $('profile-links').innerHTML = '';
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
@@ -9766,7 +9771,7 @@ const Auth = (() => {
   function chooseAvatar(event) { const file = event.target.files?.[0]; if (!file || !file.type.startsWith('image/')) return; if (file.size > 1000000) return setMessage('Profile photo must be smaller than 1 MB.', true); const reader = new FileReader(); reader.onload = () => { $('profile-avatar').src = reader.result; $('profile-avatar-data').value = reader.result; }; reader.readAsDataURL(file); }
   async function searchProfiles() {
     const query = $('profile-search-query').value.trim(); const target = $('profile-search-results');
-    if (query.length < 2) { target.textContent = 'Type at least 2 characters.'; return; }
+    if (query.length < 1) { target.innerHTML = '<div class="profile-search-empty">Start typing to discover CodeLeaf members.</div>'; return; }
     target.textContent = 'Searching…';
     const response = await fetch(`/api/auth/search?q=${encodeURIComponent(query)}`, { credentials: 'same-origin' });
     const data = await response.json().catch(() => ({}));
@@ -9884,6 +9889,7 @@ const Auth = (() => {
       window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
       const accountPopover = $('auth-profile-popover');
       const accountButton = $('auth-account-button');
+      $('profile-search-query')?.addEventListener('input', (() => { let timer; return () => { clearTimeout(timer); timer = setTimeout(searchProfiles, 220); }; })());
       accountButton?.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); accountAction(); });
       document.addEventListener('click', event => {
         const wrap = $('auth-account-wrap');
