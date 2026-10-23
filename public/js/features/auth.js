@@ -220,13 +220,16 @@ const Auth = (() => {
   }
 
   function accountAction() {
-    if (!state.user) return open();
-    openProfile();
+    if (state.user) return openProfile();
+    fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' })
+      .then(response => response.json())
+      .then(data => { state.user = data.user || null; renderAccount(); state.user ? openProfile() : open(); })
+      .catch(() => open());
   }
 
   async function init() {
     try {
-      const response = await fetch('/api/auth/me', { credentials: 'same-origin' });
+      const response = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
       const data = await response.json();
       state.user = data.user || null;
       state.required = !!data.required;

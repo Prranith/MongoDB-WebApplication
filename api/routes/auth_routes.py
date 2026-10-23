@@ -25,7 +25,10 @@ def _rate_limit(action, email=""):
 
 @auth_bp.get("/api/auth/me")
 def auth_me():
-    return jsonify({"authenticated": bool(current_user()), "required": AUTH_REQUIRED, "user": current_user()})
+    user = current_user()
+    response = jsonify({"authenticated": bool(user), "required": AUTH_REQUIRED, "user": user})
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 
 @auth_bp.post("/api/auth/register")

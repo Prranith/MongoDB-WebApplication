@@ -8725,7 +8725,7 @@ li.CodeMirror-hint-active {
       Inspector
     </button>
     <div class="auth-account-wrap" id="auth-account-wrap" hidden>
-      <button class="auth-account-button" id="auth-account-button" type="button" onclick="Auth.accountAction()" aria-label="Open profile menu" aria-expanded="false">
+      <button class="auth-account-button" id="auth-account-button" type="button" onclick="Auth.accountAction()" aria-label="Open profile" aria-expanded="false">
         <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 12a4.2 4.2 0 1 0 0-8.4A4.2 4.2 0 0 0 12 12Zm0 2.1c-4.05 0-7.35 2.1-7.35 4.7 0 .66.54 1.2 1.2 1.2h12.3c.66 0 1.2-.54 1.2-1.2 0-2.6-3.3-4.7-7.35-4.7Z"/></svg></span>
       </button>
       <div class="auth-profile-popover" id="auth-profile-popover" hidden>
@@ -9864,13 +9864,16 @@ const Auth = (() => {
   }
 
   function accountAction() {
-    if (!state.user) return open();
-    openProfile();
+    if (state.user) return openProfile();
+    fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' })
+      .then(response => response.json())
+      .then(data => { state.user = data.user || null; renderAccount(); state.user ? openProfile() : open(); })
+      .catch(() => open());
   }
 
   async function init() {
     try {
-      const response = await fetch('/api/auth/me', { credentials: 'same-origin' });
+      const response = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
       const data = await response.json();
       state.user = data.user || null;
       state.required = !!data.required;
