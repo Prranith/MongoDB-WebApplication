@@ -21,6 +21,37 @@
 - **Database Practice Sandboxes**: Run MongoDB queries and SQL against datasets with schema inspection and formatted output.
 - **Excel Results Export**: Mentors can export the leaderboard to an `.xlsx` sheet for official records.
 
+### Execution queues
+
+Remote code execution and server-side MongoDB/SQL execution can be routed
+through CloudAMQP. The API keeps the existing response format, while a
+separate worker consumes `code-execution`, `mongodb-execution`, and
+`sql-execution` jobs. Browser on-device execution does not use a queue.
+
+Configure the API and worker with:
+
+```text
+CLOUDAMQP_URL=amqps://user:password@host/vhost
+EXECUTION_QUEUE_ENABLED=1
+EXECUTION_QUEUE_WAIT_SECONDS=25
+EXECUTION_WORKER_PREFETCH=1
+```
+
+With `CLOUDAMQP_URL` present, queue mode is enabled by default. Keep the API
+deployment and worker on the same MongoDB database: the broker carries only a
+small job envelope while source code, queries, and results stay in MongoDB.
+Start the worker from the repository root with:
+
+```bash
+python -m services.execution.worker
+```
+
+The worker must run as a long-lived service outside Vercel. The included
+`Dockerfile.worker` installs GCC, G++, OpenJDK, and Python so C, C++, Java,
+and Python execute locally inside the worker. No Paiza or Piston API is used.
+It stores job payloads and results in the existing MongoDB database and
+acknowledges a RabbitMQ message only after the result has been persisted.
+
 ---
 
 ## 🏗 System Architecture

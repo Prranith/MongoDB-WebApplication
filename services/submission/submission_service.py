@@ -304,14 +304,24 @@ class SubmissionService:
             dataset_ids = body.get("datasetIds", []) or ([body.get("datasetId")] if body.get("datasetId") else [])
             if q_type == "sql":
                 from services.sql.sql_service import SqlService
-                student_result = SqlService.execute_room_query(room_id, dataset_ids, query, limit=100000) if query and dataset_ids else {"columns": [], "rows": []}
+                from services.execution.job_queue import execute as execute_job
+                student_result = execute_job(
+                    "exam_sql",
+                    {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": 100000},
+                    lambda: SqlService.execute_room_query(room_id, dataset_ids, query, limit=100000),
+                ) if query and dataset_ids else {"columns": [], "rows": []}
                 try:
                     frozen_result = json.loads(frozen_json) if frozen_json else {}
                 except Exception:
                     frozen_result = {}
                 correct = cls.grade_sql_answer(student_result, frozen_result).get("match", False)
             else:
-                student_result = cls.execute_room_query(room_id, dataset_ids, query, max_results=100000) if query and dataset_ids else {"results": []}
+                from services.execution.job_queue import execute as execute_job
+                student_result = execute_job(
+                    "exam_mongodb",
+                    {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": 100000},
+                    lambda: cls.execute_room_query(room_id, dataset_ids, query, max_results=100000),
+                ) if query and dataset_ids else {"results": []}
                 student_output = student_result.get("results", []) if student_result.get("status") == "ok" else []
                 try:
                     frozen_answer = json.loads(frozen_json) if frozen_json else []
@@ -432,7 +442,7 @@ class SubmissionService:
 
             passed_count = 0
             total_count = len(test_cases)
-            execution_origin = "local" if local_results_valid else "remote-fallback"
+            execution_origin = "local" if local_results_valid else "worker"
             for case_index, tc in enumerate(test_cases):
                 tc_input = tc.get("input", "")
                 tc_expected = tc.get("expectedOutput", "")
@@ -447,7 +457,13 @@ class SubmissionService:
                 else:
                     # Emergency path only: browser runtime unavailable or
                     # failed to produce a complete transcript.
-                    run_res = CompilerService.run_piston_code(language, code, tc_input)
+                    from services.execution.job_queue import execute as execute_job
+                    queued = execute_job(
+                        "exam_code",
+                        {"roomId": room_id, "questionId": None, "language": language, "code": code, "stdins": tc_input},
+                        lambda: {"results": [CompilerService.run_piston_code(language, code, tc_input)]},
+                    )
+                    run_res = (queued.get("results") or [{}])[0]
                 actual_out = run_res.get("stdout", "")
                 if run_res.get("stderr"):
                     actual_out += "\n" + run_res.get("stderr")
@@ -489,7 +505,12 @@ class SubmissionService:
             dataset_ids = body.get("datasetIds", []) or ([body.get("datasetId")] if body.get("datasetId") else [])
             student_result = body.get("studentResult") or {"columns": [], "rows": []}
             if query and dataset_ids:
-                student_result = SqlService.execute_room_query(room_id, dataset_ids, query, limit=10000)
+                from services.execution.job_queue import execute as execute_job
+                student_result = execute_job(
+                    "exam_sql",
+                    {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": 10000},
+                    lambda: SqlService.execute_room_query(room_id, dataset_ids, query, limit=10000),
+                )
             frozen_result = {}
             if frozen_json:
                 try: frozen_result = json.loads(frozen_json)
@@ -507,7 +528,12 @@ class SubmissionService:
 
             # Run student query server-side for grading
             if query and dataset_ids:
-                result = cls.execute_room_query(room_id, dataset_ids, query, max_results=100000)
+                from services.execution.job_queue import execute as execute_job
+                result = execute_job(
+                    "exam_mongodb",
+                    {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": 100000},
+                    lambda: cls.execute_room_query(room_id, dataset_ids, query, max_results=100000),
+                )
                 if result.get("status") == "ok":
                     student_output = result.get("results", [])
 
@@ -763,7 +789,7 @@ class SubmissionService:
 
     @staticmethod
     def verify_custom_input(room_id: str, question_id: str, language: str, code: str, stdin: str) -> dict:
-        """Run student and reference programs remotely for custom input only."""
+        """Run student and reference programs in the execution worker."""
         questions_json = redis_one(["HGET", f"room:{room_id}", "questions"])
         if not questions_json:
             raise KeyError("Room not found")

@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from services.sql.sql_service import SqlService
+from services.execution.job_queue import execute as execute_job
 
 sql_bp = Blueprint("sql_bp", __name__)
 
@@ -7,7 +8,15 @@ sql_bp = Blueprint("sql_bp", __name__)
 @sql_bp.route("/api/sql/run", methods=["POST"])
 def run_sql():
     body = request.get_json(silent=True) or {}
-    return jsonify(SqlService.execute_query(body.get("query", ""), body.get("limit", 500), body.get("tables")))
+    query = body.get("query", "")
+    limit = body.get("limit", 500)
+    tables = body.get("tables")
+    result = execute_job(
+        "playground_sql",
+        {"query": query, "limit": limit, "tables": tables},
+        lambda: SqlService.execute_query(query, limit, tables),
+    )
+    return jsonify(result)
 
 
 @sql_bp.route("/api/sql/tables", methods=["GET"])

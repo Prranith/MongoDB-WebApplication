@@ -16,6 +16,7 @@ from utils.logger import get_logger, bind_component
 from services.shared.cache import get_cache_manager, cache_key_for_query, sha_signature
 from services.shared.pagination import sanitize_offset_pagination, MAX_OFFSET_PAGE_SIZE
 from services.shared.idempotency import get_idempotency_key_from_request, serialize_idempotency_body, IdempotencyHandler, MemoryIdempotencyStore
+from services.execution.job_queue import execute as execute_job
 
 log = bind_component(get_logger(__name__), "database_api")
 
@@ -115,14 +116,25 @@ def api_query():
     # Track analytics
     analytics_tracker.record_query_executed()
 
-    if custom_collections:
-        temp_db = _create_temp_db(raw_query, custom_collections)
-        result = web_execute(raw_query, max_results=limit, db=temp_db)
-    else:
-        result = web_execute(raw_query, max_results=limit)
-
-    payload = result.to_dict()
-    return _json_response(payload)
+    job_payload = {
+        "query": raw_query,
+        "limit": limit,
+        "custom_collections": custom_collections,
+    }
+    result = execute_job(
+        "playground_mongodb",
+        job_payload,
+        lambda: (
+            web_execute(
+                raw_query,
+                max_results=limit,
+                db=_create_temp_db(raw_query, custom_collections),
+            ) if custom_collections else web_execute(raw_query, max_results=limit)
+        ).to_dict(),
+    )
+    if result.get("status") == "error" and result.get("code") == "EXECUTION_QUEUE_TIMEOUT":
+        return _json_response(result, status=503)
+    return _json_response(result)
 
 
 # ── API: Schema ───────────────────────────────────────────────────────────────
@@ -188,7 +200,7 @@ def api_snippets():
 
 @database_bp.route("/api/sandbox/run", methods=["POST"])
 def api_sandbox_run():
-    """Execute arbitrary code using Paiza API for playground mode."""
+    """Execute playground code through the configured execution worker."""
     from services.compiler.compiler_service import CompilerService
     run_piston_code = CompilerService.run_piston_code
     body = request.get_json(force=True, silent=True) or {}
@@ -197,7 +209,11 @@ def api_sandbox_run():
     stdin = body.get("stdin", "")
     filename = body.get("filename", "")
     
-    res = run_piston_code(language, code, stdin, filename)
+    res = execute_job(
+        "playground_code",
+        {"language": language, "code": code, "stdin": stdin, "filename": filename},
+        lambda: run_piston_code(language, code, stdin, filename),
+    )
     try:
         code_val = int(res.get("code", 0))
     except (ValueError, TypeError):

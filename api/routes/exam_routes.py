@@ -20,12 +20,13 @@ from services.compiler.compiler_service import CompilerService
 from services.sql.sql_service import SqlService
 from services.exam.media_service import QuestionMediaService
 from services.shared.redis_client import redis_one, get_room_participants
+from services.execution.job_queue import execute as execute_job
 from utils.logger import get_logger, bind_component
 
 exam_bp = Blueprint("exam_bp", __name__)
 log = bind_component(get_logger(__name__), "exam_api")
 
-# Expose run_piston_code helper for backwards compatibility
+# Expose the worker execution helper for backwards compatibility.
 run_piston_code = CompilerService.run_piston_code
 
 
@@ -467,9 +468,17 @@ def api_exam_run_query(room_id: str):
         return _json_response({"status": "error", "error": "datasetIds and query are required"}, status=400)
 
     if body.get("queryType") == "sql" or body.get("type") == "sql":
-        result = SqlService.execute_room_query(room_id, dataset_ids, query, limit=limit)
+        result = execute_job(
+            "exam_sql",
+            {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": limit},
+            lambda: SqlService.execute_room_query(room_id, dataset_ids, query, limit=limit),
+        )
     else:
-        result = SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=limit)
+        result = execute_job(
+            "exam_mongodb",
+            {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": limit},
+            lambda: SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=limit),
+        )
     return _json_response(result)
 
 
@@ -490,12 +499,23 @@ def api_exam_freeze_answer(room_id: str):
 
     try:
         if body.get("queryType") == "sql" or body.get("type") == "sql":
-            result = SqlService.execute_room_query(room_id, dataset_ids, query, limit=10000)
+            result = execute_job(
+                "exam_sql",
+                {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": 10000},
+                lambda: SqlService.execute_room_query(room_id, dataset_ids, query, limit=10000),
+            )
             if result.get("status") != "ok":
                 raise ValueError(result.get("error", "SQL execution failed"))
             res = SubmissionService.freeze_answer(room_id, mentor_id, question_id, dataset_ids, query, query_type="sql", result=result)
         else:
-            res = SubmissionService.freeze_answer(room_id, mentor_id, question_id, dataset_ids, query)
+            result = execute_job(
+                "exam_mongodb",
+                {"roomId": room_id, "datasetIds": dataset_ids, "query": query, "limit": 100000},
+                lambda: SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=100000),
+            )
+            if result.get("status") != "ok":
+                raise ValueError(result.get("error", "MongoDB execution failed"))
+            res = SubmissionService.freeze_answer(room_id, mentor_id, question_id, dataset_ids, query, result=result)
         return _json_response({
             "status": "ok",
             "questionId": res["questionId"],
@@ -801,7 +821,7 @@ def api_exam_get_paper(room_id: str):
 
 @exam_bp.route("/api/exam/room/<room_id>/run", methods=["POST"])
 def api_exam_run_code(room_id: str):
-    """Run code using Piston sandbox."""
+    """Run code through the CloudAMQP execution worker."""
     log.info("run_code_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
         body = request.get_json(force=True, silent=True) or {}
@@ -820,15 +840,29 @@ def api_exam_run_code(room_id: str):
             return _json_response({"status": "error", "error": "Too many execution inputs"}, status=400)
 
         if isinstance(stdins, list):
-            results = SubmissionService.run_piston_code(room_id, question_id, language, code, stdins)
+            queued_result = execute_job(
+                "exam_code",
+                {"roomId": room_id, "questionId": question_id, "language": language, "code": code, "stdins": stdins},
+                lambda: {"results": SubmissionService.run_piston_code(room_id, question_id, language, code, stdins)},
+            )
+            if queued_result.get("status") == "error":
+                return _json_response(queued_result, status=503)
+            results = queued_result.get("results", [])
             return _json_response({
                 "status": "ok",
                 "results": results
             })
         else:
             stdin = body.get("stdin", "")
-            results = SubmissionService.run_piston_code(room_id, question_id, language, code, stdin)
-            res = results[0]
+            queued_result = execute_job(
+                "exam_code",
+                {"roomId": room_id, "questionId": question_id, "language": language, "code": code, "stdins": stdin},
+                lambda: {"results": SubmissionService.run_piston_code(room_id, question_id, language, code, stdin)},
+            )
+            if queued_result.get("status") == "error":
+                return _json_response(queued_result, status=503)
+            results = queued_result.get("results", [])
+            res = results[0] if results else {"stdout": "", "stderr": "Execution returned no result", "code": 1, "output": ""}
             return _json_response({
                 "status": "ok",
                 "stdout": res["stdout"],
@@ -894,13 +928,15 @@ def api_exam_custom_verify(room_id: str, question_id: str):
         _assert_student_account(room_id, student_id)
         if RoomService.get_room_status(room_id).get("roomStatus") != "live":
             return _json_response({"status": "error", "error": "Exam is not live"}, status=403)
-        result = SubmissionService.verify_custom_input(
-            room_id,
-            question_id,
-            str(body.get("language") or "python"),
-            str(body.get("code") or ""),
-            stdin,
+        language = str(body.get("language") or "python")
+        code = str(body.get("code") or "")
+        result = execute_job(
+            "exam_custom_verify",
+            {"roomId": room_id, "questionId": question_id, "language": language, "code": code, "stdin": stdin},
+            lambda: SubmissionService.verify_custom_input(room_id, question_id, language, code, stdin),
         )
+        if result.get("status") == "error" and result.get("code"):
+            return _json_response(result, status=503)
         return _json_response({
             "status": "ok",
             "results": [result["student"]],
@@ -929,7 +965,14 @@ def api_exam_generate_test_cases(room_id: str):
         inputs = body.get("inputs", [])
         template_type = body.get("templateType", "scratch")
         driver_code = body.get("driverCode", "") or ""
-        outputs = SubmissionService.generate_test_cases(language, code, inputs, template_type, driver_code)
+        queued_result = execute_job(
+            "exam_generate_cases",
+            {"language": language, "code": code, "inputs": inputs, "templateType": template_type, "driverCode": driver_code},
+            lambda: {"outputs": SubmissionService.generate_test_cases(language, code, inputs, template_type, driver_code)},
+        )
+        if queued_result.get("status") == "error":
+            return _json_response(queued_result, status=503)
+        outputs = queued_result.get("outputs", [])
         return _json_response({
             "status": "ok",
             "outputs": outputs
