@@ -8726,7 +8726,7 @@ li.CodeMirror-hint-active {
       Inspector
     </button>
     <div class="auth-account-wrap" id="auth-account-wrap" hidden>
-      <button class="auth-account-button" id="auth-account-button" type="button" onclick="Auth.accountAction()" aria-label="Open profile" aria-expanded="false">
+      <button class="auth-account-button" id="auth-account-button" type="button" onclick="window.__openCodeLeafProfile && window.__openCodeLeafProfile(event)" aria-label="Open profile" aria-expanded="false">
         <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 12a4.2 4.2 0 1 0 0-8.4A4.2 4.2 0 0 0 12 12Zm0 2.1c-4.05 0-7.35 2.1-7.35 4.7 0 .66.54 1.2 1.2 1.2h12.3c.66 0 1.2-.54 1.2-1.2 0-2.6-3.3-4.7-7.35-4.7Z"/></svg></span>
       </button>
       <div class="auth-profile-popover" id="auth-profile-popover" hidden>
@@ -9904,6 +9904,19 @@ const Auth = (() => {
     get user() { return state.user; },
   };
 })();
+
+// Keep the profile affordance functional even while authentication state is
+// still being restored after a refresh. Auth data is populated independently.
+window.__openCodeLeafProfile = event => {
+  event?.preventDefault();
+  event?.stopPropagation();
+  const modal = document.getElementById('profile-modal');
+  if (!modal) return;
+  modal.hidden = false;
+  modal.style.display = 'grid';
+  document.body.classList.add('profile-open');
+  window.Auth?.openProfile?.();
+};
 
 window.Auth = Auth;
 

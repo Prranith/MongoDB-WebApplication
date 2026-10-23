@@ -260,6 +260,19 @@ const Auth = (() => {
   };
 })();
 
+// Keep the profile affordance functional even while authentication state is
+// still being restored after a refresh. Auth data is populated independently.
+window.__openCodeLeafProfile = event => {
+  event?.preventDefault();
+  event?.stopPropagation();
+  const modal = document.getElementById('profile-modal');
+  if (!modal) return;
+  modal.hidden = false;
+  modal.style.display = 'grid';
+  document.body.classList.add('profile-open');
+  window.Auth?.openProfile?.();
+};
+
 window.Auth = Auth;
 
 document.addEventListener('DOMContentLoaded', () => Auth.init());
