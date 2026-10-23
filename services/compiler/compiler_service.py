@@ -193,6 +193,14 @@ class CompilerService:
                 "LANG": "C.UTF-8",
                 "LC_ALL": "C.UTF-8",
                 "HOME": str(root),
+                # GCC/G++ use TMP/TEMP/TMPDIR for intermediate files. Some
+                # Windows hosts inherit C:\\Windows as the temp directory,
+                # which causes permission errors when the worker compiles C.
+                # Keep all compiler intermediates inside this writable job
+                # directory instead.
+                "TMP": str(root),
+                "TEMP": str(root),
+                "TMPDIR": str(root),
             }
             try:
                 if compile_cmd:
