@@ -17,6 +17,17 @@ PUBLIC_DIR = ROOT / "public"
 
 static_bp = Blueprint("static_bp", __name__)
 
+@static_bp.route("/admin")
+def serve_admin():
+    """Serve the separate admin control-plane shell."""
+    return send_from_directory(str(PUBLIC_DIR), "admin.html")
+
+@static_bp.route("/admin/<path:path>")
+def serve_admin_asset(path):
+    if path.startswith("api/"):
+        return jsonify({"error": "Not found"}), 404
+    return send_from_directory(str(PUBLIC_DIR), path)
+
 @static_bp.route("/")
 def serve_index():
     # Try embedded HTML first (works even if public/ was removed by .vercelignore)

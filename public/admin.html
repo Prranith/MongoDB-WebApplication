@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>CodeLeaf Operations Center</title>
+  <link rel="icon" href="/assets/branding/codeleaf-emblem.png">
+  <link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+  <div id="admin-login" class="login-shell">
+    <div class="login-orbit"></div>
+    <section class="login-card" aria-labelledby="login-title">
+      <div class="brand-mark"><img src="/assets/branding/codeleaf-emblem.png" alt="CodeLeaf"><span>CODELEAF<br><small>OPERATIONS</small></span></div>
+      <p class="eyebrow">RESTRICTED CONTROL PLANE</p>
+      <h1 id="login-title">Administrator sign in</h1>
+      <p class="muted">Use the dedicated administrator credential configured on the server.</p>
+      <form id="admin-login-form" autocomplete="on">
+        <label>Email<input id="admin-email" name="email" type="email" autocomplete="username" required></label>
+        <label>Password<input id="admin-password" name="password" type="password" autocomplete="current-password" required></label>
+        <button class="primary-button" type="submit">Open operations center</button>
+        <p id="login-error" class="form-error" role="alert"></p>
+      </form>
+      <p class="security-note">Administrator credentials are verified server-side. Passwords and session secrets are never returned to this page.</p>
+    </section>
+  </div>
+
+  <div id="admin-app" class="admin-app" hidden>
+    <aside class="sidebar">
+      <div class="sidebar-brand"><img src="/assets/branding/codeleaf-emblem.png" alt=""><div><strong>CodeLeaf</strong><span>Operations Center</span></div></div>
+      <nav id="admin-nav" aria-label="Administration">
+        <button class="nav-item active" data-view="overview"><span class="nav-icon">◈</span>Overview</button>
+        <button class="nav-item" data-view="users"><span class="nav-icon">♙</span>Users</button>
+        <button class="nav-item" data-view="exams"><span class="nav-icon">▣</span>Exams &amp; rooms</button>
+        <button class="nav-item" data-view="meetings"><span class="nav-icon">◉</span>Meetings</button>
+        <button class="nav-item" data-view="queues"><span class="nav-icon">⇄</span>Queues &amp; jobs</button>
+        <button class="nav-item" data-view="compilation"><span class="nav-icon">⌘</span>Compilation</button>
+        <button class="nav-item" data-view="infrastructure"><span class="nav-icon">⌁</span>Infrastructure</button>
+        <button class="nav-item" data-view="analytics"><span class="nav-icon">▥</span>Analytics</button>
+        <button class="nav-item" data-view="logs"><span class="nav-icon">≡</span>Logs &amp; audit</button>
+        <button class="nav-item" data-view="alerts"><span class="nav-icon">!</span>Alerts</button>
+        <button class="nav-item" data-view="security"><span class="nav-icon">◇</span>Security</button>
+        <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span>Settings</button>
+      </nav>
+      <div class="sidebar-footer"><span class="live-dot"></span><span id="connection-label">Authenticated</span><button id="admin-logout" class="text-button">Sign out</button></div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="topbar">
+        <div><p class="eyebrow" id="view-eyebrow">OPERATIONS</p><h2 id="view-title">System overview</h2></div>
+        <div class="topbar-actions">
+          <label class="global-search"><span>⌕</span><input id="global-search" placeholder="Search users, rooms, jobs…" autocomplete="off"></label>
+          <span class="environment-badge">PRODUCTION</span><span id="top-health" class="status-badge status-unknown">Unknown</span>
+          <span id="last-updated" class="last-updated">Not updated</span>
+          <button id="refresh-button" class="icon-button" title="Refresh data">↻</button>
+        </div>
+      </header>
+
+      <div id="admin-content" class="content-area">
+        <section id="view-overview" class="view active"></section>
+        <section id="view-users" class="view"></section>
+        <section id="view-exams" class="view"></section>
+        <section id="view-meetings" class="view"></section>
+        <section id="view-queues" class="view"></section>
+        <section id="view-compilation" class="view"></section>
+        <section id="view-infrastructure" class="view"></section>
+        <section id="view-analytics" class="view"></section>
+        <section id="view-logs" class="view"></section>
+        <section id="view-alerts" class="view"></section>
+        <section id="view-security" class="view"></section>
+        <section id="view-settings" class="view"></section>
+      </div>
+    </main>
+  </div>
+
+  <div id="detail-drawer" class="drawer" hidden><div class="drawer-backdrop" data-close-drawer></div><aside class="drawer-panel"><header><div><p class="eyebrow" id="drawer-eyebrow">DETAIL</p><h2 id="drawer-title">Details</h2></div><button class="icon-button" data-close-drawer aria-label="Close details">×</button></header><div id="drawer-body" class="drawer-body"></div></aside></div>
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+  <script src="/admin.js"></script>
+</body>
+</html>

@@ -61,6 +61,7 @@ from api.routes.meeting_routes import meeting_bp
 from api.routes.sql_routes import sql_bp
 from api.routes.ai_routes import ai_bp
 from api.routes.auth_routes import auth_bp
+from api.routes.admin_routes import admin_bp
 
 # Register blueprints to keep code structure modular and maintainable
 app.register_blueprint(static_bp)
@@ -72,6 +73,7 @@ app.register_blueprint(meeting_bp)
 app.register_blueprint(sql_bp)
 app.register_blueprint(ai_bp)
 app.register_blueprint(auth_bp)
+app.register_blueprint(admin_bp)
 
 
 @app.before_request
@@ -88,7 +90,10 @@ def _before_request():
     from services.auth.auth_service import AUTH_REQUIRED, current_user
     g.user = current_user()
     if AUTH_REQUIRED and request.path.startswith("/api/"):
-        public = request.path.startswith("/api/auth/") or request.path.startswith("/api/analytics")
+        # The administrator login is a separate public entry point. Every
+        # other admin API remains protected by its own server-side session
+        # decorator in admin_routes.py.
+        public = request.path.startswith("/api/auth/") or request.path == "/api/admin/auth/login" or request.path.startswith("/api/analytics")
         if not public and not g.user:
             return jsonify({"error": "Authentication required", "code": "AUTH_REQUIRED"}), 401
 
