@@ -103,7 +103,6 @@ const Auth = (() => {
     $('profile-display-email').textContent = state.user.email || '';
     $('profile-email').value = state.user.email || '';
     $('profile-college').value = state.user.college || '';
-    $('profile-linkedin').value = state.user.linkedin || '';
     $('profile-bio').value = state.user.bio || '';
     $('profile-phone').value = state.user.phone || '';
     const avatar = $('profile-avatar');
@@ -113,6 +112,10 @@ const Auth = (() => {
     $('profile-avatar-data').value = state.user.avatar || '';
     $('profile-links').innerHTML = '';
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
+    const checks = [{label:'Add profile photo', ok:!!state.user.avatar},{label:'Add your name', ok:!!state.user.name},{label:'Add bio', ok:!!state.user.bio},{label:'Add email address', ok:!!state.user.email},{label:'Add phone number', ok:!!state.user.phone},{label:'Add at least one social link', ok:!!(state.user.links || []).length}];
+    const score = Math.round(checks.filter(item => item.ok).length / checks.length * 100);
+    $('profile-completion-value').textContent = `${score}%`; $('profile-completion-label').textContent = score >= 80 ? 'Almost there!' : 'Complete your profile'; $('profile-completion-ring').style.setProperty('--completion', `${score * 3.6}deg`); $('profile-checklist').innerHTML = checks.map(item => `<li class="${item.ok ? 'done' : ''}"><span>${item.ok ? '✓' : '○'}</span>${item.label}</li>`).join('');
+    $('profile-member-since').textContent = state.user.createdAt ? new Date(state.user.createdAt).toLocaleDateString(undefined, {month:'short', year:'numeric'}) : '—';
     modal.hidden = false;
     modal.style.display = 'grid';
     document.body.classList.add('profile-open');
