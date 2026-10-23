@@ -87,7 +87,12 @@ const Auth = (() => {
       const displayName = state.user.name || state.user.email?.split('@')[0] || 'Account';
       // Keep the account control visually consistent for every user. The
       // profile details belong in the popover, not inside the avatar button.
-      if (avatar) avatar.innerHTML = '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 12a4.2 4.2 0 1 0 0-8.4A4.2 4.2 0 0 0 12 12Zm0 2.1c-4.05 0-7.35 2.1-7.35 4.7 0 .66.54 1.2 1.2 1.2h12.3c.66 0 1.2-.54 1.2-1.2 0-2.6-3.3-4.7-7.35-4.7Z"/></svg>';
+      if (avatar) {
+        const fallback = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" fill="#06110b"/><circle cx="40" cy="40" r="34" fill="#087d43" stroke="#00ed64" stroke-width="2"/><circle cx="40" cy="29" r="10" fill="#eafff0"/><path fill="#eafff0" d="M20 58c0-10 9-17 20-17s20 7 20 17v2H20v-2Z"/></svg>');
+        if (state.user.avatar) {
+          const image = document.createElement('img'); image.alt = ''; image.src = state.user.avatar; image.onerror = () => { avatar.innerHTML = `<img src="${fallback}" alt="">`; }; avatar.replaceChildren(image);
+        } else avatar.innerHTML = `<img src="${fallback}" alt="">`;
+      }
       if (name) name.textContent = displayName;
       if (email) email.textContent = state.user.email || '';
       button.title = state.user.email || '';

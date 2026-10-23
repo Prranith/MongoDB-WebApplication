@@ -8505,7 +8505,8 @@ li.CodeMirror-hint-active {
 .profile-section .auth-field textarea { width:100%; box-sizing:border-box; min-height:118px; margin-top:7px; padding:13px; border:1px solid #304438; border-radius:8px; background:#0b130e !important; color:#e9f4ec !important; font:inherit; resize:vertical; }.profile-section .auth-field textarea::placeholder { color:#6f8475; opacity:1; }.profile-section .auth-field textarea:focus { outline:none; border-color:#45a967; box-shadow:0 0 0 3px rgba(69,169,103,.12); }
 /* Reference-quality profile workspace */
 .profile-identity { position:relative; isolation:isolate; overflow:hidden; min-height:126px; }
-.profile-cover-pattern { position:absolute; inset:0 0 0 38%; z-index:-1; opacity:.72; background:radial-gradient(ellipse at 72% 48%,transparent 0 27%,rgba(0,217,119,.22) 28% 29%,transparent 30% 35%,rgba(0,217,119,.12) 36% 37%,transparent 38%),radial-gradient(ellipse at 86% 55%,transparent 0 30%,rgba(0,217,119,.15) 31% 32%,transparent 33% 40%),linear-gradient(110deg,rgba(8,35,20,.18),rgba(3,16,11,.02)); mask-image:linear-gradient(90deg,transparent,#000 22%); }
+.profile-cover-pattern { position:absolute; inset:0; z-index:0; opacity:.72; background:radial-gradient(ellipse at 72% 48%,transparent 0 27%,rgba(0,217,119,.22) 28% 29%,transparent 30% 35%,rgba(0,217,119,.12) 36% 37%,transparent 38%),radial-gradient(ellipse at 86% 55%,transparent 0 30%,rgba(0,217,119,.15) 31% 32%,transparent 33% 40%),linear-gradient(110deg,rgba(8,35,20,.18),rgba(3,16,11,.02)); mask-image:linear-gradient(90deg,transparent,#000 22%); }
+.profile-identity::after { content:''; position:absolute; inset:0 28px 0 32%; z-index:0; opacity:.28; background:url('/assets/branding/codeleaf-wordmark.png') right center / min(310px,38%) auto no-repeat; pointer-events:none; }
 .profile-hero-avatar { position:relative; z-index:1; border:2px solid #00d977; box-shadow:0 0 0 5px rgba(0,217,119,.12),0 12px 25px rgba(0,0,0,.32); }
 .profile-hero-avatar img,.profile-avatar-preview img,#profile-avatar,#profile-avatar-preview { display:block; width:100%; height:100%; border-radius:50% !important; object-fit:cover; overflow:hidden; }
 .profile-camera-button { position:absolute; right:-7px; bottom:-3px; display:grid; place-items:center; width:28px; height:28px; border:2px solid #101a14; border-radius:50%; background:#00d977; color:#052014; font-size:13px; cursor:pointer; }
@@ -8519,7 +8520,8 @@ li.CodeMirror-hint-active {
 .profile-section .auth-field input:disabled { background:#101a16; color:#8ba294; }
 .profile-character-hint { display:block; margin-top:5px; color:#617968; font-size:10px; }
 .profile-photo-row { flex-wrap:wrap; }
-.profile-photo-preview { display:flex; align-items:center; gap:8px; color:#718779; font-size:10px; }
+.profile-photo-row { display:grid; grid-template-columns:120px minmax(0,1fr) auto auto; align-items:center; gap:12px; }
+.profile-photo-preview { display:flex; align-items:center; gap:8px; min-width:0; height:52px; overflow:hidden; color:#718779; font-size:10px; }
 .profile-photo-preview img { width:42px; height:42px; border:1px solid #477154; border-radius:50%; object-fit:cover; background:#0a130e; }
 .profile-photo-remove { padding:7px 10px; border:1px solid #633b3b; border-radius:6px; background:rgba(95,28,28,.18); color:#ed9288; cursor:pointer; font-size:10px; }
 .profile-photo-remove:hover { border-color:#e36c61; background:rgba(116,32,32,.32); }
@@ -8550,6 +8552,9 @@ li.CodeMirror-hint-active {
 .profile-main { min-height:0; }
 .profile-identity-copy,.profile-cover-button,.profile-photo-edit,.profile-camera-button { display:none !important; }
 .profile-identity { min-height:180px; justify-content:center; background-color:#0d2015; }
+.profile-identity { justify-content:flex-start; padding-left:40px; }
+.auth-account-avatar img { display:block; width:100%; height:100%; border-radius:50%; object-fit:cover; }
+.profile-photo-preview img { flex:0 0 42px; }
 .profile-identity .profile-hero-avatar { flex:0 0 124px; width:124px; height:124px; }
 .profile-content { min-height:0; padding-bottom:110px; }
 .profile-modal .profile-section { overflow:visible; }
@@ -8568,6 +8573,7 @@ li.CodeMirror-hint-active {
 .profile-content { max-width:1120px; }
 .profile-section { background:linear-gradient(145deg,rgba(10,25,16,.86),rgba(7,17,11,.72)); }
 .profile-section-heading h3 { letter-spacing:-.02em; }
+@media (max-width:850px) { .profile-identity { padding-left:22px; }.profile-photo-row { grid-template-columns:1fr; }.profile-photo-preview { width:100%; } }
 .profile-tabs button { display:inline-flex; align-items:center; gap:6px; }
 .profile-tabs button svg { flex:0 0 auto; margin:0; }
 .profile-card { width:min(1120px,calc(100% - 72px)); min-height:0; margin:32px auto; border:1px solid #294838; border-radius:14px; background:#09140e; box-shadow:0 28px 80px rgba(0,0,0,.42); overflow:hidden; }
