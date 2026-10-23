@@ -12695,7 +12695,15 @@ const ClientExecution = (() => {
 
         const diagnostics = [];
         const registration = compiler.onDiagnostic(diagnostic => {
-          if (diagnostic && diagnostic.message) diagnostics.push(diagnostic.message);
+          if (!diagnostic) return;
+          const message = String(diagnostic.message || diagnostic.detail || diagnostic || '').trim();
+          if (!message) return;
+          const location = diagnostic.location || diagnostic.start || diagnostic.position || {};
+          const line = diagnostic.lineNumber || diagnostic.line || location.line || location.lineNumber || 0;
+          const column = diagnostic.columnNumber || diagnostic.column || location.column || location.columnNumber || 0;
+          const severity = diagnostic.severity ? `[${String(diagnostic.severity).toUpperCase()}] ` : '';
+          const where = line ? `${sourceName}:${line}${column ? `:${column}` : ''}: ` : `${sourceName}: `;
+          diagnostics.push(`${severity}${where}${message}`);
         });
         let sourceText = String(code || '');
         let sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
