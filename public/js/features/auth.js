@@ -99,14 +99,35 @@ const Auth = (() => {
     const modal = $('profile-modal');
     if (!modal) return;
     $('profile-name').value = state.user.name || '';
+    $('profile-email').value = state.user.email || '';
     $('profile-college').value = state.user.college || '';
     $('profile-linkedin').value = state.user.linkedin || '';
     $('profile-bio').value = state.user.bio || '';
+    $('profile-phone').value = state.user.phone || '';
+    $('profile-avatar').src = state.user.avatar || 'assets/branding/codeleaf-emblem.png?v=20261019-auth';
+    $('profile-avatar-data').value = state.user.avatar || '';
+    $('profile-links').innerHTML = '';
+    (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
     modal.hidden = false;
+  }
+  function addProfileLink(label = '', url = '') {
+    const row = document.createElement('div'); row.className = 'profile-link-row';
+    row.innerHTML = `<input class="profile-link-label" placeholder="LinkedIn / GitHub / LeetCode" value="${String(label).replace(/"/g, '&quot;')}"><input class="profile-link-url" placeholder="https://..." value="${String(url).replace(/"/g, '&quot;')}"><button type="button" aria-label="Remove link">×</button>`;
+    row.querySelector('button').onclick = () => row.remove(); $('profile-links').appendChild(row);
+  }
+  function readProfileLinks() { return [...document.querySelectorAll('.profile-link-row')].map(row => ({ label: row.querySelector('.profile-link-label').value, url: row.querySelector('.profile-link-url').value })).filter(x => x.url); }
+  function chooseAvatar(event) { const file = event.target.files?.[0]; if (!file || !file.type.startsWith('image/')) return; if (file.size > 1000000) return setMessage('Profile photo must be smaller than 1 MB.', true); const reader = new FileReader(); reader.onload = () => { $('profile-avatar').src = reader.result; $('profile-avatar-data').value = reader.result; }; reader.readAsDataURL(file); }
+  async function searchProfiles() {
+    const query = $('profile-search-query').value.trim(); const target = $('profile-search-results');
+    if (query.length < 2) { target.textContent = 'Type at least 2 characters.'; return; }
+    target.textContent = 'Searching…';
+    const response = await fetch(`/api/auth/search?q=${encodeURIComponent(query)}`, { credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    target.innerHTML = (data.users || []).map(user => `<div class="profile-search-result"><strong>${user.name || 'CodeLeaf member'}</strong><span>${user.college || user.bio || 'CodeLeaf member'}</span></div>`).join('') || 'No matching profiles found.';
   }
   function closeProfile() { const modal = $('profile-modal'); if (modal) modal.hidden = true; }
   async function saveProfile() {
-    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, college: $('profile-college').value, linkedin: $('profile-linkedin').value, bio: $('profile-bio').value }) });
+    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, phone: $('profile-phone').value, college: $('profile-college').value, bio: $('profile-bio').value, avatar: $('profile-avatar-data').value, links: readProfileLinks() }) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Unable to save profile.');
     state.user = data.user; renderAccount(); closeProfile();
@@ -200,10 +221,7 @@ const Auth = (() => {
 
   function accountAction() {
     if (!state.user) return open();
-    const popover = $('auth-profile-popover');
-    const button = $('auth-account-button');
-    if (popover) popover.hidden = !popover.hidden;
-    if (button) button.setAttribute('aria-expanded', String(popover ? !popover.hidden : false));
+    openProfile();
   }
 
   async function init() {
@@ -230,7 +248,7 @@ const Auth = (() => {
   }
 
   return {
-    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, setMode,
+    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, searchProfiles, setMode,
     require(action) { if (state.user) return action(); open(action); },
     get user() { return state.user; },
   };

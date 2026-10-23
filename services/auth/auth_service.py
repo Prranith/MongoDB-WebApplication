@@ -42,6 +42,8 @@ def _safe_user(doc):
         "college": doc.get("college", ""),
         "linkedin": doc.get("linkedin", ""),
         "bio": doc.get("bio", ""),
+        "phone": doc.get("phone", ""),
+        "links": doc.get("links", []),
         "providers": sorted(doc.get("providers", [])),
         "emailVerified": bool(doc.get("emailVerified", False)),
         "createdAt": doc.get("createdAt").isoformat() if hasattr(doc.get("createdAt"), "isoformat") else doc.get("createdAt"),
@@ -323,13 +325,22 @@ def update_profile(user_id, updates):
     db = _db()
     if db is None:
         raise RuntimeError("Authentication database is not configured.")
-    allowed = {"name", "avatar", "college", "linkedin", "bio"}
+    allowed = {"name", "avatar", "college", "phone", "bio"}
     clean = {key: str(updates.get(key) or "").strip()[:500 if key == "bio" else 180]
              for key in allowed if key in updates}
     if "name" in clean and len(clean["name"]) < 2:
         raise ValueError("Name must contain at least 2 characters.")
     if "linkedin" in clean and clean["linkedin"] and not clean["linkedin"].startswith(("https://", "http://")):
         raise ValueError("LinkedIn URL must start with https:// or http://.")
+    if "avatar" in updates:
+        avatar = str(updates.get("avatar") or "")
+        if avatar and (not avatar.startswith("data:image/") or len(avatar) > 1_500_000):
+            raise ValueError("Profile photo must be an image smaller than 1 MB.")
+        clean["avatar"] = avatar
+    if "links" in updates:
+        links = updates.get("links") if isinstance(updates.get("links"), list) else []
+        clean["links"] = [{"label": str(item.get("label") or "Website")[:40], "url": str(item.get("url") or "")[:300]}
+                           for item in links[:20] if isinstance(item, dict) and str(item.get("url") or "").startswith(("https://", "http://"))]
     if clean:
         clean["updatedAt"] = _now()
         db.users.update_one({"_id": user_id}, {"$set": clean})

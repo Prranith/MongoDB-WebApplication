@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 from services.auth.auth_service import (
     AUTH_REQUIRED, create_session, create_pending_signup,
     current_user, logout, password_login, verify_pending_signup,
-    resend_pending_signup_otp, update_profile,
+    resend_pending_signup_otp, update_profile, _safe_user,
 )
 from services.shared.rate_limit import make_rate_limiter
 
@@ -79,6 +79,24 @@ def auth_profile():
         return jsonify({"error": str(exc)}), 400
     except RuntimeError as exc:
         return jsonify({"error": str(exc)}), 503
+
+
+@auth_bp.get("/api/auth/search")
+def auth_search():
+    user = current_user()
+    if not user:
+        return jsonify({"error": "Authentication required", "code": "AUTH_REQUIRED"}), 401
+    from services.shared.redis_client import get_auth_db
+    query = str(request.args.get("q") or "").strip()[:80]
+    if len(query) < 2:
+        return jsonify({"users": []})
+    db = get_auth_db()
+    if db is None:
+        return jsonify({"error": "Authentication database is not configured."}), 503
+    import re
+    pattern = re.compile(re.escape(query), re.IGNORECASE)
+    docs = db.users.find({"status": "active", "$or": [{"name": pattern}, {"college": pattern}, {"bio": pattern}]}).limit(25)
+    return jsonify({"users": [current for current in (_safe_user(doc) for doc in docs) if current]})
 
 
 @auth_bp.post("/api/auth/verify-email")

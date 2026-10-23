@@ -8614,6 +8614,7 @@ li.CodeMirror-hint-active {
 .profile-modal[hidden] { display:none; }
 .profile-card { position:relative; width:min(520px,100%); padding:28px; border:1px solid rgba(0,237,100,.28); border-radius:18px; background:linear-gradient(145deg,#17221c,#0d1410); box-shadow:0 22px 70px rgba(0,0,0,.55); }
 .profile-hero { display:flex; align-items:center; gap:14px; margin-bottom:22px; }.profile-hero h2 { margin:0; color:#f1fff4; }.profile-hero p { margin:5px 0 0; color:#9db5a4; font-size:12px; }.profile-hero-avatar { display:grid; place-items:center; width:48px; height:48px; border-radius:50%; background:#087d43; color:#eafff0; }.profile-hero-avatar svg { width:25px; fill:currentColor; }.profile-card textarea { width:100%; resize:vertical; }.profile-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+.profile-hero-avatar { position:relative; }.profile-hero-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; }.profile-photo-edit { position:absolute; top:54px; white-space:nowrap; border:0; background:none; color:#78e39a; font-size:10px; cursor:pointer; }.profile-links-heading { display:flex; justify-content:space-between; margin:12px 0 6px; color:#9db5a4; font-size:12px; }.profile-links-heading button { border:0; background:none; color:#78e39a; cursor:pointer; }.profile-link-row { display:grid; grid-template-columns:1fr 1.5fr 25px; gap:6px; margin-bottom:7px; }.profile-link-row input { min-width:0; padding:8px; border:1px solid #304438; border-radius:6px; background:#0b110d; color:#e9f4ec; }.profile-link-row button { border:1px solid #513735; border-radius:6px; background:transparent; color:#ff8c80; cursor:pointer; }.profile-search { margin-top:22px; padding-top:16px; border-top:1px solid #293a2e; }.profile-search-title { color:#dce9df; font-size:13px; margin-bottom:8px; }.profile-search-input { display:flex; gap:8px; }.profile-search-input input { flex:1; }.profile-search-input button { border:1px solid #168b4b; border-radius:6px; background:#087d43; color:#fff; padding:0 12px; cursor:pointer; }.profile-search-result { display:flex; flex-direction:column; gap:2px; margin-top:8px; padding:8px; border:1px solid #26382b; border-radius:6px; }.profile-search-result span { color:#91a998; font-size:11px; }
 .cookie-consent { position:fixed; left:0; right:0; bottom:0; z-index:12000; display:flex; align-items:center; justify-content:center; gap:30px; min-height:76px; padding:16px 30px; border-top:1px solid rgba(95,123,105,.35); background:rgba(7,10,8,.97); color:#d2ddd4; font-size:13px; box-shadow:0 -12px 36px rgba(0,0,0,.28); }.cookie-consent-copy { max-width:820px; line-height:1.55; }.cookie-consent-copy a { color:#78e39a; text-decoration:underline; }.cookie-consent-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }.cookie-consent button { min-width:72px; padding:8px 16px; border-radius:7px; font:inherit; cursor:pointer; }.cookie-decline { border:1px solid #b13b4b; background:transparent; color:#ff7183; }.cookie-accept { border:1px solid #15934e; background:#079447; color:#fff; }.cookie-consent button:hover { filter:brightness(1.15); }
 @media (max-width:700px) { .cookie-consent { align-items:stretch; flex-direction:column; gap:12px; padding:16px 20px; }.cookie-consent-actions { justify-content:flex-end; } }
 .workspace-ai-mark { display:grid; place-items:center; width:30px; height:30px; border:1px solid #3b5646; border-radius:9px; background:#16221b; }
@@ -8741,11 +8742,15 @@ li.CodeMirror-hint-active {
 <div class="profile-modal" id="profile-modal" hidden>
   <section class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profile-title">
     <button class="auth-close" type="button" aria-label="Close profile" onclick="Auth.closeProfile()">×</button>
-    <div class="profile-hero"><div class="profile-hero-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.2 4.2 0 1 0 0-8.4A4.2 4.2 0 0 0 12 12Zm0 2.1c-4.05 0-7.35 2.1-7.35 4.7 0 .66.54 1.2 1.2 1.2h12.3c.66 0 1.2-.54 1.2-1.2 0-2.6-3.3-4.7-7.35-4.7Z"/></svg></div><div><h2 id="profile-title">Your profile</h2><p>Make your CodeLeaf identity yours.</p></div></div>
+    <div class="profile-hero"><div class="profile-hero-avatar"><img id="profile-avatar" alt="Profile photo"><input id="profile-avatar-file" type="file" accept="image/*" hidden onchange="Auth.chooseAvatar(event)"><button type="button" class="profile-photo-edit" onclick="document.getElementById('profile-avatar-file').click()">Change photo</button></div><div><h2 id="profile-title">Your profile</h2><p>Build your CodeLeaf identity.</p></div></div>
+    <input id="profile-avatar-data" type="hidden">
     <label class="auth-field">Name<input id="profile-name" autocomplete="name" /></label>
+    <label class="auth-field">Email<input id="profile-email" disabled /></label>
+    <label class="auth-field">Phone number<input id="profile-phone" type="tel" placeholder="Your phone number" /></label>
     <label class="auth-field">College<input id="profile-college" placeholder="Your college or institution" /></label>
-    <label class="auth-field">LinkedIn<input id="profile-linkedin" placeholder="https://linkedin.com/in/you" /></label>
+    <div class="profile-links-heading">Social links <button type="button" onclick="Auth.addProfileLink()">+ Add link</button></div><div id="profile-links"></div>
     <label class="auth-field">About you<textarea id="profile-bio" rows="3" placeholder="A short introduction"></textarea></label>
+    <div class="profile-search"><div class="profile-search-title">Find people on CodeLeaf</div><div class="profile-search-input"><input id="profile-search-query" placeholder="Search by name, college, or bio"><button type="button" onclick="Auth.searchProfiles()">Search</button></div><div id="profile-search-results"></div></div>
     <div class="profile-actions"><button class="auth-secondary" type="button" onclick="Auth.closeProfile()">Cancel</button><button class="auth-primary" type="button" onclick="Auth.saveProfile()">Save changes</button></div>
   </section>
 </div>
@@ -9738,14 +9743,35 @@ const Auth = (() => {
     const modal = $('profile-modal');
     if (!modal) return;
     $('profile-name').value = state.user.name || '';
+    $('profile-email').value = state.user.email || '';
     $('profile-college').value = state.user.college || '';
     $('profile-linkedin').value = state.user.linkedin || '';
     $('profile-bio').value = state.user.bio || '';
+    $('profile-phone').value = state.user.phone || '';
+    $('profile-avatar').src = state.user.avatar || 'assets/branding/codeleaf-emblem.png?v=20261019-auth';
+    $('profile-avatar-data').value = state.user.avatar || '';
+    $('profile-links').innerHTML = '';
+    (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
     modal.hidden = false;
+  }
+  function addProfileLink(label = '', url = '') {
+    const row = document.createElement('div'); row.className = 'profile-link-row';
+    row.innerHTML = `<input class="profile-link-label" placeholder="LinkedIn / GitHub / LeetCode" value="${String(label).replace(/"/g, '&quot;')}"><input class="profile-link-url" placeholder="https://..." value="${String(url).replace(/"/g, '&quot;')}"><button type="button" aria-label="Remove link">×</button>`;
+    row.querySelector('button').onclick = () => row.remove(); $('profile-links').appendChild(row);
+  }
+  function readProfileLinks() { return [...document.querySelectorAll('.profile-link-row')].map(row => ({ label: row.querySelector('.profile-link-label').value, url: row.querySelector('.profile-link-url').value })).filter(x => x.url); }
+  function chooseAvatar(event) { const file = event.target.files?.[0]; if (!file || !file.type.startsWith('image/')) return; if (file.size > 1000000) return setMessage('Profile photo must be smaller than 1 MB.', true); const reader = new FileReader(); reader.onload = () => { $('profile-avatar').src = reader.result; $('profile-avatar-data').value = reader.result; }; reader.readAsDataURL(file); }
+  async function searchProfiles() {
+    const query = $('profile-search-query').value.trim(); const target = $('profile-search-results');
+    if (query.length < 2) { target.textContent = 'Type at least 2 characters.'; return; }
+    target.textContent = 'Searching…';
+    const response = await fetch(`/api/auth/search?q=${encodeURIComponent(query)}`, { credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    target.innerHTML = (data.users || []).map(user => `<div class="profile-search-result"><strong>${user.name || 'CodeLeaf member'}</strong><span>${user.college || user.bio || 'CodeLeaf member'}</span></div>`).join('') || 'No matching profiles found.';
   }
   function closeProfile() { const modal = $('profile-modal'); if (modal) modal.hidden = true; }
   async function saveProfile() {
-    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, college: $('profile-college').value, linkedin: $('profile-linkedin').value, bio: $('profile-bio').value }) });
+    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, phone: $('profile-phone').value, college: $('profile-college').value, bio: $('profile-bio').value, avatar: $('profile-avatar-data').value, links: readProfileLinks() }) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Unable to save profile.');
     state.user = data.user; renderAccount(); closeProfile();
@@ -9839,10 +9865,7 @@ const Auth = (() => {
 
   function accountAction() {
     if (!state.user) return open();
-    const popover = $('auth-profile-popover');
-    const button = $('auth-account-button');
-    if (popover) popover.hidden = !popover.hidden;
-    if (button) button.setAttribute('aria-expanded', String(popover ? !popover.hidden : false));
+    openProfile();
   }
 
   async function init() {
@@ -9869,7 +9892,7 @@ const Auth = (() => {
   }
 
   return {
-    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, setMode,
+    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, searchProfiles, setMode,
     require(action) { if (state.user) return action(); open(action); },
     get user() { return state.user; },
   };
