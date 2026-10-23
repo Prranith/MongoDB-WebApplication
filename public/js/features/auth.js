@@ -99,6 +99,8 @@ const Auth = (() => {
     const modal = $('profile-modal');
     if (!modal) return;
     $('profile-name').value = state.user.name || '';
+    $('profile-display-name').textContent = state.user.name || 'CodeLeaf member';
+    $('profile-display-email').textContent = state.user.email || '';
     $('profile-email').value = state.user.email || '';
     $('profile-college').value = state.user.college || '';
     $('profile-linkedin').value = state.user.linkedin || '';
