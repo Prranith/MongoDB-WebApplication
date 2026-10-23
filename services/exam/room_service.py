@@ -73,13 +73,14 @@ class RoomService:
         return "MNG-" + "".join(random.choices(chars, k=4))
 
     @classmethod
-    def create_room(cls, title: str, mentor_id: str, timed: bool, duration: int, fullscreen_mode: bool, block_copypaste: bool, max_exits: int) -> dict:
+    def create_room(cls, title: str, mentor_id: str, timed: bool, duration: int, fullscreen_mode: bool, block_copypaste: bool, max_exits: int, max_copy_paste_attempts: int = 3) -> dict:
         room_id = cls._gen_room_id()
         now = int(time.time())
 
         fullscreen_val = "1" if fullscreen_mode else "0"
         block_cp_val = "1" if block_copypaste else "0"
-        max_exits_val = str(max_exits)
+        max_exits_val = str(max(1, min(int(max_exits or 5), 20)))
+        max_copy_paste_val = str(max(1, min(int(max_copy_paste_attempts or 3), 50)))
 
         pipeline = [
             ["HSET", room_key(room_id),
@@ -91,7 +92,8 @@ class RoomService:
              "createdAt", str(now),
              "fullscreenMode", fullscreen_val,
              "blockCopyPaste", block_cp_val,
-             "maxFullscreenExits", max_exits_val],
+             "maxFullscreenExits", max_exits_val,
+             "maxCopyPasteAttempts", max_copy_paste_val],
             ["EXPIRE", room_key(room_id), str(60 * 60 * 24 * 7)],  # 7-day TTL
         ]
         res = redis_cmd(pipeline)
@@ -108,7 +110,7 @@ class RoomService:
     def get_room(room_id: str, client_mentor_id: str = "") -> dict:
         fields = [
             "title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt",
-            "questions", "datasets", "fullscreenMode", "blockCopyPaste", "maxFullscreenExits"
+            "questions", "datasets", "fullscreenMode", "blockCopyPaste", "maxFullscreenExits", "maxCopyPasteAttempts"
         ]
         raw = redis_one(["HMGET", f"room:{room_id}"] + fields)
         if not raw or all(v is None for v in raw):
@@ -116,10 +118,10 @@ class RoomService:
 
         meta_keys = [
             "title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt",
-            "fullscreenMode", "blockCopyPaste", "maxFullscreenExits"
+            "fullscreenMode", "blockCopyPaste", "maxFullscreenExits", "maxCopyPasteAttempts"
         ]
         meta = {}
-        for k, v in zip(meta_keys, raw[:8] + [raw[10], raw[11], raw[12]]):
+        for k, v in zip(meta_keys, raw[:8] + [raw[10], raw[11], raw[12], raw[13]]):
             if v is not None:
                 meta[k] = v
             else:
@@ -127,6 +129,8 @@ class RoomService:
                     meta[k] = "0"
                 elif k == "maxFullscreenExits":
                     meta[k] = "5"
+                elif k == "maxCopyPasteAttempts":
+                    meta[k] = "3"
 
         questions_json = raw[8]
         datasets_json = raw[9]
@@ -493,7 +497,7 @@ class RoomService:
     def get_paper(room_id: str, mentor_id: str) -> dict:
         fields = [
             "title", "mentorId", "timed", "duration", "fullscreenMode",
-            "blockCopyPaste", "maxFullscreenExits", "questions", "datasets"
+            "blockCopyPaste", "maxFullscreenExits", "maxCopyPasteAttempts", "questions", "datasets"
         ]
         raw = redis_one(["HMGET", f"room:{room_id}"] + fields)
         if not raw or raw[1] is None:
@@ -501,8 +505,8 @@ class RoomService:
         if raw[1] != mentor_id:
             raise PermissionError("Unauthorized")
 
-        questions = json.loads(raw[7]) if raw[7] else []
-        datasets_dict = json.loads(raw[8]) if raw[8] else {}
+        questions = json.loads(raw[8]) if raw[8] else []
+        datasets_dict = json.loads(raw[9]) if raw[9] else {}
 
         datasets_list = []
         for d_id, d_meta in datasets_dict.items():
@@ -522,6 +526,7 @@ class RoomService:
             "fullscreenMode": raw[4] or "0",
             "blockCopyPaste": raw[5] or "0",
             "maxFullscreenExits": raw[6] or "5",
+            "maxCopyPasteAttempts": raw[7] or "3",
             "questions": questions,
             "datasets": datasets_list
         }

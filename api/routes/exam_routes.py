@@ -63,12 +63,13 @@ def api_exam_create_room():
     fullscreen_mode = bool(body.get("fullscreenMode", False))
     block_copypaste = bool(body.get("blockCopyPaste", False))
     max_exits = int(body.get("maxFullscreenExits", 5))
+    max_copy_paste_attempts = int(body.get("maxCopyPasteAttempts", 3))
 
     if not title:
         return _json_response({"status": "error", "error": "Title is required"}, status=400)
 
     try:
-        res = RoomService.create_room(title, mentor_id, timed, duration, fullscreen_mode, block_copypaste, max_exits)
+        res = RoomService.create_room(title, mentor_id, timed, duration, fullscreen_mode, block_copypaste, max_exits, max_copy_paste_attempts)
         return _json_response({
             "status": "ok",
             "roomId": res["roomId"],
@@ -665,7 +666,9 @@ def api_exam_student_violation(room_id: str, student_id: str):
             "status": "ok",
             "fullscreenExits": res["fullscreenExits"],
             "copyPasteAttempts": res["copyPasteAttempts"],
-            "lastFlaggedAt": res["lastFlaggedAt"]
+            "lastFlaggedAt": res["lastFlaggedAt"],
+            "blocked": res.get("blocked", False),
+            "copyPasteLimit": res.get("copyPasteLimit", 3),
         })
     except KeyError as e:
         return _json_response({"status": "error", "error": str(e)}, status=404)
@@ -783,6 +786,7 @@ def api_exam_get_paper(room_id: str):
             "fullscreenMode": paper["fullscreenMode"],
             "blockCopyPaste": paper["blockCopyPaste"],
             "maxFullscreenExits": paper["maxFullscreenExits"],
+            "maxCopyPasteAttempts": paper["maxCopyPasteAttempts"],
             "questions": paper["questions"],
             "datasets": paper["datasets"]
         })

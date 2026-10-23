@@ -34,6 +34,15 @@ class ProctoringService:
         elif violation_type == "copy_paste_attempt":
             p["copyPasteAttempts"] += 1
 
+        # The room configuration is authoritative for the copy/paste limit.
+        # Enforce the threshold on the server as well as in the browser so a
+        # student cannot avoid blocking by suppressing client-side JavaScript.
+        room_max = redis_one(["HGET", f"room:{room_id}", "maxCopyPasteAttempts"])
+        try:
+            max_copy_paste_attempts = max(1, min(int(room_max or 3), 50))
+        except (TypeError, ValueError):
+            max_copy_paste_attempts = 3
+
         p["lastFlaggedAt"] = int(time.time())
 
         redis_cmd([
@@ -41,10 +50,23 @@ class ProctoringService:
             ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ])
 
+        blocked = (
+            violation_type == "copy_paste_attempt"
+            and p["copyPasteAttempts"] >= max_copy_paste_attempts
+        )
+        if blocked:
+            ProctoringService.self_kick(
+                room_id,
+                student_id,
+                f"Copy/paste attempt limit reached ({max_copy_paste_attempts}).",
+            )
+
         return {
             "fullscreenExits": p["fullscreenExits"],
             "copyPasteAttempts": p["copyPasteAttempts"],
-            "lastFlaggedAt": p["lastFlaggedAt"]
+            "lastFlaggedAt": p["lastFlaggedAt"],
+            "blocked": blocked,
+            "copyPasteLimit": max_copy_paste_attempts,
         }
 
     @staticmethod

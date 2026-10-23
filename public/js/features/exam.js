@@ -828,6 +828,11 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       el('mentor-max-exits-field').style.display = checked ? 'block' : 'none';
     },
 
+    toggleCopyPasteRule(checked) {
+      const field = el('mentor-max-copypaste-field');
+      if (field) field.style.display = checked ? 'block' : 'none';
+    },
+
     showFlaggedDetails(studentName, fullscreenExits, copyPasteAttempts, lastFlaggedAt) {
       const timeStr = lastFlaggedAt ? new Date(lastFlaggedAt * 1000).toLocaleString() : 'Never';
       const modal = el('exam-warning-modal');
@@ -870,6 +875,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       const fullscreenMode = el('mentor-fullscreen-toggle').checked;
       const blockCopyPaste = el('mentor-block-copypaste-toggle').checked;
       const maxFullscreenExits = parseInt(el('mentor-max-exits').value) || 5;
+      const maxCopyPasteAttempts = Math.max(1, Math.min(parseInt(el('mentor-max-copypaste').value) || 3, 50));
       const mentorId = state.mentor.mentorId || genId();
       const roomId = state.mentor.roomId;
 
@@ -877,7 +883,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       el('btn-create-room').textContent = 'Creating...';
 
       const res = await apiCall('/api/exam/room/create', 'POST', {
-        title, mentorId, timed, duration, roomId, fullscreenMode, blockCopyPaste, maxFullscreenExits
+        title, mentorId, timed, duration, roomId, fullscreenMode, blockCopyPaste, maxFullscreenExits, maxCopyPasteAttempts
       });
 
       if (res.status === 'ok') {
@@ -889,6 +895,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         state.mentor.fullscreenMode = fullscreenMode;
         state.mentor.blockCopyPaste = blockCopyPaste;
         state.mentor.maxFullscreenExits = maxFullscreenExits;
+        state.mentor.maxCopyPasteAttempts = maxCopyPasteAttempts;
         state.mentor.status = 'waiting';
         state.mentor.questions = [];
         state.mentor.datasets = [];
@@ -948,6 +955,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
           const blockCopy = paper.blockCopyPaste === '1' || paper.blockCopyPaste === true;
           if (el('mentor-block-copypaste-toggle')) el('mentor-block-copypaste-toggle').checked = blockCopy;
+          mentor.toggleCopyPasteRule(blockCopy);
+          if (el('mentor-max-copypaste')) el('mentor-max-copypaste').value = parseInt(paper.maxCopyPasteAttempts) || 3;
 
           showExamAlert(`Successfully pre-loaded quiz template: "${paper.title || 'Imported'}" (${paper.questions.length} questions, ${paper.datasets ? paper.datasets.length : 0} datasets).\n\nClick "Create Room" to instantiate the test.`, { title: 'Template Loaded' });
 
@@ -3302,11 +3311,21 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     async reportFlaggedViolation(violationType) {
       if (!state.student.roomId || !state.student.studentId) return;
       try {
-        await apiCall(`/api/exam/room/${state.student.roomId}/student/${state.student.studentId}/violation`, 'POST', {
+        const res = await apiCall(`/api/exam/room/${state.student.roomId}/student/${state.student.studentId}/violation`, 'POST', {
           violationType: violationType
         });
+        if (res && res.status === 'ok' && violationType === 'copy_paste_attempt') {
+          state.student.copyPasteAttempts = Number(res.copyPasteAttempts || 0);
+          if (res.blocked) {
+            await studentNS.forceSubmitAndBlock(
+              `Copy/paste attempt limit reached (${res.copyPasteLimit || state.student.maxCopyPasteAttempts || 3}). Your assessment has been blocked.`
+            );
+          }
+        }
+        return res;
       } catch (err) {
         console.error("Failed to report proctoring violation:", err);
+        return null;
       }
     },
 
@@ -3477,6 +3496,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       state.student.fullscreenMode = (res.meta && (res.meta.fullscreenMode === '1' || res.meta.fullscreenMode === true));
       state.student.blockCopyPaste = (res.meta && (res.meta.blockCopyPaste === '1' || res.meta.blockCopyPaste === true));
       state.student.maxFullscreenExits = (res.meta && parseInt(res.meta.maxFullscreenExits)) || 5;
+      state.student.maxCopyPasteAttempts = (res.meta && parseInt(res.meta.maxCopyPasteAttempts)) || 3;
+      state.student.copyPasteAttempts = 0;
       state.student.fullscreenExitCount = 0;
 
       // Initialize question status
@@ -5874,12 +5895,14 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       setTimeout(() => { state.student.isPasting = false; }, 100);
       
       // Report violation and show modal asynchronously to avoid blocking browser's event loop
-      setTimeout(() => {
-        studentNS.reportFlaggedViolation('copy_paste_attempt');
-        showAppWarningModal(
-          "Paste Restricted",
-          "Copying and pasting is only allowed for text copied directly from within the code editor."
-        );
+      setTimeout(async () => {
+        const violation = await studentNS.reportFlaggedViolation('copy_paste_attempt');
+        if (!violation || !violation.blocked) {
+          showAppWarningModal(
+            "Paste Restricted",
+            "Copying and pasting is only allowed for text copied directly from within the code editor."
+          );
+        }
       }, 50);
     }
   }
