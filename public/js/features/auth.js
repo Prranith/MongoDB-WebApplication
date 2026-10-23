@@ -104,7 +104,10 @@ const Auth = (() => {
     $('profile-linkedin').value = state.user.linkedin || '';
     $('profile-bio').value = state.user.bio || '';
     $('profile-phone').value = state.user.phone || '';
-    $('profile-avatar').src = state.user.avatar || '/assets/branding/codeleaf-emblem.png?v=20261019-auth';
+    const avatar = $('profile-avatar');
+    const fallback = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" rx="40" fill="#087d43"/><path fill="#eafff0" d="M40 39a12 12 0 1 0 0-24 12 12 0 0 0 0 24Zm0 7c-12 0-22 7-22 16 0 2 2 3 4 3h36c2 0 4-1 4-3 0-9-10-16-22-16Z"/></svg>');
+    avatar.src = state.user.avatar || fallback;
+    avatar.onerror = () => { avatar.onerror = null; avatar.src = fallback; };
     $('profile-avatar-data').value = state.user.avatar || '';
     $('profile-links').innerHTML = '';
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));

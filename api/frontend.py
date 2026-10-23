@@ -8648,6 +8648,7 @@ li.CodeMirror-hint-active {
 .profile-hero { gap:18px; margin-bottom:32px; padding-bottom:24px; border-bottom:1px solid rgba(126,166,137,.2); }.profile-hero h2 { font-size:28px; }.profile-hero-avatar { width:82px; height:82px; }.profile-hero-avatar svg { width:35px; }.profile-card > .auth-field,.profile-card > .profile-links-heading,.profile-card > #profile-links,.profile-card > .profile-actions { max-width:680px; }
 .profile-hero { grid-column:1/-1; }.profile-card > .auth-field { grid-column:1; }.profile-card > .auth-field input,.profile-card > .auth-field textarea { width:100%; box-sizing:border-box; border:1px solid #304438; border-radius:8px; background:#0b130e; color:#e9f4ec; padding:12px 13px; font:inherit; }.profile-card > .auth-field input:disabled { color:#91a998; opacity:1; }.profile-card > .auth-field textarea { min-height:112px; }.profile-search { grid-column:2; grid-row:2 / span 6; align-self:start; position:static; width:auto; margin:0; padding:22px; border:1px solid rgba(126,166,137,.22); border-radius:16px; background:linear-gradient(160deg,rgba(8,25,15,.9),rgba(9,17,13,.7)); box-shadow:0 14px 30px rgba(0,0,0,.18); }.profile-search-title { font-size:16px; margin-bottom:12px; }.profile-search-input { flex-direction:column; }.profile-search-input input { width:100%; box-sizing:border-box; padding:11px; border:1px solid #304438; border-radius:8px; background:#0b130e; color:#e9f4ec; }.profile-search-input button { min-height:36px; }.profile-search-empty { color:#819786; font-size:12px; line-height:1.5; }.profile-search-result { cursor:pointer; transition:border-color .15s,background .15s; }.profile-search-result:hover { border-color:#3f9e63; background:rgba(22,72,42,.25); }.profile-card > .profile-links-heading,.profile-card > #profile-links,.profile-card > .profile-actions { grid-column:1; }.profile-card > .profile-actions { width:100%; }
 @media (max-width:850px) { .profile-card { display:block; width:100%; min-height:100vh; margin:0; border-radius:0; padding:28px 24px 44px; }.profile-search { width:auto; margin-top:28px; }.profile-hero h2 { font-size:23px; } }
+.profile-card { min-height:0; padding:38px 52px 34px; }
 
 </style>
 </head>
@@ -9754,7 +9755,10 @@ const Auth = (() => {
     $('profile-linkedin').value = state.user.linkedin || '';
     $('profile-bio').value = state.user.bio || '';
     $('profile-phone').value = state.user.phone || '';
-    $('profile-avatar').src = state.user.avatar || '/assets/branding/codeleaf-emblem.png?v=20261019-auth';
+    const avatar = $('profile-avatar');
+    const fallback = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" rx="40" fill="#087d43"/><path fill="#eafff0" d="M40 39a12 12 0 1 0 0-24 12 12 0 0 0 0 24Zm0 7c-12 0-22 7-22 16 0 2 2 3 4 3h36c2 0 4-1 4-3 0-9-10-16-22-16Z"/></svg>');
+    avatar.src = state.user.avatar || fallback;
+    avatar.onerror = () => { avatar.onerror = null; avatar.src = fallback; };
     $('profile-avatar-data').value = state.user.avatar || '';
     $('profile-links').innerHTML = '';
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
