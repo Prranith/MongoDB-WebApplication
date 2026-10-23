@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 from services.auth.auth_service import (
     AUTH_REQUIRED, create_session, create_pending_signup,
     current_user, logout, password_login, verify_pending_signup,
-    resend_pending_signup_otp,
+    resend_pending_signup_otp, update_profile,
 )
 from services.shared.rate_limit import make_rate_limiter
 
@@ -62,6 +62,23 @@ def auth_login():
 def auth_logout():
     logout()
     return jsonify({"authenticated": False})
+
+
+@auth_bp.route("/api/auth/profile", methods=["GET", "PUT"])
+def auth_profile():
+    user = current_user()
+    if not user:
+        return jsonify({"error": "Authentication required", "code": "AUTH_REQUIRED"}), 401
+    if request.method == "GET":
+        return jsonify({"user": user})
+    try:
+        from bson import ObjectId
+        update_profile(ObjectId(user["id"]), request.get_json(silent=True) or {})
+        return jsonify({"user": current_user()})
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 503
 
 
 @auth_bp.post("/api/auth/verify-email")

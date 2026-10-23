@@ -8609,6 +8609,12 @@ li.CodeMirror-hint-active {
 .auth-profile-email { overflow:hidden; color:#9db5a4; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
 .auth-profile-logout { margin-top:8px; padding:7px 9px; border:1px solid rgba(255,128,112,.3); border-radius:6px; background:rgba(120,35,30,.18); color:#ffb2a8; cursor:pointer; font-size:11px; text-align:left; }
 .auth-profile-logout:hover { border-color:#ff8f82; background:rgba(150,43,35,.3); }
+.auth-profile-edit { margin-top:8px; padding:7px 9px; border:1px solid #34483b; border-radius:6px; background:#162019; color:#cfe1d4; cursor:pointer; font-size:11px; text-align:left; }
+.profile-modal { position:fixed; inset:0; z-index:10001; display:grid; place-items:center; padding:24px; background:rgba(5,12,9,.78); backdrop-filter:blur(14px); }
+.profile-modal[hidden] { display:none; }
+.profile-card { position:relative; width:min(520px,100%); padding:28px; border:1px solid rgba(0,237,100,.28); border-radius:18px; background:linear-gradient(145deg,#17221c,#0d1410); box-shadow:0 22px 70px rgba(0,0,0,.55); }
+.profile-hero { display:flex; align-items:center; gap:14px; margin-bottom:22px; }.profile-hero h2 { margin:0; color:#f1fff4; }.profile-hero p { margin:5px 0 0; color:#9db5a4; font-size:12px; }.profile-hero-avatar { display:grid; place-items:center; width:48px; height:48px; border-radius:50%; background:#087d43; color:#eafff0; }.profile-hero-avatar svg { width:25px; fill:currentColor; }.profile-card textarea { width:100%; resize:vertical; }.profile-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+.cookie-consent { position:fixed; left:20px; bottom:20px; z-index:12000; display:flex; align-items:center; gap:18px; max-width:440px; padding:12px 14px; border:1px solid #304438; border-radius:10px; background:#111a14; color:#b8c9bc; font-size:12px; box-shadow:0 14px 34px rgba(0,0,0,.35); }.cookie-consent button { padding:6px 13px; border:1px solid #168b4b; border-radius:6px; background:#087d43; color:#fff; cursor:pointer; }
 .workspace-ai-mark { display:grid; place-items:center; width:30px; height:30px; border:1px solid #3b5646; border-radius:9px; background:#16221b; }
 .workspace-ai-mark img { width:24px; height:24px; object-fit:contain; }
 .workspace-ai-brand-copy { display:grid; gap:2px; min-width:0; }
@@ -8724,10 +8730,23 @@ li.CodeMirror-hint-active {
         <div class="auth-profile-heading">Signed in as</div>
         <strong class="auth-profile-name" id="auth-account-name"></strong>
         <span class="auth-profile-email" id="auth-account-email"></span>
+        <button class="auth-profile-edit" type="button" onclick="Auth.openProfile()">Edit profile</button>
         <button class="auth-profile-logout" type="button" onclick="Auth.signOut()">Sign out</button>
       </div>
     </div>
   </div>
+</div>
+
+<div class="profile-modal" id="profile-modal" hidden>
+  <section class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+    <button class="auth-close" type="button" aria-label="Close profile" onclick="Auth.closeProfile()">×</button>
+    <div class="profile-hero"><div class="profile-hero-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.2 4.2 0 1 0 0-8.4A4.2 4.2 0 0 0 12 12Zm0 2.1c-4.05 0-7.35 2.1-7.35 4.7 0 .66.54 1.2 1.2 1.2h12.3c.66 0 1.2-.54 1.2-1.2 0-2.6-3.3-4.7-7.35-4.7Z"/></svg></div><div><h2 id="profile-title">Your profile</h2><p>Make your CodeLeaf identity yours.</p></div></div>
+    <label class="auth-field">Name<input id="profile-name" autocomplete="name" /></label>
+    <label class="auth-field">College<input id="profile-college" placeholder="Your college or institution" /></label>
+    <label class="auth-field">LinkedIn<input id="profile-linkedin" placeholder="https://linkedin.com/in/you" /></label>
+    <label class="auth-field">About you<textarea id="profile-bio" rows="3" placeholder="A short introduction"></textarea></label>
+    <div class="profile-actions"><button class="auth-secondary" type="button" onclick="Auth.closeProfile()">Cancel</button><button class="auth-primary" type="button" onclick="Auth.saveProfile()">Save changes</button></div>
+  </section>
 </div>
 
 <button id="workspace-ai-launch-floating" class="workspace-ai-floating-launch" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open CodeLeaf AI" aria-label="Open CodeLeaf AI" aria-expanded="false">
@@ -9713,6 +9732,25 @@ const Auth = (() => {
     }
   }
 
+  function openProfile() {
+    if (!state.user) return open();
+    const modal = $('profile-modal');
+    if (!modal) return;
+    $('profile-name').value = state.user.name || '';
+    $('profile-college').value = state.user.college || '';
+    $('profile-linkedin').value = state.user.linkedin || '';
+    $('profile-bio').value = state.user.bio || '';
+    modal.hidden = false;
+  }
+  function closeProfile() { const modal = $('profile-modal'); if (modal) modal.hidden = true; }
+  async function saveProfile() {
+    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, college: $('profile-college').value, linkedin: $('profile-linkedin').value, bio: $('profile-bio').value }) });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Unable to save profile.');
+    state.user = data.user; renderAccount(); closeProfile();
+    window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
+  }
+
   async function request(path, payload) {
     const response = await fetch(path, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -9830,7 +9868,7 @@ const Auth = (() => {
   }
 
   return {
-    init, open, close, login, register, signOut, accountAction, setMode,
+    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, setMode,
     require(action) { if (state.user) return action(); open(action); },
     get user() { return state.user; },
   };
@@ -9839,6 +9877,19 @@ const Auth = (() => {
 window.Auth = Auth;
 
 document.addEventListener('DOMContentLoaded', () => Auth.init());
+
+</script>
+<script>
+(() => {
+  window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('codeleaf-cookie-consent')) return;
+    const banner = document.createElement('div');
+    banner.className = 'cookie-consent';
+    banner.innerHTML = '<span>CodeLeaf uses a secure session cookie to keep you signed in across visits.</span><button type="button">Allow</button>';
+    banner.querySelector('button').onclick = () => { localStorage.setItem('codeleaf-cookie-consent', '1'); banner.remove(); };
+    document.body.appendChild(banner);
+  });
+})();
 
 </script>
 <script>
@@ -14241,8 +14292,9 @@ const WorkspaceAIAssistant = (() => {
     const auth = byId('auth-overlay');
     const homeVisible = Boolean(intro?.classList.contains('active'));
     const authVisible = Boolean(auth && !auth.hidden);
+    const examVisible = [...document.querySelectorAll('.exam-overlay')].some(node => !node.hidden && getComputedStyle(node).display !== 'none');
     const panelOpen = Boolean(panel() && !panel().hidden);
-    button.hidden = homeVisible || authVisible || panelOpen;
+    button.hidden = homeVisible || authVisible || panelOpen || examVisible;
   }
   function launchButtons() {
     return [byId('workspace-ai-launch-floating'), byId('workspace-ai-launch')].filter(Boolean);
@@ -14510,7 +14562,7 @@ const WorkspaceAIAssistant = (() => {
     syncAutofillButton();
     syncLauncherVisibility();
     const visibilityObserver = new MutationObserver(syncLauncherVisibility);
-    ['intro-panel', 'auth-overlay'].forEach(id => {
+    ['intro-panel', 'auth-overlay', 'exam-role-panel', 'exam-mentor-create-panel', 'exam-mentor-dash-panel', 'exam-student-join-panel', 'exam-student-wait-panel', 'exam-student-exam-panel', 'exam-thankyou-panel', 'exam-student-kicked-panel'].forEach(id => {
       const target = byId(id);
       if (target) visibilityObserver.observe(target, { attributes: true, attributeFilter: ['class', 'hidden'] });
     });

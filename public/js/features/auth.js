@@ -94,6 +94,25 @@ const Auth = (() => {
     }
   }
 
+  function openProfile() {
+    if (!state.user) return open();
+    const modal = $('profile-modal');
+    if (!modal) return;
+    $('profile-name').value = state.user.name || '';
+    $('profile-college').value = state.user.college || '';
+    $('profile-linkedin').value = state.user.linkedin || '';
+    $('profile-bio').value = state.user.bio || '';
+    modal.hidden = false;
+  }
+  function closeProfile() { const modal = $('profile-modal'); if (modal) modal.hidden = true; }
+  async function saveProfile() {
+    const response = await fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: $('profile-name').value, college: $('profile-college').value, linkedin: $('profile-linkedin').value, bio: $('profile-bio').value }) });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Unable to save profile.');
+    state.user = data.user; renderAccount(); closeProfile();
+    window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
+  }
+
   async function request(path, payload) {
     const response = await fetch(path, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -211,7 +230,7 @@ const Auth = (() => {
   }
 
   return {
-    init, open, close, login, register, signOut, accountAction, setMode,
+    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, setMode,
     require(action) { if (state.user) return action(); open(action); },
     get user() { return state.user; },
   };

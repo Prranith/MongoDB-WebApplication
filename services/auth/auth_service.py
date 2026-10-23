@@ -39,6 +39,9 @@ def _safe_user(doc):
         "email": doc.get("email", ""),
         "name": doc.get("name") or doc.get("email", "").split("@")[0],
         "avatar": doc.get("avatar", ""),
+        "college": doc.get("college", ""),
+        "linkedin": doc.get("linkedin", ""),
+        "bio": doc.get("bio", ""),
         "providers": sorted(doc.get("providers", [])),
         "emailVerified": bool(doc.get("emailVerified", False)),
         "createdAt": doc.get("createdAt").isoformat() if hasattr(doc.get("createdAt"), "isoformat") else doc.get("createdAt"),
@@ -314,6 +317,23 @@ def logout():
     if raw and db is not None:
         db.sessions.delete_one({"_id": hashlib.sha256(raw.encode()).hexdigest()})
     session.clear()
+
+
+def update_profile(user_id, updates):
+    db = _db()
+    if db is None:
+        raise RuntimeError("Authentication database is not configured.")
+    allowed = {"name", "avatar", "college", "linkedin", "bio"}
+    clean = {key: str(updates.get(key) or "").strip()[:500 if key == "bio" else 180]
+             for key in allowed if key in updates}
+    if "name" in clean and len(clean["name"]) < 2:
+        raise ValueError("Name must contain at least 2 characters.")
+    if "linkedin" in clean and clean["linkedin"] and not clean["linkedin"].startswith(("https://", "http://")):
+        raise ValueError("LinkedIn URL must start with https:// or http://.")
+    if clean:
+        clean["updatedAt"] = _now()
+        db.users.update_one({"_id": user_id}, {"$set": clean})
+    return db.users.find_one({"_id": user_id, "status": "active"})
 
 
 def require_auth(view):

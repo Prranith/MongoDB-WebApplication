@@ -17,8 +17,9 @@ const WorkspaceAIAssistant = (() => {
     const auth = byId('auth-overlay');
     const homeVisible = Boolean(intro?.classList.contains('active'));
     const authVisible = Boolean(auth && !auth.hidden);
+    const examVisible = [...document.querySelectorAll('.exam-overlay')].some(node => !node.hidden && getComputedStyle(node).display !== 'none');
     const panelOpen = Boolean(panel() && !panel().hidden);
-    button.hidden = homeVisible || authVisible || panelOpen;
+    button.hidden = homeVisible || authVisible || panelOpen || examVisible;
   }
   function launchButtons() {
     return [byId('workspace-ai-launch-floating'), byId('workspace-ai-launch')].filter(Boolean);
@@ -286,7 +287,7 @@ const WorkspaceAIAssistant = (() => {
     syncAutofillButton();
     syncLauncherVisibility();
     const visibilityObserver = new MutationObserver(syncLauncherVisibility);
-    ['intro-panel', 'auth-overlay'].forEach(id => {
+    ['intro-panel', 'auth-overlay', 'exam-role-panel', 'exam-mentor-create-panel', 'exam-mentor-dash-panel', 'exam-student-join-panel', 'exam-student-wait-panel', 'exam-student-exam-panel', 'exam-thankyou-panel', 'exam-student-kicked-panel'].forEach(id => {
       const target = byId(id);
       if (target) visibilityObserver.observe(target, { attributes: true, attributeFilter: ['class', 'hidden'] });
     });

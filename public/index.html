@@ -239,10 +239,23 @@
         <div class="auth-profile-heading">Signed in as</div>
         <strong class="auth-profile-name" id="auth-account-name"></strong>
         <span class="auth-profile-email" id="auth-account-email"></span>
+        <button class="auth-profile-edit" type="button" onclick="Auth.openProfile()">Edit profile</button>
         <button class="auth-profile-logout" type="button" onclick="Auth.signOut()">Sign out</button>
       </div>
     </div>
   </div>
+</div>
+
+<div class="profile-modal" id="profile-modal" hidden>
+  <section class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+    <button class="auth-close" type="button" aria-label="Close profile" onclick="Auth.closeProfile()">×</button>
+    <div class="profile-hero"><div class="profile-hero-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.2 4.2 0 1 0 0-8.4A4.2 4.2 0 0 0 12 12Zm0 2.1c-4.05 0-7.35 2.1-7.35 4.7 0 .66.54 1.2 1.2 1.2h12.3c.66 0 1.2-.54 1.2-1.2 0-2.6-3.3-4.7-7.35-4.7Z"/></svg></div><div><h2 id="profile-title">Your profile</h2><p>Make your CodeLeaf identity yours.</p></div></div>
+    <label class="auth-field">Name<input id="profile-name" autocomplete="name" /></label>
+    <label class="auth-field">College<input id="profile-college" placeholder="Your college or institution" /></label>
+    <label class="auth-field">LinkedIn<input id="profile-linkedin" placeholder="https://linkedin.com/in/you" /></label>
+    <label class="auth-field">About you<textarea id="profile-bio" rows="3" placeholder="A short introduction"></textarea></label>
+    <div class="profile-actions"><button class="auth-secondary" type="button" onclick="Auth.closeProfile()">Cancel</button><button class="auth-primary" type="button" onclick="Auth.saveProfile()">Save changes</button></div>
+  </section>
 </div>
 
 <button id="workspace-ai-launch-floating" class="workspace-ai-floating-launch" type="button" onclick="WorkspaceAIAssistant.toggle()" title="Open CodeLeaf AI" aria-label="Open CodeLeaf AI" aria-expanded="false">
@@ -789,6 +802,7 @@
 <script src="js/core/state.js"></script>
 <script src="js/core/api.js"></script>
 <script src="js/features/auth.js"></script>
+<script src="js/features/cookie_consent.js"></script>
 <script src="js/utils/helpers.js"></script>
 <script src="js/ui/panels.js"></script>
 <script src="js/ui/sidebar.js"></script>
