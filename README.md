@@ -46,11 +46,11 @@ Start the worker from the repository root with:
 python -m services.execution.worker
 ```
 
-The worker must run as a long-lived service outside Vercel. The included
-`Dockerfile.worker` installs GCC, G++, OpenJDK, and Python so C, C++, Java,
-and Python execute locally inside the worker. No Paiza or Piston API is used.
-It stores job payloads and results in the existing MongoDB database and
-acknowledges a RabbitMQ message only after the result has been persisted.
+The worker must run as a long-lived Python process outside Vercel. It uses the
+Python, GCC, G++, and Java runtimes installed on that machine. No Paiza or
+Piston API is used. It stores job payloads and results in the existing MongoDB
+database and acknowledges a RabbitMQ message only after the result has been
+persisted.
 
 ---
 
