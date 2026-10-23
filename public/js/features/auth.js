@@ -10,6 +10,12 @@ const Auth = (() => {
   }
 
   function setMode(mode) {
+    if (mode === 'forgot') {
+      state.mode = 'forgot'; $('auth-title').textContent = 'Reset your CodeLeaf password'; $('auth-subtitle').textContent = 'We will email you a secure password reset link.'; $('auth-email-heading').textContent = 'Enter the email address on your account'; $('auth-name-field').hidden = true; $('auth-otp-field').hidden = true; $('auth-password').closest('.auth-field').hidden = true; $('auth-reset-fields').hidden = true; $('auth-submit').textContent = 'Send reset link'; $('auth-submit').onclick = sendResetLink; $('auth-mode-toggle').textContent = 'Back to sign in'; $('auth-mode-toggle').onclick = () => setMode('signin'); $('auth-forgot').hidden = true; return;
+    }
+    if (mode === 'reset') {
+      state.mode = 'reset'; $('auth-title').textContent = 'Choose a new password'; $('auth-subtitle').textContent = 'Use a strong password you do not reuse elsewhere.'; $('auth-email-heading').textContent = 'Your reset link is valid for 30 minutes'; $('auth-name-field').hidden = true; $('auth-otp-field').hidden = true; $('auth-password').closest('.auth-field').hidden = true; $('auth-reset-fields').hidden = false; $('auth-submit').textContent = 'Update password'; $('auth-submit').onclick = resetPassword; $('auth-mode-toggle').textContent = 'Back to sign in'; $('auth-mode-toggle').onclick = () => { history.replaceState({}, '', location.pathname); setMode('signin'); }; $('auth-forgot').hidden = true; return;
+    }
     if (mode === 'verify') {
       state.mode = 'verify';
       $('auth-title').textContent = 'Verify your email';
@@ -57,6 +63,8 @@ const Auth = (() => {
       toggle.textContent = signup ? 'Use sign in' : 'Create account';
       toggle.onclick = () => setMode(signup ? 'signin' : 'signup');
     }
+    if ($('auth-forgot')) $('auth-forgot').hidden = signup;
+    if ($('auth-reset-fields')) $('auth-reset-fields').hidden = true;
   }
 
   function open(action, mode = 'signin') {
@@ -73,6 +81,22 @@ const Auth = (() => {
     const node = overlay();
     if (node) { node.hidden = true; document.body.classList.remove('auth-open'); }
     window.WorkspaceAIAssistant?.syncLauncherVisibility?.();
+  }
+
+  async function sendResetLink() {
+    const email = $('auth-email')?.value.trim();
+    if (!email) { setMessage('Enter your email address.', true); return; }
+    try { setMessage('Sending reset link…'); const data = await request('/api/auth/forgot-password', { email }); setMessage(data.message || 'If an account exists for that email, a reset link has been sent.'); }
+    catch (error) { setMessage(error.message, true); }
+  }
+
+  async function resetPassword() {
+    const password = $('auth-reset-password')?.value || ''; const confirm = $('auth-reset-confirm')?.value || ''; const token = new URLSearchParams(location.search).get('reset');
+    if (!token) { setMessage('This reset link is missing or invalid.', true); return; }
+    if (password.length < 10) { setMessage('Password must contain at least 10 characters.', true); return; }
+    if (password !== confirm) { setMessage('Passwords do not match.', true); return; }
+    try { await request('/api/auth/reset-password', { token, newPassword: password }); history.replaceState({}, '', location.pathname); setMode('signin'); $('auth-email').value = ''; setMessage('Password updated. You can now sign in.'); }
+    catch (error) { setMessage(error.message, true); }
   }
 
   function renderAccount() {
@@ -345,12 +369,12 @@ const Auth = (() => {
           button?.setAttribute('aria-expanded', 'false');
         }
       });
-      if (new URLSearchParams(location.search).get('auth') === 'error') open();
+      const params = new URLSearchParams(location.search); if (params.get('reset')) open(null, 'reset'); else if (params.get('auth') === 'error') open();
     } catch (_) { /* The app remains usable until an authenticated API is needed. */ }
   }
 
   return {
-    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, chooseCover, setEditMode, searchProfiles, setMode,
+    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, chooseCover, setEditMode, searchProfiles, setMode, forgotPassword: () => setMode('forgot'),
     require(action) { if (state.user) return action(); open(action); },
     get user() { return state.user; },
   };

@@ -8438,6 +8438,9 @@ li.CodeMirror-hint-active {
 .auth-primary { border-color:#00a94b; background:#08783d; font-weight:700; }
 .auth-primary:hover { background:#09934c; }
 .auth-message { min-height:18px; margin:13px 0 0; color:#98b1a0; text-align:center; font-size:12px; }
+.auth-forgot-wrap { display:flex; justify-content:flex-end; margin-top:10px; }
+.auth-link-button { border:0; padding:0; background:transparent; color:#79e59a; cursor:pointer; font:11px 'Segoe UI',sans-serif; }
+.auth-link-button:hover { color:#c4ffd0; text-decoration:underline; }
 .auth-message.error { color:#ff8f82; }
 .auth-name-field[hidden] { display:none !important; }
 .auth-account-wrap { position:relative; display:inline-flex; }

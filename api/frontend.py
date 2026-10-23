@@ -8595,6 +8595,9 @@ li.CodeMirror-hint-active {
 .auth-primary { border-color:#00a94b; background:#08783d; font-weight:700; }
 .auth-primary:hover { background:#09934c; }
 .auth-message { min-height:18px; margin:13px 0 0; color:#98b1a0; text-align:center; font-size:12px; }
+.auth-forgot-wrap { display:flex; justify-content:flex-end; margin-top:10px; }
+.auth-link-button { border:0; padding:0; background:transparent; color:#79e59a; cursor:pointer; font:11px 'Segoe UI',sans-serif; }
+.auth-link-button:hover { color:#c4ffd0; text-decoration:underline; }
 .auth-message.error { color:#ff8f82; }
 .auth-name-field[hidden] { display:none !important; }
 .auth-account-wrap { position:relative; display:inline-flex; }
@@ -9413,8 +9416,8 @@ li.CodeMirror-hint-active {
     <label class="auth-field auth-name-field" id="auth-name-field" hidden>Name<input id="auth-name" autocomplete="name" placeholder="Your name" /></label>
     <label class="auth-field">Email<input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required /></label>
     <label class="auth-field">Password<input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 10 characters" required /></label>
-    <label class="auth-field" id="auth-otp-field" hidden>Verification code<input id="auth-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code" /></label>
-    <div class="auth-actions"><button class="auth-primary" id="auth-submit" type="button" onclick="Auth.login()">Sign in</button><button class="auth-secondary" id="auth-mode-toggle" type="button" onclick="Auth.register()">Create account</button></div>
+    <label class="auth-field" id="auth-otp-field" hidden>Verification code<input id="auth-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code" /></label><div id="auth-reset-fields" hidden><label class="auth-field">New password<input id="auth-reset-password" type="password" autocomplete="new-password" minlength="10" placeholder="At least 10 characters" /></label><label class="auth-field">Confirm new password<input id="auth-reset-confirm" type="password" autocomplete="new-password" minlength="10" placeholder="Repeat your new password" /></label></div>
+    <div class="auth-forgot-wrap"><button class="auth-link-button" id="auth-forgot" type="button" onclick="Auth.forgotPassword()">Forgot password?</button></div><div class="auth-actions"><button class="auth-primary" id="auth-submit" type="button" onclick="Auth.login()">Sign in</button><button class="auth-secondary" id="auth-mode-toggle" type="button" onclick="Auth.register()">Create account</button></div>
     <p class="auth-message" id="auth-message" role="status"></p>
   </section>
 </div>
@@ -9779,6 +9782,12 @@ const Auth = (() => {
   }
 
   function setMode(mode) {
+    if (mode === 'forgot') {
+      state.mode = 'forgot'; $('auth-title').textContent = 'Reset your CodeLeaf password'; $('auth-subtitle').textContent = 'We will email you a secure password reset link.'; $('auth-email-heading').textContent = 'Enter the email address on your account'; $('auth-name-field').hidden = true; $('auth-otp-field').hidden = true; $('auth-password').closest('.auth-field').hidden = true; $('auth-reset-fields').hidden = true; $('auth-submit').textContent = 'Send reset link'; $('auth-submit').onclick = sendResetLink; $('auth-mode-toggle').textContent = 'Back to sign in'; $('auth-mode-toggle').onclick = () => setMode('signin'); $('auth-forgot').hidden = true; return;
+    }
+    if (mode === 'reset') {
+      state.mode = 'reset'; $('auth-title').textContent = 'Choose a new password'; $('auth-subtitle').textContent = 'Use a strong password you do not reuse elsewhere.'; $('auth-email-heading').textContent = 'Your reset link is valid for 30 minutes'; $('auth-name-field').hidden = true; $('auth-otp-field').hidden = true; $('auth-password').closest('.auth-field').hidden = true; $('auth-reset-fields').hidden = false; $('auth-submit').textContent = 'Update password'; $('auth-submit').onclick = resetPassword; $('auth-mode-toggle').textContent = 'Back to sign in'; $('auth-mode-toggle').onclick = () => { history.replaceState({}, '', location.pathname); setMode('signin'); }; $('auth-forgot').hidden = true; return;
+    }
     if (mode === 'verify') {
       state.mode = 'verify';
       $('auth-title').textContent = 'Verify your email';
@@ -9826,6 +9835,8 @@ const Auth = (() => {
       toggle.textContent = signup ? 'Use sign in' : 'Create account';
       toggle.onclick = () => setMode(signup ? 'signin' : 'signup');
     }
+    if ($('auth-forgot')) $('auth-forgot').hidden = signup;
+    if ($('auth-reset-fields')) $('auth-reset-fields').hidden = true;
   }
 
   function open(action, mode = 'signin') {
@@ -9842,6 +9853,22 @@ const Auth = (() => {
     const node = overlay();
     if (node) { node.hidden = true; document.body.classList.remove('auth-open'); }
     window.WorkspaceAIAssistant?.syncLauncherVisibility?.();
+  }
+
+  async function sendResetLink() {
+    const email = $('auth-email')?.value.trim();
+    if (!email) { setMessage('Enter your email address.', true); return; }
+    try { setMessage('Sending reset link…'); const data = await request('/api/auth/forgot-password', { email }); setMessage(data.message || 'If an account exists for that email, a reset link has been sent.'); }
+    catch (error) { setMessage(error.message, true); }
+  }
+
+  async function resetPassword() {
+    const password = $('auth-reset-password')?.value || ''; const confirm = $('auth-reset-confirm')?.value || ''; const token = new URLSearchParams(location.search).get('reset');
+    if (!token) { setMessage('This reset link is missing or invalid.', true); return; }
+    if (password.length < 10) { setMessage('Password must contain at least 10 characters.', true); return; }
+    if (password !== confirm) { setMessage('Passwords do not match.', true); return; }
+    try { await request('/api/auth/reset-password', { token, newPassword: password }); history.replaceState({}, '', location.pathname); setMode('signin'); $('auth-email').value = ''; setMessage('Password updated. You can now sign in.'); }
+    catch (error) { setMessage(error.message, true); }
   }
 
   function renderAccount() {
@@ -10114,12 +10141,12 @@ const Auth = (() => {
           button?.setAttribute('aria-expanded', 'false');
         }
       });
-      if (new URLSearchParams(location.search).get('auth') === 'error') open();
+      const params = new URLSearchParams(location.search); if (params.get('reset')) open(null, 'reset'); else if (params.get('auth') === 'error') open();
     } catch (_) { /* The app remains usable until an authenticated API is needed. */ }
   }
 
   return {
-    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, chooseCover, setEditMode, searchProfiles, setMode,
+    init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, chooseCover, setEditMode, searchProfiles, setMode, forgotPassword: () => setMode('forgot'),
     require(action) { if (state.user) return action(); open(action); },
     get user() { return state.user; },
   };

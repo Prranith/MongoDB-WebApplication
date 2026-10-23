@@ -3,7 +3,8 @@ from flask import Blueprint, jsonify, request
 from services.auth.auth_service import (
     AUTH_REQUIRED, create_session, create_pending_signup,
     current_user, logout, password_login, verify_pending_signup,
-    resend_pending_signup_otp, update_profile, change_password, _safe_user,
+    resend_pending_signup_otp, update_profile, change_password,
+    request_password_reset, reset_password, _safe_user,
 )
 from services.shared.rate_limit import make_rate_limiter
 
@@ -65,6 +66,31 @@ def auth_login():
 def auth_logout():
     logout()
     return jsonify({"authenticated": False})
+
+
+@auth_bp.post("/api/auth/forgot-password")
+def auth_forgot_password():
+    body = request.get_json(silent=True) or {}
+    limited = _rate_limit("forgot-password", body.get("email"))
+    if limited:
+        return limited
+    try:
+        request_password_reset(body.get("email"))
+        return jsonify({"sent": True, "message": "If an account exists for that email, a reset link has been sent."})
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 503
+
+
+@auth_bp.post("/api/auth/reset-password")
+def auth_reset_password():
+    body = request.get_json(silent=True) or {}
+    try:
+        reset_password(body.get("token"), body.get("newPassword"))
+        return jsonify({"reset": True})
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 503
 
 
 @auth_bp.route("/api/auth/profile", methods=["GET", "PUT"])

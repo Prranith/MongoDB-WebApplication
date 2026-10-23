@@ -72,6 +72,7 @@ def init_indexes():
     db.email_otps.create_index("expiresAt", expireAfterSeconds=0)
     db.pending_signups.create_index("expiresAt", expireAfterSeconds=0)
     db.pending_signups.create_index("email", unique=True)
+    db.password_resets.create_index("expiresAt", expireAfterSeconds=0)
 
 
 def _otp_digest(email, code):
@@ -79,24 +80,21 @@ def _otp_digest(email, code):
     return hashlib.sha256(f"{secret}:{email}:{code}".encode()).hexdigest()
 
 
-def _send_verification_email(email, name, code):
+def _send_email_message(subject, recipient, body):
     client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
     refresh_token = os.getenv("GOOGLE_REFRESH_TOKEN", "").strip()
     sender = os.getenv("GMAIL_SENDER_EMAIL", "").strip()
     if not client_id or not client_secret or not refresh_token or not sender:
         if os.getenv("AUTH_EMAIL_DEV_MODE", "0").strip().lower() in {"1", "true", "yes"}:
-            print(f"[auth] development email OTP for {email}: {code}")
+            print(f"[auth] development email queued for {recipient}")
             return True
         raise RuntimeError("Gmail API is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, and GMAIL_SENDER_EMAIL.")
     message = EmailMessage()
-    message["Subject"] = "Verify your CodeLeaf email"
+    message["Subject"] = subject
     message["From"] = sender
-    message["To"] = email
-    message.set_content(
-        f"Hi {name},\n\nYour CodeLeaf verification code is {code}.\n"
-        f"This code expires in {OTP_TTL_MINUTES} minutes.\n\nCodeLeaf Security"
-    )
+    message["To"] = recipient
+    message.set_content(body)
     try:
         token_response = requests.post(
             "https://oauth2.googleapis.com/token",
@@ -122,6 +120,62 @@ def _send_verification_email(email, name, code):
         raise RuntimeError(f"Gmail API request failed: {exc}") from exc
     if response.status_code not in {200, 201}:
         raise RuntimeError(f"Gmail API rejected the message ({response.status_code}): {response.text[:240]}")
+    return True
+
+
+def _send_verification_email(email, name, code):
+    return _send_email_message(
+        "Verify your CodeLeaf email", email,
+        f"Hi {name},\n\nYour CodeLeaf verification code is {code}.\n"
+        f"This code expires in {OTP_TTL_MINUTES} minutes.\n\nCodeLeaf Security",
+    )
+
+
+def _send_password_reset_email(email, name, token):
+    base_url = os.getenv("APP_BASE_URL", "https://codexa-labs.vercel.app").strip().rstrip("/")
+    reset_url = f"{base_url}/?reset={token}"
+    return _send_email_message(
+        "Reset your CodeLeaf password", email,
+        f"Hi {name},\n\nWe received a request to reset your CodeLeaf password.\n"
+        f"Open this link within 30 minutes to choose a new password:\n{reset_url}\n\n"
+        "If you did not request this, you can safely ignore this email.\n\nCodeLeaf Security",
+    )
+
+
+def request_password_reset(email):
+    db = _db()
+    if db is None:
+        raise RuntimeError("Authentication database is not configured.")
+    email = _email(email)
+    user = db.users.find_one({"email": email, "status": "active"})
+    if not user:
+        return True
+    token = secrets.token_urlsafe(48)
+    now = _now()
+    db.password_resets.delete_many({"email": email})
+    _send_password_reset_email(email, user.get("name", "there"), token)
+    db.password_resets.insert_one({"email": email, "tokenHash": _otp_digest(email, token),
+                                   "createdAt": now, "expiresAt": now + timedelta(minutes=30), "used": False})
+    return True
+
+
+def reset_password(token, new_password):
+    db = _db()
+    if db is None:
+        raise RuntimeError("Authentication database is not configured.")
+    if len(new_password or "") < 10:
+        raise ValueError("Password must contain at least 10 characters.")
+    token = str(token or "").strip()
+    record = db.password_resets.find_one({"expiresAt": {"$gt": _now()}, "used": False})
+    if not record or not secrets.compare_digest(record.get("tokenHash", ""), _otp_digest(record.get("email", ""), token)):
+        raise ValueError("This password reset link is invalid or expired.")
+    result = db.users.update_one({"email": record["email"], "status": "active"}, {"$set": {"passwordHash": generate_password_hash(new_password, method="scrypt"), "updatedAt": _now()}})
+    if result.matched_count != 1:
+        raise ValueError("This password reset link is invalid or expired.")
+    db.password_resets.update_one({"_id": record["_id"]}, {"$set": {"used": True, "usedAt": _now()}})
+    user = db.users.find_one({"email": record["email"]}, {"_id": 1})
+    if user:
+        db.sessions.delete_many({"userId": user["_id"]})
     return True
 
 
