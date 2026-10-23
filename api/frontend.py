@@ -15874,6 +15874,8 @@ const ExamPortal = (() => {
       examEditor: null,
       timerInterval: null,
       ignoreFullscreenChange: false,
+      finalSubmissionConfirmed: false,
+      finalSubmissionInFlight: false,
     }
   };
 
@@ -16536,6 +16538,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     state.student.currentQIdx = null;
     state.student.autoSaveTimeout = null;
     state.student.ignoreFullscreenChange = false;
+    state.student.finalSubmissionConfirmed = false;
+    state.student.finalSubmissionInFlight = false;
     state.student.copiedFromEditor = false;
     state.student.lastInternalCopiedText = '';
     state.student.isPasting = false;
@@ -20877,7 +20881,13 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         
         const okBtn = el('confirm-submit-ok-btn');
         if (okBtn) {
-          okBtn.onclick = async () => {
+          okBtn.onclick = async (event) => {
+            // Final submission must originate from this visible confirmation
+            // button. Do not allow synthetic/programmatic clicks to submit an
+            // assessment while the student is still working.
+            if (event && event.isTrusted === false) return;
+            if (state.student.finalSubmissionInFlight) return;
+            state.student.finalSubmissionConfirmed = true;
             closeModal('exam-confirm-submit-modal');
             await studentNS._executeSubmission();
           };
@@ -20898,6 +20908,12 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async _executeSubmission() {
+      // This method is intentionally guarded: only the explicit confirmation
+      // action above may finalize an exam. Timer/proctoring/autosave paths must
+      // never be able to enter the final submission state.
+      if (!state.student.finalSubmissionConfirmed || state.student.finalSubmissionInFlight) return;
+      state.student.finalSubmissionConfirmed = false;
+      state.student.finalSubmissionInFlight = true;
       state.student.ignoreFullscreenChange = true;
       const btn = el('btn-student-submit-exam');
       if (btn) {
@@ -20917,6 +20933,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           btn.disabled = false;
           btn.innerHTML = 'Review &amp; submit <span>↗</span>';
         }
+        state.student.finalSubmissionInFlight = false;
         state.student.ignoreFullscreenChange = false;
       }
     },
