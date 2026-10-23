@@ -7,7 +7,7 @@
   const num = (value) => value === null || value === undefined ? '—' : Number(value).toLocaleString();
   const isUnavailable = (value) => value === null || value === undefined;
   const statusClass = (value) => `pill-${String(value || 'unknown').toLowerCase().replace(/[^a-z]/g,'')}`;
-  const api = async (path, options = {}) => { const response = await fetch(path, { credentials: 'same-origin', ...options, headers: {'Content-Type':'application/json', ...(options.headers || {})} }); const body = await response.json().catch(() => ({})); if (response.status === 401) { showLogin(); throw new Error('Administrator authentication required'); } if (!response.ok) throw new Error(body.error || `Request failed (${response.status})`); return body; };
+  const api = async (path, options = {}) => { const response = await fetch(path, { credentials: 'same-origin', ...options, headers: {'Content-Type':'application/json', ...(options.headers || {})} }); const body = await response.json().catch(() => ({})); if (response.status === 401 && path !== '/api/admin/auth/login') { showLogin(); } if (!response.ok) throw new Error(body.error || body.code || `Request failed (${response.status})`); return body; };
   const toast = (message, error = false) => { const node = document.createElement('div'); node.className = `toast${error ? ' error' : ''}`; node.textContent = message; $('toast-region').appendChild(node); setTimeout(() => node.remove(), 4200); };
   const showLogin = () => { clearInterval(state.refreshTimer); $('admin-app').hidden = true; $('admin-login').style.display = 'grid'; };
   const showApp = () => { $('admin-login').style.display = 'none'; $('admin-app').hidden = false; };

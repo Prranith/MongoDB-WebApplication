@@ -94,7 +94,10 @@ def _before_request():
         # other admin API remains protected by its own server-side session
         # decorator in admin_routes.py.
         public = request.path.startswith("/api/auth/") or request.path == "/api/admin/auth/login" or request.path.startswith("/api/analytics")
-        if not public and not g.user:
+        is_admin_api = request.path.startswith("/api/admin/")
+        # Admin APIs have their own independent session and role guard. Do
+        # not let the ordinary student session gate intercept them first.
+        if not public and not is_admin_api and not g.user:
             return jsonify({"error": "Authentication required", "code": "AUTH_REQUIRED"}), 401
 
 
