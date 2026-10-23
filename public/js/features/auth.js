@@ -181,12 +181,35 @@ const Auth = (() => {
   function readProfileLinks() { return [...document.querySelectorAll('.profile-link-row')].map(row => ({ label: row.querySelector('.profile-link-label').value, url: row.querySelector('.profile-link-url').value })).filter(x => x.url); }
   function chooseAvatar(event) { const file = event.target.files?.[0]; if (!file || !file.type.startsWith('image/')) return; if (file.size > 1000000) return setMessage('Profile photo must be smaller than 1 MB.', true); const reader = new FileReader(); reader.onload = () => { $('profile-avatar').src = reader.result; if ($('profile-avatar-preview')) $('profile-avatar-preview').src = reader.result; $('profile-avatar-data').value = reader.result; }; reader.readAsDataURL(file); }
   async function searchProfiles() {
-    const query = $('profile-search-query').value.trim(); const target = $('profile-search-results');
+    const query = $('profile-directory-query')?.value.trim() || $('profile-search-query')?.value.trim() || ''; const target = $('profile-directory-results') || $('profile-search-results');
     if (query.length < 1) { target.innerHTML = '<div class="profile-search-empty">Start typing to discover CodeLeaf members.</div>'; return; }
     target.textContent = 'Searching…';
     const response = await fetch(`/api/auth/search?q=${encodeURIComponent(query)}`, { credentials: 'same-origin' });
     const data = await response.json().catch(() => ({}));
-    target.innerHTML = (data.users || []).map(user => `<div class="profile-search-result"><strong>${user.name || 'CodeLeaf member'}</strong><span>${user.college || user.bio || 'CodeLeaf member'}</span></div>`).join('') || 'No matching profiles found.';
+    const escape = value => String(value || '').replace(/[&<>"']/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[character]));
+    target.innerHTML = (data.users || []).map(user => `<button class="profile-directory-result" type="button" data-profile-id="${escape(user.id)}"><span class="profile-directory-avatar">${user.avatar ? `<img src="${escape(user.avatar)}" alt="">` : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z"/></svg>'}</span><span><strong>${escape(user.name || 'CodeLeaf member')}</strong><small>${escape(user.college || user.bio || 'CodeLeaf member')}</small></span><svg class="profile-directory-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6 1.4-1.4L17.8 12l-7.4 7.4L9 18Z"/></svg></button>`).join('') || '<div class="profile-search-empty">No matching profiles found.</div>';
+    target.querySelectorAll('[data-profile-id]').forEach(result => { result.onclick = () => viewPublicProfile(result.dataset.profileId); });
+  }
+  async function viewPublicProfile(userId) {
+    if (!userId) return;
+    const preview = $('profile-public-preview'); if (!preview) return;
+    preview.hidden = false; preview.innerHTML = '<div class="profile-preview-loading">Loading profile…</div>';
+    const response = await fetch(`/api/auth/profile/${encodeURIComponent(userId)}`, { credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.profile) { preview.innerHTML = '<div class="profile-preview-loading">Unable to load this profile.</div>'; return; }
+    const profile = data.profile; const escape = value => String(value || '').replace(/[&<>"']/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[character]));
+    const links = (profile.links || []).map(link => `<a href="${escape(link.url)}" target="_blank" rel="noopener noreferrer">${escape(link.label || 'Website')}</a>`).join('');
+    const fallback = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" fill="#06110b"/><circle cx="40" cy="40" r="34" fill="#087d43" stroke="#00ed64" stroke-width="2"/><circle cx="40" cy="29" r="10" fill="#eafff0"/><path fill="#eafff0" d="M20 58c0-10 9-17 20-17s20 7 20 17v2H20v-2Z"/></svg>');
+    preview.innerHTML = `<div class="profile-preview-head"><img src="${escape(profile.avatar || fallback)}" alt=""><div><h3>${escape(profile.name || 'CodeLeaf member')}</h3><p>${escape(profile.email)}</p></div><button type="button" aria-label="Close profile preview">×</button></div><div class="profile-preview-grid"><div><span>College / University</span><strong>${escape(profile.college || 'Not provided')}</strong></div><div><span>Phone number</span><strong>${escape(profile.phone || 'Not provided')}</strong></div></div><p class="profile-preview-bio">${escape(profile.bio || 'No introduction added yet.')}</p>${links ? `<div class="profile-preview-links">${links}</div>` : ''}`;
+    preview.querySelector('button').onclick = () => { preview.hidden = true; };
+  }
+  function mountProfileDirectory() {
+    if ($('profile-directory')) return;
+    const actions = document.querySelector('.profile-actions'); if (!actions) return;
+    const directory = document.createElement('section'); directory.id = 'profile-directory'; directory.className = 'profile-section profile-directory';
+    directory.innerHTML = '<div class="profile-section-heading"><div><span class="profile-eyebrow">CODELEAF COMMUNITY</span><h3>Find people</h3><p>Search members by name, college, or bio.</p></div></div><div class="profile-directory-search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 20-4.4-4.4a7 7 0 1 0-1.4 1.4L19.6 21 21 20ZM5 10a5 5 0 1 1 10 0A5 5 0 0 1 5 10Z"/></svg><input id="profile-directory-query" placeholder="Search profiles" autocomplete="off"><span class="profile-directory-hint">Results update as you type</span></div><div id="profile-directory-results" class="profile-directory-results"><div class="profile-search-empty">Start typing to discover CodeLeaf members.</div></div><div id="profile-public-preview" class="profile-public-preview" hidden></div>';
+    actions.parentNode.insertBefore(directory, actions);
+    $('profile-directory-query').addEventListener('input', (() => { let timer; return () => { clearTimeout(timer); timer = setTimeout(searchProfiles, 160); }; })());
   }
   function closeProfile() { const modal = $('profile-modal'); if (modal) { modal.hidden = true; modal.style.display = 'none'; } document.body.classList.remove('profile-open'); }
   async function saveProfile() {
@@ -300,6 +323,7 @@ const Auth = (() => {
       window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
       const accountPopover = $('auth-profile-popover');
       const accountButton = $('auth-account-button');
+      mountProfileDirectory();
       document.querySelector('.profile-cover-button')?.addEventListener('click', () => $('profile-cover-file')?.click());
       document.querySelector('.profile-photo-remove')?.addEventListener('click', () => { $('profile-avatar').src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" rx="40" fill="#087d43"/><path fill="#eafff0" d="M40 39a12 12 0 1 0 0-24 12 12 0 0 0 0 24Zm0 7c-12 0-22 7-22 16 0 2 2 3 4 3h36c2 0 4-1 4-3 0-9-10-16-22-16Z"/></svg>'); $('profile-avatar-preview').src = $('profile-avatar').src; $('profile-avatar-data').value = ''; });
       document.querySelectorAll('.profile-tabs button').forEach((tab, index) => tab.addEventListener('click', () => {

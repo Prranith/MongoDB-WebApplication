@@ -115,6 +115,36 @@ def auth_search():
     return jsonify({"users": [current for current in (public_profile(doc) for doc in docs) if current]})
 
 
+@auth_bp.get("/api/auth/profile/<user_id>")
+def auth_public_profile(user_id):
+    """Return a read-only member profile without password/session secrets."""
+    if not current_user():
+        return jsonify({"error": "Authentication required", "code": "AUTH_REQUIRED"}), 401
+    from bson import ObjectId
+    from bson.errors import InvalidId
+    from services.shared.redis_client import get_auth_db
+    try:
+        object_id = ObjectId(user_id)
+    except (InvalidId, TypeError):
+        return jsonify({"error": "Profile not found"}), 404
+    db = get_auth_db()
+    doc = db.users.find_one({"_id": object_id, "status": "active"}) if db is not None else None
+    if not doc:
+        return jsonify({"error": "Profile not found"}), 404
+    return jsonify({"profile": {
+        "id": str(doc.get("_id", "")),
+        "name": doc.get("name") or doc.get("email", "").split("@")[0],
+        "email": doc.get("email", ""),
+        "avatar": doc.get("avatar", ""),
+        "college": doc.get("college", ""),
+        "phone": doc.get("phone", ""),
+        "bio": doc.get("bio", ""),
+        "links": doc.get("links", []),
+        "emailVerified": bool(doc.get("emailVerified", False)),
+        "createdAt": doc.get("createdAt").isoformat() if hasattr(doc.get("createdAt"), "isoformat") else doc.get("createdAt"),
+    }})
+
+
 @auth_bp.post("/api/auth/change-password")
 def auth_change_password():
     user = current_user()
