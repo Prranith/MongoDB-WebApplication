@@ -100,6 +100,7 @@ const Auth = (() => {
     if (!modal) return;
     $('profile-name').value = state.user.name || '';
     $('profile-display-name').textContent = state.user.name || 'CodeLeaf member';
+    const verified = document.createElement('span'); verified.className = 'profile-verified'; verified.setAttribute('aria-label', 'Verified profile'); verified.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.3 16.8-4.1-4.1 1.8-1.8 2.3 2.3 7.7-7.7 1.8 1.8-9.5 9.5Z"/></svg>'; $('profile-display-name').appendChild(verified);
     $('profile-display-email').textContent = state.user.email || '';
     if ($('profile-display-bio')) $('profile-display-bio').textContent = state.user.bio || 'Build your CodeLeaf identity.';
     $('profile-email').value = state.user.email || '';
@@ -116,7 +117,7 @@ const Auth = (() => {
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
     const checks = [{label:'Add profile photo', ok:!!state.user.avatar},{label:'Add your name', ok:!!state.user.name},{label:'Add bio', ok:!!state.user.bio},{label:'Add email address', ok:!!state.user.email},{label:'Add phone number', ok:!!state.user.phone},{label:'Add at least one social link', ok:!!(state.user.links || []).length}];
     const score = Math.round(checks.filter(item => item.ok).length / checks.length * 100);
-    $('profile-completion-value').textContent = `${score}%`; $('profile-completion-label').textContent = score >= 80 ? 'Almost there!' : 'Complete your profile'; $('profile-completion-ring').style.setProperty('--completion', `${score * 3.6}deg`); $('profile-checklist').innerHTML = checks.map(item => `<li class="${item.ok ? 'done' : ''}"><span>${item.ok ? '✓' : '○'}</span>${item.label}</li>`).join('');
+    $('profile-completion-value').textContent = `${score}%`; $('profile-completion-label').textContent = score >= 80 ? 'Almost there!' : 'Complete your profile'; $('profile-completion-ring').style.setProperty('--completion', `${score * 3.6}deg`); $('profile-checklist').innerHTML = checks.map(item => `<li class="${item.ok ? 'done' : ''}"><span aria-hidden="true"></span>${item.label}</li>`).join('');
     $('profile-member-since').textContent = state.user.createdAt ? new Date(state.user.createdAt).toLocaleDateString(undefined, {month:'short', year:'numeric'}) : '—';
     modal.hidden = false;
     modal.style.display = 'grid';
@@ -124,7 +125,7 @@ const Auth = (() => {
   }
   function addProfileLink(label = '', url = '') {
     const row = document.createElement('div'); row.className = 'profile-link-row';
-    row.innerHTML = `<input class="profile-link-label" placeholder="LinkedIn / GitHub / LeetCode" value="${String(label).replace(/"/g, '&quot;')}"><input class="profile-link-url" placeholder="https://..." value="${String(url).replace(/"/g, '&quot;')}"><button type="button" aria-label="Remove link">×</button>`;
+    row.innerHTML = `<span class="profile-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7V3Zm2 0v2h3.6L13 9.6 14.4 11 19 6.4V10h2V3h-7Z"/></svg></span><input class="profile-link-label" placeholder="LinkedIn / GitHub / LeetCode" value="${String(label).replace(/"/g, '&quot;')}"><input class="profile-link-url" placeholder="https://..." value="${String(url).replace(/"/g, '&quot;')}"><button type="button" aria-label="Remove link">×</button>`;
     row.querySelector('button').onclick = () => row.remove(); $('profile-links').appendChild(row);
   }
   function readProfileLinks() { return [...document.querySelectorAll('.profile-link-row')].map(row => ({ label: row.querySelector('.profile-link-label').value, url: row.querySelector('.profile-link-url').value })).filter(x => x.url); }
