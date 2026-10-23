@@ -8698,6 +8698,10 @@ li.CodeMirror-hint-active {
 .profile-checklist li span::before { content:''; width:7px; height:4px; border-left:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(-45deg) translateY(-1px); }
 .profile-checklist li:not(.done) span::before { width:5px; height:5px; border:1px solid currentColor; border-radius:50%; transform:none; }
 @media (max-width:850px) { .profile-cover-pattern { inset:0; opacity:.35; }.profile-cover-button { display:none; }.profile-identity-bio { max-width:none; }.profile-photo-preview { flex-basis:100%; } }
+/* The reference profile is a focused editor; secondary dashboard widgets stay out of this page. */
+.profile-content { display:block; max-width:980px; margin:0 auto; }
+.profile-rail { display:none !important; }
+.profile-main { width:100%; }
 
 </style>
 </head>
@@ -9808,10 +9812,6 @@ const Auth = (() => {
     $('profile-avatar-data').value = state.user.avatar || '';
     $('profile-links').innerHTML = '';
     (state.user.links || []).forEach(link => addProfileLink(link.label, link.url));
-    const checks = [{label:'Add profile photo', ok:!!state.user.avatar},{label:'Add your name', ok:!!state.user.name},{label:'Add bio', ok:!!state.user.bio},{label:'Add email address', ok:!!state.user.email},{label:'Add phone number', ok:!!state.user.phone},{label:'Add at least one social link', ok:!!(state.user.links || []).length}];
-    const score = Math.round(checks.filter(item => item.ok).length / checks.length * 100);
-    $('profile-completion-value').textContent = `${score}%`; $('profile-completion-label').textContent = score >= 80 ? 'Almost there!' : 'Complete your profile'; $('profile-completion-ring').style.setProperty('--completion', `${score * 3.6}deg`); $('profile-checklist').innerHTML = checks.map(item => `<li class="${item.ok ? 'done' : ''}"><span aria-hidden="true"></span>${item.label}</li>`).join('');
-    $('profile-member-since').textContent = state.user.createdAt ? new Date(state.user.createdAt).toLocaleDateString(undefined, {month:'short', year:'numeric'}) : '—';
     modal.hidden = false;
     modal.style.display = 'grid';
     document.body.classList.add('profile-open');

@@ -8541,3 +8541,7 @@ li.CodeMirror-hint-active {
 .profile-checklist li span::before { content:''; width:7px; height:4px; border-left:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(-45deg) translateY(-1px); }
 .profile-checklist li:not(.done) span::before { width:5px; height:5px; border:1px solid currentColor; border-radius:50%; transform:none; }
 @media (max-width:850px) { .profile-cover-pattern { inset:0; opacity:.35; }.profile-cover-button { display:none; }.profile-identity-bio { max-width:none; }.profile-photo-preview { flex-basis:100%; } }
+/* The reference profile is a focused editor; secondary dashboard widgets stay out of this page. */
+.profile-content { display:block; max-width:980px; margin:0 auto; }
+.profile-rail { display:none !important; }
+.profile-main { width:100%; }
