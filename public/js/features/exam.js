@@ -666,6 +666,12 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
   // ── Main navigation ────────────────────────────────────────────────────────
   function showRoleSelection() {
+    // Keep every entry point protected, including command palette/menu and
+    // direct calls from the console or other feature modules.
+    if (window.Auth && !Auth.user) {
+      Auth.open(() => showRoleSelection());
+      return;
+    }
     showPanel('exam-role-panel');
   }
 

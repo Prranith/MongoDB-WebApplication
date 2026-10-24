@@ -7,6 +7,69 @@
   <title>CodeLeaf Operations Center</title>
   <link rel="icon" href="/assets/branding/codeleaf-emblem.png">
   <link rel="stylesheet" href="/admin.css">
+  <style>
+    /* Keep profile media bounded in both the directory table and detail drawer. */
+    .admin-table-avatar {
+      display: block;
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 1px solid #2e6b48;
+      background: #10201b;
+    }
+    .admin-user-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+      padding: 14px;
+      background: #0a1112;
+      border: 1px solid #223233;
+      border-radius: 8px;
+    }
+    .admin-profile-image {
+      display: block;
+      flex: 0 0 96px;
+      width: 96px;
+      height: 96px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid #00ed64;
+      background: #10201b;
+    }
+    .admin-profile-fallback {
+      display: grid;
+      place-items: center;
+      color: #91a39f;
+      font-size: 10px;
+      text-align: center;
+    }
+    .admin-user-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+    .admin-drawer-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #223233;
+    }
+    .danger-button {
+      border: 1px solid #8e4542 !important;
+      background: #301817 !important;
+      color: #ffaaa2 !important;
+    }
+    @media (max-width: 650px) {
+      .admin-user-card { flex-direction: column; }
+      .admin-user-fields { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
   <div id="admin-login" class="login-shell">

@@ -8818,7 +8818,7 @@ li.CodeMirror-hint-active {
         <div class="wmenu-sep"></div>
         <div class="wmenu-item" onclick="saveQuery()">Save Query<span>Ctrl+S</span></div>
         <div class="wmenu-sep"></div>
-        <div class="wmenu-item" onclick="window.ExamPortal && window.ExamPortal.showRoleSelection()">Exam Portal</div>
+        <div class="wmenu-item" onclick="Auth.require(() => window.ExamPortal && window.ExamPortal.showRoleSelection())">Exam Portal</div>
         <div class="wmenu-item" onclick="showView('intro')">Intro Page</div>
       </div>
     </div>
@@ -8942,11 +8942,11 @@ li.CodeMirror-hint-active {
       <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
     </button>
     <!-- 7th: Exam Portal -->
-    <button class="act-btn" id="act-exam" data-tip="Exam Portal" onclick="window.ExamPortal && window.ExamPortal.showRoleSelection()">
+    <button class="act-btn" id="act-exam" data-tip="Exam Portal" onclick="Auth.require(() => window.ExamPortal && window.ExamPortal.showRoleSelection())">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
     </button>
     <!-- 8th: Join Call (video meeting) — always visible in activity bar -->
-    <button class="act-btn act-btn-meeting" id="btn-join-meeting" data-tip="Join Video Call" onclick="MeetingRoom.toggleMeeting()">
+    <button class="act-btn act-btn-meeting" id="btn-join-meeting" data-tip="Join Video Call" onclick="Auth.require(() => MeetingRoom.toggleMeeting())">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
     </button>
     <div class="act-spacer"></div>
@@ -16728,6 +16728,12 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
   // ── Main navigation ────────────────────────────────────────────────────────
   function showRoleSelection() {
+    // Keep every entry point protected, including command palette/menu and
+    // direct calls from the console or other feature modules.
+    if (window.Auth && !Auth.user) {
+      Auth.open(() => showRoleSelection());
+      return;
+    }
     showPanel('exam-role-panel');
   }
 
@@ -23314,6 +23320,12 @@ const MeetingRoom = (() => {
   }
 
   function toggleMeeting() {
+    // The activity bar and deep links can call this function directly, so the
+    // feature itself must enforce the same authentication boundary as the UI.
+    if (window.Auth && !Auth.user) {
+      Auth.open(() => toggleMeeting());
+      return;
+    }
     if (state.callActive) {
       endMeeting();
       return;

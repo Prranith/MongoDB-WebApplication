@@ -939,6 +939,12 @@ const MeetingRoom = (() => {
   }
 
   function toggleMeeting() {
+    // The activity bar and deep links can call this function directly, so the
+    // feature itself must enforce the same authentication boundary as the UI.
+    if (window.Auth && !Auth.user) {
+      Auth.open(() => toggleMeeting());
+      return;
+    }
     if (state.callActive) {
       endMeeting();
       return;
