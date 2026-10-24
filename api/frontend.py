@@ -8884,7 +8884,7 @@ li.CodeMirror-hint-active {
       Inspector
     </button>
     <div class="auth-account-wrap" id="auth-account-wrap" hidden>
-      <button class="auth-account-button" id="auth-account-button" type="button" onclick="window.__openCodeLeafProfile && window.__openCodeLeafProfile(event)" aria-label="Open profile" aria-expanded="false">
+      <button class="auth-account-button" id="auth-account-button" type="button" aria-label="Open profile" aria-expanded="false">
         <span class="auth-account-avatar" id="auth-account-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 12a4.2 4.2 0 1 0 0-8.4A4.2 4.2 0 0 0 12 12Zm0 2.1c-4.05 0-7.35 2.1-7.35 4.7 0 .66.54 1.2 1.2 1.2h12.3c.66 0 1.2-.54 1.2-1.2 0-2.6-3.3-4.7-7.35-4.7Z"/></svg></span>
       </button>
       <div class="auth-profile-popover" id="auth-profile-popover" hidden>
@@ -9798,7 +9798,7 @@ async function loadSnippets() {
 <script>
 /* CodeLeaf application authentication UI. */
 const Auth = (() => {
-  const state = { user: null, required: false, action: null, mode: 'signin' };
+  const state = { user: null, required: false, action: null, mode: 'signin', ready: false, pendingActions: [] };
   const $ = id => document.getElementById(id);
   const OTHER_COLLEGE = '__other__';
   let collegeDirectory = [];
@@ -9968,6 +9968,19 @@ const Auth = (() => {
     $('auth-email')?.focus();
   }
 
+  function flushPendingActions() {
+    const actions = state.pendingActions.splice(0);
+    if (!actions.length) return;
+    if (state.user) {
+      close();
+      actions.forEach(action => { try { action(); } catch (_) {} });
+    } else {
+      // Keep the most recent protected intent; the auth overlay can only
+      // complete one navigation action at a time.
+      open(actions[actions.length - 1]);
+    }
+  }
+
   function close() {
     const node = overlay();
     if (node) { node.hidden = true; document.body.classList.remove('auth-open'); }
@@ -10028,6 +10041,10 @@ const Auth = (() => {
 
   function openProfile() {
     if (!state.user) return open();
+    const popover = $('auth-profile-popover');
+    const accountButton = $('auth-account-button');
+    if (popover) popover.hidden = true;
+    if (accountButton) accountButton.setAttribute('aria-expanded', 'false');
     const modal = $('profile-modal');
     if (!modal) return;
     // Mount discovery when the profile is opened as well as during startup;
@@ -10280,6 +10297,7 @@ const Auth = (() => {
       const button = $('auth-account-button');
       if (popover) popover.hidden = true;
       if (button) button.setAttribute('aria-expanded', 'false');
+      closeProfile();
       renderAccount();
       window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: null }));
       if (typeof showView === 'function') showView('intro');
@@ -10287,7 +10305,19 @@ const Auth = (() => {
   }
 
   function accountAction() {
-    if (state.user) return openProfile();
+    if (!state.ready) {
+      state.pendingActions.push(() => { if (state.user) openProfile(); else open(); });
+      return;
+    }
+    if (state.user) {
+      const popover = $('auth-profile-popover');
+      const button = $('auth-account-button');
+      if (!popover) return openProfile();
+      const isOpen = !popover.hidden;
+      popover.hidden = isOpen;
+      button?.setAttribute('aria-expanded', String(!isOpen));
+      return;
+    }
     fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' })
       .then(response => response.json())
       .then(data => { state.user = data.user || null; renderAccount(); state.user ? openProfile() : open(); })
@@ -10333,11 +10363,19 @@ const Auth = (() => {
       });
       const params = new URLSearchParams(location.search); if (params.get('reset')) open(null, 'reset'); else if (params.get('auth') === 'error') open();
     } catch (_) { /* The app remains usable until an authenticated API is needed. */ }
+    finally {
+      state.ready = true;
+      flushPendingActions();
+    }
   }
 
   return {
     init, open, close, login, register, signOut, accountAction, openProfile, closeProfile, saveProfile, addProfileLink, chooseAvatar, chooseCover, setEditMode, searchProfiles, clearProfileSearch, setMode, forgotPassword: () => setMode('forgot'),
-    require(action) { if (state.user) return action(); open(action); },
+    require(action) {
+      if (state.user) return action();
+      if (!state.ready) { state.pendingActions.push(action); return; }
+      open(action);
+    },
     get user() { return state.user; },
   };
 })();
@@ -10347,12 +10385,7 @@ const Auth = (() => {
 window.__openCodeLeafProfile = event => {
   event?.preventDefault();
   event?.stopPropagation();
-  const modal = document.getElementById('profile-modal');
-  if (!modal) return;
-  modal.hidden = false;
-  modal.style.display = 'grid';
-  document.body.classList.add('profile-open');
-  window.Auth?.openProfile?.();
+  window.Auth?.accountAction?.();
 };
 
 window.Auth = Auth;
