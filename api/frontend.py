@@ -8763,6 +8763,7 @@ li.CodeMirror-hint-active {
 .profile-danger-zone > div { flex:1; }.profile-danger-zone strong { color:#f0d9d6; font-size:13px; }.profile-danger-zone p { margin:5px 0 0; color:#8f7774; font-size:11px; line-height:1.4; }
 .profile-danger-button { padding:9px 13px; border:1px solid #9c4844; border-radius:7px; background:rgba(105,31,28,.25); color:#ffaaa2; cursor:pointer; font:inherit; font-size:11px; }
 .profile-danger-button:hover { background:rgba(140,42,38,.42); border-color:#e26a61; }.profile-danger-button:disabled { opacity:.65; cursor:wait; }
+.profile-delete-account-button { margin-right:auto; }
 @media (max-width:650px) { .profile-danger-zone { align-items:flex-start; flex-direction:column; } }
 .profile-tabs button svg { flex:0 0 auto; margin:0; }
 .profile-card { width:min(1120px,calc(100% - 72px)); min-height:0; margin:32px auto; border:1px solid #294838; border-radius:14px; background:#09140e; box-shadow:0 28px 80px rgba(0,0,0,.42); overflow:hidden; }
@@ -10086,9 +10087,8 @@ const Auth = (() => {
       panel.innerHTML = `<div class="profile-section-heading"><div><span class="profile-eyebrow">PREFERENCES</span><h3>Workspace preferences</h3><p>Choose how CodeLeaf keeps you informed.</p></div></div><label class="profile-setting"><span><strong>Email notifications</strong><small>Receive account and workspace updates.</small></span><input id="profile-pref-email" type="checkbox" ${prefs.emailNotifications ? 'checked' : ''}></label><label class="profile-setting"><span><strong>Assessment reminders</strong><small>Get reminders for assigned exams and meetings.</small></span><input id="profile-pref-assessments" type="checkbox" ${prefs.assessmentReminders ? 'checked' : ''}></label><label class="profile-setting"><span><strong>Profile visibility</strong><small>Control who can find your public profile.</small></span><select id="profile-pref-visibility"><option value="members" ${prefs.profileVisibility !== 'public' ? 'selected' : ''}>CodeLeaf members</option><option value="public" ${prefs.profileVisibility === 'public' ? 'selected' : ''}>Anyone with a profile link</option></select></label><div class="profile-tab-actions"><button class="auth-primary" type="button" id="profile-save-preferences">Save preferences</button></div>`;
       $('profile-save-preferences').onclick = async () => { const payload = { preferences: { emailNotifications: $('profile-pref-email').checked, assessmentReminders: $('profile-pref-assessments').checked, profileVisibility: $('profile-pref-visibility').value } }; await persistProfile(payload, 'Preferences saved.'); };
     } else {
-      panel.innerHTML = `<div class="profile-section-heading"><div><span class="profile-eyebrow">SECURITY</span><h3>Account security</h3><p>Manage your password and verification status.</p></div></div><div class="security-status"><span class="security-status-dot"></span><div><strong>Email verified</strong><small>${state.user?.email || ''} is verified for this account.</small></div></div><form class="password-form" id="profile-password-form"><label class="auth-field">Current password<input id="profile-current-password" type="password" autocomplete="current-password" required></label><label class="auth-field">New password<input id="profile-new-password" type="password" autocomplete="new-password" minlength="10" required></label><label class="auth-field">Confirm new password<input id="profile-confirm-password" type="password" autocomplete="new-password" minlength="10" required></label><div class="profile-tab-actions"><button class="auth-primary" type="submit">Change password</button></div><p class="profile-inline-message" id="profile-security-message"></p></form><div class="profile-danger-zone"><div><strong>Delete account</strong><p>This permanently removes your profile and authentication data.</p></div><button type="button" class="profile-danger-button" id="profile-delete-account">Delete account</button><p class="profile-inline-message" id="profile-delete-message"></p></div>`;
+      panel.innerHTML = `<div class="profile-section-heading"><div><span class="profile-eyebrow">SECURITY</span><h3>Account security</h3><p>Manage your password and verification status.</p></div></div><div class="security-status"><span class="security-status-dot"></span><div><strong>Email verified</strong><small>${state.user?.email || ''} is verified for this account.</small></div></div><form class="password-form" id="profile-password-form"><label class="auth-field">Current password<input id="profile-current-password" type="password" autocomplete="current-password" required></label><label class="auth-field">New password<input id="profile-new-password" type="password" autocomplete="new-password" minlength="10" required></label><label class="auth-field">Confirm new password<input id="profile-confirm-password" type="password" autocomplete="new-password" minlength="10" required></label><div class="profile-tab-actions"><button class="auth-primary" type="submit">Change password</button></div><p class="profile-inline-message" id="profile-security-message"></p></form><div class="profile-danger-zone"><div><strong>Delete account</strong><p>This permanently removes your profile and authentication data.</p></div><p class="profile-inline-message" id="profile-delete-message"></p></div>`;
       $('profile-password-form').onsubmit = async event => { event.preventDefault(); const message = $('profile-security-message'); if ($('profile-new-password').value !== $('profile-confirm-password').value) { message.textContent = 'New passwords do not match.'; message.className = 'profile-inline-message error'; return; } try { await request('/api/auth/change-password', { currentPassword: $('profile-current-password').value, newPassword: $('profile-new-password').value }); message.textContent = 'Password changed successfully.'; message.className = 'profile-inline-message success'; event.target.reset(); } catch (error) { message.textContent = error.message; message.className = 'profile-inline-message error'; } };
-      $('profile-delete-account').onclick = deleteAccount;
     }
   }
   async function persistProfile(payload, successMessage) {
@@ -10146,6 +10146,15 @@ const Auth = (() => {
     actions.parentNode.insertBefore(directory, actions);
     $('profile-directory-query').addEventListener('input', (() => { let timer; return () => { clearTimeout(timer); timer = setTimeout(searchProfiles, 160); }; })());
     $('profile-directory-clear').onclick = clearProfileSearch;
+  }
+  function ensureDeleteAccountButton() {
+    const actions = document.querySelector('.profile-actions');
+    if (!actions || $('profile-delete-account')) return;
+    const button = document.createElement('button');
+    button.id = 'profile-delete-account'; button.type = 'button';
+    button.className = 'profile-danger-button profile-delete-account-button';
+    button.textContent = 'Delete account'; button.onclick = deleteAccount;
+    actions.insertBefore(button, actions.firstChild);
   }
   function closeProfile() { const modal = $('profile-modal'); if (modal) { modal.hidden = true; modal.style.display = 'none'; } document.body.classList.remove('profile-open'); }
   async function deleteAccount() {
@@ -10297,6 +10306,7 @@ const Auth = (() => {
       const accountButton = $('auth-account-button');
       mountProfileDirectory();
       ensurePrivatePhoneNote();
+      ensureDeleteAccountButton();
       refreshCollegeFields();
       loadCollegeDirectory();
       const sidebarSearch = document.querySelector('.profile-discover .profile-search-input');

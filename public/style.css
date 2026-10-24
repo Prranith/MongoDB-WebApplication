@@ -8606,6 +8606,7 @@ li.CodeMirror-hint-active {
 .profile-danger-zone > div { flex:1; }.profile-danger-zone strong { color:#f0d9d6; font-size:13px; }.profile-danger-zone p { margin:5px 0 0; color:#8f7774; font-size:11px; line-height:1.4; }
 .profile-danger-button { padding:9px 13px; border:1px solid #9c4844; border-radius:7px; background:rgba(105,31,28,.25); color:#ffaaa2; cursor:pointer; font:inherit; font-size:11px; }
 .profile-danger-button:hover { background:rgba(140,42,38,.42); border-color:#e26a61; }.profile-danger-button:disabled { opacity:.65; cursor:wait; }
+.profile-delete-account-button { margin-right:auto; }
 @media (max-width:650px) { .profile-danger-zone { align-items:flex-start; flex-direction:column; } }
 .profile-tabs button svg { flex:0 0 auto; margin:0; }
 .profile-card { width:min(1120px,calc(100% - 72px)); min-height:0; margin:32px auto; border:1px solid #294838; border-radius:14px; background:#09140e; box-shadow:0 28px 80px rgba(0,0,0,.42); overflow:hidden; }

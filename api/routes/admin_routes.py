@@ -285,6 +285,28 @@ def admin_user_detail(user_id):
     return jsonify({"user": _json(doc), "authEvents": _json(events), "activeSessions": db.sessions.count_documents({"userId": object_id, "expiresAt": {"$gt": _now()}})})
 
 
+@admin_bp.delete("/api/admin/users/<user_id>")
+@_require_admin("super_admin", "operations_admin")
+def admin_delete_user(user_id):
+    db = get_auth_db()
+    try:
+        object_id = ObjectId(user_id)
+    except (InvalidId, TypeError):
+        return jsonify({"error": "User not found"}), 404
+    if db is None:
+        return jsonify({"error": "Authentication database unavailable"}), 503
+    user = db.users.find_one({"_id": object_id}, {"email": 1})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    db.users.delete_one({"_id": object_id})
+    for collection in (db.sessions, db.identities, db.email_otps, db.password_resets):
+        collection.delete_many({"userId": object_id})
+    if user.get("email"):
+        db.pending_signups.delete_many({"email": user["email"]})
+    _audit("admin_delete_user", user_id)
+    return jsonify({"deleted": True, "userId": user_id})
+
+
 @admin_bp.get("/api/admin/exams")
 @_require_admin()
 def admin_exams():
@@ -337,6 +359,20 @@ def admin_exam_detail(room_id):
     return jsonify({"room": _json(safe), "participants": participants, "questions": question_summary, "media": []})
 
 
+@admin_bp.post("/api/admin/exams/<room_id>/complete")
+@_require_admin("super_admin", "operations_admin")
+def admin_complete_exam(room_id):
+    rooms = _rooms_collection()
+    room_key = room_id.strip().upper()
+    if rooms is None:
+        return jsonify({"error": "Exam database unavailable"}), 503
+    result = rooms.update_one({"_id": room_key}, {"$set": {"status": "ended", "endedAt": _now().isoformat()}})
+    if not result.matched_count:
+        return jsonify({"error": "Exam room not found"}), 404
+    _audit("admin_complete_exam", room_key)
+    return jsonify({"completed": True, "roomId": room_key})
+
+
 @admin_bp.get("/api/admin/meetings")
 @_require_admin()
 def admin_meetings():
@@ -355,6 +391,21 @@ def admin_meetings():
                       "createdAt": doc.get("createdAt"), "activeAt": doc.get("activeAt"), "endedAt": doc.get("endedAt"),
                       "participantCount": len(participants), "participants": [{"peerId": key, **_json(value)} for key, value in participants.items()]})
     return jsonify(_page(_json(items), limit))
+
+
+@admin_bp.post("/api/admin/meetings/<room_id>/complete")
+@_require_admin("super_admin", "operations_admin")
+def admin_complete_meeting(room_id):
+    db = get_exam_db()
+    collection = db["meeting_rooms"] if db is not None else None
+    room_key = room_id.strip().upper()
+    if collection is None:
+        return jsonify({"error": "Meeting database unavailable"}), 503
+    result = collection.update_one({"$or": [{"_id": room_key}, {"roomId": room_key}]}, {"$set": {"isOpen": False, "endedAt": _now().isoformat()}})
+    if not result.matched_count:
+        return jsonify({"error": "Meeting room not found"}), 404
+    _audit("admin_complete_meeting", room_key)
+    return jsonify({"completed": True, "roomId": room_key})
 
 
 @admin_bp.get("/api/admin/queues")
