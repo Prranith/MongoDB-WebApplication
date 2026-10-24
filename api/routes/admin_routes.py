@@ -176,7 +176,11 @@ def admin_login():
     db.admin_sessions.insert_one({"_id": _session_digest(token), "email": configured_email, "role": role,
                                   "createdAt": now, "lastSeenAt": now,
                                   "expiresAt": now.fromtimestamp(now.timestamp() + _ADMIN_SESSION_TTL, tz=timezone.utc)})
-    session.clear()
+    # Keep the ordinary CodeLeaf auth session intact. Admin authentication is
+    # a separate identity and must not sign the user out of the workspace.
+    session.pop("admin_session", None)
+    session.pop("admin_identity", None)
+    session.pop("admin_csrf", None)
     session["admin_session"] = token
     session["admin_identity"] = {"email": configured_email, "role": role}
     session["admin_csrf"] = secrets.token_urlsafe(32)
@@ -200,9 +204,10 @@ def admin_logout():
         if db is not None:
             db.admin_sessions.delete_one({"_id": _session_digest(raw)})
     _audit("admin_logout")
+    # Do not clear the normal student/mentor auth session when the admin
+    # console is signed out.
     session.pop("admin_identity", None)
     session.pop("admin_csrf", None)
-    session.clear()
     return jsonify({"authenticated": False})
 
 

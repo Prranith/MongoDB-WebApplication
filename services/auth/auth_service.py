@@ -5,6 +5,9 @@ import os
 import secrets
 import base64
 import requests
+import re
+import html
+from pathlib import Path
 from email.message import EmailMessage
 from datetime import datetime, timedelta, timezone
 from functools import wraps
@@ -21,6 +24,8 @@ AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "0").strip().lower() in {"1", "true",
 EMAIL_VERIFICATION_REQUIRED = True
 OTP_TTL_MINUTES = max(5, int(os.getenv("AUTH_OTP_TTL_MINUTES", "10")))
 OTP_MAX_ATTEMPTS = max(3, int(os.getenv("AUTH_OTP_MAX_ATTEMPTS", "5")))
+_COLLEGE_MASTER_PATH = Path(__file__).resolve().parents[2] / "college_list_master.txt"
+_college_master_cache = None
 
 
 def _now():
@@ -59,6 +64,45 @@ def _safe_user(doc):
 
 def _db():
     return get_auth_db()
+
+
+def _master_colleges():
+    """Load the supplied India college directory once per worker."""
+    global _college_master_cache
+    if _college_master_cache is None:
+        try:
+            text = _COLLEGE_MASTER_PATH.read_text(encoding="utf-8")
+            _college_master_cache = sorted({html.unescape(name).strip() for name in re.findall(r'"([^"\r\n]+)"', text) if html.unescape(name).strip()}, key=str.casefold)
+        except OSError:
+            _college_master_cache = []
+    return _college_master_cache
+
+
+def college_options():
+    """Return the master directory plus colleges added by users."""
+    names = set(_master_colleges())
+    db = _db()
+    if db is not None:
+        try:
+            names.update(str(doc.get("name") or "").strip() for doc in db.colleges.find({}, {"name": 1}) if str(doc.get("name") or "").strip())
+        except Exception:
+            pass
+    return sorted(names, key=str.casefold)
+
+
+def remember_college(name):
+    """Persist a custom college so it is available to later signups."""
+    name = str(name or "").strip()[:180]
+    if len(name) < 2:
+        return
+    db = _db()
+    if db is None:
+        return
+    try:
+        db.colleges.create_index("name", unique=True)
+        db.colleges.update_one({"name": name}, {"$setOnInsert": {"name": name, "createdAt": _now()}}, upsert=True)
+    except Exception:
+        pass
 
 
 def init_indexes():
@@ -192,12 +236,15 @@ def issue_email_otp(user):
                               "createdAt": now, "expiresAt": now + timedelta(minutes=OTP_TTL_MINUTES)})
 
 
-def create_pending_signup(name, email, password):
+def create_pending_signup(name, email, password, college=""):
     """Send OTP first; persist signup data only in a temporary collection."""
     email = _email(email)
     name = str(name or "").strip()[:100]
+    college = str(college or "").strip()[:180]
     if len(name) < 2 or "@" not in email or len(email) > 254:
         raise ValueError("Enter a valid name and email address.")
+    if len(college) < 2:
+        raise ValueError("College or university is required.")
     if len(password or "") < 10:
         raise ValueError("Password must contain at least 10 characters.")
     db = _db()
@@ -208,10 +255,11 @@ def create_pending_signup(name, email, password):
         raise ValueError("An account with this email already exists.")
     code = f"{secrets.randbelow(1000000):06d}"
     _send_verification_email(email, name, code)
+    remember_college(college)
     now = _now()
     db.pending_signups.replace_one(
         {"email": email},
-        {"email": email, "name": name, "passwordHash": generate_password_hash(password, method="scrypt"),
+        {"email": email, "name": name, "college": college, "passwordHash": generate_password_hash(password, method="scrypt"),
          "otpHash": _otp_digest(email, code), "attempts": 0, "createdAt": now,
          "expiresAt": now + timedelta(minutes=OTP_TTL_MINUTES)},
         upsert=True,
@@ -244,7 +292,7 @@ def verify_pending_signup(email, code):
         db.pending_signups.update_one({"_id": pending["_id"]}, {"$inc": {"attempts": 1}})
         raise ValueError("Incorrect verification code.")
     now = _now()
-    user = {"email": email, "name": pending["name"], "passwordHash": pending["passwordHash"],
+    user = {"email": email, "name": pending["name"], "college": pending.get("college", ""), "passwordHash": pending["passwordHash"],
             "providers": ["password"], "createdAt": now, "updatedAt": now,
             "status": "active", "emailVerified": True}
     try:
@@ -382,6 +430,24 @@ def logout():
     session.clear()
 
 
+def delete_account(user_id):
+    """Permanently remove the account and its authentication records."""
+    db = _db()
+    if db is None:
+        raise RuntimeError("Authentication database is not configured.")
+    user = db.users.find_one({"_id": user_id}, {"email": 1})
+    result = db.users.delete_one({"_id": user_id})
+    if not result.deleted_count:
+        raise ValueError("Account not found.")
+    for collection in (db.sessions, db.identities, db.email_otps, db.password_resets):
+        collection.delete_many({"userId": user_id})
+    if user and user.get("email"):
+        db.pending_signups.delete_many({"email": user["email"]})
+    session.pop("auth_session", None)
+    session.clear()
+    return True
+
+
 def update_profile(user_id, updates):
     db = _db()
     if db is None:
@@ -415,6 +481,10 @@ def update_profile(user_id, updates):
             "profileVisibility": "public" if prefs.get("profileVisibility") == "public" else "members",
         }
     if clean:
+        if "college" in clean:
+            if len(clean["college"]) < 2:
+                raise ValueError("College or university is required.")
+            remember_college(clean["college"])
         clean["updatedAt"] = _now()
         db.users.update_one({"_id": user_id}, {"$set": clean})
     return db.users.find_one({"_id": user_id, "status": "active"})

@@ -2,9 +2,9 @@ from flask import Blueprint, jsonify, request
 
 from services.auth.auth_service import (
     AUTH_REQUIRED, create_session, create_pending_signup,
-    current_user, logout, password_login, verify_pending_signup,
+    current_user, logout, password_login, verify_pending_signup, delete_account,
     resend_pending_signup_otp, update_profile, change_password,
-    request_password_reset, reset_password, _safe_user,
+    request_password_reset, reset_password, _safe_user, college_options,
 )
 from services.shared.rate_limit import make_rate_limiter
 from services.shared.idempotency import (
@@ -50,6 +50,11 @@ def auth_me():
     return response
 
 
+@auth_bp.get("/api/auth/colleges")
+def auth_colleges():
+    return jsonify({"colleges": college_options(), "otherValue": "__other__"})
+
+
 @auth_bp.post("/api/auth/register")
 def auth_register():
     replay = _replay_auth()
@@ -60,7 +65,7 @@ def auth_register():
     if limited:
         return limited
     try:
-        pending = create_pending_signup(body.get("name"), body.get("email"), body.get("password"))
+        pending = create_pending_signup(body.get("name"), body.get("email"), body.get("password"), body.get("college"))
         payload = {"authenticated": False, "verificationRequired": True, "email": pending["email"]}
         _record_auth(payload, 201)
         return jsonify(payload), 201
@@ -89,6 +94,21 @@ def auth_login():
 def auth_logout():
     logout()
     return jsonify({"authenticated": False})
+
+
+@auth_bp.delete("/api/auth/account")
+def auth_delete_account():
+    user = current_user()
+    if not user:
+        return jsonify({"error": "Authentication required", "code": "AUTH_REQUIRED"}), 401
+    try:
+        from bson import ObjectId
+        delete_account(ObjectId(user["id"]))
+        return jsonify({"deleted": True, "authenticated": False})
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 503
 
 
 @auth_bp.post("/api/auth/forgot-password")
@@ -186,7 +206,6 @@ def auth_public_profile(user_id):
         "email": doc.get("email", ""),
         "avatar": doc.get("avatar", ""),
         "college": doc.get("college", ""),
-        "phone": doc.get("phone", ""),
         "bio": doc.get("bio", ""),
         "links": doc.get("links", []),
         "emailVerified": bool(doc.get("emailVerified", False)),
