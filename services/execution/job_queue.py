@@ -15,6 +15,7 @@ import os
 import time
 import uuid
 import hashlib
+import threading
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
@@ -35,6 +36,8 @@ QUEUE_ENABLED = os.getenv("EXECUTION_QUEUE_ENABLED", "1").strip().lower() in {"1
 QUEUE_WAIT_SECONDS = max(5.0, float(os.getenv("EXECUTION_QUEUE_WAIT_SECONDS", "25")))
 QUEUE_VISIBILITY_SECONDS = max(30, int(os.getenv("EXECUTION_QUEUE_VISIBILITY_SECONDS", "180")))
 WORKER_COLLECTION = os.getenv("EXECUTION_WORKER_COLLECTION", "execution_workers")
+_job_indexes_ready = False
+_job_indexes_lock = threading.Lock()
 
 QUEUE_NAMES = {
     "playground_code": "code-execution",
@@ -64,16 +67,38 @@ def enabled() -> bool:
 
 
 def _jobs():
+    global _job_indexes_ready
     db = get_exam_db()
     if db is None:
         raise ExecutionJobStoreUnavailable("Execution job database is unavailable")
     collection = db[os.getenv("EXECUTION_JOB_COLLECTION", "execution_jobs")]
-    try:
-        collection.create_index("createdAt", expireAfterSeconds=86400)
-        collection.create_index("status")
-        collection.create_index([("kind", 1), ("idempotencyKey", 1)], unique=True, sparse=True)
-    except Exception:
-        pass
+    if not _job_indexes_ready:
+        with _job_indexes_lock:
+            if not _job_indexes_ready:
+                indexes = collection.index_information()
+                legacy_keys = [("kind", 1), ("idempotencyKey", 1)]
+                for name, spec in indexes.items():
+                    if (
+                        spec.get("unique")
+                        and spec.get("key") == legacy_keys
+                        and "partialFilterExpression" not in spec
+                    ):
+                        try:
+                            collection.drop_index(name)
+                            log.warning("legacy_execution_idempotency_index_removed", index=name)
+                        except PyMongoError:
+                            if name in collection.index_information():
+                                raise
+
+                collection.create_index("createdAt", expireAfterSeconds=86400)
+                collection.create_index("status")
+                collection.create_index(
+                    [("idempotencyKey", 1)],
+                    unique=True,
+                    partialFilterExpression={"idempotencyKey": {"$type": "string"}},
+                    name="execution_idempotency_key_unique",
+                )
+                _job_indexes_ready = True
     return collection
 
 

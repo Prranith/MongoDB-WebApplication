@@ -2,7 +2,9 @@ import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import mongomock
 import pymongo
+import pytest
 
 from services.exam import room_service as exam_module
 from services.exam.room_service import RoomService
@@ -117,6 +119,45 @@ def test_queue_connection_failure_is_reported_as_service_unavailable():
     assert result["code"] == "EXECUTION_QUEUE_UNAVAILABLE"
     assert "CloudAMQP" in result["error"]
     assert jobs.update_one.call_args.args[0] == {"_id": jobs.insert_one.call_args.args[0]["_id"]}
+
+
+def test_jobs_migrates_legacy_sparse_compound_idempotency_index():
+    db = mongomock.MongoClient().exam_system
+    collection = db.execution_jobs
+    collection.create_index(
+        [("kind", 1), ("idempotencyKey", 1)],
+        unique=True,
+        sparse=True,
+    )
+    collection.insert_one({"_id": "legacy-job", "kind": "playground_sql"})
+
+    with patch.object(job_queue, "_job_indexes_ready", False):
+        with patch.object(job_queue, "get_exam_db", return_value=db):
+            jobs = job_queue._jobs()
+
+    jobs.insert_one({"_id": "sql-job-1", "kind": "playground_sql"})
+    jobs.insert_one({"_id": "sql-job-2", "kind": "playground_sql"})
+    jobs.insert_one({"_id": "null-key-1", "kind": "playground_sql", "idempotencyKey": None})
+    jobs.insert_one({"_id": "null-key-2", "kind": "playground_sql", "idempotencyKey": None})
+    jobs.insert_one({
+        "_id": "idempotent-job",
+        "kind": "playground_sql",
+        "idempotencyKey": "stable-request-key",
+    })
+
+    with pytest.raises(pymongo.errors.DuplicateKeyError):
+        jobs.insert_one({
+            "_id": "duplicate-idempotent-job",
+            "kind": "playground_sql",
+            "idempotencyKey": "stable-request-key",
+        })
+
+    indexes = jobs.index_information()
+    assert "kind_1_idempotencyKey_1" not in indexes
+    assert indexes["execution_idempotency_key_unique"]["unique"] is True
+    assert indexes["execution_idempotency_key_unique"]["partialFilterExpression"] == {
+        "idempotencyKey": {"$type": "string"}
+    }
 
 
 def test_sandbox_route_returns_json_for_execution_service_failure():
