@@ -27,6 +27,7 @@ from services.shared.pagination import encode_cursor, decode_cursor
 from services.shared.rate_limit import make_rate_limiter
 from services.execution.job_queue import QUEUE_NAMES, QUEUE_URL, enabled as queue_enabled
 from services.meeting.meeting_service import MeetingService
+from services.exam.media_service import QuestionMediaService
 from utils.logger import get_logger, bind_component
 
 
@@ -229,6 +230,16 @@ def admin_overview():
     if jobs is not None:
         for status in ("queued", "running", "completed", "failed"):
             job_counts[status] = jobs.count_documents({"status": status})
+    exam_status_counts = {}
+    if rooms is not None:
+        for status in ("waiting", "live", "ended"):
+            exam_status_counts[status] = rooms.count_documents({"status": status})
+    meeting_status_counts = {}
+    if meetings is not None:
+        meeting_status_counts = {
+            "open": meetings.count_documents({"isOpen": True}),
+            "closed": meetings.count_documents({"isOpen": False}),
+        }
     sources = {"database": bool(auth is not None and exam is not None), "queue": queue_enabled(), "brokerManagement": False,
                "hostMetrics": False, "requestMetrics": False}
     degraded = not sources["database"] or not sources["queue"]
@@ -237,6 +248,7 @@ def admin_overview():
                                "activeMeetings": active_meetings, "queuedJobs": job_counts.get("queued"),
                                "runningJobs": job_counts.get("running"), "completedJobs": job_counts.get("completed"),
                                "failedJobs": job_counts.get("failed"), "queueNames": sorted(set(QUEUE_NAMES.values()))},
+                    "breakdown": {"examStatuses": exam_status_counts, "meetingStatuses": meeting_status_counts},
                     "health": "degraded" if degraded else "healthy", "sources": sources,
                     "meta": {"asOf": now.isoformat(), "sourceStatus": "available" if sources["database"] else "unavailable"}})
 
@@ -348,15 +360,55 @@ def admin_exam_detail(room_id):
             parsed = json.loads(value) if isinstance(value, str) else value
         except Exception:
             parsed = {}
-        participants.append({"studentId": str(key)[12:], **_json(parsed)})
+        student_id = str(key)[12:]
+        submissions_raw = doc.get(f"submissions:{student_id}", "{}")
+        try:
+            submissions = json.loads(submissions_raw) if isinstance(submissions_raw, str) else (submissions_raw or {})
+        except (TypeError, ValueError):
+            submissions = {}
+        normalized_submissions = {}
+        for question_id, submission in submissions.items():
+            try:
+                normalized_submissions[question_id] = (
+                    json.loads(submission) if isinstance(submission, str) else submission
+                )
+            except (TypeError, ValueError):
+                normalized_submissions[question_id] = {"raw": str(submission)}
+        participants.append({
+            "studentId": student_id,
+            **_json(parsed),
+            "submissions": _json(normalized_submissions),
+            "submissionCount": len(normalized_submissions),
+        })
     raw_questions = doc.get("questions", "[]")
     try:
         questions = json.loads(raw_questions) if isinstance(raw_questions, str) else (raw_questions or [])
     except Exception:
         questions = []
     question_summary = [{"id": q.get("id"), "title": q.get("title") or q.get("name"), "type": q.get("type"), "marks": q.get("marks") or q.get("points")} for q in questions if isinstance(q, dict)]
-    safe = {k: v for k, v in doc.items() if k not in {"questions", "datasets"} and not str(k).startswith("participant:")}
-    return jsonify({"room": _json(safe), "participants": participants, "questions": question_summary, "media": []})
+    safe = {
+        k: v for k, v in doc.items()
+        if k not in {"questions", "datasets", "hostToken"}
+        and not str(k).startswith("participant:")
+        and not str(k).startswith("submissions:")
+        and not str(k).startswith("q_answer:")
+        and not str(k).startswith("dataset_docs:")
+        and not str(k).startswith("dataset_meta:")
+    }
+    return jsonify({
+        "room": _json(safe),
+        "participants": participants,
+        "questions": question_summary,
+        "media": [],
+        "telemetry": {
+            "submissionCount": sum(p["submissionCount"] for p in participants),
+            "activeParticipants": sum(1 for p in participants if not p.get("finished")),
+            "flaggedParticipants": sum(
+                1 for p in participants
+                if (p.get("fullscreenExits", 0) or 0) + (p.get("copyPasteAttempts", 0) or 0) > 0
+            ),
+        },
+    })
 
 
 @admin_bp.post("/api/admin/exams/<room_id>/complete")
@@ -371,6 +423,30 @@ def admin_complete_exam(room_id):
         return jsonify({"error": "Exam room not found"}), 404
     _audit("admin_complete_exam", room_key)
     return jsonify({"completed": True, "roomId": room_key})
+
+
+@admin_bp.delete("/api/admin/exams/<room_id>")
+@_require_admin("super_admin", "operations_admin")
+def admin_delete_exam(room_id):
+    """Permanently remove an exam and its room-scoped media."""
+    rooms = _rooms_collection()
+    room_key = room_id.strip().upper()
+    if rooms is None:
+        return jsonify({"error": "Exam database unavailable"}), 503
+    room = rooms.find_one({"_id": room_key}, {"mentorId": 1, "title": 1})
+    if not room:
+        return jsonify({"error": "Exam room not found"}), 404
+    if os.getenv("MONGO_URI", "").strip():
+        try:
+            QuestionMediaService.delete_room_media(room_key)
+        except Exception as exc:
+            log.warning("admin_exam_media_cleanup_failed", room_id=room_key, error=str(exc))
+    result = rooms.delete_one({"_id": room_key})
+    if not result.deleted_count:
+        return jsonify({"error": "Exam room was already removed"}), 404
+    _audit("admin_delete_exam", room_key, metadata={"title": room.get("title", "")})
+    log.warning("admin_exam_deleted", room_id=room_key, title=room.get("title", ""))
+    return jsonify({"deleted": True, "roomId": room_key})
 
 
 @admin_bp.get("/api/admin/meetings")
@@ -406,6 +482,40 @@ def admin_complete_meeting(room_id):
         return jsonify({"error": "Meeting room not found"}), 404
     _audit("admin_complete_meeting", room_key)
     return jsonify({"completed": True, "roomId": room_key})
+
+
+@admin_bp.get("/api/admin/meetings/<room_id>")
+@_require_admin()
+def admin_meeting_detail(room_id):
+    db = get_exam_db()
+    collection = db["meeting_rooms"] if db is not None else None
+    room_key = room_id.strip().upper()
+    room = collection.find_one({"$or": [{"_id": room_key}, {"roomId": room_key}]}) if collection is not None else None
+    if not room:
+        return jsonify({"error": "Meeting room not found"}), 404
+    room.pop("hostToken", None)
+    return jsonify({"room": _json(room)})
+
+
+@admin_bp.delete("/api/admin/meetings/<room_id>")
+@_require_admin("super_admin", "operations_admin")
+def admin_delete_meeting(room_id):
+    """Permanently remove a meeting room and its retained activity."""
+    db = get_exam_db()
+    collection = db["meeting_rooms"] if db is not None else None
+    room_key = room_id.strip().upper()
+    if collection is None:
+        return jsonify({"error": "Meeting database unavailable"}), 503
+    room = collection.find_one({"$or": [{"_id": room_key}, {"roomId": room_key}]}, {"roomTitle": 1})
+    if not room:
+        return jsonify({"error": "Meeting room not found"}), 404
+    result = collection.delete_one({"_id": room.get("_id")})
+    if not result.deleted_count:
+        return jsonify({"error": "Meeting room was already removed"}), 404
+    MeetingService._rooms.pop(room_key, None)
+    _audit("admin_delete_meeting", room_key, metadata={"title": room.get("roomTitle", "")})
+    log.warning("admin_meeting_deleted", room_id=room_key, title=room.get("roomTitle", ""))
+    return jsonify({"deleted": True, "roomId": room_key})
 
 
 @admin_bp.get("/api/admin/queues")
@@ -462,9 +572,34 @@ def admin_analytics():
     auth = get_auth_db()
     rooms = _rooms_collection()
     jobs = _jobs_collection()
+    meetings = get_exam_db()["meeting_rooms"] if get_exam_db() is not None else None
+    submission_count = 0
+    participant_count = 0
+    flagged_participants = 0
+    if rooms is not None:
+        for room in rooms.find({}, {"participant:": 0}):
+            for key, value in room.items():
+                if str(key).startswith("participant:"):
+                    participant_count += 1
+                    try:
+                        participant = json.loads(value) if isinstance(value, str) else (value or {})
+                    except (TypeError, ValueError):
+                        participant = {}
+                    flagged_participants += int(participant.get("fullscreenExits", 0) or 0)
+                    flagged_participants += int(participant.get("copyPasteAttempts", 0) or 0)
+                elif str(key).startswith("submissions:"):
+                    try:
+                        submission_count += len(json.loads(value) if isinstance(value, str) else (value or {}))
+                    except (TypeError, ValueError):
+                        pass
     return jsonify({"data": {"users": auth.users.count_documents({}) if auth is not None else None,
                               "authEvents": auth.auth_events.count_documents({}) if auth is not None else None,
                               "exams": rooms.count_documents({}) if rooms is not None else None,
+                              "meetings": meetings.count_documents({}) if meetings is not None else None,
+                              "openMeetings": meetings.count_documents({"isOpen": True}) if meetings is not None else None,
+                              "participants": participant_count,
+                              "submissions": submission_count,
+                              "proctoringFlags": flagged_participants,
                               "executionJobs": jobs.count_documents({}) if jobs is not None else None,
                               "completedExecutions": jobs.count_documents({"status": "completed"}) if jobs is not None else None,
                               "failedExecutions": jobs.count_documents({"status": "failed"}) if jobs is not None else None},

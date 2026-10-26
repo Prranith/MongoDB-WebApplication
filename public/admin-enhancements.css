@@ -1,0 +1,9 @@
+.detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.detail-section{margin-top:20px}
+.detail-section h3{color:var(--text);font-size:12px;margin:0 0 9px}
+.submission-code summary{cursor:pointer;color:var(--green);font:10px var(--mono)}
+.submission-code pre,.inline-json{max-width:420px;max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#07100e;border:1px solid var(--border);border-radius:5px;padding:9px;color:#c9d4d1;font:10px var(--mono)}
+.inline-json{margin:0;max-width:260px}
+.admin-drawer-actions{position:sticky;bottom:0;background:linear-gradient(transparent,var(--panel) 22%);padding-top:22px}
+@media (max-width:800px){.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.detail-grid{grid-template-columns:1fr}}
