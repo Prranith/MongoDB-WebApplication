@@ -25,7 +25,12 @@ from werkzeug.security import check_password_hash
 from services.shared.redis_client import get_auth_db, get_exam_db
 from services.shared.pagination import encode_cursor, decode_cursor
 from services.shared.rate_limit import make_rate_limiter
-from services.execution.job_queue import QUEUE_NAMES, QUEUE_URL, enabled as queue_enabled
+from services.execution.job_queue import (
+    QUEUE_NAMES,
+    QUEUE_URL,
+    active_workers,
+    enabled as queue_enabled,
+)
 from services.meeting.meeting_service import MeetingService
 from services.exam.media_service import QuestionMediaService
 from utils.logger import get_logger, bind_component
@@ -222,6 +227,7 @@ def admin_overview():
     jobs = _jobs_collection()
     now = _now()
     active_sessions = auth.sessions.count_documents({"expiresAt": {"$gt": now}}) if auth is not None else None
+    workers = active_workers()
     exam_count = rooms.count_documents({}) if rooms is not None else None
     active_exams = rooms.count_documents({"status": {"$in": ["live", "started", "running"]}}) if rooms is not None else None
     meetings = exam["meeting_rooms"] if exam is not None else None
@@ -240,15 +246,18 @@ def admin_overview():
             "open": meetings.count_documents({"isOpen": True}),
             "closed": meetings.count_documents({"isOpen": False}),
         }
-    sources = {"database": bool(auth is not None and exam is not None), "queue": queue_enabled(), "brokerManagement": False,
+    sources = {"database": bool(auth is not None and exam is not None), "queue": queue_enabled(),
+               "executionWorker": bool(workers) if queue_enabled() else None, "brokerManagement": False,
                "hostMetrics": False, "requestMetrics": False}
-    degraded = not sources["database"] or not sources["queue"]
+    degraded = not sources["database"] or (queue_enabled() and not workers)
     return jsonify({"data": {"users": users.count_documents({}) if users is not None else None,
                                "activeSessions": active_sessions, "examRooms": exam_count, "activeExams": active_exams,
                                "activeMeetings": active_meetings, "queuedJobs": job_counts.get("queued"),
                                "runningJobs": job_counts.get("running"), "completedJobs": job_counts.get("completed"),
-                               "failedJobs": job_counts.get("failed"), "queueNames": sorted(set(QUEUE_NAMES.values()))},
+                               "failedJobs": job_counts.get("failed"), "activeExecutionWorkers": len(workers),
+                               "queueNames": sorted(set(QUEUE_NAMES.values()))},
                     "breakdown": {"examStatuses": exam_status_counts, "meetingStatuses": meeting_status_counts},
+                    "workers": _json(workers),
                     "health": "degraded" if degraded else "healthy", "sources": sources,
                     "meta": {"asOf": now.isoformat(), "sourceStatus": "available" if sources["database"] else "unavailable"}})
 
@@ -360,11 +369,15 @@ def admin_exam_detail(room_id):
             parsed = json.loads(value) if isinstance(value, str) else value
         except Exception:
             parsed = {}
+        if not isinstance(parsed, dict):
+            parsed = {}
         student_id = str(key)[12:]
         submissions_raw = doc.get(f"submissions:{student_id}", "{}")
         try:
             submissions = json.loads(submissions_raw) if isinstance(submissions_raw, str) else (submissions_raw or {})
         except (TypeError, ValueError):
+            submissions = {}
+        if not isinstance(submissions, dict):
             submissions = {}
         normalized_submissions = {}
         for question_id, submission in submissions.items():
@@ -385,7 +398,16 @@ def admin_exam_detail(room_id):
         questions = json.loads(raw_questions) if isinstance(raw_questions, str) else (raw_questions or [])
     except Exception:
         questions = []
+    if not isinstance(questions, list):
+        questions = []
     question_summary = [{"id": q.get("id"), "title": q.get("title") or q.get("name"), "type": q.get("type"), "marks": q.get("marks") or q.get("points")} for q in questions if isinstance(q, dict)]
+    raw_paper_audit = doc.get("paperAudit", "[]")
+    try:
+        paper_audit = json.loads(raw_paper_audit) if isinstance(raw_paper_audit, str) else (raw_paper_audit or [])
+    except (TypeError, ValueError):
+        paper_audit = []
+    if not isinstance(paper_audit, list):
+        paper_audit = []
     safe = {
         k: v for k, v in doc.items()
         if k not in {"questions", "datasets", "hostToken"}
@@ -396,9 +418,10 @@ def admin_exam_detail(room_id):
         and not str(k).startswith("dataset_meta:")
     }
     return jsonify({
-        "room": _json(safe),
         "participants": participants,
         "questions": question_summary,
+        "questionDetails": _json(questions),
+        "room": _json({**safe, "paperAudit": paper_audit}),
         "media": [],
         "telemetry": {
             "submissionCount": sum(p["submissionCount"] for p in participants),
@@ -534,7 +557,8 @@ def admin_queues():
                         "failed": jobs.count_documents({"kind": {"$in": kinds}, "status": "failed"}), "sourceStatus": "available"})
         rows.append(row)
     recent = list(jobs.find({}, {"payload": 0, "result": 0}).sort("updatedAt", -1).limit(50)) if jobs is not None else []
-    return jsonify({"queues": rows, "jobs": _json(recent), "meta": {"asOf": _now().isoformat(), "brokerManagementNote": "Broker-level consumer metrics require a CloudAMQP management API credential; execution job metrics are sourced from MongoDB."}})
+    return jsonify({"queues": rows, "jobs": _json(recent), "workers": _json(active_workers()),
+                    "meta": {"asOf": _now().isoformat(), "brokerManagementNote": "Broker-level consumer metrics require a CloudAMQP management API credential; execution job metrics are sourced from MongoDB."}})
 
 
 @admin_bp.get("/api/admin/services")

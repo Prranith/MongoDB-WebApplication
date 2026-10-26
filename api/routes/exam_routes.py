@@ -133,6 +133,7 @@ def api_exam_get_room_status(room_id: str):
             "roomStatus": res["roomStatus"],
             "startedAt": res["startedAt"],
             "endedAt": res["endedAt"],
+            "paperVersion": res["paperVersion"],
             "kicked": res["kicked"]
         })
     except KeyError as e:
@@ -1061,5 +1062,4 @@ def api_exam_delete_room(room_id: str):
     except Exception as e:
         log.error("room_delete_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
         return _json_response({"status": "error", "error": str(e)}, status=500)
-
 

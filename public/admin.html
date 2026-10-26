@@ -98,14 +98,8 @@
         <button class="nav-item" data-view="users"><span class="nav-icon">♙</span>Users</button>
         <button class="nav-item" data-view="exams"><span class="nav-icon">▣</span>Exams &amp; rooms</button>
         <button class="nav-item" data-view="meetings"><span class="nav-icon">◉</span>Meetings</button>
-        <button class="nav-item" data-view="queues"><span class="nav-icon">⇄</span>Queues &amp; jobs</button>
-        <button class="nav-item" data-view="compilation"><span class="nav-icon">⌘</span>Compilation</button>
-        <button class="nav-item" data-view="infrastructure"><span class="nav-icon">⌁</span>Infrastructure</button>
-        <button class="nav-item" data-view="analytics"><span class="nav-icon">▥</span>Analytics</button>
-        <button class="nav-item" data-view="logs"><span class="nav-icon">≡</span>Logs &amp; audit</button>
-        <button class="nav-item" data-view="alerts"><span class="nav-icon">!</span>Alerts</button>
-        <button class="nav-item" data-view="security"><span class="nav-icon">◇</span>Security</button>
-        <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span>Settings</button>
+        <button class="nav-item" data-view="queues"><span class="nav-icon">⇄</span>Execution</button>
+        <button class="nav-item" data-view="logs"><span class="nav-icon">≡</span>Audit log</button>
       </nav>
       <div class="sidebar-footer"><span class="live-dot"></span><span id="connection-label">Authenticated</span><button id="admin-logout" class="text-button">Sign out</button></div>
     </aside>
@@ -114,8 +108,8 @@
       <header class="topbar">
         <div><p class="eyebrow" id="view-eyebrow">OPERATIONS</p><h2 id="view-title">System overview</h2></div>
         <div class="topbar-actions">
-          <label class="global-search"><span>⌕</span><input id="global-search" placeholder="Search users, rooms, jobs…" autocomplete="off"></label>
-          <span class="environment-badge">PRODUCTION</span><span id="top-health" class="status-badge status-unknown">Unknown</span>
+          <label class="global-search"><span>⌕</span><input id="global-search" placeholder="Search users…" autocomplete="off"></label>
+          <span id="top-health" class="status-badge status-unknown">Unknown</span>
           <span id="last-updated" class="last-updated">Not updated</span>
           <button id="refresh-button" class="icon-button" title="Refresh data">↻</button>
         </div>

@@ -12,7 +12,8 @@ sys.path.insert(0, str(ROOT))
 
 from services.shared.redis_client import (
     redis_cmd, redis_one, hgetall, room_key,
-    get_room_participants, get_room_leaderboard_dict, get_room_kicked_dict
+    get_room_participants, get_room_leaderboard_dict, get_room_kicked_dict,
+    create_room_document,
 )
 
 class RoomService:
@@ -61,20 +62,15 @@ class RoomService:
     def _gen_room_id() -> str:
         """Generate a unique 6-char alphanumeric Room ID (e.g. MNG-4X9)."""
         chars = string.ascii_uppercase + string.digits
-        for _ in range(20):  # max 20 attempts
-            part1 = "MNG"
+        while True:
             part2 = "".join(random.choices(chars, k=3))
-            room_id = f"{part1}-{part2}"
-            # Collision check
+            room_id = f"MNG-{part2}"
             exists = redis_one(["EXISTS", f"room:{room_id}"])
             if not exists:
                 return room_id
-        # Fallback: longer random id
-        return "MNG-" + "".join(random.choices(chars, k=4))
 
     @classmethod
     def create_room(cls, title: str, mentor_id: str, timed: bool, duration: int, fullscreen_mode: bool, block_copypaste: bool, max_exits: int, max_copy_paste_attempts: int = 3) -> dict:
-        room_id = cls._gen_room_id()
         now = int(time.time())
 
         fullscreen_val = "1" if fullscreen_mode else "0"
@@ -82,23 +78,23 @@ class RoomService:
         max_exits_val = str(max(1, min(int(max_exits or 5), 20)))
         max_copy_paste_val = str(max(1, min(int(max_copy_paste_attempts or 3), 50)))
 
-        pipeline = [
-            ["HSET", room_key(room_id),
-             "title", title,
-             "mentorId", mentor_id,
-             "timed", "1" if timed else "0",
-             "duration", str(duration),
-             "status", "waiting",
-             "createdAt", str(now),
-             "fullscreenMode", fullscreen_val,
-             "blockCopyPaste", block_cp_val,
-             "maxFullscreenExits", max_exits_val,
-             "maxCopyPasteAttempts", max_copy_paste_val],
-            ["EXPIRE", room_key(room_id), str(60 * 60 * 24 * 7)],  # 7-day TTL
-        ]
-        res = redis_cmd(pipeline)
-        if res is None:
-            raise RuntimeError("Redis unavailable")
+        fields = {
+            "title": title,
+            "mentorId": mentor_id,
+            "timed": "1" if timed else "0",
+            "duration": str(duration),
+            "status": "waiting",
+            "createdAt": str(now),
+            "fullscreenMode": fullscreen_val,
+            "blockCopyPaste": block_cp_val,
+            "maxFullscreenExits": max_exits_val,
+            "maxCopyPasteAttempts": max_copy_paste_val,
+            "paperVersion": uuid.uuid4().hex,
+        }
+        while True:
+            room_id = cls._gen_room_id()
+            if create_room_document(room_id, fields):
+                break
 
         return {
             "roomId": room_id,
@@ -110,7 +106,8 @@ class RoomService:
     def get_room(room_id: str, client_mentor_id: str = "") -> dict:
         fields = [
             "title", "mentorId", "timed", "duration", "status", "createdAt", "startedAt", "endedAt",
-            "questions", "datasets", "fullscreenMode", "blockCopyPaste", "maxFullscreenExits", "maxCopyPasteAttempts"
+            "questions", "datasets", "fullscreenMode", "blockCopyPaste", "maxFullscreenExits",
+            "maxCopyPasteAttempts", "paperVersion"
         ]
         raw = redis_one(["HMGET", f"room:{room_id}"] + fields)
         if not raw or all(v is None for v in raw):
@@ -131,6 +128,7 @@ class RoomService:
                     meta[k] = "5"
                 elif k == "maxCopyPasteAttempts":
                     meta[k] = "3"
+        meta["paperVersion"] = raw[14] or ""
 
         questions_json = raw[8]
         datasets_json = raw[9]
@@ -210,7 +208,7 @@ class RoomService:
 
     @staticmethod
     def get_room_status(room_id: str) -> dict:
-        fields = ["status", "startedAt", "endedAt"]
+        fields = ["status", "startedAt", "endedAt", "paperVersion"]
         raw = redis_one(["HMGET", f"room:{room_id}"] + fields)
         if not raw or all(v is None for v in raw):
             raise KeyError("Room not found")
@@ -236,6 +234,7 @@ class RoomService:
             "roomStatus": status,
             "startedAt": started_at,
             "endedAt": ended_at,
+            "paperVersion": raw[3] or "",
             "kicked": kicked
         }
 
@@ -437,7 +436,7 @@ class RoomService:
         from services.submission.submission_service import SubmissionService
         from services.sql.sql_service import SqlService
 
-        raw = redis_one(["HMGET", f"room:{room_id}", "mentorId", "questions"])
+        raw = redis_one(["HMGET", f"room:{room_id}", "mentorId", "questions", "paperVersion", "paperAudit"])
         if not raw or raw[0] is None:
             raise KeyError("Room not found")
         if raw[0] != mentor_id:
@@ -449,40 +448,63 @@ class RoomService:
                 old_questions = json.loads(raw[1])
             except Exception:
                 pass
+        try:
+            paper_audit = json.loads(raw[3]) if raw[3] else []
+            if not isinstance(paper_audit, list):
+                paper_audit = []
+        except (TypeError, ValueError):
+            paper_audit = []
 
-        old_ids = {q.get("id") for q in old_questions if q.get("id")}
+        old_by_id = {q.get("id"): q for q in old_questions if q.get("id")}
+        old_ids = set(old_by_id)
         new_ids = {q.get("id") for q in questions if q.get("id")}
         deleted_ids = old_ids - new_ids
 
-        pipeline = [
-            ["HSET", f"room:{room_id}", "questions", json.dumps(questions)],
-            ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)]
-        ]
+        pipeline = []
 
-        # Auto-freeze query/SQL expected answers. The binary media referenced by
-        # question metadata is stored separately in GridFS, so the room paper
-        # remains safely below MongoDB's document-size limit.
+        # Refresh frozen data answers when their expected query, dataset, or
+        # question type changes; otherwise retain the existing answer.
         for q in questions:
             q_id = q.get("id")
             q_type = q.get("type", "query")
-            if q_type in ("query", "sql") and q_id:
-                exists = redis_one(["HEXISTS", f"room:{room_id}", f"q_answer:{q_id}"])
-                if not exists or str(exists) in ("0", "None"):
-                    query = q.get("expectedQuery", "").strip()
-                    dataset_ids = q.get("datasetIds", [])
-                    if not dataset_ids and q.get("datasetId"):
-                        dataset_ids = [q.get("datasetId")]
-                    if query and dataset_ids:
-                        if q_type == "sql":
-                            res = SqlService.execute_room_query(room_id, dataset_ids, query, limit=10000)
-                        else:
-                            res = SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=100000)
-                        if res.get("status") == "ok":
-                            if q_type == "sql":
-                                answer = {"columns": res.get("columns", []), "rows": res.get("rows", [])[:10000]}
-                            else:
-                                answer = res.get("results", [])[:2000]
-                            pipeline.append(["HSET", f"room:{room_id}", f"q_answer:{q_id}", json.dumps(answer)])
+            previous = old_by_id.get(q_id, {})
+            previous_dataset_ids = previous.get("datasetIds") or (
+                [previous["datasetId"]] if previous.get("datasetId") else []
+            )
+            dataset_ids = q.get("datasetIds") or ([q["datasetId"]] if q.get("datasetId") else [])
+            changed = (
+                previous.get("type", "query") != q_type
+                or (previous.get("expectedQuery") or "").strip() != (q.get("expectedQuery") or "").strip()
+                or previous_dataset_ids != dataset_ids
+            )
+            answer_field = f"q_answer:{q_id}"
+            has_answer = bool(redis_one(["HEXISTS", f"room:{room_id}", answer_field]))
+            if q_type not in ("query", "sql"):
+                if has_answer:
+                    pipeline.append(["HDEL", f"room:{room_id}", answer_field])
+                continue
+            if not q_id or (has_answer and not changed):
+                continue
+
+            query = (q.get("expectedQuery") or "").strip()
+            if not query or not dataset_ids:
+                if has_answer:
+                    pipeline.append(["HDEL", f"room:{room_id}", answer_field])
+                continue
+            if q_type == "sql":
+                res = SqlService.execute_room_query(room_id, dataset_ids, query, limit=10000)
+            else:
+                res = SubmissionService.execute_room_query(room_id, dataset_ids, query, max_results=100000)
+            if res.get("status") != "ok":
+                raise RuntimeError(
+                    f"Unable to refresh expected answer for question {q_id}: "
+                    f"{res.get('error', 'execution failed')}"
+                )
+            if q_type == "sql":
+                answer = {"columns": res.get("columns", []), "rows": res.get("rows", [])[:10000]}
+            else:
+                answer = res.get("results", [])[:2000]
+            pipeline.append(["HSET", f"room:{room_id}", answer_field, json.dumps(answer)])
 
         if deleted_ids:
             hdel_cmd = ["HDEL", f"room:{room_id}"]
@@ -490,6 +512,24 @@ class RoomService:
                 hdel_cmd.append(f"q_answer:{q_id}")
             pipeline.append(hdel_cmd)
 
+        paper_version = uuid.uuid4().hex
+        changed_ids = sorted(
+            q.get("id") for q in questions
+            if q.get("id") and old_by_id.get(q.get("id")) != q
+        )
+        paper_audit.append({
+            "paperVersion": paper_version,
+            "mentorId": mentor_id,
+            "createdAt": int(time.time()),
+            "questionCount": len(questions),
+            "changedQuestionIds": changed_ids,
+            "removedQuestionIds": sorted(deleted_ids),
+        })
+        pipeline.extend([
+            ["HSET", f"room:{room_id}", "questions", json.dumps(questions),
+             "paperVersion", paper_version, "paperAudit", json.dumps(paper_audit[-100:])],
+            ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
+        ])
         redis_cmd(pipeline)
         return len(questions)
 

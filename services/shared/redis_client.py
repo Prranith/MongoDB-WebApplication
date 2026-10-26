@@ -180,6 +180,19 @@ def redis_cmd(commands: list) -> list | None:
     return results
 
 
+def create_room_document(room_id: str, fields: dict) -> bool:
+    """Atomically create a room document; return False when its ID is taken."""
+    coll = _get_rooms_coll()
+    if coll is None:
+        raise RuntimeError("Room database is unavailable")
+    document = {"_id": room_id.strip().upper(), **fields}
+    try:
+        coll.insert_one(document)
+    except pymongo.errors.DuplicateKeyError:
+        return False
+    return True
+
+
 def update_participant_if_not_finished(room_id: str, student_id: str, participant: dict) -> str:
     """OCC guard for the final exam transition.
 

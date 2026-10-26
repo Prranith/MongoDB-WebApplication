@@ -15,7 +15,7 @@ import os
 import time
 import uuid
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
 from bson import json_util
@@ -32,6 +32,7 @@ QUEUE_URL = os.getenv("CLOUDAMQP_URL", "").strip()
 QUEUE_ENABLED = os.getenv("EXECUTION_QUEUE_ENABLED", "1").strip().lower() in {"1", "true", "yes"}
 QUEUE_WAIT_SECONDS = max(5.0, float(os.getenv("EXECUTION_QUEUE_WAIT_SECONDS", "25")))
 QUEUE_VISIBILITY_SECONDS = max(30, int(os.getenv("EXECUTION_QUEUE_VISIBILITY_SECONDS", "180")))
+WORKER_COLLECTION = os.getenv("EXECUTION_WORKER_COLLECTION", "execution_workers")
 
 QUEUE_NAMES = {
     "playground_code": "code-execution",
@@ -63,6 +64,40 @@ def _jobs():
     except Exception:
         pass
     return collection
+
+
+def record_worker_heartbeat(worker_id: str, status: str = "online", error: str = "") -> None:
+    """Persist worker liveness without exposing broker or database credentials."""
+    db = get_exam_db()
+    if db is None:
+        raise RuntimeError("Execution worker database is unavailable")
+    now = datetime.now(timezone.utc)
+    fields = {
+        "workerId": worker_id,
+        "status": status,
+        "lastHeartbeatAt": now,
+        "queueNames": sorted(set(QUEUE_NAMES.values())),
+    }
+    if error:
+        fields["lastError"] = str(error)[:500]
+    db[WORKER_COLLECTION].update_one(
+        {"_id": worker_id},
+        {"$set": fields, "$setOnInsert": {"startedAt": now}},
+        upsert=True,
+    )
+
+
+def active_workers(max_age_seconds: int = 45) -> list[dict]:
+    """Return only workers with a recent, persisted heartbeat."""
+    db = get_exam_db()
+    if db is None:
+        return []
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=max_age_seconds)
+    rows = db[WORKER_COLLECTION].find(
+        {"status": "online", "lastHeartbeatAt": {"$gt": cutoff}},
+        {"_id": 0, "workerId": 1, "status": 1, "lastHeartbeatAt": 1, "queueNames": 1},
+    ).sort("lastHeartbeatAt", -1).limit(50)
+    return list(rows)
 
 
 def _safe_json(value: Any) -> Any:
@@ -137,7 +172,33 @@ def wait_for_result(job_id: str, timeout: float | None = None) -> dict:
         if status == "failed":
             return {"status": "error", "error": job.get("error", "Execution job failed"), "code": "EXECUTION_JOB_FAILED"}
         time.sleep(0.25)
-    return {"status": "error", "error": "Execution queue timed out while waiting for a worker.", "code": "EXECUTION_QUEUE_TIMEOUT", "jobId": job_id}
+    job = collection.find_one({"_id": job_id}, {"status": 1, "kind": 1}) or {}
+    workers = active_workers()
+    queue_name = QUEUE_NAMES.get(job.get("kind", ""))
+    if not workers:
+        message = (
+            "No execution worker has reported a recent heartbeat. Start the long-running "
+            "worker with the same CLOUDAMQP_URL, MONGO_URI, and EXECUTION_JOB_COLLECTION as the API."
+        )
+    elif job.get("status") == "queued":
+        message = (
+            "The job remains queued although a worker is online. Verify the worker consumes "
+            f"the {queue_name or 'matching'} queue and shares the API's MongoDB job database."
+        )
+    else:
+        message = (
+            "An execution worker claimed the job but did not finish before the request timeout. "
+            "Check worker logs and raise EXECUTION_QUEUE_WAIT_SECONDS if this task legitimately needs longer."
+        )
+    return {
+        "status": "error",
+        "error": message,
+        "code": "EXECUTION_QUEUE_TIMEOUT",
+        "jobId": job_id,
+        "jobStatus": job.get("status", "missing"),
+        "queue": queue_name,
+        "activeWorkers": len(workers),
+    }
 
 
 def execute(kind: str, payload: dict, direct: Callable[[], dict], idempotency_key: str | None = None) -> dict:
@@ -196,7 +257,14 @@ def _dispatch(kind: str, payload: dict) -> Any:
 def process(job_id: str, kind: str, payload: dict | None = None) -> str:
     collection = _jobs()
     if payload is None:
-        stored = collection.find_one({"_id": job_id}) or {}
+        stored = collection.find_one({"_id": job_id})
+        if not stored:
+            raise RuntimeError(
+                "Execution job is missing from this worker's MongoDB ledger. "
+                "Configure the same MONGO_URI and EXECUTION_JOB_COLLECTION on the API and worker."
+            )
+        if stored.get("kind") != kind:
+            raise RuntimeError("Execution job type does not match the broker message")
         payload = stored.get("payload") or {}
     now = datetime.now(timezone.utc)
     claimed = collection.update_one(
@@ -212,4 +280,3 @@ def process(job_id: str, kind: str, payload: dict | None = None) -> str:
     except Exception as exc:
         collection.update_one({"_id": job_id}, {"$set": {"status": "failed", "error": str(exc)[:1000], "finishedAt": datetime.now(timezone.utc), "updatedAt": datetime.now(timezone.utc)}})
         return "failed"
-

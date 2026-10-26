@@ -46,11 +46,31 @@ Start the worker from the repository root with:
 python -m services.execution.worker
 ```
 
-The worker must run as a long-lived Python process outside Vercel. It uses the
-Python, GCC, G++, and Java runtimes installed on that machine. No Paiza or
-Piston API is used. It stores job payloads and results in the existing MongoDB
-database and acknowledges a RabbitMQ message only after the result has been
-persisted.
+The worker must run as a long-lived Python process outside Vercel. The
+`Dockerfile.worker` image includes Python, GCC, G++, and the Java JDK. Deploy it
+as a continuously running worker service (not a web service), and configure
+the **same** `CLOUDAMQP_URL`, `MONGO_URI`, and `EXECUTION_JOB_COLLECTION` values
+on both the Vercel API and the worker. A worker connected to a different broker
+or MongoDB database cannot see the published jobs and will cause the API to
+time out. Do not deploy the worker without setting its secrets in the hosting
+platform's environment settings.
+
+The admin overview reports recent worker heartbeats; a configured queue with
+no online worker is shown as degraded. Timeout responses also include the
+persisted job status and whether a worker was visible. The worker persists a
+result before acknowledging its RabbitMQ message.
+
+Build and run the worker image with:
+
+```bash
+docker build -f Dockerfile.worker -t codeleaf-execution-worker .
+docker run --restart unless-stopped \
+  -e CLOUDAMQP_URL \
+  -e MONGO_URI \
+  codeleaf-execution-worker
+```
+
+No Paiza or Piston API is used.
 
 ---
 

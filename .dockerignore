@@ -1,0 +1,14 @@
+.git
+.vercel
+.pytest_cache
+__pycache__
+**/__pycache__
+*.py[cod]
+*.log
+.env*
+*.env
+tests
+scratch
+docs
+public
+test.ipynb

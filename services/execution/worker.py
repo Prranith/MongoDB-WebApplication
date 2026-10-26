@@ -8,9 +8,15 @@ Run this as a separate long-lived service, not inside a Vercel function:
 import json
 import os
 import signal
+import socket
 import time
 
-from services.execution.job_queue import QUEUE_NAMES, QUEUE_URL, process
+from services.execution.job_queue import (
+    QUEUE_NAMES,
+    QUEUE_URL,
+    process,
+    record_worker_heartbeat,
+)
 
 
 def main():
@@ -19,6 +25,8 @@ def main():
     import pika
 
     reconnect_seconds = max(1, int(os.getenv("EXECUTION_WORKER_RECONNECT_SECONDS", "5")))
+    heartbeat_seconds = max(5, int(os.getenv("EXECUTION_WORKER_HEARTBEAT_SECONDS", "15")))
+    worker_id = os.getenv("EXECUTION_WORKER_ID", "").strip() or f"{socket.gethostname()}-{os.getpid()}"
     stopping = False
 
     def stop_worker(*_args):
@@ -36,6 +44,8 @@ def main():
             for queue_name in sorted(set(QUEUE_NAMES.values())):
                 channel.queue_declare(queue=queue_name, durable=True)
             channel.basic_qos(prefetch_count=max(1, int(os.getenv("EXECUTION_WORKER_PREFETCH", "1"))))
+            record_worker_heartbeat(worker_id)
+            last_heartbeat = time.monotonic()
 
             def consume(message_channel, method, properties, body):
                 started = time.monotonic()
@@ -65,14 +75,25 @@ def main():
                 channel.basic_consume(queue=queue_name, on_message_callback=consume)
             print("CodeLeaf execution worker is listening", flush=True)
             while not stopping and connection.is_open:
+                if time.monotonic() - last_heartbeat >= heartbeat_seconds:
+                    record_worker_heartbeat(worker_id)
+                    last_heartbeat = time.monotonic()
                 connection.process_data_events(time_limit=1)
         except Exception as exc:
             if not stopping:
                 print(f"execution worker connection failed: {exc}; retrying", flush=True)
+                try:
+                    record_worker_heartbeat(worker_id, status="reconnecting", error=str(exc))
+                except Exception as heartbeat_error:
+                    print(f"execution worker heartbeat failed: {heartbeat_error}", flush=True)
                 time.sleep(reconnect_seconds)
         finally:
             if connection is not None and connection.is_open:
                 connection.close()
+    try:
+        record_worker_heartbeat(worker_id, status="offline")
+    except Exception as exc:
+        print(f"execution worker shutdown heartbeat failed: {exc}", flush=True)
 
 
 if __name__ == "__main__":

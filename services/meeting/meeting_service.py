@@ -10,6 +10,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from pymongo.errors import DuplicateKeyError
+
 from services.shared.redis_client import get_exam_db
 from utils.logger import get_logger, bind_component
 
@@ -101,33 +103,52 @@ class MeetingService:
         room_title: str = "",
         owner_account_id: str = "",
     ) -> Dict[str, Any]:
-        room_id = (room_id or f"MTG-{uuid.uuid4().hex[:8].upper()}").strip().upper()
-        if cls._load(room_id):
-            raise ValueError(f"Meeting room '{room_id}' already exists")
+        requested_room_id = (room_id or "").strip().upper()
         now = _now_iso()
         room_title = " ".join((room_title or "").split())[:120] or "CodeLeaf Meeting"
-        room = {
-            "roomId": room_id,
-            "roomTitle": room_title,
-            "hostName": host_name,
-            "ownerAccountId": str(owner_account_id or ""),
-            "hostToken": (host_token or "").strip(),
-            "hostPeerId": "",
-            "creatorPeerId": "",
-            "creatorActive": False,
-            "createdAt": now,
-            "activeAt": now,
-            "participants": {},
-            "chatMessages": [],
-            "reactions": [],
-            "participantEvents": [],
-            "participantCount": 0,
-            "isOpen": True,
-            "endedAt": "",
-            "endedBy": "",
-            "_activePeers": set(),
-        }
-        cls._save(room)
+        collection = cls._collection()
+        while True:
+            candidate = requested_room_id or f"MTG-{uuid.uuid4().hex[:8].upper()}"
+            room = {
+                "roomId": candidate,
+                "roomTitle": room_title,
+                "hostName": host_name,
+                "ownerAccountId": str(owner_account_id or ""),
+                "hostToken": (host_token or "").strip(),
+                "hostPeerId": "",
+                "creatorPeerId": "",
+                "creatorActive": False,
+                "createdAt": now,
+                "activeAt": now,
+                "participants": {},
+                "chatMessages": [],
+                "reactions": [],
+                "participantEvents": [],
+                "participantCount": 0,
+                "isOpen": True,
+                "endedAt": "",
+                "endedBy": "",
+                "_activePeers": set(),
+            }
+            clean = {key: value for key, value in room.items() if key not in {"_activePeers", "participantCount"}}
+            with _rooms_lock:
+                if collection is None:
+                    if candidate in cls._rooms:
+                        if requested_room_id:
+                            raise ValueError(f"Meeting room '{candidate}' already exists")
+                        continue
+                    cls._rooms[candidate] = dict(room)
+                    break
+                clean["_id"] = candidate
+                try:
+                    collection.insert_one(clean)
+                except DuplicateKeyError as exc:
+                    if requested_room_id:
+                        raise ValueError(f"Meeting room '{candidate}' already exists") from exc
+                    continue
+                cls._rooms[candidate] = dict(room)
+                break
+        room_id = candidate
         log.info("meeting_room_created", room_id=room_id, host_name=host_name)
         return room
 
