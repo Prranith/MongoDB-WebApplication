@@ -6,7 +6,16 @@ async function fetchAPI(url, opts = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...opts
   });
-  return r.json();
+  const body = await r.text();
+  try {
+    return JSON.parse(body);
+  } catch (_) {
+    const requestId = r.headers.get('X-Correlation-ID');
+    const detail = r.ok
+      ? `The server returned an invalid response (HTTP ${r.status}).`
+      : `The server returned a non-JSON error response (HTTP ${r.status}).`;
+    throw new Error(`${detail}${requestId ? ` Request ID: ${requestId}.` : ''} Check the API deployment logs.`);
+  }
 }
 
 function getClientId() {

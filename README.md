@@ -58,7 +58,9 @@ platform's environment settings.
 The admin overview reports recent worker heartbeats; a configured queue with
 no online worker is shown as degraded. Timeout responses also include the
 persisted job status and whether a worker was visible. The worker persists a
-result before acknowledging its RabbitMQ message.
+result before acknowledging its RabbitMQ message. Broker publish and job-ledger
+failures return JSON `503` responses; use the response correlation ID to locate
+the matching API log entry instead of interpreting an HTML platform error.
 
 Build and run the worker image with:
 

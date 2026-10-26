@@ -9587,7 +9587,16 @@ async function fetchAPI(url, opts = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...opts
   });
-  return r.json();
+  const body = await r.text();
+  try {
+    return JSON.parse(body);
+  } catch (_) {
+    const requestId = r.headers.get('X-Correlation-ID');
+    const detail = r.ok
+      ? `The server returned an invalid response (HTTP ${r.status}).`
+      : `The server returned a non-JSON error response (HTTP ${r.status}).`;
+    throw new Error(`${detail}${requestId ? ` Request ID: ${requestId}.` : ''} Check the API deployment logs.`);
+  }
 }
 
 function getClientId() {
@@ -13120,7 +13129,10 @@ const ClientExecution = (() => {
       else item.reject(new Error(message.error || 'Client execution failed'));
     };
     worker.onerror = event => {
-      const error = new Error(event.message || 'Client runtime failed to load');
+      const location = event.filename
+        ? ` (${event.filename}${event.lineno ? `:${event.lineno}:${event.colno || 0}` : ''})`
+        : '';
+      const error = new Error(`${event.message || 'Client runtime failed to load'}${location}`);
       console.error('[CodeLeaf] Browser execution worker error:', {
         message: error.message,
         filename: event.filename || '',
@@ -16140,6 +16152,8 @@ const ExamPortal = (() => {
       hasRunOnce: false,
       selectedOption: null,
       pollInterval: null,
+      paperVersion: '',
+      paperSyncInFlight: false,
       examEditor: null,
       timerInterval: null,
       fullscreenWatchInterval: null,
@@ -17279,9 +17293,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         el('mentor-export-panel').style.display = 'none';
         if (rightSidebar) rightSidebar.style.display = 'none'; // Hide sidebar during live test
         if (el('btn-toggle-participants')) el('btn-toggle-participants').style.display = 'none';
-        // Show leaderboard tab, hide questions tab
+        // Keep the question editor available so the mentor can update a live paper.
         el('mentor-tab-live').style.display = 'flex';
-        el('mentor-tab-questions').style.display = 'none';
+        el('mentor-tab-questions').style.display = 'flex';
         mentor.setTab('live');
         if (!state.mentor.isPlayback) {
           mentor._startLeaderboardPoll();
@@ -19595,6 +19609,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       state.student.questions = res.questions || [];
       state.student.datasets = res.datasets || [];
       state.student.roomStatus = (res.meta && res.meta.status) ? res.meta.status : 'live';
+      state.student.paperVersion = (res.meta && res.meta.paperVersion) || '';
 
       // Setup proctoring settings
       state.student.fullscreenMode = (res.meta && (res.meta.fullscreenMode === '1' || res.meta.fullscreenMode === true));
@@ -19681,6 +19696,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             clearInterval(state.student.timerInterval);
             await studentNS.autoSaveAllResponses();
             studentNS._lockExam();
+            return;
+          }
+          if (statusRes.paperVersion && statusRes.paperVersion !== state.student.paperVersion) {
+            await studentNS._syncUpdatedPaper(statusRes.paperVersion);
           }
         }
       }, 3000);
@@ -19689,6 +19708,62 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       studentNS._initStudentEditor();
       if (state.student.questions.length > 0) {
         studentNS.selectQuestion(0);
+      }
+    },
+
+    async _syncUpdatedPaper() {
+      if (state.student.paperSyncInFlight || !state.student.roomId) return;
+      state.student.paperSyncInFlight = true;
+      try {
+        clearTimeout(state.student.autoSaveTimeout);
+        studentNS.saveCurrentActiveDraft();
+        await studentNS.autoSaveAllResponses();
+
+        const res = await apiCall(`/api/exam/room/${state.student.roomId}`);
+        if (res.status !== 'ok') return;
+        const previousQuestions = state.student.questions || [];
+        const previousStatus = state.student.status || {};
+        const previousQuestion = previousQuestions[state.student.currentQIdx];
+        const previousIndex = state.student.currentQIdx || 0;
+        const previousById = new Map(previousQuestions.map(question => [question.id, question]));
+        const nextQuestions = res.questions || [];
+        const nextStatus = {};
+
+        nextQuestions.forEach(question => {
+          const previous = previousById.get(question.id);
+          if (previous && previous.type === question.type) {
+            for (const key of [
+              '_studentDraft', '_studentDrafts', '_studentSelectedOption',
+              '_studentSelectedOptions', '_studentResult'
+            ]) {
+              if (previous[key] !== undefined) question[key] = previous[key];
+            }
+            nextStatus[question.id] = previousStatus[question.id] || 'unattempted';
+          } else {
+            nextStatus[question.id] = 'unattempted';
+          }
+        });
+
+        state.student.questions = nextQuestions;
+        state.student.datasets = res.datasets || [];
+        state.student.status = nextStatus;
+        state.student.paperVersion = (res.meta && res.meta.paperVersion) || '';
+        const nextIndex = previousQuestion
+          ? nextQuestions.findIndex(question => question.id === previousQuestion.id)
+          : -1;
+        const selectedIndex = nextIndex >= 0
+          ? nextIndex
+          : Math.min(previousIndex, Math.max(0, nextQuestions.length - 1));
+
+        studentNS._renderQNav();
+        state.student.currentQIdx = null;
+        if (nextQuestions.length) studentNS.selectQuestion(selectedIndex);
+        setStudentSaveState('Paper updated · your saved work was retained', 'saved');
+      } catch (error) {
+        console.error('Failed to synchronize updated exam paper:', error);
+        setStudentSaveState('Paper update could not be loaded; retrying', 'error');
+      } finally {
+        state.student.paperSyncInFlight = false;
       }
     },
 
@@ -22072,7 +22147,6 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 })(); // end ExamPortal IIFE
 
 window.ExamPortal = ExamPortal;
-
 
 </script>
 

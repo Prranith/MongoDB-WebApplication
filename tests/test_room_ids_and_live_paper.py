@@ -100,3 +100,54 @@ def test_queue_timeout_explains_missing_worker_and_job_state():
     assert result["jobStatus"] == "queued"
     assert result["activeWorkers"] == 0
     assert "No execution worker" in result["error"]
+
+
+def test_queue_connection_failure_is_reported_as_service_unavailable():
+    jobs = MagicMock()
+    with patch.object(job_queue, "_jobs", return_value=jobs):
+        with patch.object(job_queue, "_connection", side_effect=OSError("broker unavailable")):
+            with patch.object(job_queue, "enabled", return_value=True):
+                result = job_queue._execute_uncached(
+                    "playground_code",
+                    {"language": "python", "code": "print(1)"},
+                    lambda: {},
+                )
+
+    assert result["status"] == "error"
+    assert result["code"] == "EXECUTION_QUEUE_UNAVAILABLE"
+    assert "CloudAMQP" in result["error"]
+    assert jobs.update_one.call_args.args[0] == {"_id": jobs.insert_one.call_args.args[0]["_id"]}
+
+
+def test_sandbox_route_returns_json_for_execution_service_failure():
+    from api.routes.database_routes import database_bp
+    from api.routes.sql_routes import sql_bp
+    from flask import Flask
+
+    app = Flask(__name__)
+    app.register_blueprint(database_bp)
+    app.register_blueprint(sql_bp)
+    error = {
+        "status": "error",
+        "code": "EXECUTION_QUEUE_UNAVAILABLE",
+        "error": "Execution queue is unavailable.",
+    }
+    with patch("api.routes.database_routes.execute_job", return_value=error):
+        sandbox_response = app.test_client().post(
+            "/api/sandbox/run",
+            json={"language": "python", "code": "print(1)"},
+        )
+        mongo_response = app.test_client().post(
+            "/api/query",
+            json={"query": "db.users.find()"},
+        )
+    with patch("api.routes.sql_routes.execute_job", return_value=error):
+        sql_response = app.test_client().post(
+            "/api/sql/run",
+            json={"query": "select * from users"},
+        )
+
+    for response in (sandbox_response, mongo_response, sql_response):
+        assert response.status_code == 503
+        assert response.is_json
+        assert response.get_json()["code"] == "EXECUTION_QUEUE_UNAVAILABLE"

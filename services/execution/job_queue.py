@@ -19,10 +19,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
 from bson import json_util
+from pymongo.errors import PyMongoError
 
 from services.shared.redis_client import get_exam_db
 from services.shared.cache import get_cache_manager, sha_signature
 from services.shared.idempotency import get_persistent_idempotency_handler
+from utils.logger import get_logger, bind_component
 
 
 QUEUE_URL = os.getenv("CLOUDAMQP_URL", "").strip()
@@ -45,6 +47,15 @@ QUEUE_NAMES = {
     "exam_sql": "sql-execution",
 }
 _execution_idem = get_persistent_idempotency_handler(ttl_seconds=300)
+log = bind_component(get_logger(__name__), "execution_queue")
+
+
+class ExecutionJobStoreUnavailable(RuntimeError):
+    """The API cannot persist execution jobs in the shared MongoDB ledger."""
+
+
+class ExecutionQueueUnavailable(RuntimeError):
+    """The API could not publish an execution job to the configured broker."""
 
 
 def enabled() -> bool:
@@ -55,7 +66,7 @@ def enabled() -> bool:
 def _jobs():
     db = get_exam_db()
     if db is None:
-        raise RuntimeError("Execution job database is unavailable")
+        raise ExecutionJobStoreUnavailable("Execution job database is unavailable")
     collection = db[os.getenv("EXECUTION_JOB_COLLECTION", "execution_jobs")]
     try:
         collection.create_index("createdAt", expireAfterSeconds=86400)
@@ -142,8 +153,9 @@ def enqueue(kind: str, payload: dict, idempotency_key: str | None = None) -> str
         if existing.get("fingerprint") != fingerprint:
             raise ValueError("Idempotency key was already used with a different execution request") from exc
         return job_id
-    pika, connection = _connection()
+    connection = None
     try:
+        pika, connection = _connection()
         channel = connection.channel()
         channel.queue_declare(queue=queue_name, durable=True)
         channel.confirm_delivery()
@@ -153,11 +165,37 @@ def enqueue(kind: str, payload: dict, idempotency_key: str | None = None) -> str
             body=json.dumps({"jobId": job_id, "kind": kind}, separators=(",", ":")).encode(),
             properties=pika.BasicProperties(delivery_mode=2, content_type="application/json"),
         )
-    except Exception:
-        _jobs().update_one({"_id": job_id}, {"$set": {"status": "failed", "error": "Unable to publish execution job", "updatedAt": datetime.now(timezone.utc)}})
-        raise
+    except Exception as exc:
+        try:
+            jobs.update_one(
+                {"_id": job_id},
+                {"$set": {
+                    "status": "failed",
+                    "error": "Unable to publish execution job",
+                    "updatedAt": datetime.now(timezone.utc),
+                }},
+            )
+        except Exception as persist_error:
+            log.error(
+                "execution_job_failure_persist_failed",
+                job_id=job_id,
+                error_type=type(persist_error).__name__,
+            )
+        log.error(
+            "execution_queue_publish_failed",
+            kind=kind,
+            queue=queue_name,
+            error_type=type(exc).__name__,
+        )
+        raise ExecutionQueueUnavailable(
+            "The execution queue is unavailable. Check the API's CloudAMQP configuration and broker connectivity."
+        ) from exc
     finally:
-        connection.close()
+        if connection is not None:
+            try:
+                connection.close()
+            except Exception as exc:
+                log.warning("execution_queue_close_failed", error_type=type(exc).__name__)
     return job_id
 
 
@@ -217,7 +255,29 @@ def _execute_uncached(kind: str, payload: dict, direct: Callable[[], dict], idem
         replay = _execution_idem.check_replay(idempotency_key, method="POST", path=f"/execution/{kind}")
         if replay:
             return replay[1]
-    result = direct() if not enabled() else wait_for_result(enqueue(kind, payload, idempotency_key))
+    if not enabled():
+        result = direct()
+    else:
+        try:
+            result = wait_for_result(enqueue(kind, payload, idempotency_key))
+        except (ExecutionJobStoreUnavailable, ExecutionQueueUnavailable, PyMongoError) as exc:
+            error_code = (
+                "EXECUTION_JOB_STORE_UNAVAILABLE"
+                if isinstance(exc, (ExecutionJobStoreUnavailable, PyMongoError))
+                else "EXECUTION_QUEUE_UNAVAILABLE"
+            )
+            log.error(
+                "execution_service_unavailable",
+                kind=kind,
+                code=error_code,
+                error_type=type(exc).__name__,
+            )
+            return {
+                "status": "error",
+                "error": str(exc),
+                "code": error_code,
+                "queue": QUEUE_NAMES.get(kind),
+            }
     if idempotency_key:
         _execution_idem.record_response(idempotency_key, method="POST", path=f"/execution/{kind}", status_code=200, body=result)
     return result

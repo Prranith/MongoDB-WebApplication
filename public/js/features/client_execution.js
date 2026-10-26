@@ -395,7 +395,10 @@ const ClientExecution = (() => {
       else item.reject(new Error(message.error || 'Client execution failed'));
     };
     worker.onerror = event => {
-      const error = new Error(event.message || 'Client runtime failed to load');
+      const location = event.filename
+        ? ` (${event.filename}${event.lineno ? `:${event.lineno}:${event.colno || 0}` : ''})`
+        : '';
+      const error = new Error(`${event.message || 'Client runtime failed to load'}${location}`);
       console.error('[CodeLeaf] Browser execution worker error:', {
         message: error.message,
         filename: event.filename || '',

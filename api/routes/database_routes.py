@@ -133,7 +133,7 @@ def api_query():
         ).to_dict(),
         idempotency_key=get_idempotency_key_from_request(request),
     )
-    if result.get("status") == "error" and result.get("code") == "EXECUTION_QUEUE_TIMEOUT":
+    if result.get("status") == "error" and str(result.get("code", "")).startswith("EXECUTION_"):
         return _json_response(result, status=503)
     return _json_response(result)
 
@@ -216,6 +216,8 @@ def api_sandbox_run():
         lambda: run_piston_code(language, code, stdin, filename, language == "java"),
         idempotency_key=get_idempotency_key_from_request(request),
     )
+    if res.get("status") == "error" and str(res.get("code", "")).startswith("EXECUTION_"):
+        return _json_response(res, status=503)
     try:
         code_val = int(res.get("code", 0))
     except (ValueError, TypeError):

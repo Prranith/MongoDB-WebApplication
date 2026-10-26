@@ -18,7 +18,8 @@ def run_sql():
         lambda: SqlService.execute_query(query, limit, tables),
         idempotency_key=get_idempotency_key_from_request(request),
     )
-    return jsonify(result)
+    status_code = 503 if result.get("status") == "error" and str(result.get("code", "")).startswith("EXECUTION_") else 200
+    return jsonify(result), status_code
 
 
 @sql_bp.route("/api/sql/tables", methods=["GET"])
