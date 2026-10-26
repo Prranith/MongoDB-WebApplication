@@ -1,6 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 // The active file is the single source of truth for workspace language.
 // There is intentionally no manual language selector in the toolbar.
+function isMongoShellSource(source) {
+  const uncommented = String(source || '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  return /\bdb(?:\.[A-Za-z_$][\w$]*)?\.(?:find|findOne|aggregate|insertOne|insertMany|updateOne|updateMany|deleteOne|deleteMany|replaceOne|countDocuments|distinct|drop|createIndex)\s*\(/i.test(uncommented)
+    || /\bdb\.getCollection\s*\([^)]*\)\s*\.(?:find|findOne|aggregate|insertOne|updateOne|deleteOne)\s*\(/i.test(uncommented);
+}
+
 function getWorkspaceLanguage() {
   const path = String(typeof S !== 'undefined' && S ? S.activeFile || '' : '').toLowerCase();
   if (path.endsWith('.py')) return 'python';
@@ -8,6 +16,15 @@ function getWorkspaceLanguage() {
   if (path.endsWith('.c')) return 'c';
   if (path.endsWith('.java')) return 'java';
   if (path.endsWith('.sql')) return 'sql';
+  if (path.endsWith('.mongo') || path.endsWith('.mongodb')) return 'mongodb';
+  if (path.endsWith('.js')) {
+    const source = typeof editor !== 'undefined' && editor
+      ? editor.getValue()
+      : (typeof S !== 'undefined' && S && Array.isArray(S.files)
+        ? (S.files.find(file => file.path === S.activeFile)?.content || '')
+        : '');
+    return isMongoShellSource(source) ? 'mongodb' : 'javascript';
+  }
   return 'mongodb';
 }
 

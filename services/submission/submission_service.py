@@ -811,7 +811,7 @@ class SubmissionService:
         except (TypeError, ValueError):
             reference_code = 1
         try:
-            student_code = int(student_result.get("code", 1) or 1)
+            student_code = int(student_result.get("code", 1))
         except (TypeError, ValueError):
             student_code = 1
         reference_result = {

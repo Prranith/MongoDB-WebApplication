@@ -445,6 +445,10 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
             Exam Portal
           </button>
+
+          <button class="intro-tour-btn" type="button" onclick="CodeLeafWalkthrough.open()">
+            Explore CodeLeaf
+          </button>
         </div>
       </div>
 
@@ -796,6 +800,78 @@
   </section>
 </div>
 
+<style>
+  .intro-tour-btn {
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(16, 24, 20, .78);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color .18s ease, transform .18s ease, background .18s ease;
+  }
+  .intro-tour-btn:hover { border-color: var(--green); background: rgba(20, 44, 31, .9); transform: translateY(-1px); }
+  .walkthrough-overlay { position: fixed; inset: 0; z-index: 10050; display: grid; place-items: center; padding: 20px; background: rgba(4, 10, 7, .78); backdrop-filter: blur(12px); }
+  .walkthrough-overlay[hidden] { display: none; }
+  .walkthrough-card { width: min(760px, 100%); overflow: hidden; border: 1px solid rgba(130, 210, 157, .22); border-radius: 20px; background: linear-gradient(145deg, #111b16, #0b100d 72%); color: #edf5ef; box-shadow: 0 28px 100px rgba(0,0,0,.55); }
+  .walkthrough-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 26px 16px; }
+  .walkthrough-brand { display: flex; align-items: center; gap: 12px; }
+  .walkthrough-mark { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid rgba(106, 214, 143, .3); border-radius: 12px; background: rgba(72, 188, 111, .12); color: #87e6a3; font-size: 20px; }
+  .walkthrough-brand small { display: block; margin-top: 3px; color: #93a99a; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  .walkthrough-close { width: 36px; height: 36px; border: 1px solid #29362e; border-radius: 10px; background: transparent; color: #b9c8be; font-size: 22px; cursor: pointer; }
+  .walkthrough-progress { display: flex; gap: 6px; padding: 0 26px; }
+  .walkthrough-progress span { height: 3px; flex: 1; border-radius: 3px; background: #29362e; }
+  .walkthrough-progress span.active { background: #6bdb91; }
+  .walkthrough-content { padding: 30px 38px 24px; min-height: 300px; }
+  .walkthrough-eyebrow { color: #7cda9a; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .walkthrough-content h2 { margin: 12px 0; color: #f5fbf6; font-size: clamp(24px, 4vw, 34px); letter-spacing: -.04em; }
+  .walkthrough-description { max-width: 620px; color: #b5c4ba; font-size: 15px; line-height: 1.7; }
+  .walkthrough-points { display: grid; gap: 12px; margin: 24px 0 0; padding: 0; list-style: none; }
+  .walkthrough-points li { display: flex; gap: 11px; color: #d4e0d7; font-size: 14px; line-height: 1.55; }
+  .walkthrough-points li::before { content: "✓"; display: grid; flex: 0 0 20px; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: rgba(87, 205, 126, .14); color: #83e39f; font-size: 12px; font-weight: 700; }
+  .walkthrough-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 26px 22px; border-top: 1px solid rgba(151, 185, 161, .13); }
+  .walkthrough-step-count { color: #91a399; font-size: 12px; }
+  .walkthrough-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 9px; }
+  .walkthrough-actions button { min-height: 38px; padding: 0 14px; border: 1px solid #34433a; border-radius: 9px; background: #17221b; color: #e1ece4; font: inherit; font-size: 13px; cursor: pointer; }
+  .walkthrough-actions button:disabled { opacity: .42; cursor: default; }
+  .walkthrough-actions .walkthrough-primary { border-color: #63c982; background: #55bd75; color: #0a1a10; font-weight: 700; }
+  @media (max-width: 560px) {
+    .walkthrough-content { padding: 24px 22px 20px; min-height: 0; }
+    .walkthrough-top, .walkthrough-footer { padding-left: 20px; padding-right: 20px; }
+    .walkthrough-footer { align-items: flex-start; flex-direction: column; }
+    .walkthrough-actions { width: 100%; }
+    .walkthrough-actions button { flex: 1; }
+  }
+</style>
+
+<div class="walkthrough-overlay" id="codeleaf-walkthrough" hidden>
+  <section class="walkthrough-card" role="dialog" aria-modal="true" aria-labelledby="walkthrough-title" aria-describedby="walkthrough-description">
+    <header class="walkthrough-top">
+      <div class="walkthrough-brand"><span class="walkthrough-mark" aria-hidden="true">✦</span><div><strong>CodeLeaf guide</strong><small>Your first look around</small></div></div>
+      <button class="walkthrough-close" id="walkthrough-close" type="button" aria-label="Close guide">×</button>
+    </header>
+    <div class="walkthrough-progress" id="walkthrough-progress" aria-hidden="true"></div>
+    <main class="walkthrough-content">
+      <div class="walkthrough-eyebrow" id="walkthrough-eyebrow"></div>
+      <h2 id="walkthrough-title"></h2>
+      <p class="walkthrough-description" id="walkthrough-description"></p>
+      <ul class="walkthrough-points" id="walkthrough-points"></ul>
+    </main>
+    <footer class="walkthrough-footer">
+      <span class="walkthrough-step-count" id="walkthrough-step-count" aria-live="polite"></span>
+      <div class="walkthrough-actions">
+        <button id="walkthrough-skip" type="button">Skip tour</button>
+        <button id="walkthrough-back" type="button">Back</button>
+        <button id="walkthrough-step-action" type="button" hidden></button>
+        <button class="walkthrough-primary" id="walkthrough-next" type="button">Next</button>
+      </div>
+    </footer>
+  </section>
+</div>
+
 <!-- JavaScript Logic -->
 <script src="js/ui/dialogs.js"></script>
 <script src="js/core/state.js"></script>
@@ -803,6 +879,7 @@
 <script src="js/features/auth.js"></script>
 <script src="js/features/cookie_consent.js"></script>
 <script src="js/utils/helpers.js"></script>
+<script src="js/features/walkthrough.js"></script>
 <script src="js/ui/panels.js"></script>
 <script src="js/ui/sidebar.js"></script>
 <script src="js/ui/views.js"></script>

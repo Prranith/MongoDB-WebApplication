@@ -567,6 +567,7 @@ const Auth = (() => {
     } catch (_) { /* The app remains usable until an authenticated API is needed. */ }
     finally {
       state.ready = true;
+      window.dispatchEvent(new CustomEvent('codeleaf:auth-ready', { detail: state.user }));
       flushPendingActions();
     }
   }
@@ -579,6 +580,7 @@ const Auth = (() => {
       open(action);
     },
     get user() { return state.user; },
+    get ready() { return state.ready; },
   };
 })();
 

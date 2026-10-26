@@ -865,6 +865,12 @@ function openFileInTab(path) {
     langIndicator = 'Java';
   } else if (lowerPath.endsWith('.sql')) {
     lang = 'sql'; cmMode = 'text/x-sql'; langIndicator = 'SQL';
+  } else if (lowerPath.endsWith('.js')) {
+    lang = getWorkspaceLanguage();
+    langIndicator = lang === 'mongodb' ? 'MongoDB Query' : 'JavaScript';
+  } else if (lowerPath.endsWith('.mongo') || lowerPath.endsWith('.mongodb')) {
+    lang = 'mongodb';
+    langIndicator = 'MongoDB Query';
   }
   
   const langIndicatorEl = document.getElementById('sb-lang-indicator');
@@ -1084,7 +1090,9 @@ function renderInlineCreateInput(type) {
           const baseName = filename.replace(/\.java$/, '');
           starter = `public class ${baseName} {\n    public static void main(String[] args) {\n        System.out.println("Hello from ${baseName}!");\n    }\n}\n`;
         } else if (filename.toLowerCase().endsWith('.js')) {
-          starter = `// JavaScript/MongoDB query\ndb.users.find({});\n`;
+          starter = `// JavaScript script\nlet value = 10;\nconsole.log(value);\n`;
+        } else if (/\.(mongo|mongodb)$/i.test(filename)) {
+          starter = `// MongoDB query\ndb.users.find({});\n`;
         } else if (filename.toLowerCase().endsWith('.sql')) {
           starter = `-- SQL query\nSELECT * FROM users LIMIT 10;\n`;
         }

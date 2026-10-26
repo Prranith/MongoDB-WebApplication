@@ -322,7 +322,7 @@ def _media_mentor_guard(room_id: str, mentor_id: str):
 @exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/media/chunk", methods=["POST"])
 def api_exam_upload_question_media_chunk(room_id: str, question_id: str):
     """Buffer one slice of a chunked question-media upload."""
-    mentor_id = _account_id((body.get("mentorId") or "").strip())
+    mentor_id = _account_id(request.form.get("mentorId", "").strip())
     guard = _media_mentor_guard(room_id, mentor_id)
     if guard is not None:
         return guard
@@ -370,7 +370,7 @@ def api_exam_complete_question_media(room_id: str, question_id: str):
 def api_exam_abort_question_media(room_id: str, question_id: str):
     """Discard buffered chunks for an abandoned upload."""
     body = request.get_json(force=True, silent=True) or {}
-    mentor_id = _account_id(request.form.get("mentorId", "").strip())
+    mentor_id = _account_id((body.get("mentorId") or request.form.get("mentorId", "")).strip())
     guard = _media_mentor_guard(room_id, mentor_id)
     if guard is not None:
         return guard
@@ -744,9 +744,13 @@ def api_exam_student_violation(room_id: str, student_id: str):
             "lastFlaggedAt": res["lastFlaggedAt"],
             "blocked": res.get("blocked", False),
             "copyPasteLimit": res.get("copyPasteLimit", 3),
+            "fullscreenLimit": res.get("fullscreenLimit", 5),
+            "blockedReason": res.get("blockedReason", ""),
         })
     except KeyError as e:
         return _json_response({"status": "error", "error": str(e)}, status=404)
+    except ValueError as e:
+        return _json_response({"status": "error", "error": str(e)}, status=400)
     except Exception as e:
         log.error("violation_record_failed", room_id=room_id, student_id=student_id, error=str(e), correlation_id=g.get("correlation_id"))
         return _json_response({"status": "error", "error": str(e)}, status=500)

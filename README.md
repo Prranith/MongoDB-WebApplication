@@ -28,6 +28,14 @@ fallback provider. These requests bypass CloudAMQP; the API returns provider
 stdout, stderr, and exit code to the frontend. Workspace runs try the browser
 runtime first, then call these external providers if that runtime cannot load.
 
+Workspace `.js` files execute in an isolated QuickJS context inside the Vercel
+Python API; they do not call Piston or Paiza. The context exposes `console`,
+`readline()`, and `prompt()`, with execution-time, memory, input, and output
+limits. It does not provide Node.js APIs such as `process`, `require`, or
+network access. `.js` files containing Mongo shell `db.collection` calls
+continue to run as MongoDB queries; use `.mongo` or `.mongodb` for explicit
+MongoDB query files.
+
 CloudAMQP is used only for queued SQL/MongoDB execution:
 
 ```text
@@ -137,9 +145,13 @@ Because the Flask backend is serverless (stateless), Redis is used as the centra
 - Stores historical `submissions` for mentors to review.
 
 ### 4. Proctoring Subsystem
-A combination of frontend EventListeners and backend Webhooks:
+A combination of frontend event listeners and server-enforced room policies:
 - Intercepts `paste` events and ensures clipboard text strictly matches text copied internally via CodeMirror's `getSelection()` APIs. Rejects external data.
-- Listens to `fullscreenchange` and reports to the Mentor Dashboard immediately if the user tabs out or minimizes the window.
+- Persists fullscreen exits and copy/paste violations per participant; the server applies each room's configured thresholds and reports blocked status to the student.
+
+### 5. JavaScript exams and first-use guide
+- Coding questions can enable JavaScript alongside Python, C, C++, and Java. Sample runs, test generation, custom-input verification, and submission grading use the API's bounded QuickJS sandbox.
+- The welcome screen includes an interactive CodeLeaf walkthrough covering the workspace, data tools, exams, meetings, and productivity features.
 
 ---
 

@@ -265,6 +265,10 @@ class CompilerService:
     @classmethod
     def run_piston_code(cls, language: str, code: str, stdin: str = "", filename: str = "", strict_java_filename: bool = False):
         """Execute code through Piston, falling back to Paiza when unavailable."""
+        if str(language or "").strip().lower() in {"javascript", "js"}:
+            from services.compiler.javascript_service import JavaScriptService
+
+            return JavaScriptService.run_code(code, stdin)
         result = cls.run_piston_api(language, code, stdin, filename, strict_java_filename)
         if result is not None:
             return result

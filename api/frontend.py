@@ -9097,6 +9097,10 @@ li.CodeMirror-hint-active {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
             Exam Portal
           </button>
+
+          <button class="intro-tour-btn" type="button" onclick="CodeLeafWalkthrough.open()">
+            Explore CodeLeaf
+          </button>
         </div>
       </div>
 
@@ -9445,6 +9449,78 @@ li.CodeMirror-hint-active {
     <label class="auth-field" id="auth-otp-field" hidden>Verification code<input id="auth-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code" /></label><div id="auth-reset-fields" hidden><label class="auth-field">New password<input id="auth-reset-password" type="password" autocomplete="new-password" minlength="10" placeholder="At least 10 characters" /></label><label class="auth-field">Confirm new password<input id="auth-reset-confirm" type="password" autocomplete="new-password" minlength="10" placeholder="Repeat your new password" /></label></div>
     <div class="auth-forgot-wrap"><button class="auth-link-button" id="auth-forgot" type="button" onclick="Auth.forgotPassword()">Forgot password?</button></div><div class="auth-actions"><button class="auth-primary" id="auth-submit" type="button" onclick="Auth.login()">Sign in</button><button class="auth-secondary" id="auth-mode-toggle" type="button" onclick="Auth.register()">Create account</button></div>
     <p class="auth-message" id="auth-message" role="status"></p>
+  </section>
+</div>
+
+<style>
+  .intro-tour-btn {
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(16, 24, 20, .78);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color .18s ease, transform .18s ease, background .18s ease;
+  }
+  .intro-tour-btn:hover { border-color: var(--green); background: rgba(20, 44, 31, .9); transform: translateY(-1px); }
+  .walkthrough-overlay { position: fixed; inset: 0; z-index: 10050; display: grid; place-items: center; padding: 20px; background: rgba(4, 10, 7, .78); backdrop-filter: blur(12px); }
+  .walkthrough-overlay[hidden] { display: none; }
+  .walkthrough-card { width: min(760px, 100%); overflow: hidden; border: 1px solid rgba(130, 210, 157, .22); border-radius: 20px; background: linear-gradient(145deg, #111b16, #0b100d 72%); color: #edf5ef; box-shadow: 0 28px 100px rgba(0,0,0,.55); }
+  .walkthrough-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 26px 16px; }
+  .walkthrough-brand { display: flex; align-items: center; gap: 12px; }
+  .walkthrough-mark { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid rgba(106, 214, 143, .3); border-radius: 12px; background: rgba(72, 188, 111, .12); color: #87e6a3; font-size: 20px; }
+  .walkthrough-brand small { display: block; margin-top: 3px; color: #93a99a; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  .walkthrough-close { width: 36px; height: 36px; border: 1px solid #29362e; border-radius: 10px; background: transparent; color: #b9c8be; font-size: 22px; cursor: pointer; }
+  .walkthrough-progress { display: flex; gap: 6px; padding: 0 26px; }
+  .walkthrough-progress span { height: 3px; flex: 1; border-radius: 3px; background: #29362e; }
+  .walkthrough-progress span.active { background: #6bdb91; }
+  .walkthrough-content { padding: 30px 38px 24px; min-height: 300px; }
+  .walkthrough-eyebrow { color: #7cda9a; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .walkthrough-content h2 { margin: 12px 0; color: #f5fbf6; font-size: clamp(24px, 4vw, 34px); letter-spacing: -.04em; }
+  .walkthrough-description { max-width: 620px; color: #b5c4ba; font-size: 15px; line-height: 1.7; }
+  .walkthrough-points { display: grid; gap: 12px; margin: 24px 0 0; padding: 0; list-style: none; }
+  .walkthrough-points li { display: flex; gap: 11px; color: #d4e0d7; font-size: 14px; line-height: 1.55; }
+  .walkthrough-points li::before { content: "✓"; display: grid; flex: 0 0 20px; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: rgba(87, 205, 126, .14); color: #83e39f; font-size: 12px; font-weight: 700; }
+  .walkthrough-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 26px 22px; border-top: 1px solid rgba(151, 185, 161, .13); }
+  .walkthrough-step-count { color: #91a399; font-size: 12px; }
+  .walkthrough-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 9px; }
+  .walkthrough-actions button { min-height: 38px; padding: 0 14px; border: 1px solid #34433a; border-radius: 9px; background: #17221b; color: #e1ece4; font: inherit; font-size: 13px; cursor: pointer; }
+  .walkthrough-actions button:disabled { opacity: .42; cursor: default; }
+  .walkthrough-actions .walkthrough-primary { border-color: #63c982; background: #55bd75; color: #0a1a10; font-weight: 700; }
+  @media (max-width: 560px) {
+    .walkthrough-content { padding: 24px 22px 20px; min-height: 0; }
+    .walkthrough-top, .walkthrough-footer { padding-left: 20px; padding-right: 20px; }
+    .walkthrough-footer { align-items: flex-start; flex-direction: column; }
+    .walkthrough-actions { width: 100%; }
+    .walkthrough-actions button { flex: 1; }
+  }
+</style>
+
+<div class="walkthrough-overlay" id="codeleaf-walkthrough" hidden>
+  <section class="walkthrough-card" role="dialog" aria-modal="true" aria-labelledby="walkthrough-title" aria-describedby="walkthrough-description">
+    <header class="walkthrough-top">
+      <div class="walkthrough-brand"><span class="walkthrough-mark" aria-hidden="true">✦</span><div><strong>CodeLeaf guide</strong><small>Your first look around</small></div></div>
+      <button class="walkthrough-close" id="walkthrough-close" type="button" aria-label="Close guide">×</button>
+    </header>
+    <div class="walkthrough-progress" id="walkthrough-progress" aria-hidden="true"></div>
+    <main class="walkthrough-content">
+      <div class="walkthrough-eyebrow" id="walkthrough-eyebrow"></div>
+      <h2 id="walkthrough-title"></h2>
+      <p class="walkthrough-description" id="walkthrough-description"></p>
+      <ul class="walkthrough-points" id="walkthrough-points"></ul>
+    </main>
+    <footer class="walkthrough-footer">
+      <span class="walkthrough-step-count" id="walkthrough-step-count" aria-live="polite"></span>
+      <div class="walkthrough-actions">
+        <button id="walkthrough-skip" type="button">Skip tour</button>
+        <button id="walkthrough-back" type="button">Back</button>
+        <button id="walkthrough-step-action" type="button" hidden></button>
+        <button class="walkthrough-primary" id="walkthrough-next" type="button">Next</button>
+      </div>
+    </footer>
   </section>
 </div>
 
@@ -10374,6 +10450,7 @@ const Auth = (() => {
     } catch (_) { /* The app remains usable until an authenticated API is needed. */ }
     finally {
       state.ready = true;
+      window.dispatchEvent(new CustomEvent('codeleaf:auth-ready', { detail: state.user }));
       flushPendingActions();
     }
   }
@@ -10386,6 +10463,7 @@ const Auth = (() => {
       open(action);
     },
     get user() { return state.user; },
+    get ready() { return state.ready; },
   };
 })();
 
@@ -10534,6 +10612,215 @@ function applySettings() {
     ExamPortal.student.applySharedEditorSettings();
   }
 }
+
+</script>
+<script>
+/* First-use guide for the main CodeLeaf workflows. */
+const CodeLeafWalkthrough = (() => {
+  const STORAGE_KEY = 'codeleaf_walkthrough_v1';
+  const steps = [
+    {
+      eyebrow: '01 / Workspace',
+      title: 'A focused place to build and run',
+      description: 'Sign in and enter the workspace to write code, explore data, and run experiments in one place.',
+      points: [
+        'Create and organize files, switch between editor tabs, and use language-aware editing tools.',
+        'Run supported programming languages in the workspace, inspect output in the console, and keep useful snippets close by.',
+        'Use the Explorer, search, command palette, and settings to shape your daily workflow.'
+      ],
+      actionLabel: 'Open workspace',
+      action: () => Auth.require(() => showView('ide'))
+    },
+    {
+      eyebrow: '02 / Data',
+      title: 'Work with MongoDB and SQL data',
+      description: 'Connect your data workflow to the query surface that fits the task, then inspect results without leaving the application.',
+      points: [
+        'Write MongoDB queries and inspect collections and schema details.',
+        'Use SQL tools for relational data and see query results in the workspace console.',
+        'Review query history and reuse saved snippets as you iterate.'
+      ]
+    },
+    {
+      eyebrow: '03 / Assessments',
+      title: 'Create, host, and take exams',
+      description: 'The Exam Portal supports both the mentor’s assessment workflow and the student’s participation flow.',
+      points: [
+        'Mentors create a room, prepare question papers, attach datasets or question media, and manage a live session.',
+        'Students join with their room and identity details, answer questions, run coding examples, and submit work.',
+        'Question types include programming, MongoDB/SQL queries, and multiple choice; available features depend on the room configuration.'
+      ],
+      actionLabel: 'Open exam portal',
+      action: () => Auth.require(() => window.ExamPortal?.showRoleSelection())
+    },
+    {
+      eyebrow: '04 / Meetings',
+      title: 'Collaborate in a live meeting',
+      description: 'Start or join a meeting to communicate and work together while keeping your workspace nearby.',
+      points: [
+        'Use the meeting room for live audio/video conversations and participant coordination.',
+        'Share the workspace context with collaborators and follow shared editor activity where available.',
+        'Use meeting chat and the in-call controls to stay aligned during a session.'
+      ],
+      actionLabel: 'Open meetings',
+      action: () => Auth.require(() => window.MeetingRoom?.toggleMeeting())
+    },
+    {
+      eyebrow: '05 / AI & productivity',
+      title: 'Move from a question to a clearer next step',
+      description: 'CodeLeaf includes assistance and organization tools that help you understand and refine your work.',
+      points: [
+        'Open the CodeLeaf AI assistant for code review, explanations, and optimization prompts.',
+        'Use snippets, search, and history to find previous work and repeat common tasks.',
+        'Adjust editor and execution preferences from settings.'
+      ]
+    },
+    {
+      eyebrow: '06 / Your next step',
+      title: 'Choose a workflow and get started',
+      description: 'Whether you are learning, building, teaching, or collaborating, start with one surface and return to the guide whenever you need it.',
+      points: [
+        'Build or practice in the workspace.',
+        'Host or join an assessment through the Exam Portal.',
+        'Start a meeting when you want to collaborate live.'
+      ],
+      actionLabel: 'Enter workspace',
+      action: () => Auth.require(() => showView('ide'))
+    }
+  ];
+
+  let currentStep = 0;
+  let returnFocus = null;
+  let autoOpenHandled = false;
+
+  function element(id) { return document.getElementById(id); }
+
+  function completedForCurrentAccount() {
+    try {
+      const key = typeof accountStorageKey === 'function'
+        ? accountStorageKey(STORAGE_KEY)
+        : `${STORAGE_KEY}:${window.Auth?.user?.id || 'guest'}`;
+      return localStorage.getItem(key) === 'done';
+    } catch (error) {
+      console.warn('Unable to read walkthrough preference:', error);
+      return false;
+    }
+  }
+
+  function markCompleted() {
+    try {
+      const key = typeof accountStorageKey === 'function'
+        ? accountStorageKey(STORAGE_KEY)
+        : `${STORAGE_KEY}:${window.Auth?.user?.id || 'guest'}`;
+      localStorage.setItem(key, 'done');
+    } catch (error) {
+      console.warn('Unable to save walkthrough preference:', error);
+    }
+  }
+
+  function render() {
+    const step = steps[currentStep];
+    element('walkthrough-eyebrow').textContent = step.eyebrow;
+    element('walkthrough-title').textContent = step.title;
+    element('walkthrough-description').textContent = step.description;
+    element('walkthrough-step-count').textContent = `Step ${currentStep + 1} of ${steps.length}`;
+
+    const points = element('walkthrough-points');
+    points.replaceChildren(...step.points.map(text => {
+      const item = document.createElement('li');
+      item.textContent = text;
+      return item;
+    }));
+
+    const progress = element('walkthrough-progress');
+    progress.replaceChildren(...steps.map((_, index) => {
+      const marker = document.createElement('span');
+      if (index <= currentStep) marker.classList.add('active');
+      return marker;
+    }));
+
+    element('walkthrough-back').disabled = currentStep === 0;
+    element('walkthrough-next').textContent = currentStep === steps.length - 1 ? 'Finish' : 'Next';
+    const action = element('walkthrough-step-action');
+    action.hidden = !step.actionLabel;
+    action.textContent = step.actionLabel || '';
+  }
+
+  function close(markDone = true) {
+    const overlay = element('codeleaf-walkthrough');
+    if (!overlay || overlay.hidden) return;
+    overlay.hidden = true;
+    document.body.classList.remove('walkthrough-open');
+    if (markDone) markCompleted();
+    returnFocus?.focus?.();
+  }
+
+  function open() {
+    const overlay = element('codeleaf-walkthrough');
+    if (!overlay) return;
+    returnFocus = document.activeElement;
+    currentStep = 0;
+    render();
+    overlay.hidden = false;
+    document.body.classList.add('walkthrough-open');
+    element('walkthrough-close').focus();
+  }
+
+  function maybeAutoOpen() {
+    if (autoOpenHandled || completedForCurrentAccount()) return;
+    if (window.Auth && !Auth.ready) return;
+    const authOverlay = element('auth-overlay');
+    if (authOverlay && !authOverlay.hidden) return;
+    autoOpenHandled = true;
+    window.setTimeout(() => {
+      if (!completedForCurrentAccount()) open();
+    }, 250);
+  }
+
+  function initialize() {
+    element('walkthrough-close')?.addEventListener('click', () => close());
+    element('walkthrough-skip')?.addEventListener('click', () => close());
+    element('walkthrough-back')?.addEventListener('click', () => {
+      if (currentStep > 0) { currentStep -= 1; render(); }
+    });
+    element('walkthrough-next')?.addEventListener('click', () => {
+      if (currentStep < steps.length - 1) {
+        currentStep += 1;
+        render();
+      } else {
+        close();
+      }
+    });
+    element('walkthrough-step-action')?.addEventListener('click', () => {
+      const action = steps[currentStep].action;
+      close();
+      action?.();
+    });
+    element('codeleaf-walkthrough')?.addEventListener('click', event => {
+      if (event.target === element('codeleaf-walkthrough')) close();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !element('codeleaf-walkthrough')?.hidden) close();
+    });
+    window.addEventListener('codeleaf:auth-changed', () => window.setTimeout(maybeAutoOpen, 0));
+    window.addEventListener('codeleaf:auth-ready', maybeAutoOpen);
+    const authOverlay = element('auth-overlay');
+    if (authOverlay && typeof MutationObserver !== 'undefined') {
+      new MutationObserver(maybeAutoOpen).observe(authOverlay, { attributes: true, attributeFilter: ['hidden'] });
+    }
+    maybeAutoOpen();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize, { once: true });
+  } else {
+    initialize();
+  }
+
+  return { open };
+})();
+
+window.CodeLeafWalkthrough = CodeLeafWalkthrough;
 
 </script>
 <script>
@@ -12149,6 +12436,12 @@ function openFileInTab(path) {
     langIndicator = 'Java';
   } else if (lowerPath.endsWith('.sql')) {
     lang = 'sql'; cmMode = 'text/x-sql'; langIndicator = 'SQL';
+  } else if (lowerPath.endsWith('.js')) {
+    lang = getWorkspaceLanguage();
+    langIndicator = lang === 'mongodb' ? 'MongoDB Query' : 'JavaScript';
+  } else if (lowerPath.endsWith('.mongo') || lowerPath.endsWith('.mongodb')) {
+    lang = 'mongodb';
+    langIndicator = 'MongoDB Query';
   }
   
   const langIndicatorEl = document.getElementById('sb-lang-indicator');
@@ -12368,7 +12661,9 @@ function renderInlineCreateInput(type) {
           const baseName = filename.replace(/\\.java$/, '');
           starter = `public class ${baseName} {\\n    public static void main(String[] args) {\\n        System.out.println("Hello from ${baseName}!");\\n    }\\n}\\n`;
         } else if (filename.toLowerCase().endsWith('.js')) {
-          starter = `// JavaScript/MongoDB query\\ndb.users.find({});\\n`;
+          starter = `// JavaScript script\\nlet value = 10;\\nconsole.log(value);\\n`;
+        } else if (/\\.(mongo|mongodb)$/i.test(filename)) {
+          starter = `// MongoDB query\\ndb.users.find({});\\n`;
         } else if (filename.toLowerCase().endsWith('.sql')) {
           starter = `-- SQL query\\nSELECT * FROM users LIMIT 10;\\n`;
         }
@@ -13546,6 +13841,13 @@ async function runQuery() {
     toggleConsole();
   }
   const lang = getWorkspaceLanguage();
+  if (window.updateWorkspaceConsoleLayout) {
+    window.updateWorkspaceConsoleLayout(lang);
+  }
+  const languageIndicator = document.getElementById('sb-lang-indicator');
+  if (languageIndicator && String(S.activeFile || '').toLowerCase().endsWith('.js')) {
+    languageIndicator.textContent = lang === 'mongodb' ? 'MongoDB Query' : 'JavaScript';
+  }
   const source = editor.getValue();
   const looksLikeSql = /^\\s*(?:(?:--[^\\r\\n]*(?:\\r?\\n|$))|(?:\\/\\*[\\s\\S]*?\\*\\/\\s*))*\\s*(?:select|with)\\b/i.test(source);
   // Treat an obvious SQL statement as SQL even if an older saved workspace
@@ -14166,7 +14468,7 @@ function executionOriginInline(origin) {
 }
 
 async function runPlaygroundCode(language, code, stdin) {
-  const allowed = ['c', 'cpp', 'java', 'python', 'mongodb'];
+  const allowed = ['c', 'cpp', 'java', 'python', 'javascript', 'mongodb'];
   if (!allowed.includes(language)) {
     const message = `${language || 'This'} format is not allowed to run by the app.`;
     logOutput(`<span class="out-error">[error] ${message}</span>`);
@@ -14311,7 +14613,7 @@ function updateWorkspaceConsoleLayout(newLang) {
   const activePath = String(S.activeFile || '');
   const isMongoFile = /\\.(mongo|mongodb|js)$/i.test(activePath);
   const isMongo = newLang === 'mongodb' && isMongoFile;
-  const isInspectorFile = /\\.(sql|mongo)$/i.test(activePath);
+  const isInspectorFile = /\\.(sql|mongo|mongodb)$/i.test(activePath);
   const inspectorEl = document.getElementById('inspector');
   const btnToggleInspector = document.getElementById('btn-toggle-inspector');
   const menuToggleInspector = document.getElementById('menu-toggle-inspector');
@@ -14358,6 +14660,7 @@ window.updateWorkspaceConsoleLayout = updateWorkspaceConsoleLayout;
 // ═══════════════════════════════════════════════════════════════════
 const CODEX_KEYWORDS = {
   mongodb: ['db', 'find', 'findOne', 'aggregate', 'countDocuments', 'distinct', 'sort', 'limit', 'skip', 'match', 'group', 'project', 'lookup', 'unwind'],
+  javascript: ['async', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'let', 'new', 'null', 'return', 'static', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'undefined', 'var', 'void', 'while', 'yield', 'console', 'log'],
   python: ['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'False', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'None', 'not', 'or', 'pass', 'raise', 'return', 'True', 'try', 'while', 'with', 'yield'],
   cpp: ['alignas', 'auto', 'bool', 'break', 'case', 'catch', 'class', 'const', 'continue', 'delete', 'do', 'else', 'false', 'for', 'if', 'include', 'namespace', 'new', 'nullptr', 'private', 'protected', 'public', 'return', 'std', 'struct', 'switch', 'template', 'this', 'throw', 'true', 'try', 'using', 'virtual', 'void', 'while'],
   c: ['auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extern', 'float', 'for', 'if', 'include', 'int', 'long', 'return', 'short', 'signed', 'sizeof', 'static', 'struct', 'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile', 'while'],
@@ -14516,6 +14819,14 @@ function setupMongoIntelliSense() {
 // ═══════════════════════════════════════════════════════════════════
 // The active file is the single source of truth for workspace language.
 // There is intentionally no manual language selector in the toolbar.
+function isMongoShellSource(source) {
+  const uncommented = String(source || '')
+    .replace(/\\/\\*[\\s\\S]*?\\*\\//g, '')
+    .replace(/(^|[^:])\\/\\/.*$/gm, '$1');
+  return /\\bdb(?:\\.[A-Za-z_$][\\w$]*)?\\.(?:find|findOne|aggregate|insertOne|insertMany|updateOne|updateMany|deleteOne|deleteMany|replaceOne|countDocuments|distinct|drop|createIndex)\\s*\\(/i.test(uncommented)
+    || /\\bdb\\.getCollection\\s*\\([^)]*\\)\\s*\\.(?:find|findOne|aggregate|insertOne|updateOne|deleteOne)\\s*\\(/i.test(uncommented);
+}
+
 function getWorkspaceLanguage() {
   const path = String(typeof S !== 'undefined' && S ? S.activeFile || '' : '').toLowerCase();
   if (path.endsWith('.py')) return 'python';
@@ -14523,6 +14834,15 @@ function getWorkspaceLanguage() {
   if (path.endsWith('.c')) return 'c';
   if (path.endsWith('.java')) return 'java';
   if (path.endsWith('.sql')) return 'sql';
+  if (path.endsWith('.mongo') || path.endsWith('.mongodb')) return 'mongodb';
+  if (path.endsWith('.js')) {
+    const source = typeof editor !== 'undefined' && editor
+      ? editor.getValue()
+      : (typeof S !== 'undefined' && S && Array.isArray(S.files)
+        ? (S.files.find(file => file.path === S.activeFile)?.content || '')
+        : '');
+    return isMongoShellSource(source) ? 'mongodb' : 'javascript';
+  }
   return 'mongodb';
 }
 
@@ -17595,7 +17915,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       } else if (q.type === 'coding') {
         // Initialize coding features if missing
         if (!q.allowedLanguages) {
-          q.allowedLanguages = ['python', 'cpp', 'c', 'java'];
+          q.allowedLanguages = ['python', 'cpp', 'c', 'java', 'javascript'];
         }
         if (!q.templateType) {
           q.templateType = 'scratch';
@@ -17605,12 +17925,16 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             python: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' },
             cpp: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' },
             c: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' },
-            java: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' }
+            java: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' },
+            javascript: { starterCode: q.starterCode || 'const value = Number(readline());\\nconsole.log(value * 2);\\n', driverCode: '', editorialCode: '' }
           };
         }
         // Ensure editorialCode is initialized on all template languages
-        ['python', 'cpp', 'c', 'java'].forEach(lang => {
+        ['python', 'cpp', 'c', 'java', 'javascript'].forEach(lang => {
           if (!q.templates[lang]) q.templates[lang] = { starterCode: '', driverCode: '', editorialCode: '' };
+          if (lang === 'javascript' && !q.templates[lang].starterCode) {
+            q.templates[lang].starterCode = 'const value = Number(readline());\\nconsole.log(value * 2);\\n';
+          }
           if (q.templates[lang].editorialCode === undefined) {
             q.templates[lang].editorialCode = '';
           }
@@ -17621,9 +17945,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         state.mentor.activeConfigLang = activeLang;
 
         // Render Allowed Languages checkboxes
-        const langCheckboxes = ['python', 'cpp', 'c', 'java'].map(lang => {
+        const langCheckboxes = ['python', 'cpp', 'c', 'java', 'javascript'].map(lang => {
           const isAllowed = q.allowedLanguages.includes(lang);
-          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java' };
+          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java', javascript: 'JavaScript' };
           return `
             <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer">
               <input type="checkbox" value="${lang}" ${isAllowed ? 'checked' : ''}
@@ -17635,7 +17959,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
         // Render template configuration tabs - triggers global ExamPortal switchConfigLang
         const langTabs = q.allowedLanguages.map(lang => {
-          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java' };
+          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java', javascript: 'JavaScript' };
           return `
             <div class="exam-tab ${activeLang === lang ? 'active' : ''}" style="height:26px;padding:0 8px;font-size:11px;cursor:pointer"
                  onclick="ExamPortal.mentor.switchConfigLang('${lang}','${qId}');">
@@ -17778,6 +18102,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             let cmMode = 'python';
             if (activeLang === 'cpp' || activeLang === 'c') cmMode = 'text/x-c++src';
             if (activeLang === 'java') cmMode = 'text/x-java';
+            if (activeLang === 'javascript') cmMode = 'javascript';
 
             const cmS = CodeMirror.fromTextArea(taStarter, {
               mode: cmMode,
@@ -17809,6 +18134,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             let cmMode = 'python';
             if (activeLang === 'cpp' || activeLang === 'c') cmMode = 'text/x-c++src';
             if (activeLang === 'java') cmMode = 'text/x-java';
+            if (activeLang === 'javascript') cmMode = 'javascript';
 
             const cmD = CodeMirror.fromTextArea(taDriver, {
               mode: cmMode,
@@ -17837,6 +18163,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             let cmMode = 'python';
             if (activeLang === 'cpp' || activeLang === 'c') cmMode = 'text/x-c++src';
             if (activeLang === 'java') cmMode = 'text/x-java';
+            if (activeLang === 'javascript') cmMode = 'javascript';
 
             const cmE = CodeMirror.fromTextArea(taEditorial, {
               mode: cmMode,
@@ -17971,6 +18298,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           q.starterCode = "#include <stdio.h>\\n\\nint main() {\\n    int n;\\n    while (scanf(\\"%d\\", &n) != EOF) {\\n        printf(\\"%d\\\\n\\", n * 2);\\n    }\\n    return 0;\\n}\\n";
         } else if (lang === 'java') {
           q.starterCode = "import java.util.Scanner;\\n\\npublic class Solution {\\n    public static void main(String[] args) {\\n        Scanner sc = new Scanner(System.in);\\n        while (sc.hasNextInt()) {\\n            int n = sc.nextInt();\\n            System.out.println(n * 2);\\n        }\\n    }\\n}\\n";
+        } else if (lang === 'javascript') {
+          q.starterCode = "const value = Number(readline());\\nconsole.log(value * 2);\\n";
         }
       }
 
@@ -18030,7 +18359,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     toggleAllowedLang(qId, lang) {
       const q = state.mentor.questions.find(x => x.id === qId);
       if (!q) return;
-      if (!q.allowedLanguages) q.allowedLanguages = ['python', 'cpp', 'c', 'java'];
+      if (!q.allowedLanguages) q.allowedLanguages = ['python', 'cpp', 'c', 'java', 'javascript'];
       if (!q.templates) {
         q.templates = {
           python: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' },
@@ -18195,10 +18524,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       })) return;
 
       try {
-        const response = await fetch(`/api/exam/room/${state.mentor.roomId}/question/${qId}/media/${mediaId}`, {
+        const mentorId = encodeURIComponent(state.mentor.mentorId || '');
+        const response = await fetch(`/api/exam/room/${state.mentor.roomId}/question/${qId}/media/${mediaId}?mentorId=${mentorId}`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `mentorId=${encodeURIComponent(state.mentor.mentorId || '')}`
         });
         const result = await response.json();
         
@@ -19289,6 +19617,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             if (q.language === 'python') cmMode = 'python';
             else if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
             else if (q.language === 'java') cmMode = 'text/x-java';
+            else if (q.language === 'javascript') cmMode = 'javascript';
           }
           state.mentor.submissionEditor.setOption('mode', cmMode);
           state.mentor.submissionEditor.setValue(codeVal);
@@ -19429,15 +19758,20 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     async reportFlaggedViolation(violationType) {
       if (!state.student.roomId || !state.student.studentId) return;
       try {
+        try {
+          await studentNS.autoSaveAllResponses();
+        } catch (saveError) {
+          console.error('Could not save exam responses before reporting a violation:', saveError);
+        }
         const res = await apiCall(`/api/exam/room/${state.student.roomId}/student/${state.student.studentId}/violation`, 'POST', {
           violationType: violationType
         });
         if (res && res.status === 'ok' && violationType === 'copy_paste_attempt') {
           state.student.copyPasteAttempts = Number(res.copyPasteAttempts || 0);
           if (res.blocked) {
-            await studentNS.forceSubmitAndBlock(
-              `Copy/paste attempt limit reached (${res.copyPasteLimit || state.student.maxCopyPasteAttempts || 3}). Your assessment has been blocked.`
-            );
+            clearInterval(state.student.pollInterval);
+            clearInterval(state.student.timerInterval);
+            studentNS.handleKicked(res.blockedReason || `Copy/paste attempt limit reached (${res.copyPasteLimit || state.student.maxCopyPasteAttempts || 3}).`);
           }
         }
         return res;
@@ -19919,6 +20253,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             let cmMode = 'python';
             if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
             if (q.language === 'java') cmMode = 'text/x-java';
+            if (q.language === 'javascript') cmMode = 'javascript';
             cm.setOption('mode', cmMode);
             cm.setValue(currentCode);
             cm.clearHistory();
@@ -20094,8 +20429,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
           // Populate allowed languages select dropdown
           const langSelect = el('student-lang-select');
-          const allowed = q.allowedLanguages || ['python', 'cpp', 'c', 'java'];
-          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java' };
+          const allowed = q.allowedLanguages || ['python', 'cpp', 'c', 'java', 'javascript'];
+          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java', javascript: 'JavaScript' };
           langSelect.innerHTML = allowed.map(lang => `
             <option value="${lang}">${labels[lang]}</option>
           `).join('');
@@ -20111,7 +20446,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               python: { starterCode: q.starterCode || '# write your Python 3 code here\\nimport sys\\n\\nfor line in sys.stdin:\\n    print(int(line) * 2)\\n', driverCode: '' },
               cpp: { starterCode: '#include <iostream>\\nusing namespace std;\\n\\nint main() {\\n    int n;\\n    while (cin >> n) {\\n        cout << n * 2 << endl;\\n    }\\n    return 0;\\n}', driverCode: '' },
               c: { starterCode: '#include <stdio.h>\\n\\nint main() {\\n    int n;\\n    while (scanf("%d", &n) != EOF) {\\n        printf("%d\\\\n", n * 2);\\n    }\\n    return 0;\\n}', driverCode: '' },
-              java: { starterCode: 'import java.util.Scanner;\\n\\npublic class Solution {\\n    public static void main(String[] args) {\\n        Scanner sc = new Scanner(System.in);\\n        while (sc.hasNextInt()) {\\n            int n = sc.nextInt();\\n            System.out.println(n * 2);\\n        }\\n    }\\n}', driverCode: '' }
+              java: { starterCode: 'import java.util.Scanner;\\n\\npublic class Solution {\\n    public static void main(String[] args) {\\n        Scanner sc = new Scanner(System.in);\\n        while (sc.hasNextInt()) {\\n            int n = sc.nextInt();\\n            System.out.println(n * 2);\\n        }\\n    }\\n}', driverCode: '' },
+              javascript: { starterCode: 'const value = Number(readline());\\nconsole.log(value * 2);\\n', driverCode: '' }
             };
           }
 
@@ -20127,6 +20463,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             let cmMode = 'python';
             if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
             if (q.language === 'java') cmMode = 'text/x-java';
+            if (q.language === 'javascript') cmMode = 'javascript';
             cm.setOption('mode', cmMode);
             cm.setValue(currentCode);
             cm.clearHistory();
@@ -20298,6 +20635,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         let cmMode = 'python';
         if (newLang === 'cpp' || newLang === 'c') cmMode = 'text/x-c++src';
         if (newLang === 'java') cmMode = 'text/x-java';
+        if (newLang === 'javascript') cmMode = 'javascript';
         cm.setOption('mode', cmMode);
         cm.setValue(nextCode);
         cm.clearHistory();
@@ -21383,6 +21721,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       let cmMode = 'python';
       if (newLang === 'cpp' || newLang === 'c') cmMode = 'text/x-c++src';
       if (newLang === 'java') cmMode = 'text/x-java';
+      if (newLang === 'javascript') cmMode = 'javascript';
 
       const cm = state.student.examEditor;
       if (cm) {
@@ -22013,7 +22352,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     handleFullscreenChange();
   }
 
-  function handleFullscreenChange() {
+  async function handleFullscreenChange() {
     if (!state.student.roomId || !state.student.fullscreenMode) return;
 
     const isFs = isDocumentFullscreen();
@@ -22047,16 +22386,28 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       state.student.fullscreenExitCount = (state.student.fullscreenExitCount || 0) + 1;
       const limit = state.student.maxFullscreenExits || 5;
 
-      // Report exit to backend
-      studentNS.reportFlaggedViolation('fullscreen_exit');
-
-      if (state.student.fullscreenExitCount >= limit) {
+      const violation = await studentNS.reportFlaggedViolation('fullscreen_exit');
+      if (violation && violation.status === 'ok') {
+        state.student.fullscreenExitCount = Number(violation.fullscreenExits || state.student.fullscreenExitCount);
+        state.student.maxFullscreenExits = Number(violation.fullscreenLimit || limit);
+        if (violation.blocked) {
+          clearInterval(state.student.pollInterval);
+          clearInterval(state.student.timerInterval);
+          studentNS.handleKicked(violation.blockedReason || `Fullscreen exit limit reached (${state.student.maxFullscreenExits}).`);
+          return;
+        }
+      } else if (state.student.fullscreenExitCount >= limit) {
         studentNS.forceSubmitAndBlock(`You crossed the fullscreen exits threshold (${state.student.fullscreenExitCount}/${limit}). Your assessment has been auto-submitted and access has been terminated.`);
+        return;
+      }
+
+      if (state.student.fullscreenExitCount >= state.student.maxFullscreenExits) {
+        studentNS.forceSubmitAndBlock(`You crossed the fullscreen exits threshold (${state.student.fullscreenExitCount}/${state.student.maxFullscreenExits}). Your assessment has been auto-submitted and access has been terminated.`);
       } else {
         // Themed acknowledgement modal (blocks the whole screen until the student returns)
         showExamModal({
-          title: 'Fullscreen Mode Required',
-          message: `You exited fullscreen mode! Exit ${state.student.fullscreenExitCount} of ${limit}. You must return to fullscreen immediately or your access will be terminated.`,
+          title: 'Access Terminated',
+          message: `You exited fullscreen mode! Exit ${state.student.fullscreenExitCount} of ${state.student.maxFullscreenExits}. You must return to fullscreen immediately or your access will be terminated.`,
           danger: true,
           buttons: [{ label: 'Return to Fullscreen', value: true, danger: true }],
         }).then(() => studentNS.requestFullscreen());

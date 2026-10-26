@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════
 const CODEX_KEYWORDS = {
   mongodb: ['db', 'find', 'findOne', 'aggregate', 'countDocuments', 'distinct', 'sort', 'limit', 'skip', 'match', 'group', 'project', 'lookup', 'unwind'],
+  javascript: ['async', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'let', 'new', 'null', 'return', 'static', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'undefined', 'var', 'void', 'while', 'yield', 'console', 'log'],
   python: ['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'False', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'None', 'not', 'or', 'pass', 'raise', 'return', 'True', 'try', 'while', 'with', 'yield'],
   cpp: ['alignas', 'auto', 'bool', 'break', 'case', 'catch', 'class', 'const', 'continue', 'delete', 'do', 'else', 'false', 'for', 'if', 'include', 'namespace', 'new', 'nullptr', 'private', 'protected', 'public', 'return', 'std', 'struct', 'switch', 'template', 'this', 'throw', 'true', 'try', 'using', 'virtual', 'void', 'while'],
   c: ['auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extern', 'float', 'for', 'if', 'include', 'int', 'long', 'return', 'short', 'signed', 'sizeof', 'static', 'struct', 'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile', 'while'],

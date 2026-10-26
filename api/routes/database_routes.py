@@ -201,21 +201,26 @@ def api_snippets():
 
 @database_bp.route("/api/sandbox/run", methods=["POST"])
 def api_sandbox_run():
-    """Execute playground code directly in the API process."""
+    """Execute playground code using the API sandbox or configured providers."""
     from services.compiler.compiler_service import CompilerService
     run_piston_code = CompilerService.run_piston_code
     body = request.get_json(force=True, silent=True) or {}
-    language = body.get("language", "python")
+    language = str(body.get("language", "python")).strip().lower()
     code = body.get("code", "")
     stdin = body.get("stdin", "")
     filename = body.get("filename", "")
-    
-    res = execute_job(
-        "playground_code",
-        {"language": language, "code": code, "stdin": stdin, "filename": filename, "strictJavaFilename": language == "java"},
-        lambda: run_piston_code(language, code, stdin, filename, language == "java"),
-        idempotency_key=get_idempotency_key_from_request(request),
-    )
+
+    if language in {"javascript", "js"}:
+        from services.compiler.javascript_service import JavaScriptService
+
+        res = JavaScriptService.run_code(code, stdin)
+    else:
+        res = execute_job(
+            "playground_code",
+            {"language": language, "code": code, "stdin": stdin, "filename": filename, "strictJavaFilename": language == "java"},
+            lambda: run_piston_code(language, code, stdin, filename, language == "java"),
+            idempotency_key=get_idempotency_key_from_request(request),
+        )
     if res.get("status") == "error" and str(res.get("code", "")).startswith("EXECUTION_"):
         return _json_response(res, status=503)
     try:

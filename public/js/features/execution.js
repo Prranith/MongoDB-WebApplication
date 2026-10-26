@@ -312,6 +312,13 @@ async function runQuery() {
     toggleConsole();
   }
   const lang = getWorkspaceLanguage();
+  if (window.updateWorkspaceConsoleLayout) {
+    window.updateWorkspaceConsoleLayout(lang);
+  }
+  const languageIndicator = document.getElementById('sb-lang-indicator');
+  if (languageIndicator && String(S.activeFile || '').toLowerCase().endsWith('.js')) {
+    languageIndicator.textContent = lang === 'mongodb' ? 'MongoDB Query' : 'JavaScript';
+  }
   const source = editor.getValue();
   const looksLikeSql = /^\s*(?:(?:--[^\r\n]*(?:\r?\n|$))|(?:\/\*[\s\S]*?\*\/\s*))*\s*(?:select|with)\b/i.test(source);
   // Treat an obvious SQL statement as SQL even if an older saved workspace
@@ -932,7 +939,7 @@ function executionOriginInline(origin) {
 }
 
 async function runPlaygroundCode(language, code, stdin) {
-  const allowed = ['c', 'cpp', 'java', 'python', 'mongodb'];
+  const allowed = ['c', 'cpp', 'java', 'python', 'javascript', 'mongodb'];
   if (!allowed.includes(language)) {
     const message = `${language || 'This'} format is not allowed to run by the app.`;
     logOutput(`<span class="out-error">[error] ${message}</span>`);
@@ -1077,7 +1084,7 @@ function updateWorkspaceConsoleLayout(newLang) {
   const activePath = String(S.activeFile || '');
   const isMongoFile = /\.(mongo|mongodb|js)$/i.test(activePath);
   const isMongo = newLang === 'mongodb' && isMongoFile;
-  const isInspectorFile = /\.(sql|mongo)$/i.test(activePath);
+  const isInspectorFile = /\.(sql|mongo|mongodb)$/i.test(activePath);
   const inspectorEl = document.getElementById('inspector');
   const btnToggleInspector = document.getElementById('btn-toggle-inspector');
   const menuToggleInspector = document.getElementById('menu-toggle-inspector');

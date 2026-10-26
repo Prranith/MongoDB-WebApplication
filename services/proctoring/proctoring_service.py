@@ -33,15 +33,21 @@ class ProctoringService:
             p["fullscreenExits"] += 1
         elif violation_type == "copy_paste_attempt":
             p["copyPasteAttempts"] += 1
+        else:
+            raise ValueError("Unsupported proctoring violation")
 
-        # The room configuration is authoritative for the copy/paste limit.
-        # Enforce the threshold on the server as well as in the browser so a
-        # student cannot avoid blocking by suppressing client-side JavaScript.
+        # Room settings and participant counters survive page reloads, making
+        # the server the source of truth for both violation thresholds.
         room_max = redis_one(["HGET", f"room:{room_id}", "maxCopyPasteAttempts"])
         try:
             max_copy_paste_attempts = max(1, min(int(room_max or 3), 50))
         except (TypeError, ValueError):
             max_copy_paste_attempts = 3
+        room_fullscreen_max = redis_one(["HGET", f"room:{room_id}", "maxFullscreenExits"])
+        try:
+            max_fullscreen_exits = max(1, min(int(room_fullscreen_max or 5), 20))
+        except (TypeError, ValueError):
+            max_fullscreen_exits = 5
 
         p["lastFlaggedAt"] = int(time.time())
 
@@ -50,15 +56,24 @@ class ProctoringService:
             ["EXPIRE", f"room:{room_id}", str(60 * 60 * 24 * 7)],
         ])
 
+        reason = ""
         blocked = (
             violation_type == "copy_paste_attempt"
             and p["copyPasteAttempts"] >= max_copy_paste_attempts
+        ) or (
+            violation_type == "fullscreen_exit"
+            and p["fullscreenExits"] >= max_fullscreen_exits
         )
         if blocked:
+            reason = (
+                f"Fullscreen exit limit reached ({max_fullscreen_exits})."
+                if violation_type == "fullscreen_exit"
+                else f"Copy/paste attempt limit reached ({max_copy_paste_attempts})."
+            )
             ProctoringService.self_kick(
                 room_id,
                 student_id,
-                f"Copy/paste attempt limit reached ({max_copy_paste_attempts}).",
+                reason,
             )
 
         return {
@@ -67,6 +82,8 @@ class ProctoringService:
             "lastFlaggedAt": p["lastFlaggedAt"],
             "blocked": blocked,
             "copyPasteLimit": max_copy_paste_attempts,
+            "fullscreenLimit": max_fullscreen_exits,
+            "blockedReason": reason if blocked else "",
         }
 
     @staticmethod

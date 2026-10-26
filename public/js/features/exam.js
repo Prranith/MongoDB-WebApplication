@@ -1488,7 +1488,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       } else if (q.type === 'coding') {
         // Initialize coding features if missing
         if (!q.allowedLanguages) {
-          q.allowedLanguages = ['python', 'cpp', 'c', 'java'];
+          q.allowedLanguages = ['python', 'cpp', 'c', 'java', 'javascript'];
         }
         if (!q.templateType) {
           q.templateType = 'scratch';
@@ -1498,12 +1498,16 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             python: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' },
             cpp: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' },
             c: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' },
-            java: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' }
+            java: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' },
+            javascript: { starterCode: q.starterCode || 'const value = Number(readline());\nconsole.log(value * 2);\n', driverCode: '', editorialCode: '' }
           };
         }
         // Ensure editorialCode is initialized on all template languages
-        ['python', 'cpp', 'c', 'java'].forEach(lang => {
+        ['python', 'cpp', 'c', 'java', 'javascript'].forEach(lang => {
           if (!q.templates[lang]) q.templates[lang] = { starterCode: '', driverCode: '', editorialCode: '' };
+          if (lang === 'javascript' && !q.templates[lang].starterCode) {
+            q.templates[lang].starterCode = 'const value = Number(readline());\nconsole.log(value * 2);\n';
+          }
           if (q.templates[lang].editorialCode === undefined) {
             q.templates[lang].editorialCode = '';
           }
@@ -1514,9 +1518,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         state.mentor.activeConfigLang = activeLang;
 
         // Render Allowed Languages checkboxes
-        const langCheckboxes = ['python', 'cpp', 'c', 'java'].map(lang => {
+        const langCheckboxes = ['python', 'cpp', 'c', 'java', 'javascript'].map(lang => {
           const isAllowed = q.allowedLanguages.includes(lang);
-          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java' };
+          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java', javascript: 'JavaScript' };
           return `
             <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer">
               <input type="checkbox" value="${lang}" ${isAllowed ? 'checked' : ''}
@@ -1528,7 +1532,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
         // Render template configuration tabs - triggers global ExamPortal switchConfigLang
         const langTabs = q.allowedLanguages.map(lang => {
-          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java' };
+          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java', javascript: 'JavaScript' };
           return `
             <div class="exam-tab ${activeLang === lang ? 'active' : ''}" style="height:26px;padding:0 8px;font-size:11px;cursor:pointer"
                  onclick="ExamPortal.mentor.switchConfigLang('${lang}','${qId}');">
@@ -1671,6 +1675,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             let cmMode = 'python';
             if (activeLang === 'cpp' || activeLang === 'c') cmMode = 'text/x-c++src';
             if (activeLang === 'java') cmMode = 'text/x-java';
+            if (activeLang === 'javascript') cmMode = 'javascript';
 
             const cmS = CodeMirror.fromTextArea(taStarter, {
               mode: cmMode,
@@ -1702,6 +1707,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             let cmMode = 'python';
             if (activeLang === 'cpp' || activeLang === 'c') cmMode = 'text/x-c++src';
             if (activeLang === 'java') cmMode = 'text/x-java';
+            if (activeLang === 'javascript') cmMode = 'javascript';
 
             const cmD = CodeMirror.fromTextArea(taDriver, {
               mode: cmMode,
@@ -1730,6 +1736,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             let cmMode = 'python';
             if (activeLang === 'cpp' || activeLang === 'c') cmMode = 'text/x-c++src';
             if (activeLang === 'java') cmMode = 'text/x-java';
+            if (activeLang === 'javascript') cmMode = 'javascript';
 
             const cmE = CodeMirror.fromTextArea(taEditorial, {
               mode: cmMode,
@@ -1864,6 +1871,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           q.starterCode = "#include <stdio.h>\n\nint main() {\n    int n;\n    while (scanf(\"%d\", &n) != EOF) {\n        printf(\"%d\\n\", n * 2);\n    }\n    return 0;\n}\n";
         } else if (lang === 'java') {
           q.starterCode = "import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        while (sc.hasNextInt()) {\n            int n = sc.nextInt();\n            System.out.println(n * 2);\n        }\n    }\n}\n";
+        } else if (lang === 'javascript') {
+          q.starterCode = "const value = Number(readline());\nconsole.log(value * 2);\n";
         }
       }
 
@@ -1923,7 +1932,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     toggleAllowedLang(qId, lang) {
       const q = state.mentor.questions.find(x => x.id === qId);
       if (!q) return;
-      if (!q.allowedLanguages) q.allowedLanguages = ['python', 'cpp', 'c', 'java'];
+      if (!q.allowedLanguages) q.allowedLanguages = ['python', 'cpp', 'c', 'java', 'javascript'];
       if (!q.templates) {
         q.templates = {
           python: { starterCode: q.starterCode || '', driverCode: '', editorialCode: '' },
@@ -2088,10 +2097,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       })) return;
 
       try {
-        const response = await fetch(`/api/exam/room/${state.mentor.roomId}/question/${qId}/media/${mediaId}`, {
+        const mentorId = encodeURIComponent(state.mentor.mentorId || '');
+        const response = await fetch(`/api/exam/room/${state.mentor.roomId}/question/${qId}/media/${mediaId}?mentorId=${mentorId}`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `mentorId=${encodeURIComponent(state.mentor.mentorId || '')}`
         });
         const result = await response.json();
         
@@ -3182,6 +3190,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             if (q.language === 'python') cmMode = 'python';
             else if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
             else if (q.language === 'java') cmMode = 'text/x-java';
+            else if (q.language === 'javascript') cmMode = 'javascript';
           }
           state.mentor.submissionEditor.setOption('mode', cmMode);
           state.mentor.submissionEditor.setValue(codeVal);
@@ -3322,15 +3331,20 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     async reportFlaggedViolation(violationType) {
       if (!state.student.roomId || !state.student.studentId) return;
       try {
+        try {
+          await studentNS.autoSaveAllResponses();
+        } catch (saveError) {
+          console.error('Could not save exam responses before reporting a violation:', saveError);
+        }
         const res = await apiCall(`/api/exam/room/${state.student.roomId}/student/${state.student.studentId}/violation`, 'POST', {
           violationType: violationType
         });
         if (res && res.status === 'ok' && violationType === 'copy_paste_attempt') {
           state.student.copyPasteAttempts = Number(res.copyPasteAttempts || 0);
           if (res.blocked) {
-            await studentNS.forceSubmitAndBlock(
-              `Copy/paste attempt limit reached (${res.copyPasteLimit || state.student.maxCopyPasteAttempts || 3}). Your assessment has been blocked.`
-            );
+            clearInterval(state.student.pollInterval);
+            clearInterval(state.student.timerInterval);
+            studentNS.handleKicked(res.blockedReason || `Copy/paste attempt limit reached (${res.copyPasteLimit || state.student.maxCopyPasteAttempts || 3}).`);
           }
         }
         return res;
@@ -3812,6 +3826,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             let cmMode = 'python';
             if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
             if (q.language === 'java') cmMode = 'text/x-java';
+            if (q.language === 'javascript') cmMode = 'javascript';
             cm.setOption('mode', cmMode);
             cm.setValue(currentCode);
             cm.clearHistory();
@@ -3987,8 +4002,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
           // Populate allowed languages select dropdown
           const langSelect = el('student-lang-select');
-          const allowed = q.allowedLanguages || ['python', 'cpp', 'c', 'java'];
-          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java' };
+          const allowed = q.allowedLanguages || ['python', 'cpp', 'c', 'java', 'javascript'];
+          const labels = { python: 'Python 3', cpp: 'C++', c: 'C', java: 'Java', javascript: 'JavaScript' };
           langSelect.innerHTML = allowed.map(lang => `
             <option value="${lang}">${labels[lang]}</option>
           `).join('');
@@ -4004,7 +4019,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               python: { starterCode: q.starterCode || '# write your Python 3 code here\nimport sys\n\nfor line in sys.stdin:\n    print(int(line) * 2)\n', driverCode: '' },
               cpp: { starterCode: '#include <iostream>\nusing namespace std;\n\nint main() {\n    int n;\n    while (cin >> n) {\n        cout << n * 2 << endl;\n    }\n    return 0;\n}', driverCode: '' },
               c: { starterCode: '#include <stdio.h>\n\nint main() {\n    int n;\n    while (scanf("%d", &n) != EOF) {\n        printf("%d\\n", n * 2);\n    }\n    return 0;\n}', driverCode: '' },
-              java: { starterCode: 'import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        while (sc.hasNextInt()) {\n            int n = sc.nextInt();\n            System.out.println(n * 2);\n        }\n    }\n}', driverCode: '' }
+              java: { starterCode: 'import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        while (sc.hasNextInt()) {\n            int n = sc.nextInt();\n            System.out.println(n * 2);\n        }\n    }\n}', driverCode: '' },
+              javascript: { starterCode: 'const value = Number(readline());\nconsole.log(value * 2);\n', driverCode: '' }
             };
           }
 
@@ -4020,6 +4036,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             let cmMode = 'python';
             if (q.language === 'cpp' || q.language === 'c') cmMode = 'text/x-c++src';
             if (q.language === 'java') cmMode = 'text/x-java';
+            if (q.language === 'javascript') cmMode = 'javascript';
             cm.setOption('mode', cmMode);
             cm.setValue(currentCode);
             cm.clearHistory();
@@ -4191,6 +4208,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         let cmMode = 'python';
         if (newLang === 'cpp' || newLang === 'c') cmMode = 'text/x-c++src';
         if (newLang === 'java') cmMode = 'text/x-java';
+        if (newLang === 'javascript') cmMode = 'javascript';
         cm.setOption('mode', cmMode);
         cm.setValue(nextCode);
         cm.clearHistory();
@@ -5276,6 +5294,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       let cmMode = 'python';
       if (newLang === 'cpp' || newLang === 'c') cmMode = 'text/x-c++src';
       if (newLang === 'java') cmMode = 'text/x-java';
+      if (newLang === 'javascript') cmMode = 'javascript';
 
       const cm = state.student.examEditor;
       if (cm) {
@@ -5906,7 +5925,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     handleFullscreenChange();
   }
 
-  function handleFullscreenChange() {
+  async function handleFullscreenChange() {
     if (!state.student.roomId || !state.student.fullscreenMode) return;
 
     const isFs = isDocumentFullscreen();
@@ -5940,16 +5959,28 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       state.student.fullscreenExitCount = (state.student.fullscreenExitCount || 0) + 1;
       const limit = state.student.maxFullscreenExits || 5;
 
-      // Report exit to backend
-      studentNS.reportFlaggedViolation('fullscreen_exit');
-
-      if (state.student.fullscreenExitCount >= limit) {
+      const violation = await studentNS.reportFlaggedViolation('fullscreen_exit');
+      if (violation && violation.status === 'ok') {
+        state.student.fullscreenExitCount = Number(violation.fullscreenExits || state.student.fullscreenExitCount);
+        state.student.maxFullscreenExits = Number(violation.fullscreenLimit || limit);
+        if (violation.blocked) {
+          clearInterval(state.student.pollInterval);
+          clearInterval(state.student.timerInterval);
+          studentNS.handleKicked(violation.blockedReason || `Fullscreen exit limit reached (${state.student.maxFullscreenExits}).`);
+          return;
+        }
+      } else if (state.student.fullscreenExitCount >= limit) {
         studentNS.forceSubmitAndBlock(`You crossed the fullscreen exits threshold (${state.student.fullscreenExitCount}/${limit}). Your assessment has been auto-submitted and access has been terminated.`);
+        return;
+      }
+
+      if (state.student.fullscreenExitCount >= state.student.maxFullscreenExits) {
+        studentNS.forceSubmitAndBlock(`You crossed the fullscreen exits threshold (${state.student.fullscreenExitCount}/${state.student.maxFullscreenExits}). Your assessment has been auto-submitted and access has been terminated.`);
       } else {
         // Themed acknowledgement modal (blocks the whole screen until the student returns)
         showExamModal({
-          title: 'Fullscreen Mode Required',
-          message: `You exited fullscreen mode! Exit ${state.student.fullscreenExitCount} of ${limit}. You must return to fullscreen immediately or your access will be terminated.`,
+          title: 'Access Terminated',
+          message: `You exited fullscreen mode! Exit ${state.student.fullscreenExitCount} of ${state.student.maxFullscreenExits}. You must return to fullscreen immediately or your access will be terminated.`,
           danger: true,
           buttons: [{ label: 'Return to Fullscreen', value: true, danger: true }],
         }).then(() => studentNS.requestFullscreen());
