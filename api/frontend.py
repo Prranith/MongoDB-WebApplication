@@ -10312,13 +10312,16 @@ const Auth = (() => {
     return data;
   }
 
-  function completed(data) {
+  function completed(data, { newAccount = false } = {}) {
     state.user = data.user || null;
     renderAccount();
     window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
     close();
     setMessage('');
     if (state.action) { const action = state.action; state.action = null; action(); }
+    if (newAccount) {
+      window.dispatchEvent(new CustomEvent('codeleaf:account-created', { detail: state.user }));
+    }
   }
 
   async function login() {
@@ -10340,7 +10343,7 @@ const Auth = (() => {
         $('auth-otp')?.focus();
         return;
       }
-      completed(data);
+      completed(data, { newAccount: true });
     } catch (error) { setMessage(error.message, true); }
   }
 
@@ -10348,7 +10351,7 @@ const Auth = (() => {
     const email = $('auth-email')?.value.trim();
     const code = $('auth-otp')?.value.trim();
     if (!email || !/^\\d{6}$/.test(code || '')) { setMessage('Enter the 6-digit verification code.', true); return; }
-    try { completed(await request('/api/auth/verify-email', { email, code })); }
+    try { completed(await request('/api/auth/verify-email', { email, code }), { newAccount: true }); }
     catch (error) { setMessage(error.message, true); }
   }
 
@@ -10447,10 +10450,9 @@ const Auth = (() => {
         }
       });
       const params = new URLSearchParams(location.search); if (params.get('reset')) open(null, 'reset'); else if (params.get('auth') === 'error') open();
-    } catch (_) { /* The app remains usable until an authenticated API is needed. */ }
+    } catch (_) { /* The app remains usable until an authenticated API is needed. */     }
     finally {
       state.ready = true;
-      window.dispatchEvent(new CustomEvent('codeleaf:auth-ready', { detail: state.user }));
       flushPendingActions();
     }
   }
@@ -10463,7 +10465,6 @@ const Auth = (() => {
       open(action);
     },
     get user() { return state.user; },
-    get ready() { return state.ready; },
   };
 })();
 
@@ -10691,7 +10692,6 @@ const CodeLeafWalkthrough = (() => {
 
   let currentStep = 0;
   let returnFocus = null;
-  let autoOpenHandled = false;
 
   function element(id) { return document.getElementById(id); }
 
@@ -10766,12 +10766,8 @@ const CodeLeafWalkthrough = (() => {
     element('walkthrough-close').focus();
   }
 
-  function maybeAutoOpen() {
-    if (autoOpenHandled || completedForCurrentAccount()) return;
-    if (window.Auth && !Auth.ready) return;
-    const authOverlay = element('auth-overlay');
-    if (authOverlay && !authOverlay.hidden) return;
-    autoOpenHandled = true;
+  function openAfterSignup() {
+    if (completedForCurrentAccount()) return;
     window.setTimeout(() => {
       if (!completedForCurrentAccount()) open();
     }, 250);
@@ -10802,13 +10798,7 @@ const CodeLeafWalkthrough = (() => {
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !element('codeleaf-walkthrough')?.hidden) close();
     });
-    window.addEventListener('codeleaf:auth-changed', () => window.setTimeout(maybeAutoOpen, 0));
-    window.addEventListener('codeleaf:auth-ready', maybeAutoOpen);
-    const authOverlay = element('auth-overlay');
-    if (authOverlay && typeof MutationObserver !== 'undefined') {
-      new MutationObserver(maybeAutoOpen).observe(authOverlay, { attributes: true, attributeFilter: ['hidden'] });
-    }
-    maybeAutoOpen();
+    window.addEventListener('codeleaf:account-created', openAfterSignup);
   }
 
   if (document.readyState === 'loading') {

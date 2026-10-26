@@ -429,13 +429,16 @@ const Auth = (() => {
     return data;
   }
 
-  function completed(data) {
+  function completed(data, { newAccount = false } = {}) {
     state.user = data.user || null;
     renderAccount();
     window.dispatchEvent(new CustomEvent('codeleaf:auth-changed', { detail: state.user }));
     close();
     setMessage('');
     if (state.action) { const action = state.action; state.action = null; action(); }
+    if (newAccount) {
+      window.dispatchEvent(new CustomEvent('codeleaf:account-created', { detail: state.user }));
+    }
   }
 
   async function login() {
@@ -457,7 +460,7 @@ const Auth = (() => {
         $('auth-otp')?.focus();
         return;
       }
-      completed(data);
+      completed(data, { newAccount: true });
     } catch (error) { setMessage(error.message, true); }
   }
 
@@ -465,7 +468,7 @@ const Auth = (() => {
     const email = $('auth-email')?.value.trim();
     const code = $('auth-otp')?.value.trim();
     if (!email || !/^\d{6}$/.test(code || '')) { setMessage('Enter the 6-digit verification code.', true); return; }
-    try { completed(await request('/api/auth/verify-email', { email, code })); }
+    try { completed(await request('/api/auth/verify-email', { email, code }), { newAccount: true }); }
     catch (error) { setMessage(error.message, true); }
   }
 
@@ -564,10 +567,9 @@ const Auth = (() => {
         }
       });
       const params = new URLSearchParams(location.search); if (params.get('reset')) open(null, 'reset'); else if (params.get('auth') === 'error') open();
-    } catch (_) { /* The app remains usable until an authenticated API is needed. */ }
+    } catch (_) { /* The app remains usable until an authenticated API is needed. */     }
     finally {
       state.ready = true;
-      window.dispatchEvent(new CustomEvent('codeleaf:auth-ready', { detail: state.user }));
       flushPendingActions();
     }
   }
@@ -580,7 +582,6 @@ const Auth = (() => {
       open(action);
     },
     get user() { return state.user; },
-    get ready() { return state.ready; },
   };
 })();
 
