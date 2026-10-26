@@ -168,43 +168,40 @@ def test_playground_query_falls_back_if_worker_disappears_before_timeout():
         "exam_custom_verify",
     ],
 )
-def test_compiled_code_jobs_use_queue_when_enabled(kind):
+def test_compiled_code_jobs_bypass_queue_even_when_enabled(kind):
     expected = {"status": "ok", "stdout": "done"}
     direct = MagicMock(return_value=expected)
     with patch.object(job_queue, "enabled", return_value=True):
-        with patch.object(job_queue, "enqueue", return_value="job-1") as enqueue:
-            with patch.object(job_queue, "wait_for_result", return_value=expected) as wait_for_result:
+        with patch.object(job_queue, "enqueue") as enqueue:
+            with patch.object(job_queue, "wait_for_result") as wait_for_result:
                 result = job_queue._execute_uncached(kind, {"language": "python"}, direct)
 
     assert result == expected
-    direct.assert_not_called()
-    enqueue.assert_called_once_with(kind, {"language": "python"}, None)
-    wait_for_result.assert_called_once_with("job-1")
+    direct.assert_called_once_with()
+    enqueue.assert_not_called()
+    wait_for_result.assert_not_called()
 
 
 @pytest.mark.parametrize("language", ["python", "c", "cpp", "java"])
-def test_sandbox_code_route_uses_worker_when_queue_is_configured(language):
+def test_sandbox_code_route_bypasses_worker_when_queue_is_configured(language):
     from api.index import handler
 
     filename = "Solution.java" if language == "java" else "main"
     with patch.object(job_queue, "enabled", return_value=True):
-        with patch.object(job_queue, "enqueue", return_value="job-1") as enqueue:
-            with patch.object(job_queue, "wait_for_result", return_value={
-                "stdout": "remote", "stderr": "", "code": 0, "output": "remote"
-            }):
-                with patch(
-                    "services.compiler.compiler_service.CompilerService.run_piston_code",
-                ) as direct:
-                    response = handler.test_client().post(
-                        "/api/sandbox/run",
-                        json={"language": language, "code": "source", "filename": filename},
-                    )
+        with patch.object(job_queue, "enqueue") as enqueue:
+            with patch(
+                "services.compiler.compiler_service.CompilerService.run_piston_code",
+                return_value={"stdout": "direct", "stderr": "", "code": 0, "output": "direct"},
+            ) as direct:
+                response = handler.test_client().post(
+                    "/api/sandbox/run",
+                    json={"language": language, "code": "source", "filename": filename},
+                )
 
     assert response.status_code == 200
-    assert response.get_json()["stdout"] == "remote"
-    enqueue.assert_called_once()
-    assert enqueue.call_args.args[1]["language"] == language
-    direct.assert_not_called()
+    assert response.get_json()["stdout"] == "direct"
+    enqueue.assert_not_called()
+    direct.assert_called_once()
 
 
 def test_jobs_migrates_legacy_sparse_compound_idempotency_index():

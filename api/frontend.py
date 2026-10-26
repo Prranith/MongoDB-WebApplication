@@ -14134,7 +14134,7 @@ function setExecutionOrigin(origin, language, running, detail) {
   const statEl = document.getElementById('console-status');
   const stateClass = isLocal ? 'execution-origin-local' : 'execution-origin-remote';
 
-  const phases = isLocal ? `Preparing ${language} runtime…` : 'Connecting to a dedicated worker…';
+  const phases = isLocal ? `Preparing ${language} runtime…` : 'Connecting to the execution service…';
   const current = detail || phases;
   if (statEl) {
     statEl.innerHTML = `<span class="execution-origin ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>${running ? ` <span class="execution-phase">· ${esc(current)}</span>` : ''}`;
@@ -14161,7 +14161,7 @@ function executionOriginBanner(origin, fallbackNotice) {
 function executionOriginInline(origin) {
   const isLocal = origin === 'local';
   const stateClass = isLocal ? 'execution-origin-local' : 'execution-origin-remote';
-  const label = isLocal ? 'device' : 'remote worker';
+  const label = isLocal ? 'device' : 'execution service';
   return `<span class="execution-origin-inline ${stateClass}"><span class="execution-origin-dot"></span>${label}</span>`;
 }
 
@@ -14260,20 +14260,20 @@ async function runPlaygroundCode(language, code, stdin) {
         return;
       }
       const localFailure = clientResult.stderr || 'The browser runtime could not execute this program.';
-      setExecutionOrigin('remote', language, true, 'On-device runtime unavailable; switching to a dedicated worker.');
-      updateExecutionProgress({ detail: 'Submitting program to the remote worker…' });
+      setExecutionOrigin('remote', language, true, 'On-device runtime unavailable; switching to the execution service.');
+      updateExecutionProgress({ detail: 'Submitting program to the execution service…' });
       try {
         const start = performance.now();
         const d = await fetchAPI('/api/sandbox/run', {
           method: 'POST',
           body: JSON.stringify({ language, code, stdin, filename: S.activeFile || '' })
         });
-        updateExecutionProgress({ detail: 'Remote worker completed execution.' });
+        updateExecutionProgress({ detail: 'Execution service completed the run.' });
         d.executionOrigin = 'remote';
         handleOutput(d, (performance.now() - start).toFixed(2), `On-device attempt: ${localFailure}`);
         return;
       } catch (err) {
-        handleOutput({ status: 'ok', code: 1, stderr: `On-device attempt failed: ${localFailure}\\nRemote worker request failed: ${err.message || err}`, executionOrigin: 'remote' }, 0, localFailure);
+        handleOutput({ status: 'ok', code: 1, stderr: `On-device attempt failed: ${localFailure}\\nExecution service request failed: ${err.message || err}`, executionOrigin: 'remote' }, 0, localFailure);
         return;
       }
     }

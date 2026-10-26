@@ -23,11 +23,12 @@
 
 ### Execution queues
 
-Playground SQL, MongoDB, and compiled code can be routed through CloudAMQP
-when an execution worker is available. Workspace code first attempts a
-browser runtime; if that runtime cannot load, C, C++, Java, and Python fall
-back to the remote worker. Vercel does not include the native C/C++/Java
-toolchains, so those languages require the worker when browser execution fails.
+Playground SQL and MongoDB can be routed through CloudAMQP when an execution
+worker is available. Compiled playground and exam code bypasses the queue and
+uses the API's direct execution callback. Workspace code first attempts a
+browser runtime and falls back to the API if that runtime cannot load. The API
+host must have the relevant toolchains installed for server-side execution;
+Vercel does not include native C/C++/Java compilers.
 
 Configure the API and worker with:
 
@@ -64,8 +65,8 @@ failures return JSON `503` responses for queued requests; use the response
 correlation ID to locate the matching API log entry instead of interpreting an
 HTML platform error.
 Playground SQL and MongoDB queries fall back to their bounded in-API sandbox
-engines while no worker heartbeat is available. Compiled-code jobs require an
-online worker when browser execution cannot run.
+engines while no worker heartbeat is available. Compiled-code jobs do not
+depend on an execution-worker heartbeat.
 
 Build and run the worker image with:
 
