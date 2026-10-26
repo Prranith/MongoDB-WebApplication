@@ -133,3 +133,25 @@ def test_exam_sql_loads_dataset_name_collection_and_id_aliases(monkeypatch):
 
     assert result["status"] == "ok"
     assert result["rows"] == [{"id": 1, "name": "Ada"}]
+
+
+def test_exam_sql_room_query_bypasses_playground_queue(monkeypatch):
+    docs = [{"id": 1, "name": "Ada"}]
+
+    def fake_redis_one(command):
+        field = command[-1]
+        if field == "dataset_docs:dataset-1":
+            return json.dumps(docs)
+        if field == "dataset_meta:dataset-1":
+            return json.dumps({"name": "Students CSV", "collection": "students"})
+        return None
+
+    monkeypatch.setattr(sql_module, "redis_one", fake_redis_one)
+    monkeypatch.setattr(
+        "services.execution.query_queue.query_slot",
+        lambda _kind: (_ for _ in ()).throw(AssertionError("Exam query used the playground queue")),
+    )
+    result = SqlService.execute_room_query("ROOM", ["dataset-1"], "SELECT * FROM students;")
+
+    assert result["status"] == "ok"
+    assert result["rows"] == docs

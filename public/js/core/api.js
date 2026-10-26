@@ -75,7 +75,9 @@ async function sendHeartbeat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_id: cid })
       });
-    } catch(e) {}
+    } catch (error) {
+      console.error('Failed to load the database collections:', error);
+    }
   }
 }
 

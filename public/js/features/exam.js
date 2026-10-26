@@ -82,11 +82,11 @@ const ExamPortal = (() => {
     const label = local ? 'Local execution' : 'Remote execution';
     const detail = local
       ? 'CodeLeaf is running this program on your device.'
-      : 'CodeLeaf is running this program on a dedicated execution worker.';
+      : 'CodeLeaf is running this program through the exam API.';
     const currentQuestion = state.student.questions && state.student.questions[state.student.currentQIdx];
     if (currentQuestion && currentQuestion.type === 'coding' && (running || reason)) {
       updateStudentExecutionCard(
-        reason || (running ? (local ? 'Running program on this device…' : 'Running program on a remote worker…') : detail),
+        reason || (running ? (local ? 'Running program on this device…' : 'Running program on the exam server…') : detail),
         { mode: local ? 'local' : 'remote', kind: reason ? 'error' : (running ? 'active' : 'done') }
       );
     }
@@ -291,7 +291,7 @@ const ExamPortal = (() => {
 
 // Mentor-side expected-output generation follows the same policy as normal
 // coding runs: use the student's browser runtime first, and send the complete
-// generation request to the authoritative remote worker only if the browser
+// generation request to the exam API only if the browser
 // runtime is unavailable or produces an error. The server still freezes and
 // stores the final outputs, so this optimization never changes grading rules.
 async function generateCodingOutputsWithFallback(language, editorialCode, inputs, templateType, driverCode, onProgress) {
@@ -331,12 +331,12 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       return { status: 'ok', outputs, executionOrigin: 'local' };
     }
     onProgress?.(`On-device generation failed${localFailure ? `: ${localFailure.slice(0, 160)}` : ''}`);
-    onProgress?.('Submitting the test cases to a remote worker…');
+    onProgress?.('Submitting the test cases to the exam API…');
   } else {
-    onProgress?.('Browser runtime unavailable; submitting the test cases to a remote worker…');
+    onProgress?.('Browser runtime unavailable; submitting the test cases to the exam API…');
   }
 
-  onProgress?.('Remote worker is compiling and running the test cases…');
+  onProgress?.('The exam API is compiling and running the test cases…');
   const remote = await apiCall(`/api/exam/room/${state.mentor.roomId}/generate_test_cases`, 'POST', {
     language: normalized,
     editorialCode,
@@ -345,7 +345,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     driverCode
   });
   if (remote.status === 'ok' && remote.outputs) {
-    onProgress?.('Remote worker completed expected-output generation.');
+    onProgress?.('Server-side expected-output generation completed.');
     return { ...remote, executionOrigin: 'remote', localFailure };
   }
   onProgress?.(`Remote output generation failed: ${remote.error || 'unknown error'}`);
@@ -3271,7 +3271,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
   }; // end mentor namespace
 
   // Execute a coding submission against the exam fixtures without sending
-  // source code to a remote worker. Hidden expected outputs never enter this
+  // source code to the API. Hidden expected outputs never enter this
   // function; only stdin fixtures are needed to produce a local transcript.
   async function executeCodingCasesLocally(question, studentCode, cases, onProgress) {
     const language = String(question.language || 'python').toLowerCase().trim();
@@ -4351,9 +4351,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               });
               if (fallback.status === 'ok' && fallback.results) {
                 finalResults = fallback.results;
-                updateStudentExecutionCard('Remote worker completed execution.', { mode: 'remote', kind: 'done' });
+                updateStudentExecutionCard('Server-side execution completed.', { mode: 'remote', kind: 'done' });
               } else {
-                updateStudentExecutionCard(`Remote worker failed: ${fallback.error || 'unknown error'}`, { mode: 'remote', kind: 'error' });
+                updateStudentExecutionCard(`Server-side execution failed: ${fallback.error || 'unknown error'}`, { mode: 'remote', kind: 'error' });
               }
             }
             el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
@@ -4491,7 +4491,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         state.student.runResults = state.student.runResults || {};
 
         if (res.status === 'ok' && res.results) {
-          updateStudentExecutionCard('Remote worker completed execution.', { mode: 'remote', kind: 'done' });
+          updateStudentExecutionCard('Server-side execution completed.', { mode: 'remote', kind: 'done' });
           sampleCases.forEach((tc, i) => {
             state.student.runResults[`${q.id}-case-${i}`] = res.results[i];
           });
@@ -4517,7 +4517,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           studentNS.selectConsoleTab(tabId);
           finishStudentExecutionCard();
         } else {
-          updateStudentExecutionCard(`Remote worker failed: ${res.error || 'unknown error'}`, { mode: 'remote', kind: 'error' });
+          updateStudentExecutionCard(`Server-side execution failed: ${res.error || 'unknown error'}`, { mode: 'remote', kind: 'error' });
           finishStudentExecutionCard();
           showExamAlert('Failed to run: ' + (res.error || 'Unknown error'), { title: 'Run Failed', danger: true });
         }
@@ -4699,7 +4699,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         // Official coding submissions use the browser runtime first. The
         // server receives only the execution transcript and compares it with
         // its private frozen answers; it does not execute the editorial code
-        // or consume a remote worker for a healthy local run.
+        // or call an external provider for a healthy local run.
         try {
           if (submitBtn) submitBtn.textContent = 'Running locally...';
           startStudentExecutionCard(q.language);
@@ -4742,12 +4742,12 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             });
           }
         } catch (localError) {
-          // The backend will use its rate-limited emergency worker path when
-          // the browser cannot produce a complete local transcript.
+          // The API executes grading cases directly when the browser cannot
+          // produce a complete local transcript.
           body.clientExecution = 'remote-fallback';
           body.clientExecutionError = String(localError.message || localError).slice(0, 500);
           setExamExecutionOrigin('remote', true, `On-device grading failed: ${body.clientExecutionError}`);
-          console.error('[CodeLeaf exam] On-device grading failed; remote fallback will be used.', {
+          console.error('[CodeLeaf exam] On-device grading failed; server-side execution will be used.', {
             questionId: q.id,
             language: q.language,
             error: body.clientExecutionError

@@ -28,13 +28,11 @@ def _javascript_question(expected_output="16"):
 def test_exam_run_endpoint_executes_javascript_cases_in_api_process():
     from api.index import handler
     from api.routes import exam_routes
-
-    def execute_directly(_kind, _payload, direct, **_kwargs):
-        return direct()
+    from services.execution import job_queue
 
     with patch.object(exam_routes, "_assert_student_account"):
         with patch.object(exam_routes.RoomService, "get_room_status", return_value={"roomStatus": "live"}):
-            with patch.object(exam_routes, "execute_job", side_effect=execute_directly):
+            with patch.object(job_queue, "execute", side_effect=AssertionError("Exam execution must not use the job queue")):
                 response = handler.test_client().post(
                     "/api/exam/room/MNG-JS1/run",
                     json={
@@ -79,6 +77,29 @@ def test_javascript_exam_test_generation_and_custom_verification():
     assert verification["expectedOutput"] == "30"
 
 
+def test_mongodb_exam_room_queries_bypass_playground_queue():
+    docs = [{"userId": 7, "name": "Ada"}]
+
+    def read_room(command):
+        if command[0] == "HMGET":
+            return [json.dumps(docs), json.dumps({"name": "Students", "collection": "students"})]
+        return None
+
+    with patch("services.submission.submission_service.redis_one", side_effect=read_room):
+        with patch(
+            "services.execution.query_queue.query_slot",
+            side_effect=AssertionError("Exam query used the playground queue"),
+        ):
+            result = SubmissionService.execute_room_query(
+                "MNG-JS1",
+                ["dataset-1"],
+                "db.students.find({}, {_id: 0})",
+            )
+
+    assert result["status"] == "ok"
+    assert result["results"] == docs
+
+
 @pytest.mark.parametrize(
     ("source", "expected_score", "expected_passed"),
     [
@@ -98,13 +119,10 @@ def test_javascript_exam_submission_is_graded_by_server_execution(source, expect
             return json.dumps([question])
         return None
 
-    def execute_directly(_kind, _payload, direct, **_kwargs):
-        return direct()
-
     with patch("services.submission.submission_service.redis_one", side_effect=read_room):
         with patch("services.submission.submission_service.redis_cmd"):
             with patch("services.submission.submission_service.get_room_kicked_dict", return_value={}):
-                with patch.object(job_queue, "execute", side_effect=execute_directly):
+                with patch.object(job_queue, "execute", side_effect=AssertionError("Exam grading must not use the job queue")):
                     result = SubmissionService.submit_answer(
                         "MNG-JS1",
                         "student-1",

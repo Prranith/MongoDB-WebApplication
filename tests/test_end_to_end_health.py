@@ -7,6 +7,7 @@ middleware/logging/idempotency/pagination hooks do not break behaviour.
 """
 
 import sys
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
@@ -24,7 +25,9 @@ def test_collections_and_sample_and_schema():
     c = _client()
     coll = c.get("/api/collections").get_json()
     assert "collections" in coll
-    assert any(x["name"] == "users" for x in coll["collections"])
+    listed = {item["name"]: item["count"] for item in coll["collections"]}
+    assert {"elite", "users", "orders", "inventory", "shipments"} <= listed.keys()
+    assert all(listed[name] > 0 for name in ("elite", "users", "orders", "inventory", "shipments"))
 
     sample = c.get("/api/sample/users?limit=3").get_json()
     assert sample["collection"] == "users"
@@ -34,6 +37,12 @@ def test_collections_and_sample_and_schema():
     assert schema["collection"] == "users"
     assert "schema" in schema
     assert "count" in schema
+
+
+def test_vercel_function_bundle_includes_practice_database_files():
+    config = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
+    included_files = config["functions"]["api/index.py"]["includeFiles"]
+    assert "databases/**" in included_files
 
 
 def test_analytics_endpoints():

@@ -442,7 +442,9 @@ class SqlService:
                 tables[alias] = rows
         if not tables:
             return {"status": "error", "error": "No datasets found/loaded in room"}
-        return cls.execute_query(query, limit=limit, custom_tables=tables)
+        # Exam room queries execute directly in the API process; the
+        # playground's generic execute_query path retains its concurrency gate.
+        return cls._execute_query(query, limit=limit, custom_tables=tables)
 
     @classmethod
     def list_tables(cls, custom_tables=None):

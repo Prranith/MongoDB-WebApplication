@@ -18,14 +18,16 @@
 - **Coding Meetings**: Collaborate through meeting rooms, chat, reactions, workspace sharing, and editor-follow mode.
 - **Robust Multi-line Copy-Paste Enforcement**: Intelligently allows copying within the application editor but heavily restricts and reports external pastes.
 - **Single Page Application (SPA)**: Custom-built lightweight vanilla JavaScript framework avoiding heavy frontend dependencies.
-- **Database Practice Sandboxes**: Run MongoDB queries and SQL against datasets with schema inspection and formatted output.
+- **Database Practice Sandboxes**: Run MongoDB queries and SQL against bundled `elite`, `users`, `orders`, `inventory`, and `shipments` datasets with schema inspection and formatted output.
 - **Excel Results Export**: Mentors can export the leaderboard to an `.xlsx` sheet for official records.
 
 ### Code execution
 
 Compiled playground and exam requests call Piston directly, with Paiza as the
-fallback provider. These requests bypass CloudAMQP; the API returns provider
-stdout, stderr, and exit code to the frontend. Workspace runs try the browser
+fallback provider. Exam requests execute synchronously in the Vercel API; exam
+queries, grading, test generation, and code runs do not use CloudAMQP or an
+execution worker. For compiled languages, the API calls the external provider
+and returns stdout, stderr, and exit code. Workspace runs try the browser
 runtime first, then call these external providers if that runtime cannot load.
 
 Workspace `.js` files execute in an isolated QuickJS context inside the Vercel
@@ -36,7 +38,7 @@ network access. `.js` files containing Mongo shell `db.collection` calls
 continue to run as MongoDB queries; use `.mongo` or `.mongodb` for explicit
 MongoDB query files.
 
-CloudAMQP is used only for queued SQL/MongoDB execution:
+CloudAMQP is used for queued playground SQL/MongoDB execution only:
 
 ```text
 CLOUDAMQP_URL=amqps://user:password@host/vhost
@@ -56,9 +58,9 @@ The queue worker must run as a long-lived service outside Vercel. Configure
 `CLOUDAMQP_URL`, `MONGO_URI`, and `EXECUTION_JOB_COLLECTION` on the API and
 worker. Compiled code does not need this worker or its heartbeat.
 
-The admin overview reports recent queue-worker heartbeats; queued request
-timeouts include persisted job status and worker visibility. Compiled-code
-requests do not use that queue or depend on its heartbeat.
+The admin overview reports recent queue-worker heartbeats; queued playground
+request timeouts include persisted job status and worker visibility. Exam
+execution does not depend on that queue or its heartbeat.
 
 Build and run the database-query worker image with:
 

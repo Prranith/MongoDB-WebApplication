@@ -161,12 +161,7 @@ def test_playground_query_falls_back_if_worker_disappears_before_timeout():
 
 @pytest.mark.parametrize(
     "kind",
-    [
-        "playground_code",
-        "exam_code",
-        "exam_generate_cases",
-        "exam_custom_verify",
-    ],
+    ["playground_code"],
 )
 def test_compiled_code_jobs_bypass_queue_even_when_enabled(kind):
     expected = {"status": "ok", "stdout": "done"}
@@ -180,6 +175,16 @@ def test_compiled_code_jobs_bypass_queue_even_when_enabled(kind):
     direct.assert_called_once_with()
     enqueue.assert_not_called()
     wait_for_result.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "kind",
+    ["exam_code", "exam_generate_cases", "exam_custom_verify", "exam_mongodb", "exam_sql"],
+)
+def test_exam_jobs_are_not_supported_by_execution_queue(kind):
+    assert kind not in job_queue.QUEUE_NAMES
+    with pytest.raises(ValueError, match="Unsupported execution job type"):
+        job_queue._dispatch(kind, {})
 
 
 @pytest.mark.parametrize("language", ["python", "c", "cpp", "java"])

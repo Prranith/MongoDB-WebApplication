@@ -37,19 +37,11 @@ _job_indexes_lock = threading.Lock()
 
 QUEUE_NAMES = {
     "playground_code": "code-execution",
-    "exam_code": "code-execution",
-    "exam_generate_cases": "code-execution",
-    "exam_custom_verify": "code-execution",
     "playground_mongodb": "mongodb-execution",
-    "exam_mongodb": "mongodb-execution",
     "playground_sql": "sql-execution",
-    "exam_sql": "sql-execution",
 }
 DIRECT_CODE_KINDS = {
     "playground_code",
-    "exam_code",
-    "exam_generate_cases",
-    "exam_custom_verify",
 }
 _execution_idem = get_persistent_idempotency_handler(ttl_seconds=300)
 log = bind_component(get_logger(__name__), "execution_queue")
@@ -270,7 +262,7 @@ def execute(kind: str, payload: dict, direct: Callable[[], dict], idempotency_ke
     """Run directly when disabled, otherwise enqueue and wait for a result."""
     # Read-only database work is safe to cache briefly. Code execution is
     # deliberately never cached because it may depend on time or randomness.
-    if kind in {"playground_mongodb", "exam_mongodb", "playground_sql", "exam_sql"}:
+    if kind in {"playground_mongodb", "playground_sql"}:
         cache = get_cache_manager(default_ttl_seconds=5)
         cache_key = f"execution:{kind}:{sha_signature(_safe_json(payload))}"
         return cache.get_or_load(cache_key, lambda: _execute_uncached(kind, payload, direct, idempotency_key), ttl_seconds=5)
@@ -356,29 +348,14 @@ def _dispatch(kind: str, payload: dict) -> Any:
     if kind == "playground_code":
         from services.compiler.compiler_service import CompilerService
         return CompilerService.run_piston_code(payload["language"], payload["code"], payload.get("stdin", ""), payload.get("filename", ""), payload.get("strictJavaFilename", False))
-    if kind == "exam_code":
-        from services.submission.submission_service import SubmissionService
-        return {"results": SubmissionService.run_piston_code(payload["roomId"], payload.get("questionId"), payload["language"], payload["code"], payload.get("stdins", ""))}
-    if kind == "exam_generate_cases":
-        from services.submission.submission_service import SubmissionService
-        return {"outputs": SubmissionService.generate_test_cases(payload["language"], payload["code"], payload.get("inputs", []), payload.get("templateType", "scratch"), payload.get("driverCode", ""))}
-    if kind == "exam_custom_verify":
-        from services.submission.submission_service import SubmissionService
-        return SubmissionService.verify_custom_input(payload["roomId"], payload["questionId"], payload["language"], payload["code"], payload["stdin"])
     if kind == "playground_mongodb":
         from api.routes.database_routes import _create_temp_db
         from core.web_executor import execute as web_execute
         temp_db = _create_temp_db(payload["query"], payload.get("custom_collections", {})) if payload.get("custom_collections") else None
         return web_execute(payload["query"], max_results=payload.get("limit", 100), db=temp_db).to_dict()
-    if kind == "exam_mongodb":
-        from services.submission.submission_service import SubmissionService
-        return SubmissionService.execute_room_query(payload["roomId"], payload.get("datasetIds", []), payload["query"], max_results=payload.get("limit", 100000))
     if kind == "playground_sql":
         from services.sql.sql_service import SqlService
         return SqlService.execute_query(payload["query"], payload.get("limit", 500), payload.get("tables"))
-    if kind == "exam_sql":
-        from services.sql.sql_service import SqlService
-        return SqlService.execute_room_query(payload["roomId"], payload.get("datasetIds", []), payload["query"], limit=payload.get("limit", 1000))
     raise ValueError(f"Unsupported execution job type: {kind}")
 
 
