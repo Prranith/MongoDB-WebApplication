@@ -23,12 +23,11 @@
 
 ### Execution queues
 
-Playground SQL and MongoDB execution can be routed through CloudAMQP when an
-execution worker is available. Compiled playground and exam code use their
-direct API execution callbacks and do not use the queue. C, C++, and Java
-workspace runs use browser runtimes; the Vercel API does not include those
-native toolchains, so the browser does not fall back to the API for them.
-Python can use the direct API callback if its browser runtime is unavailable.
+Playground SQL, MongoDB, and compiled code can be routed through CloudAMQP
+when an execution worker is available. Workspace code first attempts a
+browser runtime; if that runtime cannot load, C, C++, Java, and Python fall
+back to the remote worker. Vercel does not include the native C/C++/Java
+toolchains, so those languages require the worker when browser execution fails.
 
 Configure the API and worker with:
 
@@ -49,9 +48,8 @@ python -m services.execution.worker
 ```
 
 The worker must run as a long-lived Python process outside Vercel. The
-`Dockerfile.worker` image includes Python, GCC, G++, and the Java JDK. It is
-used for queued database-query work; compiled-code requests do not depend on
-it. Deploy it as a continuously running worker service (not a web service), and configure
+`Dockerfile.worker` image includes Python, GCC, G++, and the Java JDK. Deploy it
+as a continuously running worker service (not a web service), and configure
 the **same** `CLOUDAMQP_URL`, `MONGO_URI`, and `EXECUTION_JOB_COLLECTION` values
 on both the Vercel API and the worker. A worker connected to a different broker
 or MongoDB database cannot see the published jobs and will cause the API to
@@ -66,7 +64,8 @@ failures return JSON `503` responses for queued requests; use the response
 correlation ID to locate the matching API log entry instead of interpreting an
 HTML platform error.
 Playground SQL and MongoDB queries fall back to their bounded in-API sandbox
-engines while no worker heartbeat is available.
+engines while no worker heartbeat is available. Compiled-code jobs require an
+online worker when browser execution cannot run.
 
 Build and run the worker image with:
 
