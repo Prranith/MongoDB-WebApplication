@@ -121,6 +121,43 @@ def test_queue_connection_failure_is_reported_as_service_unavailable():
     assert jobs.update_one.call_args.args[0] == {"_id": jobs.insert_one.call_args.args[0]["_id"]}
 
 
+@pytest.mark.parametrize(
+    ("kind", "expected"),
+    [
+        ("playground_sql", {"status": "ok", "rows": [{"id": 1}]}),
+        ("playground_mongodb", {"status": "ok", "data": [{"_id": 1}]}),
+    ],
+)
+def test_playground_queries_fall_back_to_api_when_worker_is_offline(kind, expected):
+    direct = MagicMock(return_value=expected)
+    with patch.object(job_queue, "enabled", return_value=True):
+        with patch.object(job_queue, "active_workers", return_value=[]):
+            with patch.object(job_queue, "enqueue") as enqueue:
+                result = job_queue._execute_uncached(kind, {"query": "test"}, direct)
+
+    assert result == expected
+    direct.assert_called_once_with()
+    enqueue.assert_not_called()
+
+
+def test_playground_query_falls_back_if_worker_disappears_before_timeout():
+    expected = {"status": "ok", "rows": [{"id": 1}]}
+    direct = MagicMock(return_value=expected)
+    timed_out = {
+        "status": "error",
+        "code": "EXECUTION_QUEUE_TIMEOUT",
+        "activeWorkers": 0,
+    }
+    with patch.object(job_queue, "enabled", return_value=True):
+        with patch.object(job_queue, "active_workers", side_effect=[[{"workerId": "worker-1"}], []]):
+            with patch.object(job_queue, "enqueue", return_value="job-1"):
+                with patch.object(job_queue, "wait_for_result", return_value=timed_out):
+                    result = job_queue._execute_uncached("playground_sql", {"query": "test"}, direct)
+
+    assert result == expected
+    direct.assert_called_once_with()
+
+
 def test_jobs_migrates_legacy_sparse_compound_idempotency_index():
     db = mongomock.MongoClient().exam_system
     collection = db.execution_jobs

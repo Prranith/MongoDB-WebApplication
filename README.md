@@ -61,6 +61,9 @@ persisted job status and whether a worker was visible. The worker persists a
 result before acknowledging its RabbitMQ message. Broker publish and job-ledger
 failures return JSON `503` responses; use the response correlation ID to locate
 the matching API log entry instead of interpreting an HTML platform error.
+Playground SQL and MongoDB queries fall back to their bounded in-API sandbox
+engines while no worker heartbeat is available; remote compiled-code execution
+still requires the separately deployed worker.
 
 Build and run the worker image with:
 

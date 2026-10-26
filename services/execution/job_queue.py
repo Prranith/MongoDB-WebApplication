@@ -280,6 +280,24 @@ def _execute_uncached(kind: str, payload: dict, direct: Callable[[], dict], idem
         replay = _execution_idem.check_replay(idempotency_key, method="POST", path=f"/execution/{kind}")
         if replay:
             return replay[1]
+
+    if enabled() and kind in {"playground_mongodb", "playground_sql"} and not active_workers():
+        log.warning(
+            "playground_query_direct_fallback",
+            kind=kind,
+            reason="no_recent_execution_worker",
+        )
+        result = direct()
+        if idempotency_key:
+            _execution_idem.record_response(
+                idempotency_key,
+                method="POST",
+                path=f"/execution/{kind}",
+                status_code=200,
+                body=result,
+            )
+        return result
+
     if not enabled():
         result = direct()
     else:
@@ -303,6 +321,17 @@ def _execute_uncached(kind: str, payload: dict, direct: Callable[[], dict], idem
                 "code": error_code,
                 "queue": QUEUE_NAMES.get(kind),
             }
+        if (
+            kind in {"playground_mongodb", "playground_sql"}
+            and result.get("code") == "EXECUTION_QUEUE_TIMEOUT"
+            and result.get("activeWorkers", 0) == 0
+        ):
+            log.warning(
+                "playground_query_direct_fallback",
+                kind=kind,
+                reason="worker_missing_at_queue_timeout",
+            )
+            result = direct()
     if idempotency_key:
         _execution_idem.record_response(idempotency_key, method="POST", path=f"/execution/{kind}", status_code=200, body=result)
     return result
