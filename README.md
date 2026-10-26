@@ -25,8 +25,10 @@
 
 Playground SQL and MongoDB execution can be routed through CloudAMQP when an
 execution worker is available. Compiled playground and exam code use their
-direct API execution callbacks and do not use the queue. Browser on-device
-execution remains the primary path for supported workspace languages.
+direct API execution callbacks and do not use the queue. C, C++, and Java
+workspace runs use browser runtimes; the Vercel API does not include those
+native toolchains, so the browser does not fall back to the API for them.
+Python can use the direct API callback if its browser runtime is unavailable.
 
 Configure the API and worker with:
 

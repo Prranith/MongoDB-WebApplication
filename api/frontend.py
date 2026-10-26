@@ -14260,6 +14260,12 @@ async function runPlaygroundCode(language, code, stdin) {
         return;
       }
       const localFailure = clientResult.stderr || 'The browser runtime could not execute this program.';
+      if (['c', 'cpp', 'java'].includes(language)) {
+        clientResult.executionOrigin = 'local';
+        clientResult.stderr = `${localFailure}\\nRemote fallback is disabled for ${language.toUpperCase()} because the API runtime does not include its compiler.`;
+        handleOutput(clientResult, clientResult.duration);
+        return;
+      }
       setExecutionOrigin('remote', language, true, 'On-device runtime unavailable; switching to a dedicated worker.');
       updateExecutionProgress({ detail: 'Submitting program to the remote worker…' });
       try {
@@ -14277,6 +14283,17 @@ async function runPlaygroundCode(language, code, stdin) {
         return;
       }
     }
+  }
+
+  if (['c', 'cpp', 'java'].includes(language)) {
+    handleOutput({
+      status: 'ok',
+      code: 1,
+      stdout: '',
+      stderr: `On-device ${language.toUpperCase()} execution is unavailable. Remote fallback is disabled because the API runtime does not include its compiler.`,
+      executionOrigin: 'local'
+    }, 0);
+    return;
   }
 
   try {
