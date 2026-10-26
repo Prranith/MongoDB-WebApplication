@@ -4,10 +4,16 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
+
+import requests
+
+from utils.logger import bind_component, get_logger
 
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
+log = bind_component(get_logger(__name__), "compiler_service")
 
 class CompilerService:
     @staticmethod
@@ -258,5 +264,207 @@ class CompilerService:
 
     @classmethod
     def run_piston_code(cls, language: str, code: str, stdin: str = "", filename: str = "", strict_java_filename: bool = False):
-        """Compatibility name used by existing routes; execution is local only."""
-        return cls.run_local_code(language, code, stdin, filename, strict_java_filename)
+        """Execute code through Piston, falling back to Paiza when unavailable."""
+        result = cls.run_piston_api(language, code, stdin, filename, strict_java_filename)
+        if result is not None:
+            return result
+        return cls.run_paiza_api(language, code, stdin, filename, strict_java_filename)
+
+    @classmethod
+    def _validate_java_filename(cls, code: str, filename: str, strict_java_filename: bool):
+        if not strict_java_filename:
+            return None
+
+        supplied_name = Path(str(filename or "")).name
+        if not supplied_name or supplied_name.lower() == ".java" or not supplied_name.lower().endswith(".java"):
+            return cls._result(
+                stderr="Java playground code must be run from a .java file. Rename the file to match the public class name.",
+                code=1,
+            )
+        file_stem = Path(supplied_name).stem
+        if not re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", file_stem):
+            return cls._result(
+                stderr=f"Invalid Java filename '{supplied_name}'. Use a valid Java class filename such as Solution.java.",
+                code=1,
+            )
+
+        source = re.sub(r"/\*.*?\*/|//[^\n]*", "", str(code or ""), flags=re.DOTALL)
+        public_declaration = re.search(
+            r"\bpublic\s+(?:abstract\s+|final\s+)?class\s+([A-Za-z_$][A-Za-z0-9_$]*)",
+            source,
+        )
+        entry_class = public_declaration.group(1) if public_declaration else cls._java_entry_class(source, "")
+        if not entry_class:
+            return cls._result(stderr="No Java class declaration was found in the submitted source.", code=1)
+        if entry_class != file_stem:
+            message = (
+                f"Java filename/class mismatch: {entry_class} must be saved as "
+                f"{entry_class}.java, or change the class to {file_stem}."
+            )
+            return cls._result(stderr=message, code=1)
+        return None
+
+    @classmethod
+    def run_piston_api(
+        cls,
+        language: str,
+        code: str,
+        stdin: str = "",
+        filename: str = "",
+        strict_java_filename: bool = False,
+    ):
+        lang_map = {"python": "python", "cpp": "cpp", "c": "c", "java": "java"}
+        piston_language = lang_map.get(str(language or "").strip().lower())
+        if not piston_language:
+            return cls._result(stderr=f"Unsupported language: {language}", code=1)
+
+        validation_error = cls._validate_java_filename(code, filename, strict_java_filename)
+        if validation_error:
+            return validation_error
+
+        if piston_language == "java":
+            entry_class = cls._java_entry_class(code, filename)
+            if not entry_class:
+                return cls._result(stderr="No Java class declaration was found in the submitted source.", code=1)
+            if entry_class == "Main":
+                files = [{"name": "Main.java", "content": code}]
+            else:
+                files = [
+                    {"name": "Main.java", "content": cls._java_launcher_source(code, entry_class)},
+                    {"name": f"{entry_class}.java", "content": code},
+                ]
+        else:
+            source_filename = {"python": "main.py", "cpp": "main.cpp", "c": "main.c"}[piston_language]
+            files = [{"name": source_filename, "content": str(code or "")}]
+
+        try:
+            response = requests.post(
+                "https://emkc.org/api/v2/piston/execute",
+                json={
+                    "language": piston_language,
+                    "version": "*",
+                    "files": files,
+                    "stdin": str(stdin or ""),
+                },
+                timeout=8,
+            )
+            if response.status_code != 200:
+                log.warning(
+                    "piston_execution_unavailable",
+                    language=piston_language,
+                    status_code=response.status_code,
+                )
+                return None
+            result = response.json()
+        except (requests.RequestException, ValueError) as exc:
+            log.warning(
+                "piston_execution_unavailable",
+                language=piston_language,
+                error_type=type(exc).__name__,
+            )
+            return None
+
+        if not isinstance(result, dict) or "run" not in result:
+            log.warning("piston_execution_invalid_response", language=piston_language)
+            return None
+        compile_result = result.get("compile") or {}
+        run_result = result.get("run") or {}
+        if not isinstance(compile_result, dict) or not isinstance(run_result, dict):
+            return None
+        if compile_result and compile_result.get("code", 0) != 0:
+            stderr = compile_result.get("stderr") or compile_result.get("output") or ""
+            return cls._result(stderr=stderr, code=compile_result.get("code", 1))
+
+        stdout = run_result.get("stdout") or ""
+        stderr = run_result.get("stderr") or ""
+        return cls._result(stdout=stdout, stderr=stderr, code=run_result.get("code", 0))
+
+    @classmethod
+    def run_paiza_api(
+        cls,
+        language: str,
+        code: str,
+        stdin: str = "",
+        filename: str = "",
+        strict_java_filename: bool = False,
+    ):
+        lang_map = {"python": "python3", "cpp": "cpp", "c": "c", "java": "java"}
+        paiza_language = lang_map.get(str(language or "").strip().lower())
+        if not paiza_language:
+            return cls._result(stderr=f"Unsupported language: {language}", code=1)
+
+        validation_error = cls._validate_java_filename(code, filename, strict_java_filename)
+        if validation_error:
+            return validation_error
+        source = str(code or "")
+        if paiza_language == "java":
+            entry_class = cls._java_entry_class(source, filename)
+            if not entry_class:
+                return cls._result(stderr="No Java class declaration was found in the submitted source.", code=1)
+            source = cls._java_launcher_source(source, entry_class)
+
+        try:
+            create_response = requests.post(
+                "https://api.paiza.io/runners/create",
+                json={
+                    "source_code": source,
+                    "language": paiza_language,
+                    "input": str(stdin or ""),
+                    "api_key": "guest",
+                },
+                timeout=8,
+            )
+            if create_response.status_code != 200:
+                return cls._result(
+                    stderr=f"Paiza could not create an execution session (HTTP {create_response.status_code}).",
+                    code=1,
+                )
+            create_result = create_response.json()
+        except (requests.RequestException, ValueError) as exc:
+            return cls._result(stderr=f"External execution services failed: {exc}", code=1)
+
+        run_id = create_result.get("id") if isinstance(create_result, dict) else None
+        if not run_id:
+            return cls._result(stderr="Paiza did not return an execution session ID.", code=1)
+
+        details_url = "https://api.paiza.io/runners/get_details"
+        for attempt in range(10):
+            if attempt:
+                time.sleep(1)
+            try:
+                details_response = requests.get(
+                    details_url,
+                    params={"id": run_id, "api_key": "guest"},
+                    timeout=8,
+                )
+                if details_response.status_code != 200:
+                    continue
+                details = details_response.json()
+            except (requests.RequestException, ValueError):
+                continue
+
+            if not isinstance(details, dict):
+                continue
+            status = details.get("status")
+            if status == "running":
+                continue
+            if status != "completed":
+                return cls._result(stderr=f"Paiza execution status: {status}", code=1)
+
+            stderr = details.get("build_stderr") or ""
+            runtime_stderr = details.get("stderr") or ""
+            if runtime_stderr:
+                stderr = f"{stderr}\n{runtime_stderr}" if stderr else runtime_stderr
+            exit_code = details.get("exit_code")
+            try:
+                exit_code = int(exit_code) if exit_code is not None else 0
+            except (ValueError, TypeError):
+                exit_code = 1
+            if details.get("build_result") == "failure" and exit_code == 0:
+                exit_code = 1
+            return cls._result(stdout=details.get("stdout") or "", stderr=stderr, code=exit_code)
+
+        return cls._result(
+            stderr="Program compilation or execution timed out while waiting for Paiza.",
+            code=1,
+        )

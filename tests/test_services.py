@@ -1,4 +1,6 @@
 import unittest
+from unittest.mock import MagicMock, patch
+
 from services.exam.room_service import RoomService
 from services.submission.submission_service import SubmissionService
 from services.leaderboard.leaderboard_service import LeaderboardService
@@ -63,6 +65,86 @@ class TestServices(unittest.TestCase):
         )
         self.assertEqual(result["code"], 0)
         self.assertEqual(result["stdout"], "OK")
+
+    @patch("services.compiler.compiler_service.requests.post")
+    def test_code_execution_uses_piston_external_api(self, post):
+        response = MagicMock(status_code=200)
+        response.json.return_value = {
+            "compile": {"code": 0},
+            "run": {"stdout": "external output", "stderr": "", "code": 0},
+        }
+        post.return_value = response
+
+        result = CompilerService.run_piston_code(
+            "java",
+            "public class Solution { public static void main(String[] args) { System.out.print(\"ok\"); } }",
+            filename="Solution.java",
+            strict_java_filename=True,
+        )
+
+        self.assertEqual(result["stdout"], "external output")
+        self.assertEqual(result["code"], 0)
+        self.assertEqual(post.call_args.args[0], "https://emkc.org/api/v2/piston/execute")
+        self.assertEqual(post.call_args.kwargs["json"]["language"], "java")
+        self.assertEqual(post.call_args.kwargs["json"]["stdin"], "")
+
+    @patch("services.compiler.compiler_service.requests.post")
+    def test_code_execution_sends_all_playground_languages_to_piston(self, post):
+        response = MagicMock(status_code=200)
+        response.json.return_value = {
+            "run": {"stdout": "ok", "stderr": "", "code": 0},
+        }
+        post.return_value = response
+        examples = {
+            "python": ("print('ok')", "python"),
+            "c": ("int main(void) { return 0; }", "c"),
+            "cpp": ("int main() { return 0; }", "cpp"),
+        }
+
+        for language, (source, expected_provider_language) in examples.items():
+            with self.subTest(language=language):
+                result = CompilerService.run_piston_code(language, source)
+                self.assertEqual(result["code"], 0)
+                self.assertEqual(post.call_args.kwargs["json"]["language"], expected_provider_language)
+
+    @patch("services.compiler.compiler_service.requests.get")
+    @patch("services.compiler.compiler_service.requests.post")
+    def test_code_execution_falls_back_from_piston_to_paiza(self, post, get):
+        piston_unavailable = MagicMock(status_code=503)
+        paiza_created = MagicMock(status_code=200)
+        paiza_created.json.return_value = {"id": "runner-1"}
+        paiza_details = MagicMock(status_code=200)
+        paiza_details.json.return_value = {
+            "status": "completed",
+            "stdout": "paiza output",
+            "stderr": "",
+            "build_stderr": "",
+            "exit_code": 0,
+            "build_result": "success",
+        }
+        post.side_effect = [piston_unavailable, paiza_created]
+        get.return_value = paiza_details
+
+        result = CompilerService.run_piston_code("python", "print('ok')")
+
+        self.assertEqual(result["stdout"], "paiza output")
+        self.assertEqual(result["code"], 0)
+        self.assertEqual(post.call_args_list[0].args[0], "https://emkc.org/api/v2/piston/execute")
+        self.assertEqual(post.call_args_list[1].args[0], "https://api.paiza.io/runners/create")
+        self.assertEqual(get.call_args.args[0], "https://api.paiza.io/runners/get_details")
+
+    @patch("services.compiler.compiler_service.requests.post")
+    def test_java_filename_mismatch_is_rejected_before_external_request(self, post):
+        result = CompilerService.run_piston_code(
+            "java",
+            "public class Solution { public static void main(String[] args) {} }",
+            filename="main.java",
+            strict_java_filename=True,
+        )
+
+        self.assertNotEqual(result["code"], 0)
+        self.assertIn("filename/class mismatch", result["stderr"])
+        post.assert_not_called()
 
     def test_extract_sub_metrics(self):
         subs = {

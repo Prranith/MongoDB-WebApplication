@@ -21,16 +21,14 @@
 - **Database Practice Sandboxes**: Run MongoDB queries and SQL against datasets with schema inspection and formatted output.
 - **Excel Results Export**: Mentors can export the leaderboard to an `.xlsx` sheet for official records.
 
-### Execution queues
+### Code execution
 
-Playground SQL and MongoDB can be routed through CloudAMQP when an execution
-worker is available. Compiled playground and exam code bypasses the queue and
-uses the API's direct execution callback. Workspace code first attempts a
-browser runtime and falls back to the API if that runtime cannot load. The API
-host must have the relevant toolchains installed for server-side execution;
-Vercel does not include native C/C++/Java compilers.
+Compiled playground and exam requests call Piston directly, with Paiza as the
+fallback provider. These requests bypass CloudAMQP; the API returns provider
+stdout, stderr, and exit code to the frontend. Workspace runs try the browser
+runtime first, then call these external providers if that runtime cannot load.
 
-Configure the API and worker with:
+CloudAMQP is used only for queued SQL/MongoDB execution:
 
 ```text
 CLOUDAMQP_URL=amqps://user:password@host/vhost
@@ -39,36 +37,22 @@ EXECUTION_QUEUE_WAIT_SECONDS=25
 EXECUTION_WORKER_PREFETCH=1
 ```
 
-With `CLOUDAMQP_URL` present, queue mode is enabled by default. Keep the API
-deployment and worker on the same MongoDB database: the broker carries only a
-small job envelope while source code, queries, and results stay in MongoDB.
-Start the worker from the repository root with:
+When database query queues are enabled, start the queue worker from the
+repository root with:
 
 ```bash
 python -m services.execution.worker
 ```
 
-The worker must run as a long-lived Python process outside Vercel. The
-`Dockerfile.worker` image includes Python, GCC, G++, and the Java JDK. Deploy it
-as a continuously running worker service (not a web service), and configure
-the **same** `CLOUDAMQP_URL`, `MONGO_URI`, and `EXECUTION_JOB_COLLECTION` values
-on both the Vercel API and the worker. A worker connected to a different broker
-or MongoDB database cannot see the published jobs and will cause the API to
-time out. Do not deploy the worker without setting its secrets in the hosting
-platform's environment settings.
+The queue worker must run as a long-lived service outside Vercel. Configure
+`CLOUDAMQP_URL`, `MONGO_URI`, and `EXECUTION_JOB_COLLECTION` on the API and
+worker. Compiled code does not need this worker or its heartbeat.
 
-The admin overview reports recent worker heartbeats; a configured queue with
-no online worker is shown as degraded. Timeout responses also include the
-persisted job status and whether a worker was visible. The worker persists a
-result before acknowledging its RabbitMQ message. Broker publish and job-ledger
-failures return JSON `503` responses for queued requests; use the response
-correlation ID to locate the matching API log entry instead of interpreting an
-HTML platform error.
-Playground SQL and MongoDB queries fall back to their bounded in-API sandbox
-engines while no worker heartbeat is available. Compiled-code jobs do not
-depend on an execution-worker heartbeat.
+The admin overview reports recent queue-worker heartbeats; queued request
+timeouts include persisted job status and worker visibility. Compiled-code
+requests do not use that queue or depend on its heartbeat.
 
-Build and run the worker image with:
+Build and run the database-query worker image with:
 
 ```bash
 docker build -f Dockerfile.worker -t codeleaf-execution-worker .
@@ -77,8 +61,6 @@ docker run --restart unless-stopped \
   -e MONGO_URI \
   codeleaf-execution-worker
 ```
-
-No Paiza or Piston API is used.
 
 ---
 
