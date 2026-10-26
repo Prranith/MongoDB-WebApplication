@@ -109,11 +109,12 @@ def test_queue_connection_failure_is_reported_as_service_unavailable():
     with patch.object(job_queue, "_jobs", return_value=jobs):
         with patch.object(job_queue, "_connection", side_effect=OSError("broker unavailable")):
             with patch.object(job_queue, "enabled", return_value=True):
-                result = job_queue._execute_uncached(
-                    "playground_code",
-                    {"language": "python", "code": "print(1)"},
-                    lambda: {},
-                )
+                with patch.object(job_queue, "active_workers", return_value=[{"workerId": "online"}]):
+                    result = job_queue._execute_uncached(
+                        "playground_sql",
+                        {"query": "select 1"},
+                        lambda: {},
+                    )
 
     assert result["status"] == "error"
     assert result["code"] == "EXECUTION_QUEUE_UNAVAILABLE"
@@ -156,6 +157,48 @@ def test_playground_query_falls_back_if_worker_disappears_before_timeout():
 
     assert result == expected
     direct.assert_called_once_with()
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "playground_code",
+        "exam_code",
+        "exam_generate_cases",
+        "exam_custom_verify",
+    ],
+)
+def test_compiled_code_jobs_bypass_queue_even_when_enabled(kind):
+    expected = {"status": "ok", "stdout": "done"}
+    direct = MagicMock(return_value=expected)
+    with patch.object(job_queue, "enabled", return_value=True):
+        with patch.object(job_queue, "enqueue") as enqueue:
+            with patch.object(job_queue, "wait_for_result") as wait_for_result:
+                result = job_queue._execute_uncached(kind, {"language": "python"}, direct)
+
+    assert result == expected
+    direct.assert_called_once_with()
+    enqueue.assert_not_called()
+    wait_for_result.assert_not_called()
+
+
+def test_sandbox_code_route_executes_directly_when_queue_is_configured():
+    from api.index import handler
+
+    with patch.object(job_queue, "enabled", return_value=True):
+        with patch.object(job_queue, "enqueue") as enqueue:
+            with patch(
+                "services.compiler.compiler_service.CompilerService.run_piston_code",
+                return_value={"stdout": "direct", "stderr": "", "code": 0, "output": "direct"},
+            ):
+                response = handler.test_client().post(
+                    "/api/sandbox/run",
+                    json={"language": "python", "code": "print('direct')"},
+                )
+
+    assert response.status_code == 200
+    assert response.get_json()["stdout"] == "direct"
+    enqueue.assert_not_called()
 
 
 def test_jobs_migrates_legacy_sparse_compound_idempotency_index():

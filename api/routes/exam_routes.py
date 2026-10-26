@@ -876,7 +876,7 @@ def api_exam_get_paper(room_id: str):
 
 @exam_bp.route("/api/exam/room/<room_id>/run", methods=["POST"])
 def api_exam_run_code(room_id: str):
-    """Run code through the CloudAMQP execution worker."""
+    """Run code directly in the API process."""
     log.info("run_code_requested", room_id=room_id, correlation_id=g.get("correlation_id"))
     try:
         body = request.get_json(force=True, silent=True) or {}
@@ -971,7 +971,7 @@ def api_exam_grading_inputs(room_id: str, question_id: str):
 
 @exam_bp.route("/api/exam/room/<room_id>/question/<question_id>/custom-verify", methods=["POST"])
 def api_exam_custom_verify(room_id: str, question_id: str):
-    """Use the remote worker only to compare a non-empty custom input."""
+    """Compare student and reference output for non-empty custom input."""
     try:
         body = request.get_json(force=True, silent=True) or {}
         student_id = str(body.get("studentId") or "")
@@ -1062,4 +1062,3 @@ def api_exam_delete_room(room_id: str):
     except Exception as e:
         log.error("room_delete_failed", room_id=room_id, error=str(e), correlation_id=g.get("correlation_id"))
         return _json_response({"status": "error", "error": str(e)}, status=500)
-

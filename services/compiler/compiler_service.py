@@ -150,11 +150,10 @@ class CompilerService:
 
     @classmethod
     def run_local_code(cls, language: str, code: str, stdin: str = "", filename: str = "", strict_java_filename: bool = False):
-        """Compile and run code inside the dedicated execution worker.
+        """Compile and run code inside the process handling the execution request.
 
-        This method deliberately has no network execution fallback. The API
-        process publishes a job to CloudAMQP and this worker executes it with
-        the toolchains installed on the worker host.
+        This method deliberately has no network execution fallback. The
+        process must have the requested language toolchain installed.
         """
         language = str(language or "").strip().lower()
         if language not in {"python", "c", "cpp", "java"}:

@@ -23,10 +23,10 @@
 
 ### Execution queues
 
-Remote code execution and server-side MongoDB/SQL execution can be routed
-through CloudAMQP. The API keeps the existing response format, while a
-separate worker consumes `code-execution`, `mongodb-execution`, and
-`sql-execution` jobs. Browser on-device execution does not use a queue.
+Playground SQL and MongoDB execution can be routed through CloudAMQP when an
+execution worker is available. Compiled playground and exam code use their
+direct API execution callbacks and do not use the queue. Browser on-device
+execution remains the primary path for supported workspace languages.
 
 Configure the API and worker with:
 
@@ -47,8 +47,9 @@ python -m services.execution.worker
 ```
 
 The worker must run as a long-lived Python process outside Vercel. The
-`Dockerfile.worker` image includes Python, GCC, G++, and the Java JDK. Deploy it
-as a continuously running worker service (not a web service), and configure
+`Dockerfile.worker` image includes Python, GCC, G++, and the Java JDK. It is
+used for queued database-query work; compiled-code requests do not depend on
+it. Deploy it as a continuously running worker service (not a web service), and configure
 the **same** `CLOUDAMQP_URL`, `MONGO_URI`, and `EXECUTION_JOB_COLLECTION` values
 on both the Vercel API and the worker. A worker connected to a different broker
 or MongoDB database cannot see the published jobs and will cause the API to
@@ -59,11 +60,11 @@ The admin overview reports recent worker heartbeats; a configured queue with
 no online worker is shown as degraded. Timeout responses also include the
 persisted job status and whether a worker was visible. The worker persists a
 result before acknowledging its RabbitMQ message. Broker publish and job-ledger
-failures return JSON `503` responses; use the response correlation ID to locate
-the matching API log entry instead of interpreting an HTML platform error.
+failures return JSON `503` responses for queued requests; use the response
+correlation ID to locate the matching API log entry instead of interpreting an
+HTML platform error.
 Playground SQL and MongoDB queries fall back to their bounded in-API sandbox
-engines while no worker heartbeat is available; remote compiled-code execution
-still requires the separately deployed worker.
+engines while no worker heartbeat is available.
 
 Build and run the worker image with:
 

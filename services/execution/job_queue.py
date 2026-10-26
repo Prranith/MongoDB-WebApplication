@@ -1,11 +1,7 @@
-"""CloudAMQP-backed execution jobs.
+"""Execution routing for database queries and compiled code.
 
-The web API remains compatible with the existing synchronous callers: when
-the queue is enabled it publishes a durable job, waits for the worker result,
-and returns the same result shape. The worker is a separate long-lived
-process (``python -m services.execution.worker``). Queue mode is enabled
-automatically when ``CLOUDAMQP_URL`` is configured; set
-``EXECUTION_QUEUE_ENABLED=0`` only for local development without a worker.
+Database queries may use CloudAMQP when a worker is available. Compiled code
+and exam code-generation jobs always use their direct execution callback.
 """
 
 from __future__ import annotations
@@ -48,6 +44,12 @@ QUEUE_NAMES = {
     "exam_mongodb": "mongodb-execution",
     "playground_sql": "sql-execution",
     "exam_sql": "sql-execution",
+}
+DIRECT_CODE_KINDS = {
+    "playground_code",
+    "exam_code",
+    "exam_generate_cases",
+    "exam_custom_verify",
 }
 _execution_idem = get_persistent_idempotency_handler(ttl_seconds=300)
 log = bind_component(get_logger(__name__), "execution_queue")
@@ -280,6 +282,18 @@ def _execute_uncached(kind: str, payload: dict, direct: Callable[[], dict], idem
         replay = _execution_idem.check_replay(idempotency_key, method="POST", path=f"/execution/{kind}")
         if replay:
             return replay[1]
+
+    if kind in DIRECT_CODE_KINDS:
+        result = direct()
+        if idempotency_key:
+            _execution_idem.record_response(
+                idempotency_key,
+                method="POST",
+                path=f"/execution/{kind}",
+                status_code=200,
+                body=result,
+            )
+        return result
 
     if enabled() and kind in {"playground_mongodb", "playground_sql"} and not active_workers():
         log.warning(

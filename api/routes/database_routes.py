@@ -201,7 +201,7 @@ def api_snippets():
 
 @database_bp.route("/api/sandbox/run", methods=["POST"])
 def api_sandbox_run():
-    """Execute playground code through the configured execution worker."""
+    """Execute playground code directly in the API process."""
     from services.compiler.compiler_service import CompilerService
     run_piston_code = CompilerService.run_piston_code
     body = request.get_json(force=True, silent=True) or {}
