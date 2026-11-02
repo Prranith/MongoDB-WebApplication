@@ -87,7 +87,7 @@ INDEX_HTML = """
         "@type": "Person",
         "name": "Prranith Swargam"
       }
-    },
+    }
   ]
 }
 </script>
