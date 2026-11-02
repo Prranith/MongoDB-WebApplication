@@ -7,9 +7,10 @@ INDEX_HTML = """
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>CodeLeaf — Multilingual Coding IDE, Assessments &amp; Meetings</title>
+<title>CodeLeaf | Online Coding IDE, SQL &amp; MongoDB Playground</title>
 <meta name="google-site-verification" content="MUmeLM3pVpTFtnd-SE9aITj4aLoI1IgY6tnqlg7aVrA" />
-<meta name="description" content="CodeLeaf is a multilingual coding IDE and learning platform for MongoDB, SQL, C, C++, Java, and Python. Create and run code, use AI assistance, build assessments, host proctored exams, and collaborate in coding meetings."/>
+<meta name="description" content="Practice Python, C, C++, Java, SQL, and MongoDB online with CodeLeaf. Build coding assessments, run proctored exams, and collaborate in coding meetings."/>
+<meta name="application-name" content="CodeLeaf"/>
 <meta name="keywords" content="CodeLeaf, multilingual coding platform, online coding IDE, online compiler, coding assessments, proctored exams, coding meetings, AI coding assistant, MongoDB sandbox, SQL playground, C++ compiler, Java compiler, Python compiler, mentor assessment platform, coding practice"/>
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"/>
 <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"/>
@@ -24,8 +25,8 @@ INDEX_HTML = """
 <meta property="og:site_name" content="CodeLeaf"/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://codeleaf-org.vercel.app/"/>
-<meta property="og:title" content="CodeLeaf — Multilingual Coding IDE, Assessments &amp; Meetings"/>
-<meta property="og:description" content="Write and run code, practice MongoDB and SQL, create assessments, host proctored exams, collaborate in meetings, and get AI coding assistance."/>
+<meta property="og:title" content="CodeLeaf | Online Coding IDE, SQL &amp; MongoDB Playground"/>
+<meta property="og:description" content="Practice code and database queries online, create assessments, run proctored exams, and collaborate in coding meetings with CodeLeaf."/>
 <meta property="og:image" content="https://codeleaf-org.vercel.app/image.png"/>
 <meta property="og:image:secure_url" content="https://codeleaf-org.vercel.app/image.png"/>
 <meta property="og:image:type" content="image/png"/>
@@ -37,8 +38,8 @@ INDEX_HTML = """
 <!-- Twitter / X Cards -->
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:url" content="https://codeleaf-org.vercel.app/"/>
-<meta name="twitter:title" content="CodeLeaf — Multilingual Coding IDE, Assessments &amp; Meetings"/>
-<meta name="twitter:description" content="A multilingual coding workspace for practice, AI assistance, assessments, proctored exams, and coding meetings."/>
+<meta name="twitter:title" content="CodeLeaf | Online Coding IDE, SQL &amp; MongoDB Playground"/>
+<meta name="twitter:description" content="Practice code and database queries online, create assessments, run proctored exams, and collaborate with CodeLeaf."/>
 <meta name="twitter:image" content="https://codeleaf-org.vercel.app/image.png"/>
 <meta name="twitter:image:alt" content="CodeLeaf Multi-Language Cloud IDE"/>
 
@@ -57,7 +58,8 @@ INDEX_HTML = """
       "applicationCategory": "DeveloperApplication",
       "operatingSystem": "All",
       "browserRequirements": "Requires JavaScript",
-      "description": "A multilingual online coding IDE and learning platform with MongoDB and SQL sandboxes, external code execution, AI assistance, mentor-created assessments, proctored exams, leaderboards, and coding meetings.",
+      "description": "An online coding IDE and database playground for Python, C, C++, Java, SQL, and MongoDB, with coding assessments, proctored exams, and collaborative meetings.",
+      "isAccessibleForFree": true,
       "creator": {
         "@type": "Person",
         "name": "Prranith Swargam",
@@ -83,6 +85,7 @@ INDEX_HTML = """
       "url": "https://codeleaf-org.vercel.app/",
       "name": "CodeLeaf",
       "description": "Multilingual Coding IDE, Assessments, Exams & Meetings",
+      "inLanguage": "en",
       "publisher": {
         "@type": "Person",
         "name": "Prranith Swargam"
@@ -2939,8 +2942,42 @@ li.CodeMirror-hint-active {
   padding-left: 17px;
 }
 
+.intro-use-cases {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.intro-use-cases article {
+  min-width: 0;
+  padding: 11px 12px;
+  border-left: 2px solid rgba(0, 237, 100, 0.46);
+  background: rgba(8, 32, 20, 0.34);
+}
+
+.intro-use-cases h2 {
+  margin: 0 0 5px;
+  color: #d7f2df;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.intro-use-cases p {
+  margin: 0;
+  color: #91ad9b;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
 @media (max-width: 760px) {
   .intro-seo ul { grid-template-columns: 1fr; }
+  .intro-use-cases { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 480px) {
+  .intro-use-cases { grid-template-columns: 1fr; }
 }
 
 .intro-enter,
@@ -9105,6 +9142,24 @@ li.CodeMirror-hint-active {
             <li>Create assessments and run structured coding exams.</li>
             <li>Collaborate with other developers in shared coding meetings.</li>
           </ul>
+          <div class="intro-use-cases" aria-label="CodeLeaf use cases">
+            <article>
+              <h2>Online coding practice</h2>
+              <p>Use one browser workspace to write, test, and understand code in popular programming languages.</p>
+            </article>
+            <article>
+              <h2>MongoDB and SQL playgrounds</h2>
+              <p>Explore datasets, write database queries, and inspect results without setting up a local database.</p>
+            </article>
+            <article>
+              <h2>Assessments and exams</h2>
+              <p>Create structured coding assessments with questions, submissions, grading, and proctoring tools.</p>
+            </article>
+            <article>
+              <h2>Collaborative coding meetings</h2>
+              <p>Share a coding workspace with teammates, mentors, or students during live technical sessions.</p>
+            </article>
+          </div>
         </section>
       </div>
 
