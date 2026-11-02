@@ -17,6 +17,8 @@ INDEX_HTML = """
 <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"/>
 <meta name="author" content="Prranith Swargam"/>
 <meta name="theme-color" content="#00ed64"/>
+<!-- Google AdSense site ownership verification -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4522839473874735" crossorigin="anonymous"></script>
 <link rel="canonical" href="https://codeleaf-org.vercel.app/"/>
 <link rel="icon" type="image/png" href="image.png"/>
 <link rel="apple-touch-icon" href="image.png"/>
