@@ -12,7 +12,7 @@ const CodeLeafWalkthrough = (() => {
         'Use the Explorer, search, command palette, and settings to shape your daily workflow.'
       ],
       actionLabel: 'Open workspace',
-      action: () => Auth.require(() => showView('ide'))
+      action: () => showView('ide')
     },
     {
       eyebrow: '02 / Data',
@@ -34,7 +34,7 @@ const CodeLeafWalkthrough = (() => {
         'Question types include programming, MongoDB/SQL queries, and multiple choice; available features depend on the room configuration.'
       ],
       actionLabel: 'Open exam portal',
-      action: () => Auth.require(() => window.ExamPortal?.showRoleSelection())
+      action: () => window.ExamPortal?.showRoleSelection()
     },
     {
       eyebrow: '04 / Meetings',
@@ -46,7 +46,7 @@ const CodeLeafWalkthrough = (() => {
         'Use meeting chat and the in-call controls to stay aligned during a session.'
       ],
       actionLabel: 'Open meetings',
-      action: () => Auth.require(() => window.MeetingRoom?.toggleMeeting())
+      action: () => window.MeetingRoom?.toggleMeeting()
     },
     {
       eyebrow: '05 / AI & productivity',
@@ -68,7 +68,7 @@ const CodeLeafWalkthrough = (() => {
         'Start a meeting when you want to collaborate live.'
       ],
       actionLabel: 'Enter workspace',
-      action: () => Auth.require(() => showView('ide'))
+      action: () => showView('ide')
     }
   ];
 

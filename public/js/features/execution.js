@@ -307,6 +307,10 @@ async function runSqlNotebookCell(index) {
 }
 
 async function runQuery() {
+  if (window.Auth && !Auth.user) {
+    Auth.require(() => runQuery());
+    return;
+  }
   const consoleEl = document.getElementById('console');
   if (consoleEl && (consoleEl.style.display === 'none' || consoleEl.offsetHeight <= 10)) {
     toggleConsole();

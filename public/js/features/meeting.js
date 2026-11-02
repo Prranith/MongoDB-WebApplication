@@ -939,12 +939,8 @@ const MeetingRoom = (() => {
   }
 
   function toggleMeeting() {
-    // The activity bar and deep links can call this function directly, so the
-    // feature itself must enforce the same authentication boundary as the UI.
-    if (window.Auth && !Auth.user) {
-      Auth.open(() => toggleMeeting());
-      return;
-    }
+    // Let visitors view the meeting choices. Authentication is required only
+    // when they actually create or join a room.
     if (state.callActive) {
       endMeeting();
       return;
@@ -1003,6 +999,10 @@ const MeetingRoom = (() => {
 
   // ─── Create flow ───────────────────────────────────────────────────────
   async function createMeeting() {
+    if (window.Auth && !Auth.user) {
+      Auth.require(() => createMeeting());
+      return;
+    }
     if (state.joining) return;
     const name = (els.createNameInput.value || "").trim() || "Developer";
     const roomTitle = (els.createTitleInput && els.createTitleInput.value || "").trim() || "CodeLeaf Meeting";
@@ -1044,6 +1044,10 @@ const MeetingRoom = (() => {
 
   // ─── Join flow ─────────────────────────────────────────────────────────
   async function joinMeeting() {
+    if (window.Auth && !Auth.user) {
+      Auth.require(() => joinMeeting());
+      return;
+    }
     if (state.joining) return;
     const name = els.userNameInput.value.trim() || "Developer";
     const roomId = els.roomIdInput.value.trim().toUpperCase();

@@ -668,12 +668,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
   // ── Main navigation ────────────────────────────────────────────────────────
   function showRoleSelection() {
-    // Keep every entry point protected, including command palette/menu and
-    // direct calls from the console or other feature modules.
-    if (window.Auth && !Auth.user) {
-      Auth.open(() => showRoleSelection());
-      return;
-    }
+    // The portal can be explored without an account. Authentication is
+    // required by the create/join/submit actions below.
     showPanel('exam-role-panel');
   }
 
@@ -871,6 +867,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async createRoom() {
+      if (window.Auth && !Auth.user) {
+        Auth.require(() => ExamPortal.mentor.createRoom());
+        return;
+      }
       const title = el('mentor-title').value.trim();
       if (!title) {
         el('mentor-title').classList.add('has-err');
@@ -3355,6 +3355,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async joinRoom() {
+      if (window.Auth && !Auth.user) {
+        Auth.require(() => ExamPortal.student.joinRoom());
+        return;
+      }
       const name = el('student-name').value.trim();
       const rollNo = el('student-roll').value.trim().toUpperCase();
       const branch = el('student-branch').value;
@@ -4650,6 +4654,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async submitAnswer() {
+      if (window.Auth && !Auth.user) {
+        Auth.require(() => ExamPortal.student.submitAnswer());
+        return;
+      }
       const q = state.student.questions[state.student.currentQIdx];
       if (!q) return;
 
@@ -5147,6 +5155,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async finishExam() {
+      if (window.Auth && !Auth.user) {
+        Auth.require(() => ExamPortal.student.finishExam());
+        return;
+      }
       const modal = el('exam-confirm-submit-modal');
       if (modal) {
         state.student.ignoreFullscreenChange = true;

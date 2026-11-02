@@ -8776,7 +8776,7 @@ li.CodeMirror-hint-active {
         <div class="wmenu-sep"></div>
         <div class="wmenu-item" onclick="saveQuery()">Save Query<span>Ctrl+S</span></div>
         <div class="wmenu-sep"></div>
-        <div class="wmenu-item" onclick="Auth.require(() => window.ExamPortal && window.ExamPortal.showRoleSelection())">Exam Portal</div>
+        <div class="wmenu-item" onclick="window.ExamPortal && window.ExamPortal.showRoleSelection()">Exam Portal</div>
         <div class="wmenu-item" onclick="showView('intro')">Intro Page</div>
       </div>
     </div>
@@ -8900,11 +8900,11 @@ li.CodeMirror-hint-active {
       <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
     </button>
     <!-- 7th: Exam Portal -->
-    <button class="act-btn" id="act-exam" data-tip="Exam Portal" onclick="Auth.require(() => window.ExamPortal && window.ExamPortal.showRoleSelection())">
+    <button class="act-btn" id="act-exam" data-tip="Exam Portal" onclick="window.ExamPortal && window.ExamPortal.showRoleSelection()">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
     </button>
     <!-- 8th: Join Call (video meeting) — always visible in activity bar -->
-    <button class="act-btn act-btn-meeting" id="btn-join-meeting" data-tip="Join Video Call" onclick="Auth.require(() => MeetingRoom.toggleMeeting())">
+    <button class="act-btn act-btn-meeting" id="btn-join-meeting" data-tip="Join Video Call" onclick="MeetingRoom.toggleMeeting()">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
     </button>
     <div class="act-spacer"></div>
@@ -9041,17 +9041,17 @@ li.CodeMirror-hint-active {
 
         <p class="intro-tagline">Code. Assess. Collaborate.</p>
         <div class="intro-actions">
-          <button class="intro-enter" id="btn-enter-workspace" onclick="Auth.require(() => showView('ide'))">
+          <button class="intro-enter" id="btn-enter-workspace" onclick="showView('ide')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
             Enter Workspace
           </button>
 
-          <button class="intro-meet-btn" id="btn-home-meet" onclick="Auth.require(() => MeetingRoom.toggleMeeting())">
+          <button class="intro-meet-btn" id="btn-home-meet" onclick="MeetingRoom.toggleMeeting()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"></rect><path d="m17 10 5-3v10l-5-3z"></path></svg>
             Meet
           </button>
 
-          <button class="intro-exam-btn" id="btn-exam-portal" onclick="Auth.require(() => ExamPortal.showRoleSelection())">
+          <button class="intro-exam-btn" id="btn-exam-portal" onclick="ExamPortal.showRoleSelection()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
             Exam Portal
           </button>
@@ -10587,7 +10587,7 @@ const CodeLeafWalkthrough = (() => {
         'Use the Explorer, search, command palette, and settings to shape your daily workflow.'
       ],
       actionLabel: 'Open workspace',
-      action: () => Auth.require(() => showView('ide'))
+      action: () => showView('ide')
     },
     {
       eyebrow: '02 / Data',
@@ -10609,7 +10609,7 @@ const CodeLeafWalkthrough = (() => {
         'Question types include programming, MongoDB/SQL queries, and multiple choice; available features depend on the room configuration.'
       ],
       actionLabel: 'Open exam portal',
-      action: () => Auth.require(() => window.ExamPortal?.showRoleSelection())
+      action: () => window.ExamPortal?.showRoleSelection()
     },
     {
       eyebrow: '04 / Meetings',
@@ -10621,7 +10621,7 @@ const CodeLeafWalkthrough = (() => {
         'Use meeting chat and the in-call controls to stay aligned during a session.'
       ],
       actionLabel: 'Open meetings',
-      action: () => Auth.require(() => window.MeetingRoom?.toggleMeeting())
+      action: () => window.MeetingRoom?.toggleMeeting()
     },
     {
       eyebrow: '05 / AI & productivity',
@@ -10643,7 +10643,7 @@ const CodeLeafWalkthrough = (() => {
         'Start a meeting when you want to collaborate live.'
       ],
       actionLabel: 'Enter workspace',
-      action: () => Auth.require(() => showView('ide'))
+      action: () => showView('ide')
     }
   ];
 
@@ -10775,10 +10775,6 @@ window.CodeLeafWalkthrough = CodeLeafWalkthrough;
 // SIDE PANEL TOGGLES
 // ═══════════════════════════════════════════════════════════════════
 function setSidePanel(name) {
-  if (window.Auth && !Auth.user) {
-    Auth.require(() => setSidePanel(name));
-    return;
-  }
   S.sidePanel = name;
   const panels = ['files', 'db', 'history', 'snippets', 'search'];
   panels.forEach(p => {
@@ -11455,13 +11451,9 @@ function insertSnippet(body) {
 // VIEWS SWITCHING
 // ═══════════════════════════════════════════════════════════════════
 function showView(name) {
-  // Home is public; every workspace surface requires an authenticated session.
-  // Keep this check centralized so toolbar, activity-bar, and programmatic
-  // navigation all follow the same rule.
-  if (name !== 'intro' && window.Auth && !Auth.user) {
-    Auth.require(() => showView(name));
-    return;
-  }
+  // Browsing the workspace is public. Authentication is enforced at the
+  // protected actions: execution, persistence, room creation/joining, and
+  // exam submission.
   S.view = name;
   const ide = document.getElementById('ide-panel');
   const intro = document.getElementById('intro-panel');
@@ -13783,6 +13775,10 @@ async function runSqlNotebookCell(index) {
 }
 
 async function runQuery() {
+  if (window.Auth && !Auth.user) {
+    Auth.require(() => runQuery());
+    return;
+  }
   const consoleEl = document.getElementById('console');
   if (consoleEl && (consoleEl.style.display === 'none' || consoleEl.offsetHeight <= 10)) {
     toggleConsole();
@@ -17042,12 +17038,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
   // ── Main navigation ────────────────────────────────────────────────────────
   function showRoleSelection() {
-    // Keep every entry point protected, including command palette/menu and
-    // direct calls from the console or other feature modules.
-    if (window.Auth && !Auth.user) {
-      Auth.open(() => showRoleSelection());
-      return;
-    }
+    // The portal can be explored without an account. Authentication is
+    // required by the create/join/submit actions below.
     showPanel('exam-role-panel');
   }
 
@@ -17245,6 +17237,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async createRoom() {
+      if (window.Auth && !Auth.user) {
+        Auth.require(() => ExamPortal.mentor.createRoom());
+        return;
+      }
       const title = el('mentor-title').value.trim();
       if (!title) {
         el('mentor-title').classList.add('has-err');
@@ -19729,6 +19725,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async joinRoom() {
+      if (window.Auth && !Auth.user) {
+        Auth.require(() => ExamPortal.student.joinRoom());
+        return;
+      }
       const name = el('student-name').value.trim();
       const rollNo = el('student-roll').value.trim().toUpperCase();
       const branch = el('student-branch').value;
@@ -21024,6 +21024,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async submitAnswer() {
+      if (window.Auth && !Auth.user) {
+        Auth.require(() => ExamPortal.student.submitAnswer());
+        return;
+      }
       const q = state.student.questions[state.student.currentQIdx];
       if (!q) return;
 
@@ -21521,6 +21525,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async finishExam() {
+      if (window.Auth && !Auth.user) {
+        Auth.require(() => ExamPortal.student.finishExam());
+        return;
+      }
       const modal = el('exam-confirm-submit-modal');
       if (modal) {
         state.student.ignoreFullscreenChange = true;
@@ -23725,12 +23733,8 @@ const MeetingRoom = (() => {
   }
 
   function toggleMeeting() {
-    // The activity bar and deep links can call this function directly, so the
-    // feature itself must enforce the same authentication boundary as the UI.
-    if (window.Auth && !Auth.user) {
-      Auth.open(() => toggleMeeting());
-      return;
-    }
+    // Let visitors view the meeting choices. Authentication is required only
+    // when they actually create or join a room.
     if (state.callActive) {
       endMeeting();
       return;
@@ -23789,6 +23793,10 @@ const MeetingRoom = (() => {
 
   // ─── Create flow ───────────────────────────────────────────────────────
   async function createMeeting() {
+    if (window.Auth && !Auth.user) {
+      Auth.require(() => createMeeting());
+      return;
+    }
     if (state.joining) return;
     const name = (els.createNameInput.value || "").trim() || "Developer";
     const roomTitle = (els.createTitleInput && els.createTitleInput.value || "").trim() || "CodeLeaf Meeting";
@@ -23830,6 +23838,10 @@ const MeetingRoom = (() => {
 
   // ─── Join flow ─────────────────────────────────────────────────────────
   async function joinMeeting() {
+    if (window.Auth && !Auth.user) {
+      Auth.require(() => joinMeeting());
+      return;
+    }
     if (state.joining) return;
     const name = els.userNameInput.value.trim() || "Developer";
     const roomId = els.roomIdInput.value.trim().toUpperCase();
