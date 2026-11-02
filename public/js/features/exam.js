@@ -1141,6 +1141,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       mentor._startParticipantPoll();
 
       showPanel('exam-mentor-dash-panel');
+      window.CodeLeafRouter?.navigate?.('/createExam');
       mentor.setParticipantsOpen(false);
       mentor.setTab('questions');
 
@@ -1255,6 +1256,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       } else if (tab === 'dataset') {
         mentor._renderDatasetTable();
       } else if (tab === 'live') {
+        window.CodeLeafRouter?.navigate?.('/liveLeaderBoard');
         mentor._startLeaderboardPoll();
       }
     },
@@ -3080,6 +3082,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
 
       mentor._renderSubQNav();
       showPanel('exam-mentor-submission-panel');
+      window.CodeLeafRouter?.navigate?.(`/${encodeURIComponent(studentId)}/submission`);
 
       if (state.mentor.questions && state.mentor.questions.length > 0) {
         mentor.selectSubmissionQuestion(0);
@@ -3582,6 +3585,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
       studentNS._renderQNav();
 
       showPanel('exam-student-exam-panel');
+      window.CodeLeafRouter?.navigate?.('/exampaper');
 
       if (state.student.fullscreenMode) {
         syncFullscreenEnforcement(true);

@@ -1313,6 +1313,7 @@ const MeetingRoom = (() => {
       state.peerId = peerId;
       state.isConnected = true;
       state.callActive = true;
+      window.CodeLeafRouter?.navigate?.(`/meeting/${encodeURIComponent(state.roomId)}/${encodeURIComponent(peerId)}`);
       document.body.classList.add("meeting-active");
       setJoining(false);
 
