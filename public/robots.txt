@@ -3,7 +3,7 @@ Allow: /
 Disallow: /api/exam/private/
 
 # Sitemaps
-Sitemap: https://codexa-labs.vercel.app/sitemap.xml
+Sitemap: https://codeleaf-org.vercel.app/sitemap.xml
 
 # Search Crawlers Rules
 User-agent: Googlebot

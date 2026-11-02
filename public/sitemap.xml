@@ -2,12 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://codexa-labs.vercel.app/</loc>
-    <lastmod>2026-10-19</lastmod>
+    <loc>https://codeleaf-org.vercel.app/</loc>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://codexa-labs.vercel.app/image.png</image:loc>
+      <image:loc>https://codeleaf-org.vercel.app/image.png</image:loc>
       <image:title>CodeLeaf Multilingual Coding IDE, Assessments, Exams &amp; Meetings</image:title>
     </image:image>
   </url>

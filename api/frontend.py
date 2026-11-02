@@ -16,18 +16,18 @@ INDEX_HTML = """
 <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"/>
 <meta name="author" content="Prranith Swargam"/>
 <meta name="theme-color" content="#00ed64"/>
-<link rel="canonical" href="https://codexa-labs.vercel.app/"/>
+<link rel="canonical" href="https://codeleaf-org.vercel.app/"/>
 <link rel="icon" type="image/png" href="image.png"/>
 <link rel="apple-touch-icon" href="image.png"/>
 
 <!-- Open Graph / Facebook / Social Cards -->
 <meta property="og:site_name" content="CodeLeaf"/>
 <meta property="og:type" content="website"/>
-<meta property="og:url" content="https://codexa-labs.vercel.app/"/>
+<meta property="og:url" content="https://codeleaf-org.vercel.app/"/>
 <meta property="og:title" content="CodeLeaf — Multilingual Coding IDE, Assessments &amp; Meetings"/>
 <meta property="og:description" content="Write and run code, practice MongoDB and SQL, create assessments, host proctored exams, collaborate in meetings, and get AI coding assistance."/>
-<meta property="og:image" content="https://codexa-labs.vercel.app/image.png"/>
-<meta property="og:image:secure_url" content="https://codexa-labs.vercel.app/image.png"/>
+<meta property="og:image" content="https://codeleaf-org.vercel.app/image.png"/>
+<meta property="og:image:secure_url" content="https://codeleaf-org.vercel.app/image.png"/>
 <meta property="og:image:type" content="image/png"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
@@ -36,10 +36,10 @@ INDEX_HTML = """
 
 <!-- Twitter / X Cards -->
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:url" content="https://codexa-labs.vercel.app/"/>
+<meta name="twitter:url" content="https://codeleaf-org.vercel.app/"/>
 <meta name="twitter:title" content="CodeLeaf — Multilingual Coding IDE, Assessments &amp; Meetings"/>
 <meta name="twitter:description" content="A multilingual coding workspace for practice, AI assistance, assessments, proctored exams, and coding meetings."/>
-<meta name="twitter:image" content="https://codexa-labs.vercel.app/image.png"/>
+<meta name="twitter:image" content="https://codeleaf-org.vercel.app/image.png"/>
 <meta name="twitter:image:alt" content="CodeLeaf Multi-Language Cloud IDE"/>
 
 <!-- JSON-LD Structured Data for Google Search Engine Rich Snippets -->
@@ -49,11 +49,11 @@ INDEX_HTML = """
   "@graph": [
     {
       "@type": "WebApplication",
-      "@id": "https://codexa-labs.vercel.app/#webapp",
+      "@id": "https://codeleaf-org.vercel.app/#webapp",
       "name": "CodeLeaf",
       "alternateName": ["CodeLeaf Cloud IDE", "CodeLeaf Coding & Assessment Platform"],
-      "url": "https://codexa-labs.vercel.app/",
-      "image": "https://codexa-labs.vercel.app/image.png",
+      "url": "https://codeleaf-org.vercel.app/",
+      "image": "https://codeleaf-org.vercel.app/image.png",
       "applicationCategory": "DeveloperApplication",
       "operatingSystem": "All",
       "browserRequirements": "Requires JavaScript",
@@ -68,13 +68,6 @@ INDEX_HTML = """
         "price": "0",
         "priceCurrency": "USD"
       },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.9",
-        "ratingCount": "1250",
-        "bestRating": "5",
-        "worstRating": "1"
-      },
       "featureList": [
         "MongoDB and SQL practice sandboxes with dataset inspection",
         "Multilingual code execution for Python, C, C++, Java, SQL, and MongoDB",
@@ -86,8 +79,8 @@ INDEX_HTML = """
     },
     {
       "@type": "WebSite",
-      "@id": "https://codexa-labs.vercel.app/#website",
-      "url": "https://codexa-labs.vercel.app/",
+      "@id": "https://codeleaf-org.vercel.app/#website",
+      "url": "https://codeleaf-org.vercel.app/",
       "name": "CodeLeaf",
       "description": "Multilingual Coding IDE, Assessments, Exams & Meetings",
       "publisher": {
@@ -95,44 +88,6 @@ INDEX_HTML = """
         "name": "Prranith Swargam"
       }
     },
-    {
-      "@type": "FAQPage",
-      "@id": "https://codexa-labs.vercel.app/#faq",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "What is CodeLeaf?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-          "text": "CodeLeaf is a multilingual coding IDE and learning platform where developers and students can practice MongoDB and SQL, run code, use AI assistance, create assessments, take proctored exams, and join coding meetings."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How can I practice MongoDB queries online for free?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-          "text": "You can open CodeLeaf in a web browser and practice MongoDB or SQL against datasets, inspect schemas, and run queries without setting up a local database."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Which programming languages does CodeLeaf support?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-          "text": "CodeLeaf supports MongoDB, SQL, Python, C++, C, and Java with syntax highlighting, autocompletion, code execution, test cases, and editor tooling."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Does CodeLeaf provide assessments, exams, and meetings?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-          "text": "Yes, CodeLeaf includes mentor-created assessments, proctored exams, live participant tracking, automatic grading, leaderboards, and coding meetings with workspace sharing."
-          }
-        }
-      ]
-    }
   ]
 }
 </script>
@@ -2947,6 +2902,45 @@ li.CodeMirror-hint-active {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.intro-seo {
+  width: min(760px, 92vw);
+  margin: 28px auto 0;
+  padding: 16px 20px;
+  border: 1px solid rgba(109, 184, 143, 0.18);
+  border-radius: 12px;
+  background: rgba(4, 20, 13, 0.46);
+  color: #a9c2b3;
+  text-align: left;
+}
+
+.intro-seo h1 {
+  margin: 0 0 7px;
+  color: #e5f5ea;
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.intro-seo p,
+.intro-seo li {
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.intro-seo p { margin: 0; }
+
+.intro-seo ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 18px;
+  margin: 11px 0 0;
+  padding-left: 17px;
+}
+
+@media (max-width: 760px) {
+  .intro-seo ul { grid-template-columns: 1fr; }
 }
 
 .intro-enter,
@@ -9102,6 +9096,16 @@ li.CodeMirror-hint-active {
             Explore CodeLeaf
           </button>
         </div>
+
+        <section class="intro-seo" aria-labelledby="codeleaf-overview-title">
+          <h1 id="codeleaf-overview-title">Online coding workspace for practice and collaboration</h1>
+          <p>CodeLeaf combines a browser-based IDE with MongoDB and SQL playgrounds, multilingual coding practice, assessments, proctored exams, and coding meetings.</p>
+          <ul>
+            <li>Write and explore Python, C, C++, Java, SQL, and MongoDB code.</li>
+            <li>Create assessments and run structured coding exams.</li>
+            <li>Collaborate with other developers in shared coding meetings.</li>
+          </ul>
+        </section>
       </div>
 
       <div class="intro-footer-row" style="position: relative; z-index: 2; background: transparent; border-top: 1px solid var(--border);">

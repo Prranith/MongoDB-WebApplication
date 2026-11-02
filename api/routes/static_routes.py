@@ -42,7 +42,7 @@ def serve_robots():
     if robots_path.exists():
         return send_from_directory(str(PUBLIC_DIR), "robots.txt")
     return (
-        "User-agent: *\nAllow: /\n\nSitemap: https://codexa-labs.vercel.app/sitemap.xml",
+        "User-agent: *\nAllow: /\n\nSitemap: https://codeleaf-org.vercel.app/sitemap.xml",
         200,
         {"Content-Type": "text/plain; charset=utf-8"}
     )
@@ -56,8 +56,8 @@ def serve_sitemap():
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         '  <url>\n'
-        '    <loc>https://codexa-labs.vercel.app/</loc>\n'
-        '    <lastmod>2026-10-19</lastmod>\n'
+        '    <loc>https://codeleaf-org.vercel.app/</loc>\n'
+        '    <lastmod>2026-11-02</lastmod>\n'
         '    <changefreq>daily</changefreq>\n'
         '    <priority>1.0</priority>\n'
         '  </url>\n'
