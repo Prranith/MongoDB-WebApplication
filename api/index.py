@@ -97,7 +97,19 @@ def _before_request():
         # enforced by admin_routes._require_admin. Do not let the ordinary
         # student session guard reject those requests before that decorator
         # gets a chance to validate the admin identity.
-        public = request.path.startswith("/api/auth/") or request.path.startswith("/api/admin/") or request.path.startswith("/api/analytics")
+        public_readonly_practice = (
+            request.path == "/api/collections"
+            or request.path == "/api/schema"
+            or request.path.startswith("/api/schema/")
+            or request.path.startswith("/api/sample/")
+            or request.path == "/api/snippets"
+        )
+        public = (
+            request.path.startswith("/api/auth/")
+            or request.path.startswith("/api/admin/")
+            or request.path.startswith("/api/analytics")
+            or public_readonly_practice
+        )
         is_admin_api = request.path.startswith("/api/admin/")
         # Admin APIs have their own independent session and role guard. Do
         # not let the ordinary student session gate intercept them first.
