@@ -2907,79 +2907,6 @@ li.CodeMirror-hint-active {
   gap: 8px;
 }
 
-.intro-seo {
-  width: min(760px, 92vw);
-  margin: 28px auto 0;
-  padding: 16px 20px;
-  border: 1px solid rgba(109, 184, 143, 0.18);
-  border-radius: 12px;
-  background: rgba(4, 20, 13, 0.46);
-  color: #a9c2b3;
-  text-align: left;
-}
-
-.intro-seo h1 {
-  margin: 0 0 7px;
-  color: #e5f5ea;
-  font-size: 16px;
-  line-height: 1.35;
-  font-weight: 700;
-}
-
-.intro-seo p,
-.intro-seo li {
-  font-size: 12px;
-  line-height: 1.65;
-}
-
-.intro-seo p { margin: 0; }
-
-.intro-seo ul {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px 18px;
-  margin: 11px 0 0;
-  padding-left: 17px;
-}
-
-.intro-use-cases {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.intro-use-cases article {
-  min-width: 0;
-  padding: 11px 12px;
-  border-left: 2px solid rgba(0, 237, 100, 0.46);
-  background: rgba(8, 32, 20, 0.34);
-}
-
-.intro-use-cases h2 {
-  margin: 0 0 5px;
-  color: #d7f2df;
-  font-size: 12px;
-  line-height: 1.35;
-  font-weight: 700;
-}
-
-.intro-use-cases p {
-  margin: 0;
-  color: #91ad9b;
-  font-size: 11px;
-  line-height: 1.55;
-}
-
-@media (max-width: 760px) {
-  .intro-seo ul { grid-template-columns: 1fr; }
-  .intro-use-cases { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (max-width: 480px) {
-  .intro-use-cases { grid-template-columns: 1fr; }
-}
-
 .intro-enter,
 .intro-exam-btn,
 .intro-meet-btn {
@@ -9129,38 +9056,7 @@ li.CodeMirror-hint-active {
             Exam Portal
           </button>
 
-          <button class="intro-tour-btn" type="button" onclick="CodeLeafWalkthrough.open()">
-            Explore CodeLeaf
-          </button>
         </div>
-
-        <section class="intro-seo" aria-labelledby="codeleaf-overview-title">
-          <h1 id="codeleaf-overview-title">Online coding workspace for practice and collaboration</h1>
-          <p>CodeLeaf combines a browser-based IDE with MongoDB and SQL playgrounds, multilingual coding practice, assessments, proctored exams, and coding meetings.</p>
-          <ul>
-            <li>Write and explore Python, C, C++, Java, SQL, and MongoDB code.</li>
-            <li>Create assessments and run structured coding exams.</li>
-            <li>Collaborate with other developers in shared coding meetings.</li>
-          </ul>
-          <div class="intro-use-cases" aria-label="CodeLeaf use cases">
-            <article>
-              <h2>Online coding practice</h2>
-              <p>Use one browser workspace to write, test, and understand code in popular programming languages.</p>
-            </article>
-            <article>
-              <h2>MongoDB and SQL playgrounds</h2>
-              <p>Explore datasets, write database queries, and inspect results without setting up a local database.</p>
-            </article>
-            <article>
-              <h2>Assessments and exams</h2>
-              <p>Create structured coding assessments with questions, submissions, grading, and proctoring tools.</p>
-            </article>
-            <article>
-              <h2>Collaborative coding meetings</h2>
-              <p>Share a coding workspace with teammates, mentors, or students during live technical sessions.</p>
-            </article>
-          </div>
-        </section>
       </div>
 
       <div class="intro-footer-row" style="position: relative; z-index: 2; background: transparent; border-top: 1px solid var(--border);">
