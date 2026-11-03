@@ -13150,6 +13150,39 @@ const ClientExecution = (() => {
         let sourceText = String(code || '');
         let sourceName = String(fileName || 'Main.java').split(/[\\\\/]/).pop() || 'Main.java';
         const diagnostics = [];
+        const explainJavaDiagnostic = message => {
+          const text = String(message || '').toLowerCase();
+          if (text.indexOf('<identifier> expected') !== -1) {
+            return 'Java expected a name here, such as a parameter or variable name. Check for a missing name or a misplaced comma near this location.';
+          }
+          if (text.indexOf("';' expected") !== -1) {
+            return 'Java expected the statement to end with a semicolon (;).';
+          }
+          if (text.indexOf('not a statement') !== -1) {
+            return 'This expression cannot be used as a complete Java statement. Check the surrounding syntax.';
+          }
+          if (text.indexOf('cannot find symbol') !== -1) {
+            return 'Java cannot find this class, method, or variable. Check its spelling, declaration, and imports.';
+          }
+          if (text.indexOf('package ') === 0 && text.indexOf(' does not exist') !== -1) {
+            return 'This Java package is not available in the browser compiler. The program will be retried on the remote worker.';
+          }
+          return 'Review the highlighted line and the code immediately before it for a Java syntax or type error.';
+        };
+        const formatJavaDiagnostic = diagnostic => {
+          const line = Number(diagnostic.line || 0);
+          const column = Number(diagnostic.column || 0);
+          const message = String(diagnostic.message || '').trim();
+          const header = (diagnostic.severity || '') + sourceName + ':' + (line || '?') + ':' + (column || '?') + ': ' + message;
+          if (!line || !message) {
+            return header + '\\\\nExplanation: ' + explainJavaDiagnostic(message);
+          }
+          const sourceLines = sourceText.split('\\\\n');
+          const sourceLine = sourceLines[line - 1] || '';
+          const safeColumn = Math.max(1, Math.min(column || 1, sourceLine.length + 1));
+          const caret = ' '.repeat(Math.max(0, safeColumn - 1)) + '^';
+          return header + '\\\\n  ' + line + ' | ' + sourceLine + '\\\\n    | ' + caret + '\\\\nExplanation: ' + explainJavaDiagnostic(message);
+        };
         const registration = compiler.onDiagnostic(diagnostic => {
           if (!diagnostic) return;
           const message = String(diagnostic.message || diagnostic.detail || diagnostic || '').trim();
@@ -13158,8 +13191,12 @@ const ClientExecution = (() => {
           const line = diagnostic.lineNumber || diagnostic.line || location.line || location.lineNumber || 0;
           const column = diagnostic.columnNumber || diagnostic.column || location.column || location.columnNumber || 0;
           const severity = diagnostic.severity ? '[' + String(diagnostic.severity).toUpperCase() + '] ' : '';
-          const where = line ? sourceName + ':' + line + (column ? ':' + column : '') + ': ' : sourceName + ': ';
-          diagnostics.push(severity + where + message);
+          diagnostics.push({
+            severity,
+            line,
+            column,
+            message
+          });
         });
         // Playground Java preserves the submitted filename. Exam templates
         // may continue to use Main.java as their launcher filename.
@@ -13199,7 +13236,7 @@ const ClientExecution = (() => {
         const compiled = compiler.compile();
         if (registration && registration.destroy) registration.destroy();
         if (!compiled) {
-          let diagnosticText = diagnostics.join('\\\\n');
+          let diagnosticText = diagnostics.map(formatJavaDiagnostic).join('\\\\n');
           // Some TeaVM compiler builds emit only a bare ";' expected" without a
           // source position. Recover the likely statement location so the
           // editor can point the user to the actual line and column.
@@ -13218,7 +13255,19 @@ const ClientExecution = (() => {
               }
             }
           }
-          return { status: 'ok', code: 1, stdout: '', stderr: diagnosticText || 'Java compilation failed.', runtime: 'teavm-javac' };
+          // Keep genuine syntax/type errors on-device. Missing packages or
+          // class-library modules (for example javax.crypto) are different:
+          // the browser compiler cannot provide them, so the caller may use
+          // the remote worker instead.
+          const moduleFailure = /package\\\\s+[^\\\\n]+\\\\s+does not exist|class file for .* not found|module .* not found|NoClassDefFoundError|ClassNotFoundException|unsupported .*class library/i.test(diagnosticText);
+          return {
+            status: 'ok',
+            code: 1,
+            stdout: '',
+            stderr: diagnosticText || 'Java compilation failed.',
+            runtime: 'teavm-javac',
+            fallbackEligible: moduleFailure
+          };
         }
 
         const mainClasses = compiler.detectMainClasses();
@@ -13231,7 +13280,7 @@ const ClientExecution = (() => {
         const outputName = 'codeleaf-java-' + Date.now().toString(36);
         if (report) report('generating', 'Generating WebAssembly…');
         if (!compiler.generateWebAssembly({ outputName, mainClass: mainClasses[0] })) {
-          return { status: 'ok', code: 1, stdout: '', stderr: diagnostics.join('\\\\n') || 'Java WebAssembly generation failed.', runtime: 'teavm-javac' };
+          return { status: 'ok', code: 1, stdout: '', stderr: diagnostics.map(formatJavaDiagnostic).join('\\\\n') || 'Java WebAssembly generation failed.', runtime: 'teavm-javac' };
         }
         const generated = compiler.getWebAssemblyOutputFile(outputName + '.wasm');
         let stdout = '';
@@ -13311,7 +13360,8 @@ const ClientExecution = (() => {
                 stdout: '',
                 stderr: String(error && (error.message || error) || 'Java runtime failed'),
                 runtime: 'codeleaf-browser',
-                executionFailure: true
+                executionFailure: true,
+                fallbackEligible: true
               }});
             }
             return;
@@ -14501,7 +14551,10 @@ async function runPlaygroundCode(language, code, stdin) {
       onProgress: updateExecutionProgress
     });
     if (clientResult) {
-      if (clientResult.runtime !== 'codeleaf-browser') {
+      const shouldFallbackToRemote = clientResult.runtime === 'codeleaf-browser'
+        || clientResult.executionFailure === true
+        || clientResult.fallbackEligible === true;
+      if (!shouldFallbackToRemote) {
         clientResult.executionOrigin = 'local';
         handleOutput(clientResult, clientResult.duration);
         return;
@@ -16439,6 +16492,13 @@ const ExamPortal = (() => {
     if (!result) return true;
     if (result.executionFailure === true) return true;
     return result.code !== undefined && Number(result.code) !== 0;
+  }
+
+  function shouldFallbackToRemote(result) {
+    if (!result) return true;
+    return result.executionFailure === true
+      || result.fallbackEligible === true
+      || result.runtime === 'codeleaf-browser';
   }
 
   function setExamExecutionOrigin(origin, running = true, reason = '') {
@@ -20806,7 +20866,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             });
           }
 
-          const localExecutionFailed = localResults.some(isExecutionFailure);
+          const localExecutionFailed = localResults.some(shouldFallbackToRemote);
+          const localCompilationFailed = localResults.some(result => (
+            isExecutionFailure(result) && !shouldFallbackToRemote(result)
+          ));
           if (localRuntimeAvailable && !localExecutionFailed) {
             el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
             el('student-run-btn').disabled = false;
@@ -20834,6 +20897,23 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             studentNS.initConsoleTabs();
             const tabId = state.student.activeConsoleTab || 'case-0';
             studentNS.selectConsoleTab(tabId);
+            finishStudentExecutionCard();
+            return;
+          }
+
+          // Preserve user-authored syntax/type/compile diagnostics locally.
+          // Only browser-runtime or unsupported-module failures should use
+          // the remote worker.
+          if (localRuntimeAvailable && localCompilationFailed && !localExecutionFailed) {
+            el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
+            el('student-run-btn').disabled = false;
+            setExamExecutionOrigin('local', false);
+            state.student.runResults = state.student.runResults || {};
+            sampleCases.forEach((tc, i) => {
+              if (localResults[i]) state.student.runResults[`${q.id}-case-${i}`] = localResults[i];
+            });
+            studentNS.initConsoleTabs();
+            studentNS.selectConsoleTab(state.student.activeConsoleTab || 'case-0');
             finishStudentExecutionCard();
             return;
           }
