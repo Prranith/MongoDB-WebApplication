@@ -69,6 +69,13 @@ const ExamPortal = (() => {
     return result.code !== undefined && Number(result.code) !== 0;
   }
 
+  function shouldFallbackToRemote(result) {
+    if (!result) return true;
+    return result.executionFailure === true
+      || result.fallbackEligible === true
+      || result.runtime === 'codeleaf-browser';
+  }
+
   function setExamExecutionOrigin(origin, running = true, reason = '') {
     if (state.student) {
       state.student.executionOrigin = origin;
@@ -4434,7 +4441,10 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             });
           }
 
-          const localExecutionFailed = localResults.some(isExecutionFailure);
+          const localExecutionFailed = localResults.some(shouldFallbackToRemote);
+          const localCompilationFailed = localResults.some(result => (
+            isExecutionFailure(result) && !shouldFallbackToRemote(result)
+          ));
           if (localRuntimeAvailable && !localExecutionFailed) {
             el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
             el('student-run-btn').disabled = false;
@@ -4462,6 +4472,23 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             studentNS.initConsoleTabs();
             const tabId = state.student.activeConsoleTab || 'case-0';
             studentNS.selectConsoleTab(tabId);
+            finishStudentExecutionCard();
+            return;
+          }
+
+          // Preserve user-authored syntax/type/compile diagnostics locally.
+          // Only browser-runtime or unsupported-module failures should use
+          // the remote worker.
+          if (localRuntimeAvailable && localCompilationFailed && !localExecutionFailed) {
+            el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
+            el('student-run-btn').disabled = false;
+            setExamExecutionOrigin('local', false);
+            state.student.runResults = state.student.runResults || {};
+            sampleCases.forEach((tc, i) => {
+              if (localResults[i]) state.student.runResults[`${q.id}-case-${i}`] = localResults[i];
+            });
+            studentNS.initConsoleTabs();
+            studentNS.selectConsoleTab(state.student.activeConsoleTab || 'case-0');
             finishStudentExecutionCard();
             return;
           }

@@ -1031,7 +1031,10 @@ async function runPlaygroundCode(language, code, stdin) {
       onProgress: updateExecutionProgress
     });
     if (clientResult) {
-      if (clientResult.runtime !== 'codeleaf-browser') {
+      const shouldFallbackToRemote = clientResult.runtime === 'codeleaf-browser'
+        || clientResult.executionFailure === true
+        || clientResult.fallbackEligible === true;
+      if (!shouldFallbackToRemote) {
         clientResult.executionOrigin = 'local';
         handleOutput(clientResult, clientResult.duration);
         return;
