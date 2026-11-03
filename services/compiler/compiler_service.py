@@ -78,7 +78,7 @@ class CompilerService:
         )
         launcher = (
             "class Main {\n"
-            "    public static void main(String[] args) {\n"
+            "    public static void main(String[] args) throws Exception {\n"
             f"        {entry_class}.main(args);\n"
             "    }\n"
             "}\n"

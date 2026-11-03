@@ -45,6 +45,7 @@ class TestServices(unittest.TestCase):
         launcher = CompilerService._java_launcher_source(code, "Test")
         self.assertIn("class Test", launcher)
         self.assertIn("Test.main(args)", launcher)
+        self.assertIn("main(String[] args) throws Exception", launcher)
         self.assertNotIn("public class Test", launcher)
 
     def test_java_entry_class_does_not_fallback_to_main(self):
