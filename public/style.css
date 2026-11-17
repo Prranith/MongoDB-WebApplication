@@ -286,16 +286,6 @@ body {
   border-left-color: #cccccc;
 }
 
-.act-public-link {
-  color: #777;
-  text-decoration: none;
-}
-
-.act-public-link:hover {
-  color: var(--green2);
-  background: rgba(78, 201, 176, .06);
-}
-
 .act-btn-meeting {
   color: #00ed64;
 }
@@ -365,6 +355,92 @@ body {
 
 .sidebar-panel.active {
   display: flex;
+}
+
+.resource-panel-intro {
+  padding: 18px 14px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.resource-panel-kicker,
+.resource-group-label {
+  color: var(--green2);
+  font: 700 9px 'JetBrains Mono', Consolas, monospace;
+  letter-spacing: .12em;
+}
+
+.resource-panel-title {
+  margin-top: 7px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.resource-panel-copy {
+  margin-top: 6px;
+  color: var(--text3);
+  font: 11px/1.5 'JetBrains Mono', Consolas, monospace;
+}
+
+.resource-link-list {
+  display: grid;
+  gap: 4px;
+  padding: 12px 10px;
+  overflow-y: auto;
+}
+
+.resource-group-label {
+  margin: 8px 4px 3px;
+  color: var(--text3);
+  font-size: 8px;
+}
+
+.resource-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--text2);
+  text-decoration: none;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+
+.resource-link:hover {
+  border-color: rgba(78, 201, 176, .28);
+  background: rgba(78, 201, 176, .08);
+  color: var(--text);
+}
+
+.resource-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border: 1px solid rgba(78, 201, 176, .3);
+  border-radius: 5px;
+  color: var(--green2);
+  font: 700 10px 'JetBrains Mono', Consolas, monospace;
+}
+
+.resource-link strong,
+.resource-link small {
+  display: block;
+}
+
+.resource-link strong {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.resource-link small {
+  margin-top: 2px;
+  color: var(--text3);
+  font: 10px 'JetBrains Mono', Consolas, monospace;
 }
 
 

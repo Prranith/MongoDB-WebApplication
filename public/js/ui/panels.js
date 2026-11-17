@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════
 function setSidePanel(name) {
   S.sidePanel = name;
-  const panels = ['files', 'db', 'history', 'snippets', 'search'];
+  const panels = ['files', 'db', 'history', 'snippets', 'search', 'resources'];
   panels.forEach(p => {
     const isAct = p === name;
     const panel = document.getElementById(`panel-${p}`);

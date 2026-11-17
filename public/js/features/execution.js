@@ -828,7 +828,8 @@ const PANEL_TITLES = {
   db: "DATABASE EXPLORER",
   history: "QUERY HISTORY",
   snippets: "SNIPPETS",
-  search: "SEARCH"
+  search: "SEARCH",
+  resources: "GUIDES & INFORMATION"
 };
 
 function renderHistoryPanel() {

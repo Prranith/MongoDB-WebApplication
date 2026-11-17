@@ -26,7 +26,7 @@ function showView(name) {
     // Set welcome icon active, others inactive
     const actWelcome = document.getElementById('act-welcome');
     if (actWelcome) actWelcome.classList.add('active');
-    ['files', 'db', 'history', 'snippets', 'search'].forEach(p => {
+    ['files', 'db', 'history', 'snippets', 'search', 'resources'].forEach(p => {
       const actBtn = document.getElementById(`act-${p}`);
       if (actBtn) actBtn.classList.remove('active');
     });

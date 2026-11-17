@@ -1,7 +1,7 @@
 /* Page-wise URLs for the existing feature-complete CodeLeaf shell. */
 (function () {
   const PATHS = {
-    home: '/', workspace: '/workspaceide', db: '/dbexplorer', history: '/history',
+    home: '/', workspace: '/workspaceide', resources: '/workspaceide', db: '/dbexplorer', history: '/history',
     guide: '/guide', search: '/search', examportal: '/examportal',
     'create-room': '/createRoom', 'create-exam': '/createExam', leaderboard: '/liveLeaderBoard',
     'join-exam': '/joinexam', 'exam-paper': '/exampaper', 'offline-viewer': '/offlineViewer',
