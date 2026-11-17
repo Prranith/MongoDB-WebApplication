@@ -2991,116 +2991,6 @@ li.CodeMirror-hint-active {
   background: rgba(2, 8, 5, 0.46) !important;
 }
 
-/* Public home content: useful context for visitors and search crawlers while
-   keeping the interactive workspace as the main product action. */
-.intro-public-content {
-  position: relative;
-  z-index: 2;
-  padding: 34px 24px 42px;
-  background: rgba(2, 8, 5, 0.78);
-  border-top: 1px solid rgba(116, 159, 135, 0.16);
-}
-.intro-content-inner {
-  width: min(1080px, 100%);
-  margin: 0 auto;
-}
-.intro-content-eyebrow {
-  margin: 0 0 10px;
-  color: #7ee6aa;
-  font: 600 10px 'JetBrains Mono', monospace;
-  letter-spacing: 1.6px;
-  text-transform: uppercase;
-}
-.intro-public-content h1,
-.intro-public-content h2,
-.intro-public-content p,
-.intro-public-content ol {
-  margin-top: 0;
-}
-.intro-public-content h1 {
-  max-width: 760px;
-  margin-bottom: 12px;
-  color: #effff4;
-  font-size: clamp(25px, 3.2vw, 40px);
-  line-height: 1.14;
-  letter-spacing: -0.7px;
-}
-.intro-content-lead {
-  max-width: 780px;
-  margin-bottom: 28px;
-  color: #b7cbbd;
-  font-size: 15px;
-  line-height: 1.75;
-}
-.intro-value-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-.intro-value-card,
-.intro-content-columns > div {
-  padding: 20px;
-  border: 1px solid rgba(119, 165, 137, 0.2);
-  border-radius: 10px;
-  background: rgba(9, 25, 16, 0.72);
-}
-.intro-value-card h2,
-.intro-content-columns h2 {
-  margin-bottom: 9px;
-  color: #e8f8ec;
-  font-size: 16px;
-  line-height: 1.35;
-}
-.intro-value-card p,
-.intro-content-columns p,
-.intro-content-columns li {
-  color: #a9bdb0;
-  font-size: 13px;
-  line-height: 1.65;
-}
-.intro-value-card p {
-  min-height: 86px;
-  margin-bottom: 15px;
-}
-.intro-value-card a,
-.intro-content-links a {
-  color: #83e9b0;
-  font-size: 12px;
-  text-decoration: none;
-}
-.intro-value-card a:hover,
-.intro-content-links a:hover {
-  color: #d7ffe4;
-  text-decoration: underline;
-}
-.intro-content-columns {
-  display: grid;
-  grid-template-columns: 1.1fr .9fr;
-  gap: 12px;
-  margin-top: 12px;
-}
-.intro-content-columns ol {
-  margin-bottom: 18px;
-  padding-left: 22px;
-}
-.intro-content-columns li + li {
-  margin-top: 7px;
-}
-.intro-content-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 18px;
-  margin-bottom: 0;
-}
-.intro-public-content kbd {
-  padding: 2px 5px;
-  border: 1px solid rgba(184, 211, 192, .3);
-  border-radius: 4px;
-  color: #d7f4df;
-  background: rgba(255,255,255,.06);
-  font: 11px 'JetBrains Mono', monospace;
-}
-
 .intro-dev {
   color: #6f8f7d;
   font-size: 11px;
@@ -3123,18 +3013,6 @@ li.CodeMirror-hint-active {
     justify-content: center;
   }
 
-  .intro-public-content {
-    padding: 28px 16px 34px;
-  }
-
-  .intro-value-grid,
-  .intro-content-columns {
-    grid-template-columns: 1fr;
-  }
-
-  .intro-value-card p {
-    min-height: 0;
-  }
 }
 
 /* ── Exam overlay panels (full-viewport) ─────────────────── */
@@ -9183,55 +9061,6 @@ li.CodeMirror-hint-active {
 
         </div>
       </div>
-
-      <!-- Crawlable, people-first explanation of what CodeLeaf is for. The
-           interactive workspace remains the primary action, while this
-           section gives new visitors useful context before they sign in. -->
-      <section class="intro-public-content" aria-labelledby="intro-content-title">
-        <div class="intro-content-inner">
-          <p class="intro-content-eyebrow">A practical browser workspace for learners and mentors</p>
-          <h1 id="intro-content-title">Learn programming by writing, running, and reviewing real code</h1>
-          <p class="intro-content-lead">
-            CodeLeaf brings a code editor, database playground, assessments, and collaborative meetings into one focused workspace.
-            It is designed for students who want fast feedback and mentors who need a simple way to teach and evaluate technical work.
-          </p>
-
-          <div class="intro-value-grid">
-            <article class="intro-value-card">
-              <h2>Practice with immediate feedback</h2>
-              <p>Open a file, choose a language, run it, and inspect the result in the same browser tab. Use the editor for Python, C, C++, Java, SQL, and MongoDB exercises.</p>
-              <a href="/guides/sql-playground">Read the SQL practice guide <span aria-hidden="true">→</span></a>
-            </article>
-            <article class="intro-value-card">
-              <h2>Understand data, not just syntax</h2>
-              <p>Explore sample collections, inspect schemas, write MongoDB queries, and work with relational SQL tables. The result panels are built to help you compare an idea with its output.</p>
-              <a href="/guides/mongodb-playground">Read the MongoDB practice guide <span aria-hidden="true">→</span></a>
-            </article>
-            <article class="intro-value-card">
-              <h2>Teach and assess in one place</h2>
-              <p>Mentors can create question papers with coding, SQL, query, and multiple-choice questions. Students receive a focused editor, run their work, and submit answers through the exam portal.</p>
-              <a href="/about">How CodeLeaf works <span aria-hidden="true">→</span></a>
-            </article>
-          </div>
-
-          <div class="intro-content-columns">
-            <div>
-              <h2>What makes CodeLeaf useful?</h2>
-              <p>Many learners switch between an editor, a database tool, a video call, and a separate assessment form. CodeLeaf keeps those steps together so the important part—the reasoning behind the solution—stays visible.</p>
-              <p>The platform is intentionally practice-oriented. Sandboxed execution is suitable for learning and classroom exercises, while the workspace lets you save files locally and revisit your experiments.</p>
-            </div>
-            <div>
-              <h2>Start with a small exercise</h2>
-              <ol>
-                <li>Enter the workspace and open a sample file.</li>
-                <li>Run the code or query with <kbd>Ctrl</kbd> + <kbd>Enter</kbd>.</li>
-                <li>Read the output, adjust the solution, and run it again.</li>
-              </ol>
-              <p class="intro-content-links"><a href="/faq">Frequently asked questions</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/contact">Contact</a></p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <div class="intro-footer-row" style="position: relative; z-index: 2; background: transparent; border-top: 1px solid var(--border);">
         <div class="intro-dev">
