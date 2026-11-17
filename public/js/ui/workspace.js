@@ -816,6 +816,10 @@ function openFileInTab(path) {
   const file = S.files.find(f => f.path === path);
   if (!file || file.type === 'folder') return;
 
+  if (document.body.classList.contains('workspace-content-active') && typeof closeWorkspaceContent === 'function') {
+    closeWorkspaceContent({ restore: false });
+  }
+
   // Save the outgoing tab's undo stack before changing activeFile. CodeMirror
   // itself is shared by all tabs, so its default history is shared as well.
   rememberWorkspaceEditorHistory();

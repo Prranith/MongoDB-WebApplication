@@ -7307,6 +7307,290 @@ li.CodeMirror-hint-active {
 .workspace-editor-empty button:hover { border-color: #9ac7a7; background: rgba(61, 105, 75, .58); transform: translateY(-1px); }
 .workspace-editor-empty small { color: #68786d; font-size: 10px; }
 .workspace-file-preview.active { display:flex; }
+
+/* Public information pages are rendered inside the editor grid instead of
+   replacing the CodeLeaf shell with a separate document. */
+#ide-panel.workspace-content-active #workspace-editor-empty,
+#ide-panel.workspace-content-active #workspace-file-preview,
+#ide-panel.workspace-content-active #sql-notebook,
+#ide-panel.workspace-content-active #console,
+#ide-panel.workspace-content-active #console-resizer,
+#ide-panel.workspace-content-active #inspector,
+#ide-panel.workspace-content-active #workspace-ai-legacy-launch {
+  display: none !important;
+}
+
+#ide-panel.workspace-content-active #workspace-content-view {
+  display: flex;
+}
+
+body.workspace-content-active #win-controls .tbtn-run,
+body.workspace-content-active #win-controls #btn-toggle-console,
+body.workspace-content-active #win-controls #btn-toggle-inspector {
+  display: none !important;
+}
+
+.workspace-content-view {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.workspace-content-shell {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.workspace-content-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text3);
+  background: var(--bg2);
+  font: 10px 'JetBrains Mono', Consolas, monospace;
+  flex-shrink: 0;
+}
+
+.workspace-content-breadcrumb {
+  color: var(--green2);
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+
+.workspace-content-toolbar-title {
+  overflow: hidden;
+  color: var(--text2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-content-toolbar-button {
+  min-width: 28px;
+  height: 25px;
+  padding: 0 9px;
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text2);
+  background: transparent;
+  cursor: pointer;
+  font: 600 10px 'JetBrains Mono', Consolas, monospace;
+}
+
+.workspace-content-toolbar-button:hover {
+  border-color: var(--green2);
+  color: var(--text);
+  background: rgba(78, 201, 176, .1);
+}
+
+.workspace-content-close {
+  margin-left: auto;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.workspace-content-scroll {
+  min-height: 0;
+  overflow: auto;
+  flex: 1;
+}
+
+.workspace-content-document {
+  width: min(1080px, calc(100% - 64px));
+  margin: 0 auto;
+  padding: 46px 0 72px;
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.65;
+}
+
+.workspace-content-document .page-kicker {
+  margin: 0 0 10px;
+  color: var(--green2);
+  font: 600 10px 'JetBrains Mono', Consolas, monospace;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.workspace-content-document h1 {
+  max-width: 820px;
+  margin: 0 0 18px;
+  color: var(--text);
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: 1.08;
+  letter-spacing: -.045em;
+}
+
+.workspace-content-document .page-lead {
+  max-width: 780px;
+  margin: 0 0 34px;
+  color: var(--text2);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.workspace-content-document .content-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+  margin: 26px 0;
+}
+
+.workspace-content-document .content-card,
+.workspace-content-document .faq-item {
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  background: linear-gradient(145deg, rgba(35, 45, 38, .72), rgba(25, 29, 26, .78));
+}
+
+.workspace-content-document .content-card {
+  padding: 18px;
+}
+
+.workspace-content-document .content-card h2,
+.workspace-content-document .faq-item h2 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.workspace-content-document .content-card p,
+.workspace-content-document .faq-item p,
+.workspace-content-document .page-section p,
+.workspace-content-document .page-section li {
+  color: var(--text2);
+  font-size: 13px;
+}
+
+.workspace-content-document .content-card p,
+.workspace-content-document .faq-item p {
+  margin: 0;
+}
+
+.workspace-content-document .page-section {
+  margin-top: 36px;
+}
+
+.workspace-content-document .page-section h2 {
+  margin: 0 0 11px;
+  color: var(--text);
+  font-size: 23px;
+  line-height: 1.2;
+}
+
+.workspace-content-document .page-section h3 {
+  margin: 23px 0 6px;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.workspace-content-document .page-section ul,
+.workspace-content-document .page-section ol {
+  padding-left: 22px;
+}
+
+.workspace-content-document .faq-list {
+  display: grid;
+  gap: 10px;
+}
+
+.workspace-content-document .faq-item {
+  padding: 16px 18px;
+}
+
+.workspace-content-document .callout {
+  margin: 24px 0;
+  padding: 16px 18px;
+  border-left: 3px solid var(--green2);
+  background: rgba(61, 177, 108, .08);
+}
+
+.workspace-content-document .callout p {
+  margin: 0;
+  color: var(--text2);
+  font-size: 13px;
+}
+
+.workspace-content-document pre {
+  overflow-x: auto;
+  margin: 16px 0;
+  padding: 15px;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: #d5f7df;
+  background: #090b0f;
+  font: 12px/1.65 'JetBrains Mono', Consolas, monospace;
+}
+
+.workspace-content-document code {
+  color: #bcebc9;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: .92em;
+}
+
+.workspace-content-document a {
+  color: var(--green2);
+}
+
+.workspace-content-document .button-link {
+  display: inline-flex;
+  padding: 9px 13px;
+  border: 1px solid rgba(131, 233, 176, .36);
+  border-radius: 5px;
+  color: var(--text);
+  background: rgba(33, 121, 73, .25);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.workspace-content-loading,
+.workspace-content-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 100%;
+  padding: 32px;
+  color: var(--text3);
+  text-align: center;
+  flex-direction: column;
+}
+
+.workspace-content-error strong {
+  color: var(--red);
+}
+
+.workspace-content-error span {
+  max-width: 420px;
+}
+
+.workspace-content-loader {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(131, 233, 176, .25);
+  border-top-color: var(--green2);
+  border-radius: 50%;
+  animation: workspace-content-spin .7s linear infinite;
+}
+
+@keyframes workspace-content-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 720px) {
+  .workspace-content-document { width: min(100% - 30px, 1080px); padding-top: 32px; }
+  .workspace-content-document .content-grid { grid-template-columns: 1fr; }
+  .workspace-content-breadcrumb { display: none; }
+}
+
 .workspace-preview-toolbar { min-height:30px; display:flex; align-items:center; gap:12px; padding:2px 10px; border-bottom:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
 .workspace-preview-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text2); font-size:11px; flex:1; }
 .workspace-preview-controls { display:flex; align-items:center; gap:2px; margin-left:auto; }
@@ -9207,6 +9491,7 @@ li.CodeMirror-hint-active {
           <textarea id="raw-editor">// Open a workspace file to write queries</textarea>
           <div id="sql-notebook" aria-label="SQL notebook"></div>
           <div id="workspace-file-preview" aria-live="polite"></div>
+          <div id="workspace-content-view" class="workspace-content-view" aria-live="polite" hidden></div>
           <div id="workspace-editor-empty" class="workspace-editor-empty" hidden>
             <div class="workspace-editor-empty-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
@@ -11567,6 +11852,9 @@ function insertSnippet(body) {
 // VIEWS SWITCHING
 // ═══════════════════════════════════════════════════════════════════
 function showView(name) {
+  if (name === 'intro' && document.body.classList.contains('workspace-content-active') && typeof closeWorkspaceContent === 'function') {
+    closeWorkspaceContent({ restore: false });
+  }
   // Browsing the workspace is public. Authentication is enforced at the
   // protected actions: execution, persistence, room creation/joining, and
   // exam submission.
@@ -12442,6 +12730,10 @@ function openFileInTab(path) {
   const file = S.files.find(f => f.path === path);
   if (!file || file.type === 'folder') return;
 
+  if (document.body.classList.contains('workspace-content-active') && typeof closeWorkspaceContent === 'function') {
+    closeWorkspaceContent({ restore: false });
+  }
+
   // Save the outgoing tab's undo stack before changing activeFile. CodeMirror
   // itself is shared by all tabs, so its default history is shared as well.
   rememberWorkspaceEditorHistory();
@@ -12971,6 +13263,212 @@ function deleteActiveQueryFile(path) {
     }
   })();
 }
+
+</script>
+<script>
+// INTERNAL PUBLIC CONTENT VIEW
+// Public information pages remain crawlable at their own URLs, but links from
+// the CodeLeaf shell open the same content inside the editor workspace.
+const WORKSPACE_CONTENT_ROUTES = new Set([
+  '/about',
+  '/faq',
+  '/guides/sql-playground',
+  '/guides/mongodb-playground',
+  '/privacy',
+  '/terms',
+  '/contact',
+]);
+const WORKSPACE_SHELL_ROUTES = new Set(['/', '/workspace', '/workspaceide']);
+
+const WORKSPACE_CONTENT_CACHE = new Map();
+let workspaceContentRequest = null;
+let workspaceContentPreviousFile = null;
+let workspaceContentPreviousLanguage = null;
+
+function workspaceContentPath(value) {
+  try {
+    return new URL(value, window.location.origin).pathname;
+  } catch (_) {
+    return '';
+  }
+}
+
+function isWorkspaceContentRoute(value) {
+  return WORKSPACE_CONTENT_ROUTES.has(workspaceContentPath(value));
+}
+
+function workspaceContentButton(label, text, handler) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'workspace-content-toolbar-button';
+  button.title = label;
+  button.setAttribute('aria-label', label);
+  button.textContent = text;
+  button.addEventListener('click', handler);
+  return button;
+}
+
+function renderWorkspaceContentLoading(path) {
+  const view = document.getElementById('workspace-content-view');
+  if (!view) return;
+  view.replaceChildren();
+  const loading = document.createElement('div');
+  loading.className = 'workspace-content-loading';
+  loading.innerHTML = '<span class="workspace-content-loader" aria-hidden="true"></span>';
+  const message = document.createElement('span');
+  message.textContent = `Opening ${path.replace(/^\\//, '')}…`;
+  loading.appendChild(message);
+  view.appendChild(loading);
+}
+
+function renderWorkspaceContentError(message) {
+  const view = document.getElementById('workspace-content-view');
+  if (!view) return;
+  view.replaceChildren();
+  const error = document.createElement('div');
+  error.className = 'workspace-content-error';
+  const title = document.createElement('strong');
+  title.textContent = 'Unable to open this page';
+  const detail = document.createElement('span');
+  detail.textContent = message || 'Please try again.';
+  const retry = workspaceContentButton('Retry', 'Retry', () => openWorkspaceContent(view.dataset.route));
+  error.append(title, detail, retry);
+  view.appendChild(error);
+}
+
+function buildWorkspaceContentView(route, pageHtml) {
+  const view = document.getElementById('workspace-content-view');
+  if (!view) return;
+  const parsed = new DOMParser().parseFromString(pageHtml, 'text/html');
+  const source = parsed.querySelector('main') || parsed.body;
+  const documentBody = source.cloneNode(true);
+  documentBody.classList.add('workspace-content-document');
+  documentBody.querySelectorAll('script, style, link, form').forEach(node => node.remove());
+
+  const shell = document.createElement('div');
+  shell.className = 'workspace-content-shell';
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'workspace-content-toolbar';
+  const breadcrumb = document.createElement('span');
+  breadcrumb.className = 'workspace-content-breadcrumb';
+  breadcrumb.textContent = 'CODELEAF  /  GUIDES & INFORMATION';
+  const title = document.createElement('span');
+  title.className = 'workspace-content-toolbar-title';
+  title.textContent = parsed.title.replace(/\\s*\\|.*$/, '').trim() || 'CodeLeaf information';
+  const close = workspaceContentButton('Return to editor', '×', () => closeWorkspaceContent());
+  close.classList.add('workspace-content-close');
+  toolbar.append(breadcrumb, title, close);
+
+  const scroll = document.createElement('div');
+  scroll.className = 'workspace-content-scroll';
+  scroll.appendChild(documentBody);
+  shell.append(toolbar, scroll);
+  view.replaceChildren(shell);
+  view.dataset.route = route;
+
+  documentBody.querySelectorAll('a[href]').forEach(link => {
+    const href = link.getAttribute('href');
+    if (isWorkspaceContentRoute(href)) link.dataset.workspaceContentRoute = workspaceContentPath(href);
+  });
+}
+
+async function openWorkspaceContent(route) {
+  const path = workspaceContentPath(route);
+  if (!WORKSPACE_CONTENT_ROUTES.has(path)) return false;
+  const view = document.getElementById('workspace-content-view');
+  const ide = document.getElementById('ide-panel');
+  if (!view || !ide) return false;
+
+  if (workspaceContentPreviousFile === null) workspaceContentPreviousFile = S.activeFile || '';
+  if (workspaceContentPreviousLanguage === null) {
+    const indicator = document.getElementById('sb-lang-indicator');
+    workspaceContentPreviousLanguage = indicator ? indicator.textContent : '';
+  }
+  if (workspaceContentRequest) workspaceContentRequest.abort();
+  const request = new AbortController();
+  workspaceContentRequest = request;
+
+  showView('ide');
+  if (S.sidePanel !== 'resources') setSidePanel('resources');
+  ide.classList.add('workspace-content-active');
+  document.body.classList.add('workspace-content-active');
+  view.hidden = false;
+  view.classList.add('active');
+  view.dataset.route = path;
+  const indicator = document.getElementById('sb-lang-indicator');
+  if (indicator) indicator.textContent = 'Guide';
+  renderWorkspaceContentLoading(path);
+
+  try {
+    let html = WORKSPACE_CONTENT_CACHE.get(path);
+    if (!html) {
+      const response = await fetch(path, { signal: request.signal, headers: { Accept: 'text/html' } });
+      if (!response.ok) throw new Error(`The page returned HTTP ${response.status}.`);
+      html = await response.text();
+      WORKSPACE_CONTENT_CACHE.set(path, html);
+    }
+    if (workspaceContentRequest !== request || !view.classList.contains('active') || view.dataset.route !== path) return true;
+    buildWorkspaceContentView(path, html);
+  } catch (error) {
+    if (error && error.name === 'AbortError') return true;
+    renderWorkspaceContentError(error && error.message);
+  } finally {
+    if (workspaceContentRequest === request) workspaceContentRequest = null;
+  }
+  return true;
+}
+
+function closeWorkspaceContent(options = {}) {
+  if (workspaceContentRequest) workspaceContentRequest.abort();
+  workspaceContentRequest = null;
+  const view = document.getElementById('workspace-content-view');
+  const ide = document.getElementById('ide-panel');
+  if (view) {
+    view.hidden = true;
+    view.classList.remove('active');
+    view.replaceChildren();
+    delete view.dataset.route;
+  }
+  if (ide) ide.classList.remove('workspace-content-active');
+  document.body.classList.remove('workspace-content-active');
+  const indicator = document.getElementById('sb-lang-indicator');
+  if (indicator && workspaceContentPreviousLanguage !== null) indicator.textContent = workspaceContentPreviousLanguage;
+  const previousFile = workspaceContentPreviousFile;
+  workspaceContentPreviousFile = null;
+  workspaceContentPreviousLanguage = null;
+  if (options.restore !== false && previousFile && typeof openFileInTab === 'function') {
+    openFileInTab(previousFile);
+  } else if (typeof updateWorkspaceEmptyState === 'function') {
+    updateWorkspaceEmptyState();
+  }
+}
+
+function initWorkspaceContentLinks() {
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href]');
+    if (!link) return;
+    const resourceLink = link.closest('#panel-resources');
+    const internalLink = link.dataset.workspaceContentRoute;
+    const path = internalLink || (resourceLink ? workspaceContentPath(link.getAttribute('href')) : '');
+    const contentDocumentLink = link.closest('.workspace-content-document');
+    if (!WORKSPACE_CONTENT_ROUTES.has(path) && !(contentDocumentLink && WORKSPACE_SHELL_ROUTES.has(path))) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (contentDocumentLink && WORKSPACE_SHELL_ROUTES.has(path)) {
+      closeWorkspaceContent({ restore: false });
+      if (path === '/') showView('intro');
+      else {
+        showView('ide');
+        setSidePanel('files');
+      }
+      return;
+    }
+    openWorkspaceContent(path);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', initWorkspaceContentLinks, { once: true });
 
 </script>
 <script>

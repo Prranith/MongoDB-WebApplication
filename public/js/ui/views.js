@@ -2,6 +2,9 @@
 // VIEWS SWITCHING
 // ═══════════════════════════════════════════════════════════════════
 function showView(name) {
+  if (name === 'intro' && document.body.classList.contains('workspace-content-active') && typeof closeWorkspaceContent === 'function') {
+    closeWorkspaceContent({ restore: false });
+  }
   // Browsing the workspace is public. Authentication is enforced at the
   // protected actions: execution, persistence, room creation/joining, and
   // exam submission.
