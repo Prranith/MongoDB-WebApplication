@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CodeLeaf FAQ | Coding practice, SQL, MongoDB, exams, and privacy</title>
+  <meta name="description" content="Answers to common questions about CodeLeaf coding practice, SQL and MongoDB sandboxes, exams, meetings, accounts, and data handling.">
+  <meta name="robots" content="index,follow"><link rel="canonical" href="https://codeleaf-org.vercel.app/faq">
+  <link rel="stylesheet" href="/site-pages/site-pages.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is CodeLeaf?","acceptedAnswer":{"@type":"Answer","text":"CodeLeaf is a browser workspace for coding practice, SQL and MongoDB exercises, mentor assessments, exams, and collaborative meetings."}},{"@type":"Question","name":"Which languages can I practice?","acceptedAnswer":{"@type":"Answer","text":"The workspace supports Python, C, C++, Java, SQL, and MongoDB exercises."}},{"@type":"Question","name":"Is CodeLeaf a production database?","acceptedAnswer":{"@type":"Answer","text":"No. CodeLeaf database tools are bounded practice sandboxes and should not be used for production data or secrets."}}]}</script>
+</head>
+<body>
+  <header class="site-header"><a class="site-brand" href="/"><img src="/image.png" alt="CodeLeaf"><span><strong>CodeLeaf</strong><small>Questions and answers</small></span></a><nav class="site-nav" aria-label="Primary"><a href="/about">About</a><a href="/guides/sql-playground">SQL guide</a><a href="/guides/mongodb-playground">MongoDB guide</a><a href="/workspaceide">Open workspace</a></nav></header>
+  <main class="page-shell"><p class="page-kicker">Help center</p><h1>Common questions about CodeLeaf.</h1><p class="page-lead">These answers explain what the platform is designed to do, how its practice tools behave, and where to find more detail.</p><div class="faq-list">
+    <article class="faq-item"><h2>What is CodeLeaf?</h2><p>CodeLeaf is a browser workspace for coding practice, SQL and MongoDB exercises, mentor-created assessments, proctored exams, and coding meetings.</p></article>
+    <article class="faq-item"><h2>Which languages can I practice?</h2><p>The workspace includes Python, C, C++, Java, SQL, and MongoDB query workflows. Available execution features can vary by exercise type and room configuration.</p></article>
+    <article class="faq-item"><h2>Is the SQL tool a hosted MySQL server?</h2><p>No. It is a bounded educational sandbox that accepts common MySQL-style statements while enforcing limits and isolating the practice state. Use a real MySQL instance to validate production-specific behavior.</p></article>
+    <article class="faq-item"><h2>Why does a table still exist after I run another cell?</h2><p>SQL notebook cells share a runtime so that a schema cell can be followed by insert and select cells. Use the runtime reset control when you want to remove the current practice state.</p></article>
+    <article class="faq-item"><h2>Can mentors create SQL questions?</h2><p>Yes. Mentors can attach datasets, write an expected SQL answer, preview it with the exam SQL service, freeze the result, and review student submissions.</p></article>
+    <article class="faq-item"><h2>Should I upload private or production data?</h2><p>No. Use sample or anonymized data for practice. Never place passwords, tokens, customer records, or other confidential information in a code cell, dataset, exam, or meeting.</p></article>
+    <article class="faq-item"><h2>How can I report a bug or request help?</h2><p>Use the <a href="/contact">Contact page</a> to reach the developer through the project channels. Include the page, steps to reproduce, and a sanitized example; never include credentials.</p></article>
+    <article class="faq-item"><h2>Is CodeLeaf free?</h2><p>Core learning features are currently available without a paid subscription. Availability may change as the project evolves; check the relevant page for the current experience.</p></article>
+  </div></main>
+  <footer class="page-footer">CodeLeaf help center<div class="page-footer-links"><a href="/">Home</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/contact">Contact</a></div></footer>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About CodeLeaf | A practical coding and assessment workspace</title>
+  <meta name="description" content="Learn how CodeLeaf combines browser coding practice, SQL and MongoDB sandboxes, assessments, exams, and meetings for students and mentors.">
+  <meta name="robots" content="index,follow"><link rel="canonical" href="https://codeleaf-org.vercel.app/about">
+  <link rel="stylesheet" href="/site-pages/site-pages.css">
+</head>
+<body>
+  <header class="site-header"><a class="site-brand" href="/"><img src="/image.png" alt="CodeLeaf"><span><strong>CodeLeaf</strong><small>Learn by building</small></span></a><nav class="site-nav" aria-label="Primary"><a href="/guides/sql-playground">SQL guide</a><a href="/guides/mongodb-playground">MongoDB guide</a><a href="/faq">FAQ</a><a href="/workspaceide">Open workspace</a></nav></header>
+  <main class="page-shell">
+    <p class="page-kicker">About the platform</p>
+    <h1>A focused place to practice technical work.</h1>
+    <p class="page-lead">CodeLeaf is a browser-based learning workspace for people who want to write code, work with data, and receive useful feedback without assembling a collection of disconnected tools.</p>
+    <div class="content-grid">
+      <article class="content-card"><h2>For students</h2><p>Practice Python, C, C++, Java, SQL, and MongoDB with a code editor, runnable examples, schema inspection, and visible output. Small feedback loops make it easier to understand why a solution works.</p></article>
+      <article class="content-card"><h2>For mentors</h2><p>Create question papers with coding, SQL, query, and multiple-choice questions. Freeze expected results, run a live assessment, review submissions, and use the leaderboard to guide follow-up teaching.</p></article>
+      <article class="content-card"><h2>For collaboration</h2><p>Use a CodeLeaf meeting room to discuss an exercise while keeping the shared editor and workspace nearby. The goal is to make explanation and hands-on work part of the same session.</p></article>
+    </div>
+    <section class="page-section"><h2>Why CodeLeaf was built</h2><p>Programming practice is most effective when a learner can move from an idea to a working experiment quickly. A normal lesson may require an editor, a compiler, a database client, a video call, and a way to collect answers. Switching among those tools adds friction and often hides the reasoning behind the result.</p><p>CodeLeaf brings those common learning steps together. It is not intended to replace a production database, a full local development environment, or a formal learning-management system. It is a practice surface: a safe place to try a query, inspect a schema, compare output, and improve the next attempt.</p></section>
+    <section class="page-section"><h2>How the main tools work</h2><h3>Code execution</h3><p>The workspace editor supports common teaching languages and sends bounded execution requests to the server-side compiler path. Output, diagnostics, and run timing stay visible beside the editor so students can iterate without losing context.</p><h3>SQL and MongoDB practice</h3><p>The database tools load bounded practice data into an isolated execution environment. SQL exercises support familiar relational operations such as table definitions, keys, joins, grouping, and aggregates. MongoDB exercises use sample collections and query inspection. Read the <a href="/guides/sql-playground">SQL guide</a> and <a href="/guides/mongodb-playground">MongoDB guide</a> for examples.</p><h3>Assessments</h3><p>Mentors can create an exam room, attach datasets, define expected answers, and invite students with a room code. Students receive the question text and the relevant editor. SQL and query submissions are executed and compared with the mentor's frozen result.</p></section>
+    <div class="callout"><p><strong>Built for learning:</strong> Keep credentials, secrets, and production data out of practice cells. CodeLeaf is a teaching and experimentation environment; always review a result before using it elsewhere.</p></div>
+    <a class="button-link" href="/">Return to CodeLeaf</a>
+  </main>
+  <footer class="page-footer">CodeLeaf is developed by <a href="https://www.linkedin.com/in/prranith-swargam-a620a6334/">Prranith Swargam</a>.<div class="page-footer-links"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/contact">Contact</a><a href="/faq">FAQ</a></div></footer>
+</body>
+</html>

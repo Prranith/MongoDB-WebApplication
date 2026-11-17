@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQL Playground Guide | Practice MySQL-style queries in CodeLeaf</title>
+  <meta name="description" content="A practical guide to using the CodeLeaf SQL playground for tables, keys, joins, aggregates, constraints, and multi-statement practice.">
+  <meta name="robots" content="index,follow"><link rel="canonical" href="https://codeleaf-org.vercel.app/guides/sql-playground">
+  <link rel="stylesheet" href="/site-pages/site-pages.css">
+</head>
+<body>
+  <header class="site-header"><a class="site-brand" href="/"><img src="/image.png" alt="CodeLeaf"><span><strong>CodeLeaf</strong><small>SQL practice guide</small></span></a><nav class="site-nav" aria-label="Primary"><a href="/about">About</a><a href="/guides/mongodb-playground">MongoDB guide</a><a href="/faq">FAQ</a><a href="/workspaceide">Open workspace</a></nav></header>
+  <main class="page-shell">
+    <p class="page-kicker">Hands-on database learning</p>
+    <h1>Practice SQL by seeing the database change.</h1>
+    <p class="page-lead">The CodeLeaf SQL playground is made for short experiments: define a schema, insert a few rows, query them, and inspect the result. It accepts common MySQL-style syntax while running each practice session in an isolated sandbox.</p>
+    <section class="page-section"><h2>A useful first exercise</h2><p>Open the workspace, choose SQL, and run the following as one script or as separate notebook cells:</p><pre>CREATE TABLE courses (
+  course_id INT PRIMARY KEY,
+  title VARCHAR(80) NOT NULL,
+  credits INT
+);
+
+INSERT INTO courses VALUES
+  (101, 'Database Systems', 4),
+  (102, 'Web Programming', 3);
+
+SELECT title, credits
+FROM courses
+WHERE credits &gt;= 3
+ORDER BY title;</pre><p>The result should show both courses ordered by title. If you run the <code>CREATE TABLE</code> statement again in the same notebook state, the database correctly reports that the table already exists. Use a new runtime or <code>DROP TABLE</code> when you intentionally want to start over.</p></section>
+    <div class="content-grid"><article class="content-card"><h2>Keys and constraints</h2><p>Use <code>PRIMARY KEY</code> for a row identity, composite keys when uniqueness depends on multiple columns, <code>UNIQUE</code> for alternate identifiers, and <code>FOREIGN KEY</code> for relationships. Constraint errors are feedback about the data model.</p></article><article class="content-card"><h2>Joins and grouping</h2><p>Practice <code>INNER JOIN</code>, <code>LEFT JOIN</code>, <code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>GROUP BY</code>, and <code>HAVING</code> with two related tables. Qualify column names with aliases when tables share a field such as <code>id</code>.</p></article><article class="content-card"><h2>Notebook workflow</h2><p>Keep schema setup, seed data, and analysis in separate cells. Run cells in order, read each output below the editor, and use the runtime reset control when you need a clean state.</p></article></div>
+    <section class="page-section"><h2>Common mistakes to learn from</h2><ol><li><strong>Duplicate primary keys:</strong> inserting the same key twice should fail. Do not hide the error with <code>INSERT OR REPLACE</code> unless replacement is your deliberate lesson.</li><li><strong>Missing foreign-key parents:</strong> insert the referenced department, user, or course before inserting the child row.</li><li><strong>Unexpected duplicates after a join:</strong> inspect the relationship and join condition. A one-to-many relation can create several result rows for one parent.</li><li><strong>Filtering aggregates with WHERE:</strong> use <code>WHERE</code> before grouping and <code>HAVING</code> after grouping.</li><li><strong>Changing the schema without checking state:</strong> a notebook remembers successful mutations between cell runs. Reset the runtime when repeating a setup exercise.</li></ol></section>
+    <section class="page-section"><h2>What the sandbox is for</h2><p>This playground is intended for education, interview preparation, and classroom exercises. It is bounded for safety and convenience, so it should not be treated as a hosted MySQL production database. Use small practice datasets, never paste passwords or private customer data, and validate important queries in the actual database engine you will use.</p><p>Ready to try it? <a href="/workspaceide">Open the SQL workspace</a> or read the <a href="/faq">FAQ</a>.</p></section>
+  </main>
+  <footer class="page-footer">CodeLeaf SQL practice guide<div class="page-footer-links"><a href="/">Home</a><a href="/about">About</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/contact">Contact</a></div></footer>
+</body>
+</html>

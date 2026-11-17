@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MongoDB Playground Guide | Practice document queries in CodeLeaf</title>
+  <meta name="description" content="Learn a practical workflow for MongoDB find queries, projections, sorting, limits, and aggregation pipelines in the CodeLeaf playground.">
+  <meta name="robots" content="index,follow"><link rel="canonical" href="https://codeleaf-org.vercel.app/guides/mongodb-playground">
+  <link rel="stylesheet" href="/site-pages/site-pages.css">
+</head>
+<body>
+  <header class="site-header"><a class="site-brand" href="/"><img src="/image.png" alt="CodeLeaf"><span><strong>CodeLeaf</strong><small>MongoDB practice guide</small></span></a><nav class="site-nav" aria-label="Primary"><a href="/about">About</a><a href="/guides/sql-playground">SQL guide</a><a href="/faq">FAQ</a><a href="/workspaceide">Open workspace</a></nav></header>
+  <main class="page-shell">
+    <p class="page-kicker">Document database learning</p>
+    <h1>Explore documents, then explain the result.</h1>
+    <p class="page-lead">MongoDB practice is easier when you can inspect a collection before writing the query. CodeLeaf gives you sample data, a schema view, a query editor, and a result panel for short, repeatable experiments.</p>
+    <section class="page-section"><h2>Start with find, projection, and sort</h2><p>Use a collection available in the database explorer. The exact collection names depend on the selected sample dataset, but the workflow stays the same:</p><pre>db.products.find({ category: "Books" }, {
+  name: 1,
+  price: 1,
+  _id: 0
+}).sort({ price: -1 }).limit(5)</pre><p>This query filters documents, returns only the fields needed for the exercise, orders the results by price, and limits the output. Run one change at a time so you can tell which part affected the result.</p></section>
+    <div class="content-grid"><article class="content-card"><h2>Inspect first</h2><p>Open the schema or sample document view before guessing field names. Document data can contain nested objects and arrays, so a quick inspection prevents many empty-result queries.</p></article><article class="content-card"><h2>Build pipelines</h2><p>Use aggregation stages such as <code>$match</code>, <code>$project</code>, <code>$group</code>, and <code>$sort</code>. Keep each stage focused and check the output as your pipeline grows.</p></article><article class="content-card"><h2>Compare results</h2><p>When a query returns no documents, simplify it: remove the sort, then the projection, then the filter. Rebuild from the first step that returns the expected shape.</p></article></div>
+    <section class="page-section"><h2>A small aggregation exercise</h2><p>Suppose each product contains <code>category</code> and <code>price</code>. This pipeline groups products by category and calculates a count and average price:</p><pre>db.products.aggregate([
+  { $match: { price: { $gt: 10 } } },
+  { $group: {
+      _id: "$category",
+      items: { $sum: 1 },
+      averagePrice: { $avg: "$price" }
+  } },
+  { $sort: { averagePrice: -1 } }
+])</pre><p>Read the pipeline from top to bottom. First it removes low-priced products, then it groups the remaining documents, and finally it orders the summary.</p></section>
+    <section class="page-section"><h2>Practice responsibly</h2><p>The playground uses bounded sample data for learning. It is not a replacement for validating a query against your own MongoDB version and indexes. Do not upload confidential records or credentials. For relational exercises, switch to the <a href="/guides/sql-playground">SQL practice guide</a>.</p><p><a href="/workspaceide">Open the database workspace</a> and try the examples with the schema panel visible.</p></section>
+  </main>
+  <footer class="page-footer">CodeLeaf MongoDB practice guide<div class="page-footer-links"><a href="/">Home</a><a href="/about">About</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/contact">Contact</a></div></footer>
+</body>
+</html>

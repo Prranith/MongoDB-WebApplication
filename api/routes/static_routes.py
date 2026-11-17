@@ -42,6 +42,16 @@ _APP_ROUTES = {
     "/joinmeet": {"name": "join-meeting", "initial": "join-meeting"},
 }
 
+_PUBLIC_CONTENT_PAGES = {
+    "/about": "about.html",
+    "/faq": "faq.html",
+    "/privacy": "privacy.html",
+    "/terms": "terms.html",
+    "/contact": "contact.html",
+    "/guides/sql-playground": "guides-sql-playground.html",
+    "/guides/mongodb-playground": "guides-mongodb-playground.html",
+}
+
 
 def _app_shell(route="/"):
     if not INDEX_HTML:
@@ -56,6 +66,13 @@ def _serve_app_route(route):
     if shell:
         return shell, 200, {"Content-Type": "text/html; charset=utf-8"}
     return send_from_directory(str(PUBLIC_DIR), "index.html")
+
+
+def _serve_public_content_page(route):
+    filename = _PUBLIC_CONTENT_PAGES.get(route)
+    if not filename:
+        return jsonify({"error": "Not found"}), 404
+    return send_from_directory(str(PUBLIC_DIR / "site-pages"), filename)
 
 @static_bp.route("/admin")
 def serve_admin():
@@ -96,6 +113,17 @@ def serve_index():
 @static_bp.route("/joinmeet")
 def serve_app_entry():
     return _serve_app_route(request.path)
+
+
+@static_bp.route("/about")
+@static_bp.route("/faq")
+@static_bp.route("/privacy")
+@static_bp.route("/terms")
+@static_bp.route("/contact")
+@static_bp.route("/guides/sql-playground")
+@static_bp.route("/guides/mongodb-playground")
+def serve_public_content_page():
+    return _serve_public_content_page(request.path)
 
 
 @static_bp.route("/<string:student_id>/submission")

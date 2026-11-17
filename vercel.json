@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/index.py": {
-      "includeFiles": "{databases/**,public/assets/**,public/image.png,public/image1.png,public/robots.txt,public/sitemap.xml,public/admin.html,public/admin.css,public/admin.js}",
+      "includeFiles": "{databases/**,public/assets/**,public/site-pages/**,public/image.png,public/image1.png,public/robots.txt,public/sitemap.xml,public/ads.txt,public/admin.html,public/admin.css,public/admin.js}",
       "excludeFiles": "{tests/**,scratch/**,ui/**,**/__pycache__/**,**/*.pyc,requirements-desktop.txt}"
     }
   },
