@@ -19,6 +19,20 @@ def test_public_content_pages_are_reachable_and_indexable():
         assert "CodeLeaf" in body
 
 
+def test_welcome_screen_links_to_all_public_information_pages():
+    body = app.test_client().get("/").get_data(as_text=True)
+    for path in (
+        "/about",
+        "/faq",
+        "/guides/sql-playground",
+        "/guides/mongodb-playground",
+        "/privacy",
+        "/terms",
+        "/contact",
+    ):
+        assert f'href="{path}"' in body
+
+
 def test_ads_txt_publishes_the_configured_google_seller():
     response = app.test_client().get("/ads.txt")
     assert response.status_code == 200

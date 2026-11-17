@@ -383,6 +383,26 @@
       <!-- Canvas for particle background -->
       <canvas id="particle-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></canvas>
 
+      <nav class="intro-public-nav" aria-label="CodeLeaf information">
+        <a href="/about">About</a>
+        <a href="/faq">FAQ</a>
+        <details class="intro-nav-menu">
+          <summary>Guides</summary>
+          <div class="intro-nav-dropdown">
+            <a href="/guides/sql-playground">SQL Playground</a>
+            <a href="/guides/mongodb-playground">MongoDB Playground</a>
+          </div>
+        </details>
+        <details class="intro-nav-menu">
+          <summary>Policies</summary>
+          <div class="intro-nav-dropdown">
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </div>
+        </details>
+        <a href="/contact">Contact</a>
+      </nav>
+
       <div class="intro-wrap" style="position: relative; z-index: 2; background: transparent;">
         <div class="intro-brand-lockup">
           <img class="intro-logo" id="logo-img" src="assets/branding/codeleaf-emblem.png?v=20261019-home" alt="CodeLeaf leaf circuit emblem" onclick="showView('ide')"/>

@@ -2858,6 +2858,80 @@ li.CodeMirror-hint-active {
   display: none;
 }
 
+/* Compact public navigation for the welcome screen. It keeps the application
+   hero untouched while giving visitors direct access to the information pages. */
+.intro-public-nav {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px;
+  border: 1px solid rgba(151, 206, 169, .2);
+  border-radius: 9px;
+  background: rgba(4, 15, 9, .64);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .16);
+  backdrop-filter: blur(12px);
+}
+.intro-public-nav > a,
+.intro-nav-menu > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #b8d0be;
+  font: 600 10px 'JetBrains Mono', Consolas, monospace;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  list-style: none;
+  transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+.intro-nav-menu > summary::-webkit-details-marker { display: none; }
+.intro-nav-menu > summary::after {
+  content: '⌄';
+  margin-left: 5px;
+  color: #78a98a;
+  font-size: 11px;
+}
+.intro-public-nav > a:hover,
+.intro-nav-menu > summary:hover,
+.intro-nav-menu[open] > summary {
+  border-color: rgba(131, 233, 176, .3);
+  color: #edfff2;
+  background: rgba(28, 104, 61, .3);
+}
+.intro-nav-menu { position: relative; }
+.intro-nav-dropdown {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  display: grid;
+  min-width: 184px;
+  padding: 5px;
+  border: 1px solid rgba(151, 206, 169, .23);
+  border-radius: 8px;
+  background: rgba(6, 20, 12, .96);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .35);
+  backdrop-filter: blur(14px);
+}
+.intro-nav-dropdown a {
+  padding: 8px 9px;
+  border-radius: 5px;
+  color: #b8d0be;
+  font: 600 10px 'JetBrains Mono', Consolas, monospace;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.intro-nav-dropdown a:hover {
+  color: #edfff2;
+  background: rgba(42, 143, 82, .26);
+}
+
 @keyframes codeleaf-home-cinematic {
   0% { transform: translate3d(-2.2%, -1.2%, 0) scale(1) rotate(-0.15deg); }
   25% { transform: translate3d(1.4%, -2.4%, 0) scale(1.15) rotate(0.05deg); }
@@ -2997,6 +3071,21 @@ li.CodeMirror-hint-active {
 }
 
 @media (max-width: 560px) {
+  .intro-public-nav {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    justify-content: center;
+    gap: 1px;
+    padding: 4px;
+  }
+
+  .intro-public-nav > a,
+  .intro-nav-menu > summary {
+    padding: 0 6px;
+    font-size: 9px;
+  }
+
   .intro-brand-lockup {
     padding: 0 24px;
   }
@@ -9035,6 +9124,26 @@ li.CodeMirror-hint-active {
     <div id="intro-panel" class="active" style="position: relative; overflow: hidden;">
       <!-- Canvas for particle background -->
       <canvas id="particle-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></canvas>
+
+      <nav class="intro-public-nav" aria-label="CodeLeaf information">
+        <a href="/about">About</a>
+        <a href="/faq">FAQ</a>
+        <details class="intro-nav-menu">
+          <summary>Guides</summary>
+          <div class="intro-nav-dropdown">
+            <a href="/guides/sql-playground">SQL Playground</a>
+            <a href="/guides/mongodb-playground">MongoDB Playground</a>
+          </div>
+        </details>
+        <details class="intro-nav-menu">
+          <summary>Policies</summary>
+          <div class="intro-nav-dropdown">
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </div>
+        </details>
+        <a href="/contact">Contact</a>
+      </nav>
 
       <div class="intro-wrap" style="position: relative; z-index: 2; background: transparent;">
         <div class="intro-brand-lockup">
