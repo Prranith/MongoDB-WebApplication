@@ -53,6 +53,8 @@ const ExamPortal = (() => {
       ignoreFullscreenChange: false,
       finalSubmissionConfirmed: false,
       finalSubmissionInFlight: false,
+      executionController: null,
+      executionStopped: false,
     }
   };
 
@@ -160,6 +162,54 @@ const ExamPortal = (() => {
       toggle.setAttribute('title', 'Expand execution log');
       toggle.textContent = '⌄';
     }
+  }
+
+  const STUDENT_RUN_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+  const STUDENT_STOP_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>';
+
+  function setStudentRunButton(running) {
+    const button = el('student-run-btn');
+    if (!button) return;
+    button.classList.toggle('running', !!running);
+    button.innerHTML = running ? `${STUDENT_STOP_ICON} Stop` : `${STUDENT_RUN_ICON} Run`;
+    button.disabled = false;
+  }
+
+  function beginStudentExecution() {
+    const execution = { controller: new AbortController(), stopped: false };
+    state.student.executionController = execution;
+    state.student.executionStopped = false;
+    setStudentRunButton(true);
+    return execution;
+  }
+
+  function finishStudentExecution(execution) {
+    if (state.student.executionController !== execution) return;
+    state.student.executionController = null;
+    state.student.executionStopped = false;
+    setStudentRunButton(false);
+  }
+
+  function stopStudentExecution() {
+    const execution = state.student.executionController;
+    if (!execution) return false;
+    execution.stopped = true;
+    state.student.executionStopped = true;
+    execution.controller.abort();
+    if (typeof ClientExecution !== 'undefined' && ClientExecution.stop) ClientExecution.stop();
+    setStudentRunButton(false);
+    const status = el('student-console-status');
+    if (status) {
+      status.textContent = '■ Execution stopped';
+      status.style.color = 'var(--text3)';
+    }
+    updateStudentExecutionCard('Execution cancelled by the user.', { mode: state.student.executionCardMode || 'local', kind: 'error' });
+    finishStudentExecutionCard();
+    return true;
+  }
+
+  function studentExecutionStopped(execution) {
+    return !execution || execution.stopped || execution.controller.signal.aborted;
   }
 
   function langCommentPrefix(lang) {
@@ -446,14 +496,14 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
   // One execution path for SQL questions in both mentor and student views.
   // The server route is backed by SqlService, so SQL questions get the same
   // MySQL-compatible parser, constraints, joins, aggregates, and limits.
-  async function runExamSql(roomId, datasetIds, query, limit = 10000) {
+  async function runExamSql(roomId, datasetIds, query, limit = 10000, options = {}) {
     return apiCall(`/api/exam/room/${roomId}/query`, 'POST', {
       datasetIds,
       query,
       queryType: 'sql',
       type: 'sql',
       limit,
-    });
+    }, options);
   }
 
   function renderExamSqlResult(result, emptyMessage = '-- No rows returned') {
@@ -614,16 +664,18 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     if (tone === 'error') saveEl.classList.add('is-error');
   }
 
-  async function apiCall(url, method = 'GET', body = null) {
+  async function apiCall(url, method = 'GET', body = null, options = {}) {
     try {
       const opts = {
         method,
         headers: { 'Content-Type': 'application/json' },
+        ...options,
       };
       if (body) opts.body = JSON.stringify(body);
       const res = await fetch(url, opts);
       return await res.json();
     } catch (e) {
+      if (e && e.name === 'AbortError') return { status: 'stopped', aborted: true, error: 'Execution stopped by the user.' };
       return { status: 'error', error: '// Connection error — retrying...' };
     }
   }
@@ -4255,6 +4307,19 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async runQuery() {
+      if (state.student.executionController) {
+        stopStudentExecution();
+        return;
+      }
+      const execution = beginStudentExecution();
+      try {
+        return await studentNS._runQuery(execution);
+      } finally {
+        finishStudentExecution(execution);
+      }
+    },
+
+    async _runQuery(execution) {
       const cm = state.student.examEditor;
       if (!cm) return;
       const query = cm.getValue();
@@ -4267,12 +4332,11 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           el('student-pane-yours').innerHTML = '<span style="color:var(--red)">// No dataset linked to this question</span>';
           return;
         }
-        el('student-run-btn').textContent = 'Running...';
-        el('student-run-btn').disabled = true;
+        setStudentRunButton(true);
         setExamExecutionOrigin('remote');
-        const res = await runExamSql(state.student.roomId, datasetIds, query);
-        el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
-        el('student-run-btn').disabled = false;
+        const res = await runExamSql(state.student.roomId, datasetIds, query, 10000, { signal: execution.controller.signal });
+        if (studentExecutionStopped(execution)) return;
+        setStudentRunButton(false);
         if (res.status === 'ok') {
           state.student.sqlResult = res;
           q._studentResult = res;
@@ -4302,8 +4366,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         // intentional remote custom-verification path.
         const hasCustomInput = state.student.activeConsoleTab === 'custom' && customInputVal.trim().length > 0;
 
-        el('student-run-btn').textContent = 'Running...';
-        el('student-run-btn').disabled = true;
+        setStudentRunButton(true);
         startStudentExecutionCard(q.language);
         setExamExecutionOrigin('local');
         el('student-console-status').style.color = 'var(--text3)';
@@ -4328,6 +4391,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             for (const inp of stdins) {
               const res = await ClientExecution.run('python', codeToExecute, inp, {
                 timeoutMs: 60000,
+                signal: execution.controller.signal,
                 onProgress: progress => {
                   if (progress && progress.detail) {
                     console.info('[CodeLeaf exam]', progress.detail);
@@ -4336,6 +4400,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 }
               });
               if (!res) throw new Error('The Python browser runtime returned no result.');
+              if (res.aborted || studentExecutionStopped(execution)) return { aborted: true };
               results.push({
                 stdout: res.stdout || '',
                 stderr: res.stderr || '',
@@ -4347,7 +4412,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             return results;
           };
 
-          runLocalCases().then(async results => {
+          await runLocalCases().then(async results => {
+            if (results?.aborted || studentExecutionStopped(execution)) return;
             let finalResults = results;
             let usedRemoteFallback = false;
             const localFailed = results.some(isExecutionFailure);
@@ -4363,7 +4429,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 language: q.language,
                 code: query,
                 stdins
-              });
+              }, { signal: execution.controller.signal });
+              if (studentExecutionStopped(execution)) return;
               if (fallback.status === 'ok' && fallback.results) {
                 finalResults = fallback.results;
                 updateStudentExecutionCard('Server-side execution completed.', { mode: 'remote', kind: 'done' });
@@ -4386,7 +4453,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 language: q.language,
                 code: query,
                 stdin: customInputVal
-              });
+              }, { signal: execution.controller.signal });
+              if (studentExecutionStopped(execution)) return;
               if (customResult.status === 'ok' && customResult.results && customResult.results[0]) {
                 state.student.runResults[`${q.id}-custom`] = {
                   ...customResult.results[0],
@@ -4418,6 +4486,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           for (const inp of stdins) {
             const local = await ClientExecution.run(codingLanguage, codeToExecute, inp, {
               timeoutMs: 120000,
+              signal: execution.controller.signal,
               onProgress: progress => {
                 if (progress && progress.detail) {
                   console.info('[CodeLeaf exam]', progress.detail);
@@ -4425,6 +4494,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 }
               }
             });
+            if (local?.aborted || studentExecutionStopped(execution)) return;
             if (!local) {
               localRuntimeAvailable = false;
               localFailureReason = 'The browser runtime returned no result.';
@@ -4460,7 +4530,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 language: q.language,
                 code: query,
                 stdin: customInputVal
-              });
+              }, { signal: execution.controller.signal });
+              if (studentExecutionStopped(execution)) return;
               if (customResult.status === 'ok' && customResult.results && customResult.results[0]) {
                 state.student.runResults[`${q.id}-custom`] = {
                   ...customResult.results[0],
@@ -4518,7 +4589,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           language: q.language,
           code: query,
           stdins: stdins
-        });
+        }, { signal: execution.controller.signal });
+
+        if (studentExecutionStopped(execution)) return;
 
         el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
         el('student-run-btn').disabled = false;
@@ -4536,7 +4609,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               language: q.language,
               code: query,
               stdin: customInputVal
-            });
+            }, { signal: execution.controller.signal });
+            if (studentExecutionStopped(execution)) return;
             if (customResult.status === 'ok' && customResult.results && customResult.results[0]) {
               state.student.runResults[`${q.id}-custom`] = {
                 ...customResult.results[0],
@@ -4565,8 +4639,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         return;
       }
 
-      el('student-run-btn').textContent = 'Running...';
-      el('student-run-btn').disabled = true;
+      setStudentRunButton(true);
       setExamExecutionOrigin('remote');
       el('student-console-status').style.color = 'var(--text3)';
 
@@ -4574,7 +4647,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         datasetIds,
         query,
         limit: 100,
-      });
+      }, { signal: execution.controller.signal });
+
+      if (studentExecutionStopped(execution)) return;
 
       el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
       el('student-run-btn').disabled = false;

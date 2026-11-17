@@ -528,6 +528,17 @@ const ClientExecution = (() => {
       }
       return result;
     } catch (error) {
+      if (options.signal && options.signal.aborted) {
+        return {
+          status: 'stopped',
+          aborted: true,
+          code: 1,
+          stdout: '',
+          stderr: 'Execution stopped by the user.',
+          runtime: 'codeleaf-browser',
+          duration: (performance.now() - started).toFixed(2)
+        };
+      }
       // Supported languages are intentionally device-only. Do not silently
       // forward source code to the remote executor when a local runtime fails.
       const message = error && error.message ? error.message : String(error || 'Client runtime failed');

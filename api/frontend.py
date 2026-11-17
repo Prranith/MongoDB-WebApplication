@@ -403,6 +403,16 @@ body {
   border-left-color: #cccccc;
 }
 
+.act-public-link {
+  color: #777;
+  text-decoration: none;
+}
+
+.act-public-link:hover {
+  color: var(--green2);
+  background: rgba(78, 201, 176, .06);
+}
+
 .act-btn-meeting {
   color: #00ed64;
 }
@@ -473,6 +483,7 @@ body {
 .sidebar-panel.active {
   display: flex;
 }
+
 
 .panel-hdr {
   height: 24px;
@@ -2858,80 +2869,6 @@ li.CodeMirror-hint-active {
   display: none;
 }
 
-/* Compact public navigation for the welcome screen. It keeps the application
-   hero untouched while giving visitors direct access to the information pages. */
-.intro-public-nav {
-  position: absolute;
-  top: 18px;
-  right: 24px;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 5px;
-  border: 1px solid rgba(151, 206, 169, .2);
-  border-radius: 9px;
-  background: rgba(4, 15, 9, .64);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, .16);
-  backdrop-filter: blur(12px);
-}
-.intro-public-nav > a,
-.intro-nav-menu > summary {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 9px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: #b8d0be;
-  font: 600 10px 'JetBrains Mono', Consolas, monospace;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-  list-style: none;
-  transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
-}
-.intro-nav-menu > summary::-webkit-details-marker { display: none; }
-.intro-nav-menu > summary::after {
-  content: '⌄';
-  margin-left: 5px;
-  color: #78a98a;
-  font-size: 11px;
-}
-.intro-public-nav > a:hover,
-.intro-nav-menu > summary:hover,
-.intro-nav-menu[open] > summary {
-  border-color: rgba(131, 233, 176, .3);
-  color: #edfff2;
-  background: rgba(28, 104, 61, .3);
-}
-.intro-nav-menu { position: relative; }
-.intro-nav-dropdown {
-  position: absolute;
-  top: calc(100% + 7px);
-  right: 0;
-  display: grid;
-  min-width: 184px;
-  padding: 5px;
-  border: 1px solid rgba(151, 206, 169, .23);
-  border-radius: 8px;
-  background: rgba(6, 20, 12, .96);
-  box-shadow: 0 16px 34px rgba(0, 0, 0, .35);
-  backdrop-filter: blur(14px);
-}
-.intro-nav-dropdown a {
-  padding: 8px 9px;
-  border-radius: 5px;
-  color: #b8d0be;
-  font: 600 10px 'JetBrains Mono', Consolas, monospace;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.intro-nav-dropdown a:hover {
-  color: #edfff2;
-  background: rgba(42, 143, 82, .26);
-}
-
 @keyframes codeleaf-home-cinematic {
   0% { transform: translate3d(-2.2%, -1.2%, 0) scale(1) rotate(-0.15deg); }
   25% { transform: translate3d(1.4%, -2.4%, 0) scale(1.15) rotate(0.05deg); }
@@ -3071,21 +3008,6 @@ li.CodeMirror-hint-active {
 }
 
 @media (max-width: 560px) {
-  .intro-public-nav {
-    top: 10px;
-    right: 10px;
-    left: 10px;
-    justify-content: center;
-    gap: 1px;
-    padding: 4px;
-  }
-
-  .intro-public-nav > a,
-  .intro-nav-menu > summary {
-    padding: 0 6px;
-    font-size: 9px;
-  }
-
   .intro-brand-lockup {
     padding: 0 24px;
   }
@@ -8991,11 +8913,33 @@ li.CodeMirror-hint-active {
     <button class="act-btn" id="act-search" data-tip="Search Workspace" onclick="setSidePanel('search')">
       <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
     </button>
+    <!-- Public information links -->
+    <a class="act-btn act-public-link" href="/about" data-tip="About" aria-label="About CodeLeaf">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 10h2v7h-2v-7Zm0-4h2v2h-2V6Zm1-4a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
+    </a>
+    <a class="act-btn act-public-link" href="/faq" data-tip="FAQ" aria-label="Frequently asked questions">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 10 10A10.01 10.01 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Zm-1-5h2v2h-2v-2Zm1.9-2.1-.9.6V14h-2v-1.6a1 1 0 0 1 .45-.84l1.35-.9a1.5 1.5 0 1 0-2.3-1.26H7.5a3.5 3.5 0 1 1 5.4 2.94Z"/></svg>
+    </a>
+    <a class="act-btn act-public-link" href="/guides/sql-playground" data-tip="SQL Playground" aria-label="SQL Playground guide">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5.5C4 3.57 7.58 2 12 2s8 1.57 8 3.5S16.42 9 12 9 4 7.43 4 5.5Zm0 5C4 12.43 7.58 14 12 14s8-1.57 8-3.5V14.5c0 1.93-3.58 3.5-8 3.5s-8-1.57-8-3.5v-4Zm0 5C4 17.43 7.58 19 12 19s8-1.57 8-3.5V19c0 1.93-3.58 3.5-8 3.5S4 20.93 4 19v-3.5Z"/></svg>
+    </a>
+    <a class="act-btn act-public-link" href="/guides/mongodb-playground" data-tip="MongoDB Playground" aria-label="MongoDB Playground guide">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c3.31 0 6 1.34 6 3v5c0 1.66-2.69 3-6 3s-6-1.34-6-3V5c0-1.66 2.69-3 6-3Zm-6 9c0 1.66 2.69 3 6 3s6-1.34 6-3v4c0 1.66-2.69 3-6 3s-6-1.34-6-3v-4Zm0 5c0 1.66 2.69 3 6 3s6-1.34 6-3v3c0 1.66-2.69 3-6 3s-6-1.34-6-3v-3Z"/></svg>
+    </a>
+    <a class="act-btn act-public-link" href="/privacy" data-tip="Privacy" aria-label="Privacy policy">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5.25 3.4 9.86 8 11 4.6-1.14 8-5.75 8-11V5l-8-3Zm0 17.9c-3.1-1.1-6-4.5-6-8.9V6.38l6-2.25 6 2.25V11c0 4.4-2.9 7.8-6 8.9ZM11 7h2v5h-2V7Zm0 6h2v2h-2v-2Z"/></svg>
+    </a>
+    <a class="act-btn act-public-link" href="/terms" data-tip="Terms" aria-label="Terms of use">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v15H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 2H6v16h12V8h-4V4Zm-5 7h6v2H9v-2Zm0 4h6v2H9v-2Z"/></svg>
+    </a>
+    <a class="act-btn act-public-link" href="/contact" data-tip="Contact" aria-label="Contact CodeLeaf">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 3v1.2l8 5.33 8-5.33V7l-8 5.33L4 7Z"/></svg>
+    </a>
     <!-- 7th: Exam Portal -->
     <button class="act-btn" id="act-exam" data-tip="Exam Portal" onclick="window.ExamPortal && window.ExamPortal.showRoleSelection()">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
     </button>
-    <!-- 8th: Join Call (video meeting) — always visible in activity bar -->
+    <!-- Join Call (video meeting) — always visible in activity bar -->
     <button class="act-btn act-btn-meeting" id="btn-join-meeting" data-tip="Join Video Call" onclick="MeetingRoom.toggleMeeting()">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
     </button>
@@ -9111,6 +9055,7 @@ li.CodeMirror-hint-active {
       <div id="workspace-search-status" class="workspace-search-status">Search across the current workspace</div>
       <div id="workspace-search-results" class="workspace-search-results" role="list"></div>
     </div>
+
   </div>
 
   <!-- Resize handle -->
@@ -9124,26 +9069,6 @@ li.CodeMirror-hint-active {
     <div id="intro-panel" class="active" style="position: relative; overflow: hidden;">
       <!-- Canvas for particle background -->
       <canvas id="particle-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></canvas>
-
-      <nav class="intro-public-nav" aria-label="CodeLeaf information">
-        <a href="/about">About</a>
-        <a href="/faq">FAQ</a>
-        <details class="intro-nav-menu">
-          <summary>Guides</summary>
-          <div class="intro-nav-dropdown">
-            <a href="/guides/sql-playground">SQL Playground</a>
-            <a href="/guides/mongodb-playground">MongoDB Playground</a>
-          </div>
-        </details>
-        <details class="intro-nav-menu">
-          <summary>Policies</summary>
-          <div class="intro-nav-dropdown">
-            <a href="/privacy">Privacy</a>
-            <a href="/terms">Terms</a>
-          </div>
-        </details>
-        <a href="/contact">Contact</a>
-      </nav>
 
       <div class="intro-wrap" style="position: relative; z-index: 2; background: transparent;">
         <div class="intro-brand-lockup">
@@ -13608,6 +13533,17 @@ const ClientExecution = (() => {
       }
       return result;
     } catch (error) {
+      if (options.signal && options.signal.aborted) {
+        return {
+          status: 'stopped',
+          aborted: true,
+          code: 1,
+          stdout: '',
+          stderr: 'Execution stopped by the user.',
+          runtime: 'codeleaf-browser',
+          duration: (performance.now() - started).toFixed(2)
+        };
+      }
       // Supported languages are intentionally device-only. Do not silently
       // forward source code to the remote executor when a local runtime fails.
       const message = error && error.message ? error.message : String(error || 'Client runtime failed');
@@ -13637,6 +13573,56 @@ const ClientExecution = (() => {
 const SQL_SANDBOXES = new Map();
 const SQL_NOTEBOOK_OUTPUTS = new Map();
 let SQL_NOTEBOOK_EDITORS = [];
+let activeWorkspaceExecution = null;
+
+const WORKSPACE_RUN_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+const WORKSPACE_STOP_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>';
+
+function workspaceRunButton() {
+  return [...document.querySelectorAll('.tbtn-run')]
+    .find(button => button.id !== 'student-run-btn' && button.offsetParent !== null)
+    || document.querySelector('.tbtn-run:not(#student-run-btn)');
+}
+
+function setWorkspaceRunButton(running) {
+  const button = workspaceRunButton();
+  if (!button) return;
+  button.classList.toggle('running', !!running);
+  button.innerHTML = running ? `${WORKSPACE_STOP_ICON} Stop` : `${WORKSPACE_RUN_ICON} Run`;
+}
+
+function beginWorkspaceExecution() {
+  if (activeWorkspaceExecution) return activeWorkspaceExecution;
+  activeWorkspaceExecution = { controller: new AbortController(), stopped: false };
+  setWorkspaceRunButton(true);
+  return activeWorkspaceExecution;
+}
+
+function finishWorkspaceExecution(execution) {
+  if (activeWorkspaceExecution !== execution) return;
+  activeWorkspaceExecution = null;
+  setWorkspaceRunButton(false);
+}
+
+function stopWorkspaceExecution() {
+  const execution = activeWorkspaceExecution;
+  if (!execution) return false;
+  execution.stopped = true;
+  execution.controller.abort();
+  if (typeof ClientExecution !== 'undefined' && ClientExecution.stop) ClientExecution.stop();
+  stopExecutionProgress();
+  setWorkspaceRunButton(false);
+  const status = document.getElementById('console-status');
+  if (status) status.textContent = '■ Execution stopped';
+  const output = document.getElementById('output-text');
+  if (output) output.innerHTML = '<span class="out-info">[stopped] Execution cancelled by the user.</span>';
+  activeWorkspaceExecution = null;
+  return true;
+}
+
+function workspaceExecutionStopped(execution) {
+  return !execution || execution.stopped || execution.controller.signal.aborted;
+}
 
 function sqlSandboxKey() {
   return S.activeFile || '__workspace_editor__';
@@ -13788,7 +13774,17 @@ function renderSqlNotebook(source) {
   runAll.type = 'button';
   runAll.className = 'sql-notebook-action';
   runAll.textContent = 'Run all';
-  runAll.onclick = async () => { for (let index = 0; index < document.querySelectorAll('.sql-notebook-cell').length; index++) await runSqlNotebookCell(index); };
+  runAll.onclick = async () => {
+    const execution = beginWorkspaceExecution();
+    try {
+      for (let index = 0; index < document.querySelectorAll('.sql-notebook-cell').length; index++) {
+        if (workspaceExecutionStopped(execution)) break;
+        await runSqlNotebookCell(index);
+      }
+    } finally {
+      finishWorkspaceExecution(execution);
+    }
+  };
   const addCell = document.createElement('button');
   addCell.type = 'button';
   addCell.dataset.sqlAction = 'add-cell';
@@ -13909,13 +13905,15 @@ function initializeSqlNotebook(source) {
 }
 
 async function runSqlNotebookCell(index) {
+  const ownsExecution = !activeWorkspaceExecution;
+  const execution = beginWorkspaceExecution();
   syncSqlNotebookToFile();
   const cell = document.querySelector(`.sql-notebook-cell[data-cell-index="${index}"]`);
-  if (!cell) return;
+  if (!cell) { if (ownsExecution) finishWorkspaceExecution(execution); return; }
   const input = cell.querySelector('.sql-cell-input');
   const output = cell.querySelector('.sql-cell-output');
   const query = (SQL_NOTEBOOK_EDITORS[index]?.getValue() || input.value).trim();
-  if (!query) return;
+  if (!query) { if (ownsExecution) finishWorkspaceExecution(execution); return; }
   output.classList.add('has-result');
   output.classList.remove('error');
   output.textContent = 'Running…';
@@ -13923,20 +13921,32 @@ async function runSqlNotebookCell(index) {
   try {
     const requestBody = { query, limit: S.settings ? S.settings.maxResults : 500 };
     if (SQL_SANDBOXES.has(runtimeKey)) requestBody.tables = SQL_SANDBOXES.get(runtimeKey);
-    const result = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody) });
+    const result = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody), signal: execution.controller.signal });
+    if (workspaceExecutionStopped(execution)) return;
     if (result.status !== 'ok') throw new Error(result.error || 'SQL execution failed');
     if (result.tables) SQL_SANDBOXES.set(runtimeKey, result.tables);
     const html = renderSqlResultTable(result, 'sql-notebook-result');
     output.innerHTML = html;
     SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, { ...(SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {}), [index]: { html } });
   } catch (error) {
+    if (workspaceExecutionStopped(execution)) {
+      output.classList.remove('error');
+      output.textContent = '[stopped] Execution cancelled by the user.';
+      return;
+    }
     output.classList.add('error');
     output.textContent = `[error] ${error.message}`;
     SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, { ...(SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {}), [index]: { text: output.textContent, error: true } });
+  } finally {
+    if (ownsExecution) finishWorkspaceExecution(execution);
   }
 }
 
 async function runQuery() {
+  if (activeWorkspaceExecution) {
+    stopWorkspaceExecution();
+    return;
+  }
   if (window.Auth && !Auth.user) {
     Auth.require(() => runQuery());
     return;
@@ -13966,13 +13976,15 @@ async function runQuery() {
     }
     const q = source.trim();
     if (!q) return;
+    const execution = beginWorkspaceExecution();
     const statEl = document.getElementById('console-status');
     if (statEl) statEl.textContent = '⟳ Running SQL...';
     try {
       const sandboxKey = sqlSandboxKey();
       const requestBody = { query: q, limit: S.settings ? S.settings.maxResults : 500 };
       if (SQL_SANDBOXES.has(sandboxKey)) requestBody.tables = SQL_SANDBOXES.get(sandboxKey);
-      const d = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody) });
+      const d = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody), signal: execution.controller.signal });
+      if (workspaceExecutionStopped(execution)) return;
       if (d.status !== 'ok') throw new Error(d.error || 'SQL execution failed');
       if (d.tables) SQL_SANDBOXES.set(sandboxKey, d.tables);
       S.lastData = d.rows; S.lastRaw = JSON.stringify(d, null, 2);
@@ -13983,7 +13995,14 @@ async function runQuery() {
       if (document.getElementById('console-time')) document.getElementById('console-time').textContent = `${d.duration || 0}ms`;
       if (document.getElementById('console-count')) document.getElementById('console-count').textContent = `${resultCount} ${d.operation && d.operation !== 'select' ? 'affected' : 'rows'}`;
       renderTreeView(d.rows); renderRawJsonView(d); renderSqlTable(d);
-    } catch (e) { if (statEl) statEl.textContent = `✕ ${e.message}`; logOutput(`<span class="out-error">[error] ${e.message}</span>`); }
+    } catch (e) {
+      if (!workspaceExecutionStopped(execution)) {
+        if (statEl) statEl.textContent = `✕ ${e.message}`;
+        logOutput(`<span class="out-error">[error] ${e.message}</span>`);
+      }
+    } finally {
+      finishWorkspaceExecution(execution);
+    }
     return;
   }
   if (lang !== 'mongodb') {
@@ -13994,12 +14013,18 @@ async function runQuery() {
       const parts = fullText.split('================= Output =================');
       stdin = parts[0].trim();
     }
-    await runPlaygroundCode(lang, editor.getValue(), stdin);
+    const execution = beginWorkspaceExecution();
+    try {
+      await runPlaygroundCode(lang, editor.getValue(), stdin);
+    } finally {
+      finishWorkspaceExecution(execution);
+    }
     return;
   }
 
   const q = editor.getValue().trim();
   if (!q) return;
+  const execution = beginWorkspaceExecution();
 
   const statEl = document.getElementById('console-status');
   if (statEl) statEl.innerHTML = `⟳ Running query...`;
@@ -14011,9 +14036,7 @@ async function runQuery() {
 
   logOutput(`<span class="out-info">[info] Executing MongoDB command...</span>`);
   
-  const runBtn = document.querySelector('.tbtn-run');
-  runBtn.classList.add('running');
-  runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Stop`;
+  setWorkspaceRunButton(true);
 
   try {
     const limitVal = S.settings ? S.settings.maxResults : 10000;
@@ -14035,14 +14058,15 @@ async function runQuery() {
         query: q, 
         limit: limitVal,
         custom_collections: customCollsMap
-      })
+      }),
+      signal: execution.controller.signal
     });
+    if (workspaceExecutionStopped(execution)) return;
     
     S.lastData = d.data;
     S.lastRaw = JSON.stringify(d.data, null, 2);
     
-    runBtn.classList.remove('running');
-    runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
+    setWorkspaceRunButton(false);
 
     const ms = (d.timing_ms || 0).toFixed(2);
     const count = d.docs_returned || 0;
@@ -14076,10 +14100,13 @@ async function runQuery() {
       saveToHistory(q, 'error', 0, 0);
     }
   } catch(e) {
-    runBtn.classList.remove('running');
-    runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
-    if (statEl) statEl.innerHTML = `— Network Error`;
-    logOutput(`<span class="out-err">[network error] ${esc(e.message)}</span>`);
+    if (!workspaceExecutionStopped(execution)) {
+      setWorkspaceRunButton(false);
+      if (statEl) statEl.innerHTML = `— Network Error`;
+      logOutput(`<span class="out-err">[network error] ${esc(e.message)}</span>`);
+    }
+  } finally {
+    finishWorkspaceExecution(execution);
   }
 }
 
@@ -14582,6 +14609,7 @@ async function runPlaygroundCode(language, code, stdin) {
     return;
   }
   const statEl = document.getElementById('console-status');
+  const execution = activeWorkspaceExecution || beginWorkspaceExecution();
 
   const timeEl = document.getElementById('console-time');
   const countEl = document.getElementById('console-count');
@@ -14596,13 +14624,11 @@ async function runPlaygroundCode(language, code, stdin) {
   if (logView) logView.innerHTML = '';
   appendExecutionCli('[codeleaf] Selecting the safest available execution runtime…');
 
-  const runBtn = document.querySelector('.tbtn-run');
-  if (runBtn) {
-    runBtn.classList.add('running');
-    runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Stop`;
-  }
+  const runBtn = workspaceRunButton();
+  setWorkspaceRunButton(true);
 
   const handleOutput = (d, duration, fallbackNotice) => {
+    if (workspaceExecutionStopped(execution)) return;
     stopExecutionProgress();
     if (runBtn) {
       runBtn.classList.remove('running');
@@ -14658,8 +14684,10 @@ async function runPlaygroundCode(language, code, stdin) {
       timeoutMs: clientTimeout,
       fileName: S.activeFile || 'Main.java',
       strictJavaFilename: language === 'java',
+      signal: execution.controller.signal,
       onProgress: updateExecutionProgress
     });
+    if (workspaceExecutionStopped(execution)) return;
     if (clientResult) {
       const shouldFallbackToRemote = clientResult.runtime === 'codeleaf-browser'
         || clientResult.executionFailure === true
@@ -14676,13 +14704,16 @@ async function runPlaygroundCode(language, code, stdin) {
         const start = performance.now();
         const d = await fetchAPI('/api/sandbox/run', {
           method: 'POST',
-          body: JSON.stringify({ language, code, stdin, filename: S.activeFile || '' })
+          body: JSON.stringify({ language, code, stdin, filename: S.activeFile || '' }),
+          signal: execution.controller.signal
         });
+        if (workspaceExecutionStopped(execution)) return;
         updateExecutionProgress({ detail: 'Execution service completed the run.' });
         d.executionOrigin = 'remote';
         handleOutput(d, (performance.now() - start).toFixed(2), `On-device attempt: ${localFailure}`);
         return;
       } catch (err) {
+        if (workspaceExecutionStopped(execution)) return;
         handleOutput({ status: 'ok', code: 1, stderr: `On-device attempt failed: ${localFailure}\\nExecution service request failed: ${err.message || err}`, executionOrigin: 'remote' }, 0, localFailure);
         return;
       }
@@ -14699,12 +14730,15 @@ async function runPlaygroundCode(language, code, stdin) {
         code: code,
         stdin: stdin,
         filename: S.activeFile || ''
-      })
+      }),
+      signal: execution.controller.signal
     });
+    if (workspaceExecutionStopped(execution)) return;
     const duration = (performance.now() - start).toFixed(2);
     d.executionOrigin = 'remote';
     handleOutput(d, duration);
   } catch (err) {
+    if (workspaceExecutionStopped(execution)) return;
     if (runBtn) {
       runBtn.classList.remove('running');
       runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
@@ -16588,6 +16622,8 @@ const ExamPortal = (() => {
       ignoreFullscreenChange: false,
       finalSubmissionConfirmed: false,
       finalSubmissionInFlight: false,
+      executionController: null,
+      executionStopped: false,
     }
   };
 
@@ -16695,6 +16731,54 @@ const ExamPortal = (() => {
       toggle.setAttribute('title', 'Expand execution log');
       toggle.textContent = '⌄';
     }
+  }
+
+  const STUDENT_RUN_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+  const STUDENT_STOP_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>';
+
+  function setStudentRunButton(running) {
+    const button = el('student-run-btn');
+    if (!button) return;
+    button.classList.toggle('running', !!running);
+    button.innerHTML = running ? `${STUDENT_STOP_ICON} Stop` : `${STUDENT_RUN_ICON} Run`;
+    button.disabled = false;
+  }
+
+  function beginStudentExecution() {
+    const execution = { controller: new AbortController(), stopped: false };
+    state.student.executionController = execution;
+    state.student.executionStopped = false;
+    setStudentRunButton(true);
+    return execution;
+  }
+
+  function finishStudentExecution(execution) {
+    if (state.student.executionController !== execution) return;
+    state.student.executionController = null;
+    state.student.executionStopped = false;
+    setStudentRunButton(false);
+  }
+
+  function stopStudentExecution() {
+    const execution = state.student.executionController;
+    if (!execution) return false;
+    execution.stopped = true;
+    state.student.executionStopped = true;
+    execution.controller.abort();
+    if (typeof ClientExecution !== 'undefined' && ClientExecution.stop) ClientExecution.stop();
+    setStudentRunButton(false);
+    const status = el('student-console-status');
+    if (status) {
+      status.textContent = '■ Execution stopped';
+      status.style.color = 'var(--text3)';
+    }
+    updateStudentExecutionCard('Execution cancelled by the user.', { mode: state.student.executionCardMode || 'local', kind: 'error' });
+    finishStudentExecutionCard();
+    return true;
+  }
+
+  function studentExecutionStopped(execution) {
+    return !execution || execution.stopped || execution.controller.signal.aborted;
   }
 
   function langCommentPrefix(lang) {
@@ -16981,14 +17065,14 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
   // One execution path for SQL questions in both mentor and student views.
   // The server route is backed by SqlService, so SQL questions get the same
   // MySQL-compatible parser, constraints, joins, aggregates, and limits.
-  async function runExamSql(roomId, datasetIds, query, limit = 10000) {
+  async function runExamSql(roomId, datasetIds, query, limit = 10000, options = {}) {
     return apiCall(`/api/exam/room/${roomId}/query`, 'POST', {
       datasetIds,
       query,
       queryType: 'sql',
       type: 'sql',
       limit,
-    });
+    }, options);
   }
 
   function renderExamSqlResult(result, emptyMessage = '-- No rows returned') {
@@ -17149,16 +17233,18 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     if (tone === 'error') saveEl.classList.add('is-error');
   }
 
-  async function apiCall(url, method = 'GET', body = null) {
+  async function apiCall(url, method = 'GET', body = null, options = {}) {
     try {
       const opts = {
         method,
         headers: { 'Content-Type': 'application/json' },
+        ...options,
       };
       if (body) opts.body = JSON.stringify(body);
       const res = await fetch(url, opts);
       return await res.json();
     } catch (e) {
+      if (e && e.name === 'AbortError') return { status: 'stopped', aborted: true, error: 'Execution stopped by the user.' };
       return { status: 'error', error: '// Connection error — retrying...' };
     }
   }
@@ -20790,6 +20876,19 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
     },
 
     async runQuery() {
+      if (state.student.executionController) {
+        stopStudentExecution();
+        return;
+      }
+      const execution = beginStudentExecution();
+      try {
+        return await studentNS._runQuery(execution);
+      } finally {
+        finishStudentExecution(execution);
+      }
+    },
+
+    async _runQuery(execution) {
       const cm = state.student.examEditor;
       if (!cm) return;
       const query = cm.getValue();
@@ -20802,12 +20901,11 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           el('student-pane-yours').innerHTML = '<span style="color:var(--red)">// No dataset linked to this question</span>';
           return;
         }
-        el('student-run-btn').textContent = 'Running...';
-        el('student-run-btn').disabled = true;
+        setStudentRunButton(true);
         setExamExecutionOrigin('remote');
-        const res = await runExamSql(state.student.roomId, datasetIds, query);
-        el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
-        el('student-run-btn').disabled = false;
+        const res = await runExamSql(state.student.roomId, datasetIds, query, 10000, { signal: execution.controller.signal });
+        if (studentExecutionStopped(execution)) return;
+        setStudentRunButton(false);
         if (res.status === 'ok') {
           state.student.sqlResult = res;
           q._studentResult = res;
@@ -20837,8 +20935,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         // intentional remote custom-verification path.
         const hasCustomInput = state.student.activeConsoleTab === 'custom' && customInputVal.trim().length > 0;
 
-        el('student-run-btn').textContent = 'Running...';
-        el('student-run-btn').disabled = true;
+        setStudentRunButton(true);
         startStudentExecutionCard(q.language);
         setExamExecutionOrigin('local');
         el('student-console-status').style.color = 'var(--text3)';
@@ -20863,6 +20960,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             for (const inp of stdins) {
               const res = await ClientExecution.run('python', codeToExecute, inp, {
                 timeoutMs: 60000,
+                signal: execution.controller.signal,
                 onProgress: progress => {
                   if (progress && progress.detail) {
                     console.info('[CodeLeaf exam]', progress.detail);
@@ -20871,6 +20969,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 }
               });
               if (!res) throw new Error('The Python browser runtime returned no result.');
+              if (res.aborted || studentExecutionStopped(execution)) return { aborted: true };
               results.push({
                 stdout: res.stdout || '',
                 stderr: res.stderr || '',
@@ -20882,7 +20981,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
             return results;
           };
 
-          runLocalCases().then(async results => {
+          await runLocalCases().then(async results => {
+            if (results?.aborted || studentExecutionStopped(execution)) return;
             let finalResults = results;
             let usedRemoteFallback = false;
             const localFailed = results.some(isExecutionFailure);
@@ -20898,7 +20998,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 language: q.language,
                 code: query,
                 stdins
-              });
+              }, { signal: execution.controller.signal });
+              if (studentExecutionStopped(execution)) return;
               if (fallback.status === 'ok' && fallback.results) {
                 finalResults = fallback.results;
                 updateStudentExecutionCard('Server-side execution completed.', { mode: 'remote', kind: 'done' });
@@ -20921,7 +21022,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 language: q.language,
                 code: query,
                 stdin: customInputVal
-              });
+              }, { signal: execution.controller.signal });
+              if (studentExecutionStopped(execution)) return;
               if (customResult.status === 'ok' && customResult.results && customResult.results[0]) {
                 state.student.runResults[`${q.id}-custom`] = {
                   ...customResult.results[0],
@@ -20953,6 +21055,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           for (const inp of stdins) {
             const local = await ClientExecution.run(codingLanguage, codeToExecute, inp, {
               timeoutMs: 120000,
+              signal: execution.controller.signal,
               onProgress: progress => {
                 if (progress && progress.detail) {
                   console.info('[CodeLeaf exam]', progress.detail);
@@ -20960,6 +21063,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 }
               }
             });
+            if (local?.aborted || studentExecutionStopped(execution)) return;
             if (!local) {
               localRuntimeAvailable = false;
               localFailureReason = 'The browser runtime returned no result.';
@@ -20995,7 +21099,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
                 language: q.language,
                 code: query,
                 stdin: customInputVal
-              });
+              }, { signal: execution.controller.signal });
+              if (studentExecutionStopped(execution)) return;
               if (customResult.status === 'ok' && customResult.results && customResult.results[0]) {
                 state.student.runResults[`${q.id}-custom`] = {
                   ...customResult.results[0],
@@ -21053,7 +21158,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
           language: q.language,
           code: query,
           stdins: stdins
-        });
+        }, { signal: execution.controller.signal });
+
+        if (studentExecutionStopped(execution)) return;
 
         el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
         el('student-run-btn').disabled = false;
@@ -21071,7 +21178,8 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
               language: q.language,
               code: query,
               stdin: customInputVal
-            });
+            }, { signal: execution.controller.signal });
+            if (studentExecutionStopped(execution)) return;
             if (customResult.status === 'ok' && customResult.results && customResult.results[0]) {
               state.student.runResults[`${q.id}-custom`] = {
                 ...customResult.results[0],
@@ -21100,8 +21208,7 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         return;
       }
 
-      el('student-run-btn').textContent = 'Running...';
-      el('student-run-btn').disabled = true;
+      setStudentRunButton(true);
       setExamExecutionOrigin('remote');
       el('student-console-status').style.color = 'var(--text3)';
 
@@ -21109,7 +21216,9 @@ async function generateCodingOutputsWithFallback(language, editorialCode, inputs
         datasetIds,
         query,
         limit: 100,
-      });
+      }, { signal: execution.controller.signal });
+
+      if (studentExecutionStopped(execution)) return;
 
       el('student-run-btn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run';
       el('student-run-btn').disabled = false;

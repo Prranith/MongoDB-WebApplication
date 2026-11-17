@@ -7,6 +7,56 @@
 const SQL_SANDBOXES = new Map();
 const SQL_NOTEBOOK_OUTPUTS = new Map();
 let SQL_NOTEBOOK_EDITORS = [];
+let activeWorkspaceExecution = null;
+
+const WORKSPACE_RUN_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+const WORKSPACE_STOP_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>';
+
+function workspaceRunButton() {
+  return [...document.querySelectorAll('.tbtn-run')]
+    .find(button => button.id !== 'student-run-btn' && button.offsetParent !== null)
+    || document.querySelector('.tbtn-run:not(#student-run-btn)');
+}
+
+function setWorkspaceRunButton(running) {
+  const button = workspaceRunButton();
+  if (!button) return;
+  button.classList.toggle('running', !!running);
+  button.innerHTML = running ? `${WORKSPACE_STOP_ICON} Stop` : `${WORKSPACE_RUN_ICON} Run`;
+}
+
+function beginWorkspaceExecution() {
+  if (activeWorkspaceExecution) return activeWorkspaceExecution;
+  activeWorkspaceExecution = { controller: new AbortController(), stopped: false };
+  setWorkspaceRunButton(true);
+  return activeWorkspaceExecution;
+}
+
+function finishWorkspaceExecution(execution) {
+  if (activeWorkspaceExecution !== execution) return;
+  activeWorkspaceExecution = null;
+  setWorkspaceRunButton(false);
+}
+
+function stopWorkspaceExecution() {
+  const execution = activeWorkspaceExecution;
+  if (!execution) return false;
+  execution.stopped = true;
+  execution.controller.abort();
+  if (typeof ClientExecution !== 'undefined' && ClientExecution.stop) ClientExecution.stop();
+  stopExecutionProgress();
+  setWorkspaceRunButton(false);
+  const status = document.getElementById('console-status');
+  if (status) status.textContent = '■ Execution stopped';
+  const output = document.getElementById('output-text');
+  if (output) output.innerHTML = '<span class="out-info">[stopped] Execution cancelled by the user.</span>';
+  activeWorkspaceExecution = null;
+  return true;
+}
+
+function workspaceExecutionStopped(execution) {
+  return !execution || execution.stopped || execution.controller.signal.aborted;
+}
 
 function sqlSandboxKey() {
   return S.activeFile || '__workspace_editor__';
@@ -158,7 +208,17 @@ function renderSqlNotebook(source) {
   runAll.type = 'button';
   runAll.className = 'sql-notebook-action';
   runAll.textContent = 'Run all';
-  runAll.onclick = async () => { for (let index = 0; index < document.querySelectorAll('.sql-notebook-cell').length; index++) await runSqlNotebookCell(index); };
+  runAll.onclick = async () => {
+    const execution = beginWorkspaceExecution();
+    try {
+      for (let index = 0; index < document.querySelectorAll('.sql-notebook-cell').length; index++) {
+        if (workspaceExecutionStopped(execution)) break;
+        await runSqlNotebookCell(index);
+      }
+    } finally {
+      finishWorkspaceExecution(execution);
+    }
+  };
   const addCell = document.createElement('button');
   addCell.type = 'button';
   addCell.dataset.sqlAction = 'add-cell';
@@ -279,13 +339,15 @@ function initializeSqlNotebook(source) {
 }
 
 async function runSqlNotebookCell(index) {
+  const ownsExecution = !activeWorkspaceExecution;
+  const execution = beginWorkspaceExecution();
   syncSqlNotebookToFile();
   const cell = document.querySelector(`.sql-notebook-cell[data-cell-index="${index}"]`);
-  if (!cell) return;
+  if (!cell) { if (ownsExecution) finishWorkspaceExecution(execution); return; }
   const input = cell.querySelector('.sql-cell-input');
   const output = cell.querySelector('.sql-cell-output');
   const query = (SQL_NOTEBOOK_EDITORS[index]?.getValue() || input.value).trim();
-  if (!query) return;
+  if (!query) { if (ownsExecution) finishWorkspaceExecution(execution); return; }
   output.classList.add('has-result');
   output.classList.remove('error');
   output.textContent = 'Running…';
@@ -293,20 +355,32 @@ async function runSqlNotebookCell(index) {
   try {
     const requestBody = { query, limit: S.settings ? S.settings.maxResults : 500 };
     if (SQL_SANDBOXES.has(runtimeKey)) requestBody.tables = SQL_SANDBOXES.get(runtimeKey);
-    const result = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody) });
+    const result = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody), signal: execution.controller.signal });
+    if (workspaceExecutionStopped(execution)) return;
     if (result.status !== 'ok') throw new Error(result.error || 'SQL execution failed');
     if (result.tables) SQL_SANDBOXES.set(runtimeKey, result.tables);
     const html = renderSqlResultTable(result, 'sql-notebook-result');
     output.innerHTML = html;
     SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, { ...(SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {}), [index]: { html } });
   } catch (error) {
+    if (workspaceExecutionStopped(execution)) {
+      output.classList.remove('error');
+      output.textContent = '[stopped] Execution cancelled by the user.';
+      return;
+    }
     output.classList.add('error');
     output.textContent = `[error] ${error.message}`;
     SQL_NOTEBOOK_OUTPUTS.set(runtimeKey, { ...(SQL_NOTEBOOK_OUTPUTS.get(runtimeKey) || {}), [index]: { text: output.textContent, error: true } });
+  } finally {
+    if (ownsExecution) finishWorkspaceExecution(execution);
   }
 }
 
 async function runQuery() {
+  if (activeWorkspaceExecution) {
+    stopWorkspaceExecution();
+    return;
+  }
   if (window.Auth && !Auth.user) {
     Auth.require(() => runQuery());
     return;
@@ -336,13 +410,15 @@ async function runQuery() {
     }
     const q = source.trim();
     if (!q) return;
+    const execution = beginWorkspaceExecution();
     const statEl = document.getElementById('console-status');
     if (statEl) statEl.textContent = '⟳ Running SQL...';
     try {
       const sandboxKey = sqlSandboxKey();
       const requestBody = { query: q, limit: S.settings ? S.settings.maxResults : 500 };
       if (SQL_SANDBOXES.has(sandboxKey)) requestBody.tables = SQL_SANDBOXES.get(sandboxKey);
-      const d = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody) });
+      const d = await fetchAPI('/api/sql/run', { method: 'POST', body: JSON.stringify(requestBody), signal: execution.controller.signal });
+      if (workspaceExecutionStopped(execution)) return;
       if (d.status !== 'ok') throw new Error(d.error || 'SQL execution failed');
       if (d.tables) SQL_SANDBOXES.set(sandboxKey, d.tables);
       S.lastData = d.rows; S.lastRaw = JSON.stringify(d, null, 2);
@@ -353,7 +429,14 @@ async function runQuery() {
       if (document.getElementById('console-time')) document.getElementById('console-time').textContent = `${d.duration || 0}ms`;
       if (document.getElementById('console-count')) document.getElementById('console-count').textContent = `${resultCount} ${d.operation && d.operation !== 'select' ? 'affected' : 'rows'}`;
       renderTreeView(d.rows); renderRawJsonView(d); renderSqlTable(d);
-    } catch (e) { if (statEl) statEl.textContent = `✕ ${e.message}`; logOutput(`<span class="out-error">[error] ${e.message}</span>`); }
+    } catch (e) {
+      if (!workspaceExecutionStopped(execution)) {
+        if (statEl) statEl.textContent = `✕ ${e.message}`;
+        logOutput(`<span class="out-error">[error] ${e.message}</span>`);
+      }
+    } finally {
+      finishWorkspaceExecution(execution);
+    }
     return;
   }
   if (lang !== 'mongodb') {
@@ -364,12 +447,18 @@ async function runQuery() {
       const parts = fullText.split('================= Output =================');
       stdin = parts[0].trim();
     }
-    await runPlaygroundCode(lang, editor.getValue(), stdin);
+    const execution = beginWorkspaceExecution();
+    try {
+      await runPlaygroundCode(lang, editor.getValue(), stdin);
+    } finally {
+      finishWorkspaceExecution(execution);
+    }
     return;
   }
 
   const q = editor.getValue().trim();
   if (!q) return;
+  const execution = beginWorkspaceExecution();
 
   const statEl = document.getElementById('console-status');
   if (statEl) statEl.innerHTML = `⟳ Running query...`;
@@ -381,9 +470,7 @@ async function runQuery() {
 
   logOutput(`<span class="out-info">[info] Executing MongoDB command...</span>`);
   
-  const runBtn = document.querySelector('.tbtn-run');
-  runBtn.classList.add('running');
-  runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Stop`;
+  setWorkspaceRunButton(true);
 
   try {
     const limitVal = S.settings ? S.settings.maxResults : 10000;
@@ -405,14 +492,15 @@ async function runQuery() {
         query: q, 
         limit: limitVal,
         custom_collections: customCollsMap
-      })
+      }),
+      signal: execution.controller.signal
     });
+    if (workspaceExecutionStopped(execution)) return;
     
     S.lastData = d.data;
     S.lastRaw = JSON.stringify(d.data, null, 2);
     
-    runBtn.classList.remove('running');
-    runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
+    setWorkspaceRunButton(false);
 
     const ms = (d.timing_ms || 0).toFixed(2);
     const count = d.docs_returned || 0;
@@ -446,10 +534,13 @@ async function runQuery() {
       saveToHistory(q, 'error', 0, 0);
     }
   } catch(e) {
-    runBtn.classList.remove('running');
-    runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
-    if (statEl) statEl.innerHTML = `— Network Error`;
-    logOutput(`<span class="out-err">[network error] ${esc(e.message)}</span>`);
+    if (!workspaceExecutionStopped(execution)) {
+      setWorkspaceRunButton(false);
+      if (statEl) statEl.innerHTML = `— Network Error`;
+      logOutput(`<span class="out-err">[network error] ${esc(e.message)}</span>`);
+    }
+  } finally {
+    finishWorkspaceExecution(execution);
   }
 }
 
@@ -952,6 +1043,7 @@ async function runPlaygroundCode(language, code, stdin) {
     return;
   }
   const statEl = document.getElementById('console-status');
+  const execution = activeWorkspaceExecution || beginWorkspaceExecution();
 
   const timeEl = document.getElementById('console-time');
   const countEl = document.getElementById('console-count');
@@ -966,13 +1058,11 @@ async function runPlaygroundCode(language, code, stdin) {
   if (logView) logView.innerHTML = '';
   appendExecutionCli('[codeleaf] Selecting the safest available execution runtime…');
 
-  const runBtn = document.querySelector('.tbtn-run');
-  if (runBtn) {
-    runBtn.classList.add('running');
-    runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Stop`;
-  }
+  const runBtn = workspaceRunButton();
+  setWorkspaceRunButton(true);
 
   const handleOutput = (d, duration, fallbackNotice) => {
+    if (workspaceExecutionStopped(execution)) return;
     stopExecutionProgress();
     if (runBtn) {
       runBtn.classList.remove('running');
@@ -1028,8 +1118,10 @@ async function runPlaygroundCode(language, code, stdin) {
       timeoutMs: clientTimeout,
       fileName: S.activeFile || 'Main.java',
       strictJavaFilename: language === 'java',
+      signal: execution.controller.signal,
       onProgress: updateExecutionProgress
     });
+    if (workspaceExecutionStopped(execution)) return;
     if (clientResult) {
       const shouldFallbackToRemote = clientResult.runtime === 'codeleaf-browser'
         || clientResult.executionFailure === true
@@ -1046,13 +1138,16 @@ async function runPlaygroundCode(language, code, stdin) {
         const start = performance.now();
         const d = await fetchAPI('/api/sandbox/run', {
           method: 'POST',
-          body: JSON.stringify({ language, code, stdin, filename: S.activeFile || '' })
+          body: JSON.stringify({ language, code, stdin, filename: S.activeFile || '' }),
+          signal: execution.controller.signal
         });
+        if (workspaceExecutionStopped(execution)) return;
         updateExecutionProgress({ detail: 'Execution service completed the run.' });
         d.executionOrigin = 'remote';
         handleOutput(d, (performance.now() - start).toFixed(2), `On-device attempt: ${localFailure}`);
         return;
       } catch (err) {
+        if (workspaceExecutionStopped(execution)) return;
         handleOutput({ status: 'ok', code: 1, stderr: `On-device attempt failed: ${localFailure}\nExecution service request failed: ${err.message || err}`, executionOrigin: 'remote' }, 0, localFailure);
         return;
       }
@@ -1069,12 +1164,15 @@ async function runPlaygroundCode(language, code, stdin) {
         code: code,
         stdin: stdin,
         filename: S.activeFile || ''
-      })
+      }),
+      signal: execution.controller.signal
     });
+    if (workspaceExecutionStopped(execution)) return;
     const duration = (performance.now() - start).toFixed(2);
     d.executionOrigin = 'remote';
     handleOutput(d, duration);
   } catch (err) {
+    if (workspaceExecutionStopped(execution)) return;
     if (runBtn) {
       runBtn.classList.remove('running');
       runBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg> Run`;
