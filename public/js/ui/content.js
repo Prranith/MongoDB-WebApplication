@@ -11,6 +11,7 @@ const WORKSPACE_CONTENT_ROUTES = new Set([
   '/contact',
 ]);
 const WORKSPACE_SHELL_ROUTES = new Set(['/', '/workspace', '/workspaceide']);
+const WORKSPACE_CONTENT_PREFIX = '/workspaceide';
 
 const WORKSPACE_CONTENT_CACHE = new Map();
 let workspaceContentRequest = null;
@@ -19,10 +20,25 @@ let workspaceContentPreviousLanguage = null;
 
 function workspaceContentPath(value) {
   try {
-    return new URL(value, window.location.origin).pathname;
+    const pathname = new URL(value, window.location.origin).pathname.replace(/\/$/, '') || '/';
+    if (pathname.startsWith(`${WORKSPACE_CONTENT_PREFIX}/`)) {
+      const contentPath = pathname.slice(WORKSPACE_CONTENT_PREFIX.length) || '/';
+      if (WORKSPACE_CONTENT_ROUTES.has(contentPath)) return contentPath;
+    }
+    return pathname;
   } catch (_) {
     return '';
   }
+}
+
+function workspaceContentUrl(path) {
+  return `${WORKSPACE_CONTENT_PREFIX}${path}`;
+}
+
+function navigateWorkspaceContent(path, replace = false) {
+  const url = workspaceContentUrl(path);
+  if (window.location.pathname === url) return;
+  window.history[replace ? 'replaceState' : 'pushState']({ codeleafRoute: url }, '', url);
 }
 
 function isWorkspaceContentRoute(value) {
@@ -105,7 +121,7 @@ function buildWorkspaceContentView(route, pageHtml) {
   });
 }
 
-async function openWorkspaceContent(route) {
+async function openWorkspaceContent(route, options = {}) {
   const path = workspaceContentPath(route);
   if (!WORKSPACE_CONTENT_ROUTES.has(path)) return false;
   const view = document.getElementById('workspace-content-view');
@@ -123,6 +139,8 @@ async function openWorkspaceContent(route) {
 
   showView('ide');
   if (S.sidePanel !== 'resources') setSidePanel('resources');
+  if (options.history !== false) navigateWorkspaceContent(path, options.replace === true);
+  else navigateWorkspaceContent(path, true);
   ide.classList.add('workspace-content-active');
   document.body.classList.add('workspace-content-active');
   view.hidden = false;
@@ -164,6 +182,9 @@ function closeWorkspaceContent(options = {}) {
   }
   if (ide) ide.classList.remove('workspace-content-active');
   document.body.classList.remove('workspace-content-active');
+  if (options.history !== false && window.location.pathname.startsWith(`${WORKSPACE_CONTENT_PREFIX}/`)) {
+    window.history.pushState({ codeleafRoute: WORKSPACE_CONTENT_PREFIX }, '', WORKSPACE_CONTENT_PREFIX);
+  }
   const indicator = document.getElementById('sb-lang-indicator');
   if (indicator && workspaceContentPreviousLanguage !== null) indicator.textContent = workspaceContentPreviousLanguage;
   const previousFile = workspaceContentPreviousFile;

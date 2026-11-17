@@ -18,6 +18,22 @@ PUBLIC_DIR = ROOT / "public"
 
 static_bp = Blueprint("static_bp", __name__)
 
+# These are indexable public information pages. The workspace-prefixed routes
+# below are interactive shell aliases for the same content.
+_PUBLIC_CONTENT_PAGES = {
+    "/about": "about.html",
+    "/faq": "faq.html",
+    "/privacy": "privacy.html",
+    "/terms": "terms.html",
+    "/contact": "contact.html",
+    "/guides/sql-playground": "guides-sql-playground.html",
+    "/guides/mongodb-playground": "guides-mongodb-playground.html",
+}
+
+_WORKSPACE_CONTENT_ROUTES = {
+    f"/workspaceide{path}": path for path in _PUBLIC_CONTENT_PAGES
+}
+
 # These are real browser entry points for the existing interactive shell. The
 # shell is intentionally reused so editor, exam, meeting, and auth behavior
 # stays identical while each major screen gets a stable URL.
@@ -41,24 +57,37 @@ _APP_ROUTES = {
     "/createMeet": {"name": "create-meeting", "initial": "create-meeting"},
     "/joinmeet": {"name": "join-meeting", "initial": "join-meeting"},
 }
-
-_PUBLIC_CONTENT_PAGES = {
-    "/about": "about.html",
-    "/faq": "faq.html",
-    "/privacy": "privacy.html",
-    "/terms": "terms.html",
-    "/contact": "contact.html",
-    "/guides/sql-playground": "guides-sql-playground.html",
-    "/guides/mongodb-playground": "guides-mongodb-playground.html",
-}
+_APP_ROUTES.update(
+    {
+        route: {"name": "workspace-content", "initial": "workspace", "content": content}
+        for route, content in _WORKSPACE_CONTENT_ROUTES.items()
+    }
+)
 
 
 def _app_shell(route="/"):
-    if not INDEX_HTML:
-        return None
+    shell = INDEX_HTML
+    if not shell:
+        index_path = PUBLIC_DIR / "index.html"
+        if not index_path.is_file():
+            return None
+        shell = index_path.read_text(encoding="utf-8")
     config = _APP_ROUTES.get(route, {"name": "app", "initial": "home"})
     bootstrap = '<script>window.__CODELEAF_ROUTE = ' + json.dumps(config, separators=(",", ":")) + ';</script>'
-    return INDEX_HTML.replace("</head>", bootstrap + "</head>", 1)
+    if config.get("content"):
+        # The public content page remains the indexable canonical URL. The
+        # workspace-prefixed endpoint is an interactive shell alias.
+        shell = shell.replace(
+            '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"/>',
+            '<meta name="robots" content="noindex,follow"/>',
+            1,
+        )
+        shell = shell.replace(
+            '<link rel="canonical" href="https://codeleaf-org.vercel.app/"/>',
+            f'<link rel="canonical" href="https://codeleaf-org.vercel.app{config["content"]}"/>',
+            1,
+        )
+    return shell.replace("</head>", bootstrap + "</head>", 1)
 
 
 def _serve_app_route(route):
@@ -88,10 +117,7 @@ def serve_admin_asset(path):
 @static_bp.route("/")
 def serve_index():
     # Try embedded HTML first (works even if public/ was removed by .vercelignore)
-    if INDEX_HTML:
-        return _serve_app_route("/")
-    # Fallback: serve from file
-    return send_from_directory(str(PUBLIC_DIR), "index.html")
+    return _serve_app_route("/")
 
 
 @static_bp.route("/home")
@@ -113,6 +139,14 @@ def serve_index():
 @static_bp.route("/joinmeet")
 def serve_app_entry():
     return _serve_app_route(request.path)
+
+
+@static_bp.route("/workspaceide/<path:content_path>")
+def serve_workspace_content_entry(content_path):
+    route = f"/workspaceide/{content_path}".rstrip("/")
+    if route not in _WORKSPACE_CONTENT_ROUTES:
+        return jsonify({"error": "Not found"}), 404
+    return _serve_app_route(route)
 
 
 @static_bp.route("/about")

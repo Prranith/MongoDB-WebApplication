@@ -24,7 +24,12 @@
     const route = window.__CODELEAF_ROUTE || { initial: 'home' };
     switch (route.initial) {
       case 'home': return setPanel('home');
-      case 'workspace': return setPanel('workspace');
+      case 'workspace':
+        setPanel('workspace');
+        if (route.content && typeof openWorkspaceContent === 'function') {
+          return openWorkspaceContent(route.content, { history: false });
+        }
+        return;
       case 'db': return setPanel('db');
       case 'history': return setPanel('history');
       case 'guide': return setPanel('snippets');
