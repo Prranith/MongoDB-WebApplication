@@ -124,11 +124,19 @@ def _otp_digest(email, code):
     return hashlib.sha256(f"{secret}:{email}:{code}".encode()).hexdigest()
 
 
+def _secret_env(name):
+    """Read a deployment secret while tolerating copied surrounding quotes."""
+    value = str(os.getenv(name, "") or "").strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        value = value[1:-1].strip()
+    return value
+
+
 def _send_email_message(subject, recipient, body):
-    client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
-    client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
-    refresh_token = os.getenv("GOOGLE_REFRESH_TOKEN", "").strip()
-    sender = os.getenv("GMAIL_SENDER_EMAIL", "").strip()
+    client_id = _secret_env("GOOGLE_CLIENT_ID")
+    client_secret = _secret_env("GOOGLE_CLIENT_SECRET")
+    refresh_token = _secret_env("GOOGLE_REFRESH_TOKEN")
+    sender = _secret_env("GMAIL_SENDER_EMAIL")
     if not client_id or not client_secret or not refresh_token or not sender:
         if os.getenv("AUTH_EMAIL_DEV_MODE", "0").strip().lower() in {"1", "true", "yes"}:
             print(f"[auth] development email queued for {recipient}")
@@ -149,7 +157,22 @@ def _send_email_message(subject, recipient, body):
     except requests.RequestException as exc:
         raise RuntimeError(f"Gmail OAuth token request failed: {exc}") from exc
     if token_response.status_code != 200:
-        raise RuntimeError(f"Gmail OAuth token request failed ({token_response.status_code}): {token_response.text[:240]}")
+        try:
+            token_error = token_response.json().get("error", "")
+        except (ValueError, AttributeError):
+            token_error = ""
+        if token_error == "invalid_grant":
+            raise RuntimeError(
+                "CodeLeaf email verification is temporarily unavailable because the Gmail authorization "
+                "has expired or been revoked. The administrator must generate a new refresh token using "
+                "the same Google OAuth client and update GOOGLE_REFRESH_TOKEN in Vercel."
+            )
+        if token_error == "invalid_client":
+            raise RuntimeError(
+                "CodeLeaf email verification is temporarily unavailable because the configured Google OAuth "
+                "client credentials are invalid. Check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Vercel."
+            )
+        raise RuntimeError(f"Gmail OAuth token request failed (HTTP {token_response.status_code}).")
     access_token = token_response.json().get("access_token")
     if not access_token:
         raise RuntimeError("Gmail OAuth token response did not contain an access token.")
