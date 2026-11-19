@@ -21,3 +21,17 @@ def test_gmail_invalid_grant_returns_actionable_configuration_error(monkeypatch)
     with patch("services.auth.auth_service.requests.post", return_value=response):
         with pytest.raises(RuntimeError, match="generate a new refresh token"):
             _send_email_message("Subject", "recipient@example.com", "Body")
+
+
+def test_gmail_smtp_app_password_is_preferred(monkeypatch):
+    monkeypatch.setenv("GMAIL_SENDER_EMAIL", "sender@example.com")
+    monkeypatch.setenv("SMTP_PASSWORD", "app-password")
+    smtp = MagicMock()
+    smtp.__enter__.return_value = smtp
+    with patch("services.auth.auth_service.smtplib.SMTP", return_value=smtp) as smtp_factory:
+        assert _send_email_message("Subject", "recipient@example.com", "Body") is True
+
+    smtp_factory.assert_called_once_with("smtp.gmail.com", 587, timeout=15)
+    smtp.starttls.assert_called_once_with()
+    smtp.login.assert_called_once_with("sender@example.com", "app-password")
+    smtp.send_message.assert_called_once()

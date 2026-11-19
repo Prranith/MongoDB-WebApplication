@@ -4,6 +4,7 @@ import hashlib
 import os
 import secrets
 import base64
+import smtplib
 import requests
 import re
 import html
@@ -133,10 +134,44 @@ def _secret_env(name):
 
 
 def _send_email_message(subject, recipient, body):
+    # Prefer Gmail SMTP with an App Password when configured. This is a
+    # deliberately simple deployment path for the single CodeLeaf sender
+    # mailbox: it avoids OAuth consent-screen verification and refresh-token
+    # expiry while keeping the OAuth API path below for existing deployments.
+    # SMTP_PASSWORD is the short deployment-facing name. Keep the longer
+    # name as a compatibility alias for environments already configured.
+    smtp_password = _secret_env("SMTP_PASSWORD") or _secret_env("GMAIL_SMTP_APP_PASSWORD")
+    sender = _secret_env("GMAIL_SENDER_EMAIL")
+    if smtp_password and sender:
+        host = _secret_env("GMAIL_SMTP_HOST") or "smtp.gmail.com"
+        try:
+            port = int(_secret_env("GMAIL_SMTP_PORT") or "587")
+        except ValueError:
+            raise RuntimeError("GMAIL_SMTP_PORT must be a valid port number.")
+        message = EmailMessage()
+        message["Subject"] = subject
+        message["From"] = sender
+        message["To"] = recipient
+        message.set_content(body)
+        try:
+            if port == 465:
+                with smtplib.SMTP_SSL(host, port, timeout=15) as smtp:
+                    smtp.login(sender, smtp_password)
+                    smtp.send_message(message)
+            else:
+                with smtplib.SMTP(host, port, timeout=15) as smtp:
+                    smtp.ehlo()
+                    smtp.starttls()
+                    smtp.ehlo()
+                    smtp.login(sender, smtp_password)
+                    smtp.send_message(message)
+        except (OSError, smtplib.SMTPException) as exc:
+            raise RuntimeError(f"Gmail SMTP delivery failed: {exc}") from exc
+        return True
+
     client_id = _secret_env("GOOGLE_CLIENT_ID")
     client_secret = _secret_env("GOOGLE_CLIENT_SECRET")
     refresh_token = _secret_env("GOOGLE_REFRESH_TOKEN")
-    sender = _secret_env("GMAIL_SENDER_EMAIL")
     if not client_id or not client_secret or not refresh_token or not sender:
         if os.getenv("AUTH_EMAIL_DEV_MODE", "0").strip().lower() in {"1", "true", "yes"}:
             print(f"[auth] development email queued for {recipient}")
